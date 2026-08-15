@@ -615,6 +615,35 @@ std::vector<NumiTemporalConeProbeInput> makeProblems(
     }};
     std::vector<NumiTemporalConeProbeInput> inputs;
     inputs.reserve(count);
+    const auto appendFixedProjection = [&inputs, &identity](
+        const std::array<float, 3>& rawImpulse,
+        const float frictionU,
+        const float frictionV,
+        const float maximumNormalImpulse = 0.0f
+    ) {
+        const auto projected = projectCone(
+            {{
+                static_cast<double>(rawImpulse[0]),
+                static_cast<double>(rawImpulse[1]),
+                static_cast<double>(rawImpulse[2]),
+            }},
+            frictionU,
+            frictionV,
+            maximumNormalImpulse
+        );
+        inputs.push_back(makeInput(
+            identity,
+            {{
+                -static_cast<float>(projected[0]),
+                -static_cast<float>(projected[1]),
+                -static_cast<float>(projected[2]),
+            }},
+            rawImpulse,
+            frictionU,
+            frictionV,
+            maximumNormalImpulse
+        ));
+    };
     inputs.push_back(makeInput(
         identity, {{1.0f, 0.0f, 0.0f}}, {{0.0f, 0.0f, 0.0f}},
         0.6f, 0.6f
@@ -698,6 +727,22 @@ std::vector<NumiTemporalConeProbeInput> makeProblems(
         {{-1.0f, 0.0f, 0.0f}}, {{0.0f, 0.0f, 0.0f}},
         0.5f, 0.5f
     ));
+    appendFixedProjection(
+        {{1.0e20f, 1.0e20f, 0.0f}},
+        0.5f,
+        0.5f
+    );
+    appendFixedProjection(
+        {{1.0e20f, 1.0e20f, 0.0f}},
+        0.5f,
+        0.5f,
+        1.0e20f
+    );
+    appendFixedProjection(
+        {{4.0e19f, 1.0e20f, -8.0e19f}},
+        0.8f,
+        0.35f
+    );
 
     for (std::size_t index = inputs.size(); index < count; ++index) {
         const float a = 0.25f + 0.01f * static_cast<float>(index % 71u);
@@ -860,7 +905,7 @@ int run(const int argc, const char* const* argv) {
             throw std::runtime_error("unknown argument: " + std::string(value));
         }
     }
-    problemCount = std::max<std::size_t>(problemCount, 17u);
+    problemCount = std::max<std::size_t>(problemCount, 20u);
     replayCount = std::max<std::uint32_t>(replayCount, 2u);
     if (problemCount > std::numeric_limits<std::uint32_t>::max()) {
         throw std::runtime_error("case count exceeds the probe ABI");
@@ -1023,6 +1068,34 @@ int run(const int argc, const char* const* argv) {
     const bool indefiniteLocalBlockRejected =
         replays[0].outputs[16].status.x ==
             NUMI_TEMPORAL_CONE_PROBE_FACTORIZATION_FAILED;
+    const auto extremeProjectionAccepted = [&](const std::size_t index) {
+        const auto oracle = solveOracle(inputs[index]);
+        const auto& gpu = replays[0].outputs[index];
+        if (oracle.status != NUMI_TEMPORAL_CONE_PROBE_SUCCESS ||
+            gpu.status.x != NUMI_TEMPORAL_CONE_PROBE_SUCCESS ||
+            gpu.residualAndConeViolation.w > 2.0e-6f) {
+            return false;
+        }
+        const std::array<double, 3> actual{{
+            gpu.impulseAndDelta.x,
+            gpu.impulseAndDelta.y,
+            gpu.impulseAndDelta.z,
+        }};
+        for (std::size_t axis = 0u; axis < 3u; ++axis) {
+            if (!std::isfinite(actual[axis]) ||
+                normalizedError(actual[axis], oracle.impulse[axis]) >
+                    1.0e-5) {
+                return false;
+            }
+        }
+        return true;
+    };
+    const bool extremeUnboundedProjection =
+        extremeProjectionAccepted(17u);
+    const bool extremeCappedProjection =
+        extremeProjectionAccepted(18u);
+    const bool extremeAnisotropicProjection =
+        extremeProjectionAccepted(19u);
 
     double totalGPUSeconds = 0.0;
     for (const auto& replay : replays) {
@@ -1047,7 +1120,10 @@ int run(const int argc, const char* const* argv) {
         zeroUAxisCone &&
         degenerateCap &&
         exactInactiveAxis &&
-        indefiniteLocalBlockRejected;
+        indefiniteLocalBlockRejected &&
+        extremeUnboundedProjection &&
+        extremeCappedProjection &&
+        extremeAnisotropicProjection;
 
     if (maximumRelativeError > 1.0e-5) {
         const auto worstOracle = solveOracle(inputs[maximumRelativeErrorCase]);
@@ -1087,6 +1163,12 @@ int run(const int argc, const char* const* argv) {
               << (exactInactiveAxis ? "true" : "false")
               << " indefinite_local_block_rejected="
               << (indefiniteLocalBlockRejected ? "true" : "false")
+              << " extreme_unbounded_projection="
+              << (extremeUnboundedProjection ? "true" : "false")
+              << " extreme_capped_projection="
+              << (extremeCappedProjection ? "true" : "false")
+              << " extreme_anisotropic_projection="
+              << (extremeAnisotropicProjection ? "true" : "false")
               << '\n'
               << "average_gpu_seconds=" << averageGPUSeconds
               << " cases_per_second=" << casesPerSecond << '\n'

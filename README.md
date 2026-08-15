@@ -103,6 +103,8 @@ An installed or relocated harness can load a specific library with
 - Per-environment failure publication; no silent contact dropping.
 - Exact Euclidean projection onto isotropic, anisotropic, one-axis degenerate,
   and capped elliptic friction cones.
+- Scale-homogeneous extreme-magnitude cone projection with an unchanged
+  ordinary-magnitude fast path and typed rejection of unrepresentable results.
 - Packed, sorted 3x3 block-CSR Delassus operators with exact dense parity.
 - Deterministic GPU composition of `J M^-1 J^T + R` from shared-owner
   Jacobians and response columns.

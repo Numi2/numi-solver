@@ -22,7 +22,9 @@ The qualification gate requires:
 - either zero-friction tangent is exactly inactive while the orthogonal
   positive-friction tangent remains physical;
 - a sub-epsilon nonzero inactive input is still projected to exact zero;
-- the capped one-axis cone reaches its exact interval boundary.
+- the capped one-axis cone reaches its exact interval boundary;
+- finite `1e20`-scale unbounded, capped, and anisotropic projections match the
+  independent FP64 closest point without FP32 squared-norm overflow.
 
 The adversarial anisotropic batch produced:
 
@@ -40,10 +42,13 @@ zero_u_axis_cone=true
 degenerate_cap=true
 exact_inactive_axis=true
 indefinite_local_block_rejected=true
+extreme_unbounded_projection=true
+extreme_capped_projection=true
+extreme_anisotropic_projection=true
 ```
 
-The measured isolated local-block throughput was approximately 34.8 million
-problems/s for the adversarial anisotropic batch and 100.6 million problems/s
+The measured isolated local-block throughput was approximately 33.4 million
+problems/s for the adversarial anisotropic batch and 96.6 million problems/s
 for the predominantly isotropic batch. The latter takes the closed-form fast
 path; these are local mathematical blocks, not full environment steps.
 
@@ -101,13 +106,13 @@ spd_cholesky=true
 min_spd_pivot=0.894427198
 shared_rigid_oracle=true
 under_relaxed_path=true
-average_gpu_seconds=0.004927417
-islands_per_second=831267.23
-contacts_per_second=8722826.34
-contact_iterations_per_second=305451740.20
+average_gpu_seconds=0.004970100
+islands_per_second=824128.29
+contacts_per_second=8647914.55
+contact_iterations_per_second=302828515.34
 streamed_buffer_bytes=10126748
-dense_gpu_seconds=0.010791633
-dense_to_stream_speedup=2.190119899
+dense_gpu_seconds=0.010805625
+dense_to_stream_speedup=2.174126286
 dense_buffer_bytes=159711232
 stream_to_dense_memory=0.063406611
 streamed_blocks=169861
@@ -121,7 +126,7 @@ result=PASS
 ```
 
 The streamed representation used 6.34% of the dense qualification buffers and
-the isolated streamed kernel was 2.190x faster for the same byte-identical
+the isolated streamed kernel was 2.174x faster for the same byte-identical
 FP32 solve. GPU time excludes CPU oracle work and buffer upload. These ratios
 describe this declared topology mix; they are not universal scene claims.
 
@@ -133,8 +138,8 @@ rollback gates. The richer batch remains within 0.4% of the prior
 positive-friction-only `0.004931358`-second measurement while qualifying 2,184
 lower-dimensional contacts.
 
-The combined metallib SHA-256 for this PSD-conditioning milestone was
-`6b334db6664885c27422ad4a3c0feed5a430d35af187fd4b5e9abee0c65c50c9`.
+The combined metallib SHA-256 for this extreme-scale cone milestone was
+`a370efb164aeb77754576b6eccdcbc970028844b015847d60b1aea1c57449cc0`.
 
 On the earlier 1,024-island positive-friction qualification batch, the
 unaccelerated revision measured `0.004850083` seconds, 431 maximum iterations,
@@ -148,7 +153,7 @@ dispatch remains one SIMD32 group per island.
 
 The typed failure batch separately verifies malformed symmetry, failed local
 conditioning, bounded iteration exhaustion, invalid ABI, unsorted/duplicate
-CSR, capacity overflow, nonfinite FP32 warm-start arithmetic, finite-entry
+CSR, capacity overflow, an exact cone projection outside FP32 range, finite-entry
 FP32 row-sum overflow, a positive-determinant local block with two small
 negative eigenvalues that the CFM shift would otherwise hide, and a feasible
 zero-KKT but positive-objective stationary point from an indefinite global
@@ -200,14 +205,14 @@ missing_coupling_rejected=true
 non_psd_regularization_rejected=true
 deterministic_failures=true
 failure_rollback=true
-average_gpu_seconds=0.001693804
-assembly_gpu_seconds=0.000777813
-assembly_fraction=0.459210410
-islands_per_second=604556.32
-blocks_per_second=24636260.27
-assembly_blocks_per_second=53649176.37
-factor_fmas_per_second=1816552189.59
-contact_iterations_per_second=99509143.10
+average_gpu_seconds=0.001677246
+assembly_gpu_seconds=0.000846771
+assembly_fraction=0.504857909
+islands_per_second=610524.69
+blocks_per_second=24879477.52
+assembly_blocks_per_second=49280157.95
+factor_fmas_per_second=1668617952.47
+contact_iterations_per_second=100491530.03
 factor_bytes=3505020
 streamed_operator_bytes=1716156
 dense_operator_bytes=37748736
@@ -223,8 +228,8 @@ result=PASS
 
 Factor inputs plus the assembled sparse operator used 13.83% of the fixed
 dense operator storage for this declared topology mix. The assembly-only
-measurement produced 53.65 million blocks/s and the complete assembly/solve
-chain produced 604,556 islands/s. One unreported warmup command precedes each
+measurement produced 49.28 million blocks/s and the complete assembly/solve
+chain produced 610,525 islands/s. One unreported warmup command precedes each
 timed path. These are isolated kernel measurements, not environment-step or
 energy claims.
 

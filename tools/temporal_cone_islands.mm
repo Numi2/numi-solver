@@ -1096,14 +1096,14 @@ Batch makeFailureBatch() {
     batch.headers[2].control.z = 1u;
     batch.headers[2].control.w = 1u;
 
-    // Problem 6: finite authored data whose cone norm overflows in FP32 must
-    // fail transactionally instead of publishing a nonfinite warm start.
+    // Problem 6: finite authored data whose exact cone projection exceeds
+    // FP32 range must fail instead of publishing a nonfinite warm start.
     auto& overflow = batch.contacts[6u * kMaxContacts];
-    overflow.warmImpulseAndFrictionV.x = 0.0f;
+    overflow.warmImpulseAndFrictionV.x =
+        std::numeric_limits<float>::max();
     overflow.warmImpulseAndFrictionV.y =
         std::numeric_limits<float>::max();
-    overflow.warmImpulseAndFrictionV.z =
-        std::numeric_limits<float>::max();
+    overflow.warmImpulseAndFrictionV.z = 0.0f;
 
     // Problem 7: every authored coefficient is finite and every local 3x3
     // diagonal remains factorizable, but deterministic FP32 absolute-row

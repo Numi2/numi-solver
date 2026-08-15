@@ -20,6 +20,7 @@ constant uint kConeProjectionIterations = 28u;
 // nearly rank-deficient articulated contacts cannot turn a bounded target
 // velocity into an unbounded impulse correction.
 constant float kContactMatrixRegularization = 1.0e-2f;
+constant float kConeProjectionSafeMagnitude = 1.0e18f;
 
 struct Mat3 {
     float3 row0;
@@ -621,7 +622,8 @@ inline float anisotropicConeBoundaryFunction(
 // monotone scalar KKT equation with a fixed bracket/iteration order, retaining
 // deterministic FP32 execution. A positive normal cap projects onto the exact
 // capped ellipse when the unbounded solution exceeds it.
-inline float3 projectFrictionConeValues(
+__attribute__((always_inline)) inline float3
+projectFrictionConeValuesUnscaled(
     const float3 impulse,
     const float frictionU,
     const float frictionV,
@@ -781,6 +783,45 @@ inline float3 projectFrictionConeValues(
         );
     }
     return projected;
+}
+
+// Cone projection is positively homogeneous in the impulse and authored
+// normal cap. Normalize only the extreme slow path so squared norms and KKT
+// brackets remain finite without taxing ordinary contact iterations.
+__attribute__((always_inline)) inline float3 projectFrictionConeValues(
+    const float3 impulse,
+    const float frictionU,
+    const float frictionV,
+    const float maximumNormalImpulse
+) {
+    const float3 magnitude = abs(impulse);
+    if (all(magnitude <= float3(kConeProjectionSafeMagnitude)) &&
+        maximumNormalImpulse <= kConeProjectionSafeMagnitude) {
+        return projectFrictionConeValuesUnscaled(
+            impulse,
+            frictionU,
+            frictionV,
+            maximumNormalImpulse
+        );
+    }
+    const float inputScale = max(
+        max(magnitude.x, max(magnitude.y, magnitude.z)),
+        max(maximumNormalImpulse, 0.0f)
+    );
+    if (!isfinite(inputScale)) {
+        return float3(INFINITY);
+    }
+    const float3 scaledImpulse = impulse / inputScale;
+    const float scaledMaximumNormalImpulse =
+        maximumNormalImpulse > 0.0f
+        ? maximumNormalImpulse / inputScale
+        : 0.0f;
+    return inputScale * projectFrictionConeValuesUnscaled(
+        scaledImpulse,
+        frictionU,
+        frictionV,
+        scaledMaximumNormalImpulse
+    );
 }
 
 inline float3 projectFrictionCone(

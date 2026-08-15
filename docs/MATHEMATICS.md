@@ -96,6 +96,27 @@ than copying the FP32 iteration count. If the unbounded projection exceeds an
 authored normal cap, a second monotone scalar projection finds the closest
 tangent point on the capped ellipse.
 
+For finite extreme-magnitude inputs, direct FP32 squared norms can overflow
+even when the exact projected impulse is representable. Cone projection is
+positively homogeneous when the impulse and normal cap are scaled together.
+With
+
+```math
+s=\max\left(\|y\|_\infty,\lambda_{n,\max}\right),
+```
+
+the solver therefore uses
+
+```math
+\Pi_{\mathcal C(\lambda_{n,\max})}(y)
+=s\,\Pi_{\mathcal C(\lambda_{n,\max}/s)}(y/s).
+```
+
+This normalization is selected only when `s > 1e18`; the ordinary path keeps
+the original closed-form or scalar-root projection. A finite input whose exact
+projected result exceeds FP32 range is rejected by the existing typed,
+transactional nonfinite-result gate rather than silently clamped.
+
 A single zero friction coefficient defines a lower-dimensional cone rather
 than a frictionless contact. For example, when `mu_u=0` and `mu_v>0`,
 
@@ -157,7 +178,8 @@ implementation of the equations above. It checks:
 - normalized fixed-point convergence residual;
 - byte-identical repeated GPU output;
 - separating, impact, sticking, sliding, anisotropic, ill-conditioned and
-  capped-contact, polar-boundary and extreme-anisotropy cases;
+  capped-contact, polar-boundary, extreme-anisotropy, and finite `1e20`-scale
+  isotropic, anisotropic, and capped projection cases;
 - isolated kernel time and problem throughput.
 
 This qualifies the local Temporal Cone block. Coupled contact-space KKT,
