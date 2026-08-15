@@ -43,15 +43,17 @@ The kernel rejects:
 - any missing or extraneous shared-owner CSR coupling;
 - nonfinite inputs or assembled coefficients;
 - authored regularization that is asymmetric or not positive-semidefinite;
-- assembled `W_ij`/`W_ji^T` disagreement above the FP32 symmetry tolerance.
+- assembled `W_ij`/`W_ji^T` disagreement above the FP32 symmetry tolerance;
+- negative curvature in the complete assembled FP32 operator.
 
 ## Transaction and command-buffer ownership
 
 The assembly kernel writes candidate coefficients but begins with an invalid
-output solver header. Only a completely valid, symmetric operator commits a
-versioned `NumiTemporalConeStreamHeader`. The streamed solver is encoded in a
-second compute encoder on the same caller-owned command buffer and consumes
-that header directly. A rejected assembly therefore makes the chained solver
+output solver header. Only a completely valid, symmetric, numerically
+positive-semidefinite operator commits a versioned
+`NumiTemporalConeStreamHeader`. The streamed solver is encoded in a second
+compute encoder on the same caller-owned command buffer and consumes that
+header directly. A rejected assembly therefore makes the chained solver
 publish typed failure and zero impulse output without host intervention.
 
 There is no CPU readback, second command queue, internal command-buffer commit,
@@ -60,12 +62,30 @@ or wait between response-column assembly and contact solve.
 ## Positive-semidefinite authority
 
 Symmetry and the PSD principal-minor certificate for every authored 3x3
-regularization block are checked on GPU. Full-operator positive
-semidefiniteness then follows from the provider contract `V=M^-1J^T` with
-positive-definite mass response. Arbitrary symmetric response columns are not
-silently declared physical. The qualification harness independently
-reconstructs every dense operator and applies FP64 Cholesky before accepting
-the generated batch.
+regularization block are checked on GPU. The kernel then materializes the
+lower triangle of the actual assembled FP32 operator, normalizes it by its
+maximum absolute coefficient, and applies deterministic semidefinite
+Cholesky in fixed contact/axis order. For `N` contacts, the normalized pivot
+tolerance is
+
+```math
+\tau = 64\,\epsilon_{32}(3N).
+```
+
+A pivot below `-tau` is typed negative curvature. A pivot within `tau` is
+treated as zero and is admissible only when every remaining entry in that
+Schur-complement column is also within `tau`. This accepts numerical PSD
+nullspaces without silently accepting a coupled negative mode. The 96-row
+capacity uses 4,656 packed FP32 values, or 18,624 bytes; the compiled assembly
+pipeline reports 18,624 bytes of static threadgroup memory. This arena exists
+only in assembly, and the iterative streamed solver remains at 2,560 bytes.
+
+The certificate establishes numerical PSD of the assembled FP32 operator at
+the declared tolerance. It does not prove that arbitrary response columns
+really came from a physical inverse mass. The rigid and articulated producers
+retain their own mass/inertia/factor checks. The qualification harness also
+reconstructs every generated dense operator independently and applies FP64
+Cholesky; its admitted batch has minimum pivot `0.905538510`.
 
 The generic assembly ABI still consumes authored topology, Jacobians, and
 response columns. The rigid response kernel generates rigid 6-DOF terms from

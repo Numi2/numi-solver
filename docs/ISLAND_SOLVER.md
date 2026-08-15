@@ -90,10 +90,11 @@ the diagonal roots in the rollback checkpoint arena, adding no retained
 threadgroup memory.
 
 This is a necessary global-curvature condition, not a claim that checking only
-2x2 minors proves an arbitrary matrix PSD. The physical assembly path retains
-its `J M^-1 J^T + R` construction and independent full-matrix FP64 Cholesky
-qualification. A higher-order indefinite operator that satisfies every 2x2
-bound is still rejected by the final whole-island positive-energy certificate.
+2x2 minors proves an arbitrary matrix PSD. The production assembly path adds a
+complete packed FP32 semidefinite-Cholesky certificate before it publishes a
+solver header. Direct dense/CSR callers still retain the final whole-island
+positive-energy certificate, which rejects a feasible stationary point with
+positive energy but is not a substitute for full arbitrary-matrix PSD proof.
 
 ## Deterministic iteration and residual
 

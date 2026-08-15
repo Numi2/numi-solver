@@ -13384,6 +13384,13 @@ inline bool temporalConeRegularizationPSD(
         isfinite(determinant);
 }
 
+inline uint temporalConePackedLowerIndex(
+    const uint row,
+    const uint column
+) {
+    return (row * (row + 1u)) / 2u + column;
+}
+
 // Deterministically assembles a complete block-CSR Delassus operator from
 // contact Jacobians J_i and already-computed response columns M^-1 J_i^T.
 // Topology is supplied separately and is accepted only when it contains every
@@ -13410,6 +13417,14 @@ kernel void numi_temporal_cone_stream_assemble(
     const uint problem [[threadgroup_position_in_grid]],
     const uint lane [[thread_index_in_simdgroup]]
 ) {
+    // The production assembly path certifies the complete scalar operator,
+    // not only its diagonal blocks and 2x2 principal minors. Packed storage
+    // keeps the 96-row maximum below 19 KiB and is confined to assembly, so
+    // the iterative solver's threadgroup footprint does not change.
+    threadgroup float packedLower[
+        NUMI_TEMPORAL_CONE_PACKED_LOWER_ELEMENTS
+    ];
+
     if (problem >= problemCount) {
         return;
     }
@@ -13849,10 +13864,341 @@ kernel void numi_temporal_cone_stream_assemble(
     );
     const float maximumCoefficient = simd_max(laneMaximumCoefficient);
     const float minimumDiagonal = simd_min(laneMinimumDiagonal);
+    uint certificateFailure = symmetryFailure;
+    if (certificateFailure == NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS) {
+        const uint dimension = 3u * contactCount;
+        const uint packedCount = dimension * (dimension + 1u) / 2u;
+        const float inverseScale = maximumCoefficient > 0.0f
+            ? 1.0f / maximumCoefficient
+            : 1.0f;
+        for (uint index = lane; index < packedCount; index += 32u) {
+            packedLower[index] = 0.0f;
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+
+        if (active) {
+            for (uint relativeBlock = rowBegin;
+                 relativeBlock < rowEnd;
+                 ++relativeBlock) {
+                const uint source = columnIndices[
+                    blockBase + relativeBlock
+                ];
+                if (source > lane) {
+                    continue;
+                }
+                const uint valueBase =
+                    (blockBase + relativeBlock) *
+                    NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS;
+                for (uint targetAxis = 0u;
+                     targetAxis < 3u;
+                     ++targetAxis) {
+                    const uint scalarRow = 3u * lane + targetAxis;
+                    for (uint sourceAxis = 0u;
+                         sourceAxis < 3u;
+                         ++sourceAxis) {
+                        const uint scalarColumn =
+                            3u * source + sourceAxis;
+                        if (scalarColumn <= scalarRow) {
+                            packedLower[temporalConePackedLowerIndex(
+                                scalarRow,
+                                scalarColumn
+                            )] = outputBlockValues[
+                                valueBase + 3u * targetAxis + sourceAxis
+                            ] * inverseScale;
+                        }
+                    }
+                }
+            }
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+
+        // Block the fixed-order scalar factorization by contact. Lane zero
+        // factors one 3x3 diagonal block while every other lane solves one
+        // trailing 3x3 block row. This is algebraically the same unpivoted
+        // semidefinite Cholesky order, but needs one barrier per contact rather
+        // than one per scalar row. A numerically zero pivot is valid only when
+        // the corresponding Schur-complement column is also zero.
+        const float factorTolerance =
+            64.0f * kFloatEpsilon * float(dimension);
+        for (uint pivotContact = 0u;
+             pivotContact < contactCount;
+             ++pivotContact) {
+            const uint pivotBase = 3u * pivotContact;
+            float laneL00 = 0.0f;
+            float laneL10 = 0.0f;
+            float laneL20 = 0.0f;
+            float laneL11 = 0.0f;
+            float laneL21 = 0.0f;
+            float laneL22 = 0.0f;
+            uint lanePivotFailure =
+                NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS;
+            if (lane == 0u) {
+                float reduced00 = packedLower[
+                    temporalConePackedLowerIndex(
+                        pivotBase,
+                        pivotBase
+                    )
+                ];
+                float reduced10 = packedLower[
+                    temporalConePackedLowerIndex(
+                        pivotBase + 1u,
+                        pivotBase
+                    )
+                ];
+                float reduced20 = packedLower[
+                    temporalConePackedLowerIndex(
+                        pivotBase + 2u,
+                        pivotBase
+                    )
+                ];
+                float reduced11 = packedLower[
+                    temporalConePackedLowerIndex(
+                        pivotBase + 1u,
+                        pivotBase + 1u
+                    )
+                ];
+                float reduced21 = packedLower[
+                    temporalConePackedLowerIndex(
+                        pivotBase + 2u,
+                        pivotBase + 1u
+                    )
+                ];
+                float reduced22 = packedLower[
+                    temporalConePackedLowerIndex(
+                        pivotBase + 2u,
+                        pivotBase + 2u
+                    )
+                ];
+                for (uint inner = 0u; inner < pivotBase; ++inner) {
+                    const float value0 = packedLower[
+                        temporalConePackedLowerIndex(pivotBase, inner)
+                    ];
+                    const float value1 = packedLower[
+                        temporalConePackedLowerIndex(
+                            pivotBase + 1u,
+                            inner
+                        )
+                    ];
+                    const float value2 = packedLower[
+                        temporalConePackedLowerIndex(
+                            pivotBase + 2u,
+                            inner
+                        )
+                    ];
+                    reduced00 = fma(-value0, value0, reduced00);
+                    reduced10 = fma(-value1, value0, reduced10);
+                    reduced20 = fma(-value2, value0, reduced20);
+                    reduced11 = fma(-value1, value1, reduced11);
+                    reduced21 = fma(-value2, value1, reduced21);
+                    reduced22 = fma(-value2, value2, reduced22);
+                }
+                if (!isfinite(reduced00) ||
+                    reduced00 < -factorTolerance) {
+                    lanePivotFailure =
+                        NUMI_TEMPORAL_CONE_ASSEMBLY_INDEFINITE_OPERATOR;
+                } else {
+                    laneL00 = reduced00 > factorTolerance
+                        ? sqrt(reduced00)
+                        : 0.0f;
+                }
+                if (lanePivotFailure ==
+                    NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS) {
+                    if (laneL00 > 0.0f) {
+                        laneL10 = reduced10 / laneL00;
+                        laneL20 = reduced20 / laneL00;
+                    } else if (abs(reduced10) > factorTolerance ||
+                               abs(reduced20) > factorTolerance) {
+                        lanePivotFailure =
+                            NUMI_TEMPORAL_CONE_ASSEMBLY_INDEFINITE_OPERATOR;
+                    }
+                    if (!isfinite(laneL10) || !isfinite(laneL20)) {
+                        lanePivotFailure =
+                            NUMI_TEMPORAL_CONE_ASSEMBLY_INDEFINITE_OPERATOR;
+                    }
+                }
+                reduced11 = fma(-laneL10, laneL10, reduced11);
+                if (lanePivotFailure ==
+                        NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS &&
+                    (!isfinite(reduced11) ||
+                     reduced11 < -factorTolerance)) {
+                    lanePivotFailure =
+                        NUMI_TEMPORAL_CONE_ASSEMBLY_INDEFINITE_OPERATOR;
+                } else {
+                    laneL11 = reduced11 > factorTolerance
+                        ? sqrt(reduced11)
+                        : 0.0f;
+                }
+                reduced21 = fma(-laneL20, laneL10, reduced21);
+                if (lanePivotFailure ==
+                    NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS) {
+                    if (laneL11 > 0.0f) {
+                        laneL21 = reduced21 / laneL11;
+                    } else if (abs(reduced21) > factorTolerance) {
+                        lanePivotFailure =
+                            NUMI_TEMPORAL_CONE_ASSEMBLY_INDEFINITE_OPERATOR;
+                    }
+                    if (!isfinite(laneL21)) {
+                        lanePivotFailure =
+                            NUMI_TEMPORAL_CONE_ASSEMBLY_INDEFINITE_OPERATOR;
+                    }
+                }
+                reduced22 = fma(-laneL20, laneL20, reduced22);
+                reduced22 = fma(-laneL21, laneL21, reduced22);
+                if (lanePivotFailure ==
+                        NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS &&
+                    (!isfinite(reduced22) ||
+                     reduced22 < -factorTolerance)) {
+                    lanePivotFailure =
+                        NUMI_TEMPORAL_CONE_ASSEMBLY_INDEFINITE_OPERATOR;
+                } else {
+                    laneL22 = reduced22 > factorTolerance
+                        ? sqrt(reduced22)
+                        : 0.0f;
+                }
+                if (lanePivotFailure ==
+                    NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS) {
+                    packedLower[temporalConePackedLowerIndex(
+                        pivotBase,
+                        pivotBase
+                    )] = laneL00;
+                    packedLower[temporalConePackedLowerIndex(
+                        pivotBase + 1u,
+                        pivotBase
+                    )] = laneL10;
+                    packedLower[temporalConePackedLowerIndex(
+                        pivotBase + 2u,
+                        pivotBase
+                    )] = laneL20;
+                    packedLower[temporalConePackedLowerIndex(
+                        pivotBase + 1u,
+                        pivotBase + 1u
+                    )] = laneL11;
+                    packedLower[temporalConePackedLowerIndex(
+                        pivotBase + 2u,
+                        pivotBase + 1u
+                    )] = laneL21;
+                    packedLower[temporalConePackedLowerIndex(
+                        pivotBase + 2u,
+                        pivotBase + 2u
+                    )] = laneL22;
+                }
+            }
+            const uint pivotFailure = simd_max(lanePivotFailure);
+            const float l00 = simd_broadcast(laneL00, 0u);
+            const float l10 = simd_broadcast(laneL10, 0u);
+            const float l20 = simd_broadcast(laneL20, 0u);
+            const float l11 = simd_broadcast(laneL11, 0u);
+            const float l21 = simd_broadcast(laneL21, 0u);
+            const float l22 = simd_broadcast(laneL22, 0u);
+            if (pivotFailure !=
+                NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS) {
+                certificateFailure = pivotFailure;
+                break;
+            }
+
+            uint laneFactorFailure =
+                NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS;
+            const uint rowContact = pivotContact + 1u + lane;
+            if (rowContact < contactCount) {
+                for (uint targetAxis = 0u;
+                     targetAxis < 3u;
+                     ++targetAxis) {
+                    const uint row = 3u * rowContact + targetAxis;
+                    float reduced0 = packedLower[
+                        temporalConePackedLowerIndex(row, pivotBase)
+                    ];
+                    float reduced1 = packedLower[
+                        temporalConePackedLowerIndex(row, pivotBase + 1u)
+                    ];
+                    float reduced2 = packedLower[
+                        temporalConePackedLowerIndex(row, pivotBase + 2u)
+                    ];
+                    for (uint inner = 0u; inner < pivotBase; ++inner) {
+                        const float rowValue = packedLower[
+                            temporalConePackedLowerIndex(row, inner)
+                        ];
+                        reduced0 = fma(
+                            -rowValue,
+                            packedLower[temporalConePackedLowerIndex(
+                                pivotBase,
+                                inner
+                            )],
+                            reduced0
+                        );
+                        reduced1 = fma(
+                            -rowValue,
+                            packedLower[temporalConePackedLowerIndex(
+                                pivotBase + 1u,
+                                inner
+                            )],
+                            reduced1
+                        );
+                        reduced2 = fma(
+                            -rowValue,
+                            packedLower[temporalConePackedLowerIndex(
+                                pivotBase + 2u,
+                                inner
+                            )],
+                            reduced2
+                        );
+                    }
+                    float value0 = 0.0f;
+                    float value1 = 0.0f;
+                    float value2 = 0.0f;
+                    if (l00 > 0.0f) {
+                        value0 = reduced0 / l00;
+                    } else if (abs(reduced0) > factorTolerance) {
+                        laneFactorFailure =
+                            NUMI_TEMPORAL_CONE_ASSEMBLY_INDEFINITE_OPERATOR;
+                    }
+                    reduced1 = fma(-value0, l10, reduced1);
+                    if (l11 > 0.0f) {
+                        value1 = reduced1 / l11;
+                    } else if (abs(reduced1) > factorTolerance) {
+                        laneFactorFailure =
+                            NUMI_TEMPORAL_CONE_ASSEMBLY_INDEFINITE_OPERATOR;
+                    }
+                    reduced2 = fma(-value0, l20, reduced2);
+                    reduced2 = fma(-value1, l21, reduced2);
+                    if (l22 > 0.0f) {
+                        value2 = reduced2 / l22;
+                    } else if (abs(reduced2) > factorTolerance) {
+                        laneFactorFailure =
+                            NUMI_TEMPORAL_CONE_ASSEMBLY_INDEFINITE_OPERATOR;
+                    }
+                    if (!isfinite(value0) || !isfinite(value1) ||
+                        !isfinite(value2) || !isfinite(reduced0) ||
+                        !isfinite(reduced1) || !isfinite(reduced2)) {
+                        laneFactorFailure =
+                            NUMI_TEMPORAL_CONE_ASSEMBLY_INDEFINITE_OPERATOR;
+                    }
+                    packedLower[temporalConePackedLowerIndex(
+                        row,
+                        pivotBase
+                    )] = value0;
+                    packedLower[temporalConePackedLowerIndex(
+                        row,
+                        pivotBase + 1u
+                    )] = value1;
+                    packedLower[temporalConePackedLowerIndex(
+                        row,
+                        pivotBase + 2u
+                    )] = value2;
+                }
+            }
+            const uint columnFailure = simd_max(laneFactorFailure);
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+            if (columnFailure !=
+                NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS) {
+                certificateFailure = columnFailure;
+                break;
+            }
+        }
+    }
     if (lane == 0u) {
         NumiTemporalConeAssemblyStatus status = {};
         status.control = uint4(
-            symmetryFailure,
+            certificateFailure,
             contactCount,
             blockCount,
             groupMaximumTerms
@@ -13864,7 +14210,7 @@ kernel void numi_temporal_cone_stream_assemble(
             float(topologyErrors)
         );
         outputStatuses[problem] = status;
-        if (symmetryFailure == NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS) {
+        if (certificateFailure == NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS) {
             NumiTemporalConeStreamHeader output = {};
             output.control = uint4(
                 NUMI_TEMPORAL_CONE_STREAM_ABI_VERSION,

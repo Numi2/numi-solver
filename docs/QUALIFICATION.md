@@ -190,8 +190,9 @@ term, sparse graphs, and five full 1,024-block cliques. An independent CPU
 path reconstructs the dense operator and applies FP64 Cholesky.
 
 The assembly encoder commits a streamed header only after topology,
-finiteness, and symmetry validation. The solver encoder consumes that header
-on the same command buffer, with no CPU readback between stages.
+finiteness, symmetry, and complete normalized FP32 semidefinite-Cholesky
+validation. The solver encoder consumes that header on the same command
+buffer, with no CPU readback between stages.
 
 Measured command:
 
@@ -221,16 +222,18 @@ shared_rigid_oracle=true
 asymmetric_rejected=true
 missing_coupling_rejected=true
 non_psd_regularization_rejected=true
+indefinite_operator_rejected=true
+semidefinite_operator_accepted=true
 deterministic_failures=true
 failure_rollback=true
-average_gpu_seconds=0.001706492
-assembly_gpu_seconds=0.000788167
-assembly_fraction=0.461863757
-islands_per_second=600061.53
-blocks_per_second=24453093.33
-assembly_blocks_per_second=52944386.60
-factor_fmas_per_second=1792688124.99
-contact_iterations_per_second=98769307.39
+average_gpu_seconds=0.004705962
+assembly_gpu_seconds=0.003805708
+assembly_fraction=0.808699254
+islands_per_second=217596.30
+blocks_per_second=8867261.54
+assembly_blocks_per_second=10964844.46
+factor_fmas_per_second=371267809.96
+contact_iterations_per_second=35816052.74
 factor_bytes=3505020
 streamed_operator_bytes=1716156
 dense_operator_bytes=37748736
@@ -239,23 +242,37 @@ max_terms_per_contact=32
 max_dofs_per_term=32
 max_island_blocks=1024
 full_capacity_islands=5
+assembly_threadgroup_memory=18624
+solver_threadgroup_memory=2560
 same_command_buffer=true
 cpu_readback_between_stages=false
 result=PASS
 ```
 
 Factor inputs plus the assembled sparse operator used 13.83% of the fixed
-dense operator storage for this declared topology mix. The assembly-only
-measurement produced 52.94 million blocks/s and the complete assembly/solve
-chain produced 600,062 islands/s. One unreported warmup command precedes each
-timed path. These are isolated kernel measurements, not environment-step or
-energy claims.
+dense operator storage for this declared topology mix. Across three 10-replay
+runs, paired chain time ranged from `0.004669758` to `0.005587308` seconds with
+median `0.004705962`; assembly-only time ranged from `0.003805708` to
+`0.003830625` seconds with median `0.003809821`. The representative paired run
+above produced 10.96 million assembly blocks/s and 217,596 complete chained
+islands/s. Relative to the preceding symmetry/minor-only milestone, median
+chain time is 2.76x and assembly-only time is 4.83x. This is the measured cost
+of the full operator certificate, not a speedup. One unreported warmup command
+precedes each timed path. These are isolated kernel measurements, not
+environment-step or energy claims.
+
+The combined metallib SHA-256 for this full assembled-operator certificate is
+`8c476fe2d261d431c74e1a46e6d4ad02fabd6afb44b2c06b1cf521cfadbc9825`.
 
 The adversarial transaction cases independently corrupt one response column,
-omit a required shared-owner block, and author a positive-determinant
-regularization block with two negative eigenvalues. All are deterministically
-rejected; the output stream header remains invalid and the chained solver
-publishes zero impulses.
+omit a required shared-owner block, author a positive-determinant
+regularization block with two negative eigenvalues, and construct a
+four-contact tridiagonal operator whose scalar diagonals and every 2x2
+principal minor are positive while its smallest eigenvalue is negative. All
+are deterministically rejected; the output stream header remains invalid and
+the chained solver publishes zero impulses. A separate exact rank-one
+operator with zero tangential rows is deterministically accepted, exercising
+the semidefinite zero-pivot rule rather than silently requiring SPD.
 
 ## Rigid response-to-velocity gate
 

@@ -112,6 +112,8 @@ An installed or relocated harness can load a specific library with
 - Packed, sorted 3x3 block-CSR Delassus operators with exact dense parity.
 - Deterministic GPU composition of `J M^-1 J^T + R` from shared-owner
   Jacobians and response columns.
+- Full assembled-operator PSD admission by normalized, packed, deterministic
+  semidefinite Cholesky before the streamed solver header is published.
 - GPU generation of rigid 6-DOF `J` and `M^-1 J^T` directly from contact
   frames, inverse mass, and world-space inverse inertia.
 - Canonical articulated kinematics and mass assembly, checked Cholesky

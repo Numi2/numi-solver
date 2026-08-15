@@ -952,6 +952,101 @@ int run(const int argc, const char* const* argv) {
         nonPSDFirst.headers[1].control.x == 0u &&
         nonPSDFirst.solverStatuses[1].control.x ==
             NUMI_TEMPORAL_CONE_ISLAND_INVALID_ABI;
+
+    // Every scalar diagonal and 2x2 principal minor can look admissible while
+    // the complete operator is still indefinite. Build the four-contact path
+    // with unit normal diagonal and -0.75 adjacent coupling. Every 2x2
+    // principal determinant is at least 1 - 0.75^2 > 0, but the smallest
+    // eigenvalue is 1 - 1.5*cos(pi/5) < 0.
+    AssemblyBatch indefinite = makeBatch(36u);
+    const std::size_t indefiniteProblem = 2u;
+    const auto& indefiniteHeader = indefinite.headers[indefiniteProblem];
+    for (std::size_t contact = 0u;
+         contact < indefiniteHeader.control.y;
+         ++contact) {
+        const auto& span = indefinite.spans[
+            indefiniteHeader.inputRanges.x + contact
+        ];
+        std::size_t edgeTerms = 0u;
+        for (std::size_t localTerm = 0u;
+             localTerm < span.ranges.y;
+             ++localTerm) {
+            const auto& term = indefinite.terms[
+                span.ranges.x + localTerm
+            ];
+            std::fill_n(
+                indefinite.jacobianValues.begin() + term.control.z,
+                3u * term.control.y,
+                0.0f
+            );
+            std::fill_n(
+                indefinite.responseValues.begin() + term.control.w,
+                3u * term.control.y,
+                0.0f
+            );
+            if (term.control.x >= indefiniteHeader.control.y) {
+                indefinite.jacobianValues[term.control.z] = 1.0f;
+                indefinite.responseValues[term.control.w] = -0.75f;
+                ++edgeTerms;
+            }
+        }
+        const std::size_t regularizationBase =
+            indefiniteHeader.inputRanges.y + 9u * contact;
+        std::fill_n(
+            indefinite.regularizationValues.begin() + regularizationBase,
+            9u,
+            0.0f
+        );
+        indefinite.regularizationValues[regularizationBase] =
+            1.0f + 0.75f * static_cast<float>(edgeTerms);
+        indefinite.regularizationValues[regularizationBase + 4u] = 1.0f;
+        indefinite.regularizationValues[regularizationBase + 8u] = 1.0f;
+    }
+    const GPUResult indefiniteFirst = runGPU(
+        device, queue, assemblyPipeline, solverPipeline, indefinite
+    );
+    const GPUResult indefiniteReplay = runGPU(
+        device, queue, assemblyPipeline, solverPipeline, indefinite
+    );
+    const bool indefiniteOperatorRejected =
+        indefiniteFirst.assemblyStatuses[indefiniteProblem].control.x ==
+            NUMI_TEMPORAL_CONE_ASSEMBLY_INDEFINITE_OPERATOR &&
+        indefiniteFirst.headers[indefiniteProblem].control.x == 0u &&
+        indefiniteFirst.solverStatuses[indefiniteProblem].control.x ==
+            NUMI_TEMPORAL_CONE_ISLAND_INVALID_ABI;
+
+    // Exercise the zero-pivot path with the exact rank-one normal operator
+    // [[1, 1], [1, 1]] and zero tangential rows. Positive semidefinite does
+    // not require strict positive definiteness, so assembly must publish it.
+    AssemblyBatch semidefinite = makeBatch(36u);
+    const auto& semidefiniteHeader = semidefinite.headers[1];
+    std::fill_n(
+        semidefinite.regularizationValues.begin() +
+            semidefiniteHeader.inputRanges.y,
+        18u,
+        0.0f
+    );
+    const GPUResult semidefiniteFirst = runGPU(
+        device,
+        queue,
+        assemblyPipeline,
+        solverPipeline,
+        semidefinite,
+        false
+    );
+    const GPUResult semidefiniteReplay = runGPU(
+        device,
+        queue,
+        assemblyPipeline,
+        solverPipeline,
+        semidefinite,
+        false
+    );
+    const bool semidefiniteOperatorAccepted =
+        semidefiniteFirst.assemblyStatuses[1].control.x ==
+            NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS &&
+        semidefiniteFirst.headers[1].control.x ==
+            NUMI_TEMPORAL_CONE_STREAM_ABI_VERSION;
     const auto sameResult = [](const GPUResult& first,
                                const GPUResult& second) {
         return std::memcmp(
@@ -986,10 +1081,13 @@ int run(const int argc, const char* const* argv) {
     const bool deterministicFailures =
         sameResult(asymmetricFirst, asymmetricReplay) &&
         sameResult(missingFirst, missingReplay) &&
-        sameResult(nonPSDFirst, nonPSDReplay);
+        sameResult(nonPSDFirst, nonPSDReplay) &&
+        sameResult(indefiniteFirst, indefiniteReplay) &&
+        sameResult(semidefiniteFirst, semidefiniteReplay);
     const auto zeroFailureImpulses = [](const AssemblyBatch& failedBatch,
-                                        const GPUResult& result) {
-        const auto& failedHeader = failedBatch.headers[1];
+                                        const GPUResult& result,
+                                        const std::size_t problem) {
+        const auto& failedHeader = failedBatch.headers[problem];
         for (std::size_t contact = 0u;
              contact < failedHeader.control.y;
              ++contact) {
@@ -1004,9 +1102,14 @@ int run(const int argc, const char* const* argv) {
         return true;
     };
     const bool failureRollback =
-        zeroFailureImpulses(asymmetric, asymmetricFirst) &&
-        zeroFailureImpulses(missing, missingFirst) &&
-        zeroFailureImpulses(nonPSD, nonPSDFirst);
+        zeroFailureImpulses(asymmetric, asymmetricFirst, 1u) &&
+        zeroFailureImpulses(missing, missingFirst, 1u) &&
+        zeroFailureImpulses(nonPSD, nonPSDFirst, 1u) &&
+        zeroFailureImpulses(
+            indefinite,
+            indefiniteFirst,
+            indefiniteProblem
+        );
 
     double totalSeconds = 0.0;
     for (const auto& replay : replays) {
@@ -1110,6 +1213,10 @@ int run(const int argc, const char* const* argv) {
         ? static_cast<double>(factorBytes + streamedOperatorBytes) /
             static_cast<double>(denseOperatorBytes)
         : 0.0;
+    const std::uint64_t assemblyThreadgroupMemory =
+        assemblyPipeline.staticThreadgroupMemoryLength;
+    const std::uint64_t solverThreadgroupMemory =
+        solverPipeline.staticThreadgroupMemoryLength;
     const bool passed =
         failedIslands == 0u &&
         maximumAssemblyError <= 2.0e-6 &&
@@ -1128,6 +1235,8 @@ int run(const int argc, const char* const* argv) {
         asymmetricRejected &&
         missingRejected &&
         nonPSDRegularizationRejected &&
+        indefiniteOperatorRejected &&
+        semidefiniteOperatorAccepted &&
         deterministicFailures &&
         failureRollback;
 
@@ -1163,6 +1272,10 @@ int run(const int argc, const char* const* argv) {
               << (missingRejected ? "true" : "false")
               << " non_psd_regularization_rejected="
               << (nonPSDRegularizationRejected ? "true" : "false")
+              << " indefinite_operator_rejected="
+              << (indefiniteOperatorRejected ? "true" : "false")
+              << " semidefinite_operator_accepted="
+              << (semidefiniteOperatorAccepted ? "true" : "false")
               << " deterministic_failures="
               << (deterministicFailures ? "true" : "false")
               << " failure_rollback="
@@ -1184,7 +1297,11 @@ int run(const int argc, const char* const* argv) {
               << " max_terms_per_contact=" << maximumTerms
               << " max_dofs_per_term=" << maximumTermDOFs
               << " max_island_blocks=" << maximumIslandBlocks
-              << " full_capacity_islands=" << fullCapacityIslands << '\n'
+              << " full_capacity_islands=" << fullCapacityIslands
+              << " assembly_threadgroup_memory="
+              << assemblyThreadgroupMemory
+              << " solver_threadgroup_memory="
+              << solverThreadgroupMemory << '\n'
               << "same_command_buffer=true cpu_readback_between_stages=false\n"
               << "result=" << (passed ? "PASS" : "FAIL") << '\n';
     return passed ? 0 : 1;
