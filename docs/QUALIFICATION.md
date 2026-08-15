@@ -224,13 +224,30 @@ max_positive_objective=0.000000000
 max_operator_infinity_norm=121.167037964
 max_condition_upper=2423.340820312
 max_iterations=493
+max_contact_kinetic_increase=0.000835493
+max_allowed_recovery_work=0.028184319
+max_energy_excess=0.000000000
+max_cone_utilization=1.000000238
+impulse_bearing_contacts=504813
+sticking_contacts=133208
+sliding_contacts=371605
+independent_inputs_bitwise=true
+independent_topology_exact=true
+independent_dense_stream_operator_bitwise=true
+independent_max_operator_error=0.000004041
+independent_max_free_velocity_error=0.000000401
+independent_max_kkt_residual=0.000001212
+independent_max_complementarity_residual=0.000001261
+cpu_oracle_converged=true
+cpu_oracle_iterations=172
+max_cpu_oracle_impulse_error=0.000003290
 dense_deterministic=true
 streamed_deterministic=true
 dense_stream_bitwise=true
-state_hash=0x205fd70f99aa7f64
-dense_gpu_seconds=0.895662792
-streamed_gpu_seconds=0.515733347
-dense_to_stream_speedup=1.736678065
+state_hash=0xe7a1625bb1af3b2a
+dense_gpu_seconds=0.399108431
+streamed_gpu_seconds=0.207362139
+dense_to_stream_speedup=1.924692871
 dense_operator_bytes=4718592
 streamed_operator_bytes=1596416
 stream_to_dense_operator_memory=0.338324653
@@ -248,16 +265,25 @@ The response term is PSD, so CFM bounds the smallest eigenvalue, while the
 reported infinity row norm bounds the largest eigenvalue. This is an upper
 bound rather than an estimated condition number.
 
+The apply kernel independently measures candidate-to-published particle
+kinetic energy and admits positive energy only up to authored
+penetration-recovery work. Its deterministic two-SIMD32 reduction also counts
+actual sticking and sliding regimes. After GPU completion, a separate CPU path
+reconstructs every final active operator/free-velocity pair in double
+precision, re-evaluates KKT/cone/VI/objective certificates, and solves
+environment zero from zero to a `1e-11` FP64 KKT tolerance. The CPU oracle is
+outside the timed interval and is not presented as a throughput rival.
+
 The final Apple M4 scaling sweep used 480 steps and three replay averages per
 path:
 
 | Environments | Dense s | Streamed s | Speedup | Streamed env-microsteps/s |
 |---:|---:|---:|---:|---:|
-| 16 | 0.619194222 | 0.366568153 | 1.689x | 20,951 |
-| 32 | 0.493069292 | 0.336931917 | 1.463x | 45,588 |
-| 64 | 0.618551097 | 0.376852750 | 1.641x | 81,517 |
-| 128 | 0.895662792 | 0.515733347 | 1.737x | 119,131 |
-| 256 | 1.757964042 | 0.940558750 | 1.869x | 130,646 |
+| 16 | 0.228763806 | 0.156120264 | 1.465x | 49,193 |
+| 32 | 0.241172764 | 0.163186667 | 1.478x | 94,125 |
+| 64 | 0.309486833 | 0.170473278 | 1.815x | 180,204 |
+| 128 | 0.399108431 | 0.207362139 | 1.925x | 296,293 |
+| 256 | 0.735854472 | 0.387633181 | 1.898x | 317,001 |
 
 All rows had zero failed steps/escapes, deterministic replay, and exact
 dense/streamed parity. Allocated CSR storage was 33.8% of dense storage; the
@@ -268,24 +294,25 @@ exact parity:
 
 | Preset | Condition upper | Max KKT | Max VI | Iterations | Speedup |
 |---|---:|---:|---:|---:|---:|
-| baseline | 2423.34 | 1.998e-6 | 2.000e-6 | 493 | 1.737x |
-| stiff-braid | 2233.95 | 1.954e-6 | 1.982e-6 | 422 | 1.612x |
-| low-cfm | 6007.80 | 1.998e-6 | 2.000e-6 | 680 | 1.410x |
-| high-friction | 1979.88 | 2.000e-6 | 2.000e-6 | 440 | 1.436x |
+| baseline | 2423.34 | 1.998e-6 | 2.000e-6 | 493 | 1.925x |
+| stiff-braid | 2233.95 | 1.954e-6 | 1.982e-6 | 422 | 1.403x |
+| low-cfm | 6007.80 | 1.998e-6 | 2.000e-6 | 680 | 1.421x |
+| high-friction | 1979.88 | 2.000e-6 | 2.000e-6 | 440 | 1.479x |
 
 A four-second/1,920-step run passed with zero failures and escapes, condition
 upper bound `2460.12`, maximum KKT `1.990e-6`, maximum VI `1.999e-6`, and 543
 maximum iterations. A deterministic half-timestep replay differed by
 `0.025897510 m` in final position L-infinity norm, below its declared
-`0.075 m` refinement gate. The complete CTest suite contains 14 passing tests,
-including these stress, long-horizon, refinement, rollback, and Metal gates.
+`0.075 m` refinement gate. The complete CTest suite contains 15 passing tests,
+including zero-contact freefall, stress, long-horizon, refinement, rollback,
+and Metal gates.
 
 This is matched evidence for Numi streamed CSR over Numi dense storage on the
 declared bag topology. No claim against an external simulator follows without
 a matched implementation and measurement. The exact mechanics and
 approximation boundary are documented in [BRAIDED_BAG.md](BRAIDED_BAG.md).
 The qualified combined metallib SHA-256 is
-`7dcbeb2528af383aedcbfbfda6e6836ad0b132cf4a15dc27a0524cdddbc2eee6`.
+`58aa8d970a863c3cdbbe10f68937c732e56af851fee4e7755069aefc35db66fe`.
 
 ## Response-column assembly and chained solve gate
 

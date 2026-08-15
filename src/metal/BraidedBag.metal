@@ -676,7 +676,9 @@ kernel void numi_braided_bag_apply(
     device const float* maximumRowSums [[buffer(12)]],
     device const uint* activeBlockCounts [[buffer(13)]],
     const uint environment [[threadgroup_position_in_grid]],
-    const uint threadIndex [[thread_index_in_threadgroup]]
+    const uint threadIndex [[thread_index_in_threadgroup]],
+    const uint simdLane [[thread_index_in_simdgroup]],
+    const uint simdGroup [[simdgroup_index_in_threadgroup]]
 ) {
     if (environment >= config.control.y) {
         return;
@@ -684,6 +686,24 @@ kernel void numi_braided_bag_apply(
     threadgroup NumiBraidedBagContact contacts[
         NUMI_BRAIDED_BAG_CONTACT_COUNT
     ];
+    threadgroup float maximumNodeRadiusGroups[2];
+    threadgroup float maximumNodeSpeedGroups[2];
+    threadgroup float maximumStretchGroups[2];
+    threadgroup float maximumPenetrationGroups[2];
+    threadgroup float maximumBallRadiusGroups[2];
+    threadgroup float minimumBallHeightGroups[2];
+    threadgroup float maximumBallSpeedGroups[2];
+    threadgroup float kineticDeltaGroups[2];
+    threadgroup float kineticScaleGroups[2];
+    threadgroup float allowedRecoveryWorkGroups[2];
+    threadgroup float maximumConeUtilizationGroups[2];
+    threadgroup float maximumNormalImpulseGroups[2];
+    threadgroup float maximumTangentImpulseGroups[2];
+    threadgroup uint impulseBearingGroups[2];
+    threadgroup uint stickingGroups[2];
+    threadgroup uint slidingGroups[2];
+    threadgroup uint zeroImpulseGroups[2];
+    threadgroup uint escapeMaskGroups[2];
     const uint compactContactBase =
         environment * NUMI_BRAIDED_BAG_CONTACT_COUNT;
     const uint solverContactBase =
@@ -756,6 +776,202 @@ kernel void numi_braided_bag_apply(
     }
     threadgroup_barrier(mem_flags::mem_device);
 
+    float lanePenetration = 0.0f;
+    float laneAllowedRecoveryWork = 0.0f;
+    float laneConeUtilization = 0.0f;
+    float laneNormalImpulse = 0.0f;
+    float laneTangentImpulse = 0.0f;
+    uint laneImpulseBearing = 0u;
+    uint laneSticking = 0u;
+    uint laneSliding = 0u;
+    uint laneZeroImpulse = 0u;
+    if (threadIndex < NUMI_BRAIDED_BAG_CONTACT_COUNT) {
+        if (accepted && threadIndex < contactCount) {
+            const NumiBraidedBagContact contact = contacts[threadIndex];
+            const float3 impulse = solvedImpulses[
+                solverContactBase + threadIndex
+            ].xyz;
+            warmImpulses[compactContactBase + threadIndex] = float4(
+                impulse,
+                0.0f
+            );
+            warmIdentities[compactContactBase + threadIndex] =
+                (contact.identity.x << 16u) | contact.identity.y;
+            lanePenetration = max(
+                -contact.normalAndSeparation.w,
+                0.0f
+            );
+            const float inverseTimestep = 1.0f / config.timing.x;
+            const float separation = contact.normalAndSeparation.w;
+            const float bias = separation >= 0.0f
+                ? separation * inverseTimestep
+                : max(
+                    config.contact.x * separation * inverseTimestep,
+                    -config.contact.w
+                );
+            laneAllowedRecoveryWork = max(-impulse.x * bias, 0.0f);
+            laneNormalImpulse = max(impulse.x, 0.0f);
+            laneTangentImpulse = length(impulse.yz);
+            if (laneNormalImpulse > 1.0e-6f) {
+                laneImpulseBearing = 1u;
+                const float coneRadius =
+                    config.braidMaterial.w * laneNormalImpulse;
+                laneConeUtilization = coneRadius > 0.0f
+                    ? laneTangentImpulse / coneRadius
+                    : 0.0f;
+                if (laneConeUtilization >= 0.99f) {
+                    laneSliding = 1u;
+                } else {
+                    laneSticking = 1u;
+                }
+            } else {
+                laneZeroImpulse = 1u;
+            }
+        } else {
+            warmImpulses[compactContactBase + threadIndex] = float4(0.0f);
+            warmIdentities[compactContactBase + threadIndex] =
+                NUMI_BRAIDED_BAG_INVALID_PARTICLE;
+        }
+    }
+
+    const uint nodeBase = environment * NUMI_BRAIDED_BAG_NODE_COUNT;
+    float laneNodeRadius = 0.0f;
+    float laneNodeSpeed = 0.0f;
+    if (threadIndex < NUMI_BRAIDED_BAG_NODE_COUNT) {
+        const NumiBraidedBagNode state = nodes[nodeBase + threadIndex];
+        laneNodeRadius = length(state.positionAndInverseMass.xy);
+        laneNodeSpeed = length(state.velocity.xyz);
+    }
+
+    float laneStretch = 0.0f;
+    for (uint edge = threadIndex;
+         edge < NUMI_BRAIDED_BAG_EDGE_COUNT;
+         edge += 64u) {
+        const NumiBraidedBagEdge link = edges[edge];
+        const float lengthNow = distance(
+            nodes[nodeBase + link.nodes.x].positionAndInverseMass.xyz,
+            nodes[nodeBase + link.nodes.y].positionAndInverseMass.xyz
+        );
+        laneStretch = max(
+            laneStretch,
+            abs(lengthNow - link.rest.x) / link.rest.x
+        );
+    }
+
+    const uint ballBase = environment * NUMI_BRAIDED_BAG_BALL_COUNT;
+    float laneBallRadius = 0.0f;
+    float laneBallHeight = INFINITY;
+    float laneBallSpeed = 0.0f;
+    float laneBallPhysicalRadius = 0.0f;
+    if (threadIndex < NUMI_BRAIDED_BAG_BALL_COUNT) {
+        const NumiBraidedBagBall state = balls[ballBase + threadIndex];
+        laneBallRadius = length(state.positionAndInverseMass.xy);
+        laneBallHeight = state.positionAndInverseMass.z;
+        laneBallSpeed = length(state.velocityAndRadius.xyz);
+        laneBallPhysicalRadius = state.velocityAndRadius.w;
+    }
+
+    float laneKineticDelta = 0.0f;
+    float laneKineticScale = 0.0f;
+    if (accepted && threadIndex < NUMI_BRAIDED_BAG_PARTICLE_COUNT) {
+        const float inverseMass = bagParticleInverseMass(
+            nodes,
+            balls,
+            environment,
+            threadIndex
+        );
+        if (inverseMass > 0.0f) {
+            const float3 before = bagParticleCandidateVelocity(
+                candidateNodeVelocities,
+                candidateBallVelocities,
+                environment,
+                threadIndex
+            );
+            const float3 after = threadIndex < NUMI_BRAIDED_BAG_NODE_COUNT
+                ? nodes[nodeBase + threadIndex].velocity.xyz
+                : balls[
+                    ballBase +
+                    threadIndex - NUMI_BRAIDED_BAG_NODE_COUNT
+                ].velocityAndRadius.xyz;
+            const float kineticBefore =
+                0.5f * dot(before, before) / inverseMass;
+            const float kineticAfter =
+                0.5f * dot(after, after) / inverseMass;
+            laneKineticDelta = kineticAfter - kineticBefore;
+            laneKineticScale = max(kineticBefore, kineticAfter);
+        }
+    }
+
+    const float groupMaximumNodeRadius = simd_max(laneNodeRadius);
+    const float groupMaximumNodeSpeed = simd_max(laneNodeSpeed);
+    const float groupMaximumStretch = simd_max(laneStretch);
+    const float groupMaximumPenetration = simd_max(lanePenetration);
+    const float groupMaximumBallRadius = simd_max(laneBallRadius);
+    const float groupMinimumBallHeight = simd_min(laneBallHeight);
+    const float groupMaximumBallSpeed = simd_max(laneBallSpeed);
+    const float groupKineticDelta = simd_sum(laneKineticDelta);
+    const float groupKineticScale = simd_sum(laneKineticScale);
+    const float groupAllowedRecoveryWork = simd_sum(
+        laneAllowedRecoveryWork
+    );
+    const float groupMaximumConeUtilization = simd_max(
+        laneConeUtilization
+    );
+    const float groupMaximumNormalImpulse = simd_max(laneNormalImpulse);
+    const float groupMaximumTangentImpulse = simd_max(laneTangentImpulse);
+    const uint groupImpulseBearing = simd_sum(laneImpulseBearing);
+    const uint groupSticking = simd_sum(laneSticking);
+    const uint groupSliding = simd_sum(laneSliding);
+    const uint groupZeroImpulse = simd_sum(laneZeroImpulse);
+    if (simdLane == 0u) {
+        maximumNodeRadiusGroups[simdGroup] = groupMaximumNodeRadius;
+        maximumNodeSpeedGroups[simdGroup] = groupMaximumNodeSpeed;
+        maximumStretchGroups[simdGroup] = groupMaximumStretch;
+        maximumPenetrationGroups[simdGroup] = groupMaximumPenetration;
+        maximumBallRadiusGroups[simdGroup] = groupMaximumBallRadius;
+        minimumBallHeightGroups[simdGroup] = groupMinimumBallHeight;
+        maximumBallSpeedGroups[simdGroup] = groupMaximumBallSpeed;
+        kineticDeltaGroups[simdGroup] = groupKineticDelta;
+        kineticScaleGroups[simdGroup] = groupKineticScale;
+        allowedRecoveryWorkGroups[simdGroup] =
+            groupAllowedRecoveryWork;
+        maximumConeUtilizationGroups[simdGroup] =
+            groupMaximumConeUtilization;
+        maximumNormalImpulseGroups[simdGroup] =
+            groupMaximumNormalImpulse;
+        maximumTangentImpulseGroups[simdGroup] =
+            groupMaximumTangentImpulse;
+        impulseBearingGroups[simdGroup] = groupImpulseBearing;
+        stickingGroups[simdGroup] = groupSticking;
+        slidingGroups[simdGroup] = groupSliding;
+        zeroImpulseGroups[simdGroup] = groupZeroImpulse;
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+
+    const float maximumNodeRadius = max(
+        maximumNodeRadiusGroups[0],
+        maximumNodeRadiusGroups[1]
+    );
+    uint laneEscapeMask = 0u;
+    if (threadIndex < NUMI_BRAIDED_BAG_BALL_COUNT) {
+        const bool radialEscape =
+            laneBallRadius - laneBallPhysicalRadius >
+            maximumNodeRadius + config.braidMaterial.z + config.bounds.w;
+        const bool bottomEscape =
+            laneBallHeight < config.bounds.y - config.bounds.w;
+        const bool mouthEscape =
+            laneBallHeight - laneBallPhysicalRadius >
+            config.bounds.z + config.bounds.w;
+        if (radialEscape || bottomEscape || mouthEscape) {
+            laneEscapeMask = 1u << threadIndex;
+        }
+    }
+    const uint groupEscapeMask = simd_sum(laneEscapeMask);
+    if (simdLane == 0u) {
+        escapeMaskGroups[simdGroup] = groupEscapeMask;
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+
     if (threadIndex == 0u) {
         NumiBraidedBagStatus status = statuses[environment];
         status.control.y += 1u;
@@ -807,90 +1023,92 @@ kernel void numi_braided_bag_apply(
         if (!accepted) {
             status.control.x += 1u;
         }
-        for (uint contactIndex = 0u;
-             contactIndex < NUMI_BRAIDED_BAG_CONTACT_COUNT;
-             ++contactIndex) {
-            if (accepted && contactIndex < contactCount) {
-                warmImpulses[compactContactBase + contactIndex] =
-                    solvedImpulses[solverContactBase + contactIndex];
-                const NumiBraidedBagContact contact = contacts[contactIndex];
-                warmIdentities[compactContactBase + contactIndex] =
-                    (contact.identity.x << 16u) | contact.identity.y;
-            } else {
-                warmImpulses[compactContactBase + contactIndex] =
-                    float4(0.0f);
-                warmIdentities[compactContactBase + contactIndex] =
-                    NUMI_BRAIDED_BAG_INVALID_PARTICLE;
-            }
-            if (contactIndex < contactCount) {
-                status.solverMetrics.x = max(
-                    status.solverMetrics.x,
-                    max(-contacts[contactIndex].normalAndSeparation.w, 0.0f)
-                );
-            }
-        }
-        const uint nodeBase =
-            environment * NUMI_BRAIDED_BAG_NODE_COUNT;
-        float maximumNodeRadius = 0.0f;
-        for (uint node = 0u;
-             node < NUMI_BRAIDED_BAG_NODE_COUNT;
-             ++node) {
-            const NumiBraidedBagNode state = nodes[nodeBase + node];
-            maximumNodeRadius = max(
-                maximumNodeRadius,
-                length(state.positionAndInverseMass.xy)
-            );
-            status.physicalMetrics.w = max(
-                status.physicalMetrics.w,
-                length(state.velocity.xyz)
-            );
-        }
-        for (uint edge = 0u;
-             edge < NUMI_BRAIDED_BAG_EDGE_COUNT;
-             ++edge) {
-            const NumiBraidedBagEdge link = edges[edge];
-            const float lengthNow = distance(
-                nodes[nodeBase + link.nodes.x].positionAndInverseMass.xyz,
-                nodes[nodeBase + link.nodes.y].positionAndInverseMass.xyz
-            );
-            status.solverMetrics.y = max(
-                status.solverMetrics.y,
-                abs(lengthNow - link.rest.x) / link.rest.x
-            );
-        }
-        const uint ballBase =
-            environment * NUMI_BRAIDED_BAG_BALL_COUNT;
-        for (uint ball = 0u;
-             ball < NUMI_BRAIDED_BAG_BALL_COUNT;
-             ++ball) {
-            const NumiBraidedBagBall state = balls[ballBase + ball];
-            const float radial = length(state.positionAndInverseMass.xy);
-            status.physicalMetrics.x = max(
-                status.physicalMetrics.x,
-                radial
-            );
-            status.physicalMetrics.y = min(
-                status.physicalMetrics.y,
-                state.positionAndInverseMass.z
-            );
-            status.physicalMetrics.z = max(
-                status.physicalMetrics.z,
-                length(state.velocityAndRadius.xyz)
-            );
-            const bool radialEscape =
-                radial - state.velocityAndRadius.w >
-                maximumNodeRadius + config.braidMaterial.z + config.bounds.w;
-            const bool bottomEscape =
-                state.positionAndInverseMass.z <
-                config.bounds.y - config.bounds.w;
-            const bool mouthEscape =
-                state.positionAndInverseMass.z -
-                    state.velocityAndRadius.w >
-                config.bounds.z + config.bounds.w;
-            if (radialEscape || bottomEscape || mouthEscape) {
-                status.control.w |= 1u << ball;
-            }
-        }
+        status.solverMetrics.x = max(
+            status.solverMetrics.x,
+            max(
+                maximumPenetrationGroups[0],
+                maximumPenetrationGroups[1]
+            )
+        );
+        status.solverMetrics.y = max(
+            status.solverMetrics.y,
+            max(maximumStretchGroups[0], maximumStretchGroups[1])
+        );
+        status.physicalMetrics.x = max(
+            status.physicalMetrics.x,
+            max(maximumBallRadiusGroups[0], maximumBallRadiusGroups[1])
+        );
+        status.physicalMetrics.y = min(
+            status.physicalMetrics.y,
+            min(minimumBallHeightGroups[0], minimumBallHeightGroups[1])
+        );
+        status.physicalMetrics.z = max(
+            status.physicalMetrics.z,
+            max(maximumBallSpeedGroups[0], maximumBallSpeedGroups[1])
+        );
+        status.physicalMetrics.w = max(
+            status.physicalMetrics.w,
+            max(maximumNodeSpeedGroups[0], maximumNodeSpeedGroups[1])
+        );
+        status.control.w |= escapeMaskGroups[0] + escapeMaskGroups[1];
+
+        const float kineticDelta =
+            kineticDeltaGroups[0] + kineticDeltaGroups[1];
+        const float kineticScale =
+            kineticScaleGroups[0] + kineticScaleGroups[1];
+        const float allowedRecoveryWork =
+            allowedRecoveryWorkGroups[0] + allowedRecoveryWorkGroups[1];
+        const float energyExcess = max(
+            kineticDelta - allowedRecoveryWork,
+            0.0f
+        );
+        const float normalizedEnergyExcess = energyExcess / max(
+            1.0f,
+            max(kineticScale, allowedRecoveryWork)
+        );
+        status.energyMetrics.x = max(
+            status.energyMetrics.x,
+            max(kineticDelta, 0.0f)
+        );
+        status.energyMetrics.y = max(
+            status.energyMetrics.y,
+            allowedRecoveryWork
+        );
+        status.energyMetrics.z = max(
+            status.energyMetrics.z,
+            energyExcess
+        );
+        status.energyMetrics.w = max(
+            status.energyMetrics.w,
+            normalizedEnergyExcess
+        );
+        status.frictionMetrics.x = max(
+            status.frictionMetrics.x,
+            max(
+                maximumConeUtilizationGroups[0],
+                maximumConeUtilizationGroups[1]
+            )
+        );
+        status.frictionMetrics.y = max(
+            status.frictionMetrics.y,
+            max(
+                maximumNormalImpulseGroups[0],
+                maximumNormalImpulseGroups[1]
+            )
+        );
+        status.frictionMetrics.z = max(
+            status.frictionMetrics.z,
+            max(
+                maximumTangentImpulseGroups[0],
+                maximumTangentImpulseGroups[1]
+            )
+        );
+        status.contactRegimes.x +=
+            impulseBearingGroups[0] + impulseBearingGroups[1];
+        status.contactRegimes.y += stickingGroups[0] + stickingGroups[1];
+        status.contactRegimes.z += slidingGroups[0] + slidingGroups[1];
+        status.contactRegimes.w +=
+            zeroImpulseGroups[0] + zeroImpulseGroups[1];
         statuses[environment] = status;
     }
 }

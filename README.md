@@ -144,6 +144,13 @@ An installed or relocated harness can load a specific library with
 - Scale-aware KKT, cone-feasibility, and nonpositive-energy success gates.
 - Runtime Delassus infinity-norm measurement and a rigorous
   `kappa_2 <= ||W||_infinity / CFM` conditioning upper gate.
+- Direct particle kinetic-energy accounting against authored
+  penetration-recovery work, plus measured sticking/sliding regime coverage.
+- Independent post-run CPU reconstruction of bag contact geometry, free
+  velocity, CSR topology, and Delassus coefficients, followed by double-
+  precision KKT/cone/VI/objective evaluation and an FP64 solve from zero.
+- Two-SIMD32 apply-stage reductions for node, edge, ball, energy, friction,
+  escape, and warm-start evidence; no serial lane-0 scene scan.
 - Independent dual-feasibility and variational-inequality complementarity
   admission, evaluated at the accepted iterate rather than inferred from an
   update norm.

@@ -356,6 +356,19 @@ if(BUILD_TESTING)
             LABELS "metal;physics;braid;rigid;contact;streamed"
             TIMEOUT 60
     )
+    add_test(
+        NAME temporal_cone.braided_bag_freefall
+        COMMAND $<TARGET_FILE:numi-solver-braided-bag>
+            --environments 1
+            --steps 1
+            --replays 2
+    )
+    set_tests_properties(
+        temporal_cone.braided_bag_freefall
+        PROPERTIES
+            LABELS "metal;physics;braid;zero_contact;streamed"
+            TIMEOUT 60
+    )
     foreach(NUMI_BAG_PRESET IN ITEMS stiff-braid low-cfm high-friction)
         string(REPLACE "-" "_" NUMI_BAG_TEST_SUFFIX "${NUMI_BAG_PRESET}")
         add_test(

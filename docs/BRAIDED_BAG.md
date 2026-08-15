@@ -95,9 +95,16 @@ records and gates:
 - normalized variational-inequality complementarity residual;
 - nonpositive contact objective;
 - maximum penetration and relative strand stretch;
+- direct candidate-to-published kinetic-energy change against the allowed
+  penetration-recovery work budget;
+- impulse-bearing, sticking, and sliding contact counts plus maximum Coulomb
+  cone utilization;
 - solver failures and transactional completion;
 - ball escape through the wall, base, or mouth;
-- byte-identical replay and dense/streamed trajectory equality.
+- byte-identical replay and dense/streamed trajectory equality;
+- an independent CPU reconstruction of geometry, free velocity, exact CSR,
+  every Delassus coefficient, KKT/cone/VI/objective certificates, and an FP64
+  solve from zero.
 
 Because the assembled operator is
 
@@ -138,6 +145,28 @@ forced an otherwise interior one-axis `(normal, tangent)` pair to the wedge
 boundary. The corrected projection drops the inactive component first and
 projects only the active 2D wedge.
 
+The contact-energy certificate is computed from particle velocities rather
+than inferred from the solver objective. For candidate velocity `v*` and
+published velocity `v+`, it measures
+
+```math
+\Delta K=\sum_p\frac{m_p}{2}
+\left(\|v_p^+\|^2-\|v_p^*\|^2\right).
+```
+
+The admissible positive work is the penetration-recovery contribution
+`max(-sum_i lambda_{i,n} b_i, 0)`, where `b_i` is the authored normal bias.
+The trajectory gates both raw and scale-normalized excess of `Delta K` above
+that budget. Sticking means cone utilization is below `0.99`; sliding means it
+is at or above `0.99`. These labels are measured regimes, not inferred from a
+nonzero friction coefficient.
+
+After the command buffer completes, the host independently reconstructs the
+last active island for every environment in double precision. Environment
+zero is additionally solved from zero to a `1e-11` FP64 KKT tolerance. This
+post-run oracle is outside the timed GPU interval and is a correctness
+reference, not a CPU throughput comparison.
+
 ## Apple M4 matched result
 
 Measured on 2026-08-16 with three replays per path:
@@ -165,13 +194,30 @@ max_positive_objective=0.000000000
 max_operator_infinity_norm=121.167037964
 max_condition_upper=2423.340820312
 max_iterations=493
+max_contact_kinetic_increase=0.000835493
+max_allowed_recovery_work=0.028184319
+max_energy_excess=0.000000000
+max_cone_utilization=1.000000238
+impulse_bearing_contacts=504813
+sticking_contacts=133208
+sliding_contacts=371605
+independent_inputs_bitwise=true
+independent_topology_exact=true
+independent_dense_stream_operator_bitwise=true
+independent_max_operator_error=0.000004041
+independent_max_free_velocity_error=0.000000401
+independent_max_kkt_residual=0.000001212
+independent_max_complementarity_residual=0.000001261
+cpu_oracle_converged=true
+cpu_oracle_iterations=172
+max_cpu_oracle_impulse_error=0.000003290
 dense_deterministic=true
 streamed_deterministic=true
 dense_stream_bitwise=true
-state_hash=0x205fd70f99aa7f64
-dense_gpu_seconds=0.895662792
-streamed_gpu_seconds=0.515733347
-dense_to_stream_speedup=1.736678065
+state_hash=0xe7a1625bb1af3b2a
+dense_gpu_seconds=0.399108431
+streamed_gpu_seconds=0.207362139
+dense_to_stream_speedup=1.924692871
 ```
 
 The allocated streamed operator remains fixed-capacity and used 33.8% of the
@@ -186,15 +232,30 @@ dense/streamed states and certificates.
 
 | Environments | Dense s | Streamed s | Speedup | Streamed env-microsteps/s |
 |---:|---:|---:|---:|---:|
-| 16 | 0.619194222 | 0.366568153 | 1.689x | 20,951 |
-| 32 | 0.493069292 | 0.336931917 | 1.463x | 45,588 |
-| 64 | 0.618551097 | 0.376852750 | 1.641x | 81,517 |
-| 128 | 0.895662792 | 0.515733347 | 1.737x | 119,131 |
-| 256 | 1.757964042 | 0.940558750 | 1.869x | 130,646 |
+| 16 | 0.228763806 | 0.156120264 | 1.465x | 49,193 |
+| 32 | 0.241172764 | 0.163186667 | 1.478x | 94,125 |
+| 64 | 0.309486833 | 0.170473278 | 1.815x | 180,204 |
+| 128 | 0.399108431 | 0.207362139 | 1.925x | 296,293 |
+| 256 | 0.735854472 | 0.387633181 | 1.898x | 317,001 |
 
 An environment-microstep means one completed physics step for one bag; it is
 not an RL transition. These command-buffer GPU times include the full bag
 microstep loop, not CPU oracle work.
+
+Against the immediately preceding qualified revision `66188dc`, the same
+256-environment streamed workload moved from `0.940558750 s` to
+`0.387633181 s`, a `2.43x` end-to-end improvement; dense moved from
+`1.757964042 s` to `0.735854472 s`, or `2.39x`. Both revisions produced the
+same physical maxima and exact dense/stream parity. This is a same-device,
+same-workload revision comparison, separate from the within-build
+`1.898x` dense/stream advantage above.
+
+The apply stage now reduces node, edge, ball, energy, and friction diagnostics
+across two deterministic SIMD32 groups. It no longer sends 56 nodes, 100
+edges, six balls, and 27 warm-start slots through a serial lane-0 loop. The
+physical trajectory is unchanged; the additional status ABI records the new
+energy/friction proof. Static threadgroup memory is 2,736 bytes for apply and
+2,560 bytes for either solver.
 
 ### Stress and convergence matrix
 
@@ -205,23 +266,26 @@ baseline row above uses 128 environments. `low-cfm` reduces CFM from `0.05` to
 
 | Preset | Condition upper | Max KKT | Max VI | Max iterations | Speedup |
 |---|---:|---:|---:|---:|---:|
-| baseline | 2423.34 | 1.998e-6 | 2.000e-6 | 493 | 1.737x |
-| stiff-braid | 2233.95 | 1.954e-6 | 1.982e-6 | 422 | 1.612x |
-| low-cfm | 6007.80 | 1.998e-6 | 2.000e-6 | 680 | 1.410x |
-| high-friction | 1979.88 | 2.000e-6 | 2.000e-6 | 440 | 1.436x |
+| baseline | 2423.34 | 1.998e-6 | 2.000e-6 | 493 | 1.925x |
+| stiff-braid | 2233.95 | 1.954e-6 | 1.982e-6 | 422 | 1.403x |
+| low-cfm | 6007.80 | 1.998e-6 | 2.000e-6 | 680 | 1.421x |
+| high-friction | 1979.88 | 2.000e-6 | 2.000e-6 | 440 | 1.479x |
 
 Every stress row had zero failed steps and escapes and exact dense/streamed
 parity. A four-second, 1,920-step run also passed with zero failures/escapes,
 `0.002601266 m` maximum penetration, `0.177796379` maximum relative stretch,
 `1.999e-6` maximum VI residual, condition upper bound `2460.12`, and 543
-maximum iterations. Halving the timestep from `1/480 s` to `1/960 s` for the
+maximum iterations. Its contact energy excess remained exactly zero, both
+stick and slip regimes occurred, the FP64 final-island oracle converged in 376
+iterations, and streamed execution was `1.516x` faster. Halving the timestep
+from `1/480 s` to `1/960 s` for the
 same simulated second produced a deterministic final-position L-infinity
 difference of `0.025897510 m`, below the declared `0.075 m` refinement gate.
 
 This proves the streamed Numi block-CSR path is superior to the dense Numi path
 for this exact operator, trajectory, device, and build: identical FP32 states
 and certificates, 33.8% of allocated operator memory, less operator work after
-active compaction, and a measured 1.41–1.87x speedup across the qualified
+active compaction, and a measured 1.40–1.92x speedup across the qualified
 matrix. It does not establish superiority over MuJoCo, Isaac Lab, or another
 external solver because no matched external implementation was measured.
 
@@ -229,7 +293,7 @@ Metal dispatch-boundary counter sampling is unsupported on this device/toolchain
 so no stage-level occupancy, bandwidth, or counter percentage is claimed.
 
 The qualified combined metallib SHA-256 is
-`7dcbeb2528af383aedcbfbfda6e6836ad0b132cf4a15dc27a0524cdddbc2eee6`.
+`58aa8d970a863c3cdbbe10f68937c732e56af851fee4e7755069aefc35db66fe`.
 
 Use `--dump-obj PATH` to export the final braid lines and ball-center comments
 for inspection. The OBJ is a geometry aid; the numerical and containment

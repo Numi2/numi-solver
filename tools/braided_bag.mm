@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -103,6 +104,17 @@ struct RunResult {
     std::vector<NumiBraidedBagBall> balls;
     std::vector<NumiBraidedBagStatus> statuses;
     std::vector<NumiTemporalConeIslandStatus> solverStatuses;
+    std::vector<mr_float4> candidateNodeVelocities;
+    std::vector<mr_float4> candidateBallVelocities;
+    std::vector<NumiBraidedBagContact> geometry;
+    std::vector<NumiTemporalConeIslandContact> solverContacts;
+    std::vector<mr_float4> impulses;
+    std::vector<NumiTemporalConeIslandHeader> denseHeaders;
+    std::vector<float> denseMatrices;
+    std::vector<NumiTemporalConeStreamHeader> streamHeaders;
+    std::vector<std::uint32_t> rowOffsets;
+    std::vector<std::uint32_t> columnIndices;
+    std::vector<float> streamBlocks;
     double seconds = 0.0;
 };
 
@@ -444,7 +456,9 @@ RunResult runGPU(
         environmentCount * NUMI_BRAIDED_BAG_CONTACT_COUNT,
         NUMI_BRAIDED_BAG_INVALID_PARTICLE
     );
+    std::memset(geometryBuffer.contents, 0, geometryBuffer.length);
     std::memset(contactBuffer.contents, 0, contactBuffer.length);
+    std::memset(streamBlockBuffer.contents, 0, streamBlockBuffer.length);
     std::memset(impulseBuffer.contents, 0, impulseBuffer.length);
     std::memset(solverStatusBuffer.contents, 0, solverStatusBuffer.length);
     std::memset(maximumRowSumBuffer.contents, 0, maximumRowSumBuffer.length);
@@ -600,6 +614,94 @@ RunResult runGPU(
         outputSolverStatuses,
         outputSolverStatuses + environmentCount
     );
+    const auto* outputCandidateNodes = static_cast<const mr_float4*>(
+        candidateNodeBuffer.contents
+    );
+    result.candidateNodeVelocities.assign(
+        outputCandidateNodes,
+        outputCandidateNodes +
+            environmentCount * NUMI_BRAIDED_BAG_NODE_COUNT
+    );
+    const auto* outputCandidateBalls = static_cast<const mr_float4*>(
+        candidateBallBuffer.contents
+    );
+    result.candidateBallVelocities.assign(
+        outputCandidateBalls,
+        outputCandidateBalls +
+            environmentCount * NUMI_BRAIDED_BAG_BALL_COUNT
+    );
+    const auto* outputGeometry = static_cast<const NumiBraidedBagContact*>(
+        geometryBuffer.contents
+    );
+    result.geometry.assign(
+        outputGeometry,
+        outputGeometry +
+            environmentCount * NUMI_BRAIDED_BAG_CONTACT_COUNT
+    );
+    const auto* outputContacts = static_cast<
+        const NumiTemporalConeIslandContact*
+    >(contactBuffer.contents);
+    result.solverContacts.assign(
+        outputContacts,
+        outputContacts +
+            environmentCount * NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
+    );
+    const auto* outputImpulses = static_cast<const mr_float4*>(
+        impulseBuffer.contents
+    );
+    result.impulses.assign(
+        outputImpulses,
+        outputImpulses +
+            environmentCount * NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
+    );
+    const auto* outputDenseHeaders = static_cast<
+        const NumiTemporalConeIslandHeader*
+    >(denseHeaderBuffer.contents);
+    result.denseHeaders.assign(
+        outputDenseHeaders,
+        outputDenseHeaders + environmentCount
+    );
+    const auto* outputStreamHeaders = static_cast<
+        const NumiTemporalConeStreamHeader*
+    >(streamHeaderBuffer.contents);
+    result.streamHeaders.assign(
+        outputStreamHeaders,
+        outputStreamHeaders + environmentCount
+    );
+    const auto* outputRowOffsets = static_cast<const std::uint32_t*>(
+        rowOffsetBuffer.contents
+    );
+    result.rowOffsets.assign(
+        outputRowOffsets,
+        outputRowOffsets + initial.rowOffsets.size()
+    );
+    const auto* outputColumnIndices = static_cast<const std::uint32_t*>(
+        columnIndexBuffer.contents
+    );
+    result.columnIndices.assign(
+        outputColumnIndices,
+        outputColumnIndices + initial.columnIndices.size()
+    );
+    if (path == NUMI_BRAIDED_BAG_PATH_DENSE) {
+        const auto* outputDenseMatrices = static_cast<const float*>(
+            denseMatrixBuffer.contents
+        );
+        result.denseMatrices.assign(
+            outputDenseMatrices,
+            outputDenseMatrices +
+                environmentCount *
+                    NUMI_TEMPORAL_CONE_ISLAND_MATRIX_ELEMENTS
+        );
+    } else {
+        const auto* outputStreamBlocks = static_cast<const float*>(
+            streamBlockBuffer.contents
+        );
+        result.streamBlocks.assign(
+            outputStreamBlocks,
+            outputStreamBlocks +
+                environmentCount * NUMI_BRAIDED_BAG_STREAM_BLOCK_COUNT * 9u
+        );
+    }
     if (commandBuffer.GPUEndTime >= commandBuffer.GPUStartTime) {
         result.seconds = commandBuffer.GPUEndTime - commandBuffer.GPUStartTime;
     }
@@ -634,6 +736,40 @@ bool sameResult(const RunResult& first, const RunResult& second) {
         ) == 0;
 }
 
+template <typename T>
+bool sameVectorBytes(
+    const std::vector<T>& first,
+    const std::vector<T>& second
+) {
+    return first.size() == second.size() &&
+        (first.empty() ||
+         std::memcmp(
+             first.data(),
+             second.data(),
+             first.size() * sizeof(T)
+         ) == 0);
+}
+
+bool sameProofSnapshot(const RunResult& first, const RunResult& second) {
+    return sameVectorBytes(
+            first.candidateNodeVelocities,
+            second.candidateNodeVelocities
+        ) &&
+        sameVectorBytes(
+            first.candidateBallVelocities,
+            second.candidateBallVelocities
+        ) &&
+        sameVectorBytes(first.geometry, second.geometry) &&
+        sameVectorBytes(first.solverContacts, second.solverContacts) &&
+        sameVectorBytes(first.impulses, second.impulses) &&
+        sameVectorBytes(first.denseHeaders, second.denseHeaders) &&
+        sameVectorBytes(first.denseMatrices, second.denseMatrices) &&
+        sameVectorBytes(first.streamHeaders, second.streamHeaders) &&
+        sameVectorBytes(first.rowOffsets, second.rowOffsets) &&
+        sameVectorBytes(first.columnIndices, second.columnIndices) &&
+        sameVectorBytes(first.streamBlocks, second.streamBlocks);
+}
+
 double maximumPositionLInfDelta(
     const RunResult& first,
     const RunResult& second
@@ -664,6 +800,677 @@ double maximumPositionLInfDelta(
         });
     }
     return maximum;
+}
+
+struct IndependentBagProof {
+    bool inputsBitwise = true;
+    bool topologyExact = true;
+    bool denseStreamOperatorBitwise = true;
+    double maximumOperatorAbsoluteError = 0.0;
+    double maximumFreeVelocityAbsoluteError = 0.0;
+    double maximumKKTResidual = 0.0;
+    double maximumConeViolation = 0.0;
+    double maximumComplementarityResidual = 0.0;
+    double maximumPositiveObjective = 0.0;
+    bool cpuOracleConverged = false;
+    std::uint32_t cpuOracleIterations = 0u;
+    double cpuOracleSeconds = 0.0;
+    double cpuOracleKKTResidual = 0.0;
+    double maximumCPUOracleImpulseError = 0.0;
+};
+
+double component(const mr_float4 value, const std::size_t axis) {
+    switch (axis) {
+    case 0u:
+        return value.x;
+    case 1u:
+        return value.y;
+    default:
+        return value.z;
+    }
+}
+
+std::uint32_t component(const mr_uint4 value, const std::size_t axis) {
+    switch (axis) {
+    case 0u:
+        return value.x;
+    case 1u:
+        return value.y;
+    default:
+        return value.z;
+    }
+}
+
+std::array<double, 3> contactAxis(
+    const NumiBraidedBagContact& contact,
+    const std::size_t axis
+) {
+    const mr_float4 value = axis == 0u
+        ? contact.normalAndSeparation
+        : axis == 1u
+        ? contact.tangentU
+        : contact.tangentV;
+    return {{value.x, value.y, value.z}};
+}
+
+double dot3(
+    const std::array<double, 3>& first,
+    const std::array<double, 3>& second
+) {
+    return first[0] * second[0] +
+        first[1] * second[1] +
+        first[2] * second[2];
+}
+
+double particleInverseMass(
+    const InitialState& initial,
+    const std::size_t environment,
+    const std::uint32_t particle
+) {
+    if (particle < NUMI_BRAIDED_BAG_NODE_COUNT) {
+        return initial.nodes[
+            environment * NUMI_BRAIDED_BAG_NODE_COUNT + particle
+        ].positionAndInverseMass.w;
+    }
+    return initial.balls[
+        environment * NUMI_BRAIDED_BAG_BALL_COUNT +
+        particle - NUMI_BRAIDED_BAG_NODE_COUNT
+    ].positionAndInverseMass.w;
+}
+
+std::array<double, 3> particleCandidateVelocity(
+    const RunResult& result,
+    const std::size_t environment,
+    const std::uint32_t particle
+) {
+    const mr_float4 value = particle < NUMI_BRAIDED_BAG_NODE_COUNT
+        ? result.candidateNodeVelocities[
+            environment * NUMI_BRAIDED_BAG_NODE_COUNT + particle
+        ]
+        : result.candidateBallVelocities[
+            environment * NUMI_BRAIDED_BAG_BALL_COUNT +
+            particle - NUMI_BRAIDED_BAG_NODE_COUNT
+        ];
+    return {{value.x, value.y, value.z}};
+}
+
+bool contactsShareParticleCPU(
+    const NumiBraidedBagContact& first,
+    const NumiBraidedBagContact& second
+) {
+    const std::size_t firstCount = static_cast<std::size_t>(first.weights.w);
+    const std::size_t secondCount = static_cast<std::size_t>(second.weights.w);
+    for (std::size_t a = 0u; a < firstCount; ++a) {
+        for (std::size_t b = 0u; b < secondCount; ++b) {
+            if (component(first.particles, a) ==
+                component(second.particles, b)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+double delassusCoefficientCPU(
+    const InitialState& initial,
+    const std::size_t environment,
+    const NumiBraidedBagContact& target,
+    const std::size_t targetAxis,
+    const NumiBraidedBagContact& source,
+    const std::size_t sourceAxis,
+    const bool diagonalContact
+) {
+    const auto targetDirection = contactAxis(target, targetAxis);
+    const auto sourceDirection = contactAxis(source, sourceAxis);
+    const std::size_t targetCount = static_cast<std::size_t>(
+        target.weights.w
+    );
+    const std::size_t sourceCount = static_cast<std::size_t>(
+        source.weights.w
+    );
+    double coefficient = 0.0;
+    for (std::size_t targetParticipant = 0u;
+         targetParticipant < targetCount;
+         ++targetParticipant) {
+        for (std::size_t sourceParticipant = 0u;
+             sourceParticipant < sourceCount;
+             ++sourceParticipant) {
+            if (component(target.particles, targetParticipant) !=
+                component(source.particles, sourceParticipant)) {
+                continue;
+            }
+            coefficient +=
+                component(target.weights, targetParticipant) *
+                component(source.weights, sourceParticipant) *
+                particleInverseMass(
+                    initial,
+                    environment,
+                    component(target.particles, targetParticipant)
+                ) *
+                dot3(targetDirection, sourceDirection);
+        }
+    }
+    if (diagonalContact && targetAxis == sourceAxis) {
+        coefficient += initial.config.contact.y;
+    }
+    return coefficient;
+}
+
+std::array<double, 3> projectIsotropicConeCPU(
+    const std::array<double, 3>& value,
+    const double friction
+) {
+    const double normal = value[0];
+    const double tangentNorm = std::hypot(value[1], value[2]);
+    if (friction <= 0.0) {
+        return {{std::max(normal, 0.0), 0.0, 0.0}};
+    }
+    if (normal >= 0.0 && tangentNorm <= friction * normal) {
+        return value;
+    }
+    if (normal + friction * tangentNorm <= 0.0) {
+        return {{0.0, 0.0, 0.0}};
+    }
+    const double projectedNormal =
+        (normal + friction * tangentNorm) /
+        (1.0 + friction * friction);
+    const double tangentScale = tangentNorm > 0.0
+        ? friction * projectedNormal / tangentNorm
+        : 0.0;
+    return {{
+        projectedNormal,
+        tangentScale * value[1],
+        tangentScale * value[2],
+    }};
+}
+
+struct CPUReferenceSolution {
+    std::vector<double> impulses;
+    bool converged = false;
+    std::uint32_t iterations = 0u;
+    double kktResidual = std::numeric_limits<double>::infinity();
+    double seconds = 0.0;
+};
+
+CPUReferenceSolution solveConeQPReference(
+    const std::vector<double>& matrix,
+    const std::vector<double>& freeVelocity,
+    const std::vector<double>& friction
+) {
+    CPUReferenceSolution result;
+    const std::size_t contactCount = friction.size();
+    const std::size_t dimension = 3u * contactCount;
+    result.impulses.assign(dimension, 0.0);
+    if (contactCount == 0u) {
+        result.converged = true;
+        result.kktResidual = 0.0;
+        return result;
+    }
+    std::vector<double> rowBounds(contactCount, 0.0);
+    for (std::size_t contact = 0u;
+         contact < contactCount;
+         ++contact) {
+        for (std::size_t axis = 0u; axis < 3u; ++axis) {
+            double rowSum = 0.0;
+            const std::size_t row = 3u * contact + axis;
+            for (std::size_t column = 0u;
+                 column < dimension;
+                 ++column) {
+                rowSum += std::abs(matrix[row * dimension + column]);
+            }
+            rowBounds[contact] = std::max(rowBounds[contact], rowSum);
+        }
+    }
+    std::vector<double> previous(dimension, 0.0);
+    std::vector<double> search(dimension, 0.0);
+    std::vector<double> next(dimension, 0.0);
+    std::vector<double> response(dimension, 0.0);
+    const auto evaluateKKT = [&](const std::vector<double>& impulses) {
+        double maximumNatural = 0.0;
+        double maximumScale = 1.0;
+        for (std::size_t contact = 0u;
+             contact < contactCount;
+             ++contact) {
+            std::array<double, 3> residual{{0.0, 0.0, 0.0}};
+            std::array<double, 3> value{{0.0, 0.0, 0.0}};
+            for (std::size_t axis = 0u; axis < 3u; ++axis) {
+                const std::size_t row = 3u * contact + axis;
+                double action = 0.0;
+                for (std::size_t column = 0u;
+                     column < dimension;
+                     ++column) {
+                    action += matrix[row * dimension + column] *
+                        impulses[column];
+                }
+                residual[axis] = action + freeVelocity[row];
+                value[axis] = impulses[row] -
+                    residual[axis] / rowBounds[contact];
+                maximumScale = std::max({
+                    maximumScale,
+                    std::abs(action),
+                    std::abs(freeVelocity[row]),
+                });
+            }
+            const auto projected = projectIsotropicConeCPU(
+                value,
+                friction[contact]
+            );
+            for (std::size_t axis = 0u; axis < 3u; ++axis) {
+                maximumNatural = std::max(
+                    maximumNatural,
+                    rowBounds[contact] * std::abs(
+                        impulses[3u * contact + axis] - projected[axis]
+                    )
+                );
+            }
+        }
+        return maximumNatural / maximumScale;
+    };
+
+    double accelerationClock = 1.0;
+    const auto begin = std::chrono::steady_clock::now();
+    constexpr std::uint32_t maximumIterations = 50000u;
+    constexpr double tolerance = 1.0e-11;
+    for (std::uint32_t iteration = 0u;
+         iteration < maximumIterations;
+         ++iteration) {
+        std::fill(response.begin(), response.end(), 0.0);
+        for (std::size_t row = 0u; row < dimension; ++row) {
+            for (std::size_t column = 0u;
+                 column < dimension;
+                 ++column) {
+                response[row] += matrix[row * dimension + column] *
+                    search[column];
+            }
+        }
+        for (std::size_t contact = 0u;
+             contact < contactCount;
+             ++contact) {
+            std::array<double, 3> proposed{};
+            for (std::size_t axis = 0u; axis < 3u; ++axis) {
+                const std::size_t row = 3u * contact + axis;
+                proposed[axis] = search[row] -
+                    (response[row] + freeVelocity[row]) /
+                        rowBounds[contact];
+            }
+            const auto projected = projectIsotropicConeCPU(
+                proposed,
+                friction[contact]
+            );
+            for (std::size_t axis = 0u; axis < 3u; ++axis) {
+                next[3u * contact + axis] = projected[axis];
+            }
+        }
+        result.iterations = iteration + 1u;
+        result.kktResidual = evaluateKKT(next);
+        if (result.kktResidual <= tolerance) {
+            result.impulses = next;
+            result.converged = true;
+            break;
+        }
+        double restartMeasure = 0.0;
+        for (std::size_t row = 0u; row < dimension; ++row) {
+            restartMeasure += (search[row] - next[row]) *
+                (next[row] - result.impulses[row]);
+        }
+        previous = result.impulses;
+        result.impulses = next;
+        if (restartMeasure > 0.0 || (iteration + 1u) % 64u == 0u) {
+            accelerationClock = 1.0;
+            search = result.impulses;
+        } else {
+            const double nextClock = 0.5 * (
+                1.0 + std::sqrt(1.0 + 4.0 * accelerationClock *
+                    accelerationClock)
+            );
+            const double momentum =
+                (accelerationClock - 1.0) / nextClock;
+            for (std::size_t row = 0u; row < dimension; ++row) {
+                search[row] = result.impulses[row] + momentum *
+                    (result.impulses[row] - previous[row]);
+            }
+            accelerationClock = nextClock;
+        }
+    }
+    const auto end = std::chrono::steady_clock::now();
+    result.seconds = std::chrono::duration<double>(end - begin).count();
+    return result;
+}
+
+IndependentBagProof independentlyVerifyBagSnapshot(
+    const InitialState& initial,
+    const RunResult& dense,
+    const RunResult& streamed
+) {
+    IndependentBagProof proof;
+    const std::size_t environmentCount = dense.statuses.size();
+    proof.inputsBitwise =
+        environmentCount == streamed.statuses.size() &&
+        sameVectorBytes(
+            dense.candidateNodeVelocities,
+            streamed.candidateNodeVelocities
+        ) &&
+        sameVectorBytes(
+            dense.candidateBallVelocities,
+            streamed.candidateBallVelocities
+        );
+    for (std::size_t environment = 0u;
+         environment < environmentCount;
+         ++environment) {
+        const std::uint32_t contactCount =
+            dense.solverStatuses[environment].control.w;
+        proof.inputsBitwise = proof.inputsBitwise &&
+            contactCount == streamed.solverStatuses[environment].control.w &&
+            dense.denseHeaders[environment].control.y == contactCount &&
+            streamed.streamHeaders[environment].control.y == contactCount;
+        const std::size_t geometryBase =
+            environment * NUMI_BRAIDED_BAG_CONTACT_COUNT;
+        const std::size_t solverBase =
+            environment * NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS;
+        proof.inputsBitwise = proof.inputsBitwise &&
+            std::memcmp(
+                dense.geometry.data() + geometryBase,
+                streamed.geometry.data() + geometryBase,
+                contactCount * sizeof(NumiBraidedBagContact)
+            ) == 0 &&
+            std::memcmp(
+                dense.solverContacts.data() + solverBase,
+                streamed.solverContacts.data() + solverBase,
+                contactCount * sizeof(NumiTemporalConeIslandContact)
+            ) == 0 &&
+            std::memcmp(
+                dense.impulses.data() + solverBase,
+                streamed.impulses.data() + solverBase,
+                contactCount * sizeof(mr_float4)
+            ) == 0;
+
+        const std::size_t dimension = 3u * contactCount;
+        std::vector<double> operatorValues(dimension * dimension, 0.0);
+        std::vector<double> freeVelocity(dimension, 0.0);
+        std::vector<double> impulses(dimension, 0.0);
+        const auto& streamHeader = streamed.streamHeaders[environment];
+        const std::size_t denseMatrixBase =
+            environment * NUMI_TEMPORAL_CONE_ISLAND_MATRIX_ELEMENTS;
+        for (std::size_t target = 0u;
+             target < contactCount;
+             ++target) {
+            const auto& targetGeometry = dense.geometry[
+                geometryBase + target
+            ];
+            const auto& solverContact = dense.solverContacts[
+                solverBase + target
+            ];
+            std::array<double, 3> relativeVelocity{{0.0, 0.0, 0.0}};
+            const std::size_t participantCount = static_cast<std::size_t>(
+                targetGeometry.weights.w
+            );
+            for (std::size_t participant = 0u;
+                 participant < participantCount;
+                 ++participant) {
+                const auto particleVelocity = particleCandidateVelocity(
+                    dense,
+                    environment,
+                    component(targetGeometry.particles, participant)
+                );
+                const double weight = component(
+                    targetGeometry.weights,
+                    participant
+                );
+                for (std::size_t axis = 0u; axis < 3u; ++axis) {
+                    relativeVelocity[axis] += weight * particleVelocity[axis];
+                }
+            }
+            const double separation =
+                targetGeometry.normalAndSeparation.w;
+            const double inverseTimestep = 1.0 / initial.config.timing.x;
+            const double bias = separation >= 0.0
+                ? separation * inverseTimestep
+                : std::max(
+                    initial.config.contact.x * separation * inverseTimestep,
+                    -static_cast<double>(initial.config.contact.w)
+                );
+            for (std::size_t axis = 0u; axis < 3u; ++axis) {
+                const double expected = dot3(
+                    relativeVelocity,
+                    contactAxis(targetGeometry, axis)
+                ) + (axis == 0u ? bias : 0.0);
+                freeVelocity[3u * target + axis] = expected;
+                proof.maximumFreeVelocityAbsoluteError = std::max(
+                    proof.maximumFreeVelocityAbsoluteError,
+                    std::abs(expected - component(
+                        solverContact.freeVelocityAndFrictionU,
+                        axis
+                    ))
+                );
+                impulses[3u * target + axis] = component(
+                    dense.impulses[solverBase + target],
+                    axis
+                );
+            }
+
+            const std::size_t rowOffset = streamHeader.ranges.y + target;
+            const std::uint32_t rowBegin = streamed.rowOffsets[rowOffset];
+            const std::uint32_t rowEnd = streamed.rowOffsets[rowOffset + 1u];
+            std::size_t relativeBlock = rowBegin;
+            for (std::size_t source = 0u;
+                 source < contactCount;
+                 ++source) {
+                const auto& sourceGeometry = dense.geometry[
+                    geometryBase + source
+                ];
+                const bool expectedBlock = target == source ||
+                    contactsShareParticleCPU(
+                        targetGeometry,
+                        sourceGeometry
+                    );
+                if (expectedBlock) {
+                    proof.topologyExact = proof.topologyExact &&
+                        relativeBlock < rowEnd &&
+                        streamed.columnIndices[
+                            streamHeader.ranges.z + relativeBlock
+                        ] == source;
+                }
+                for (std::size_t targetAxis = 0u;
+                     targetAxis < 3u;
+                     ++targetAxis) {
+                    for (std::size_t sourceAxis = 0u;
+                         sourceAxis < 3u;
+                         ++sourceAxis) {
+                        const double expected = delassusCoefficientCPU(
+                            initial,
+                            environment,
+                            targetGeometry,
+                            targetAxis,
+                            sourceGeometry,
+                            sourceAxis,
+                            target == source
+                        );
+                        operatorValues[
+                            (3u * target + targetAxis) * dimension +
+                            3u * source + sourceAxis
+                        ] = expected;
+                        const float denseValue = dense.denseMatrices[
+                            denseMatrixBase +
+                            (3u * target + targetAxis) *
+                                NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                            3u * source + sourceAxis
+                        ];
+                        proof.maximumOperatorAbsoluteError = std::max(
+                            proof.maximumOperatorAbsoluteError,
+                            std::abs(expected - denseValue)
+                        );
+                        if (expectedBlock) {
+                            const float streamValue = streamed.streamBlocks[
+                                (streamHeader.ranges.z + relativeBlock) * 9u +
+                                3u * targetAxis + sourceAxis
+                            ];
+                            proof.denseStreamOperatorBitwise =
+                                proof.denseStreamOperatorBitwise &&
+                                std::memcmp(
+                                    &denseValue,
+                                    &streamValue,
+                                    sizeof(float)
+                                ) == 0;
+                            proof.maximumOperatorAbsoluteError = std::max(
+                                proof.maximumOperatorAbsoluteError,
+                                std::abs(expected - streamValue)
+                            );
+                        } else {
+                            proof.denseStreamOperatorBitwise =
+                                proof.denseStreamOperatorBitwise &&
+                                denseValue == 0.0f;
+                        }
+                    }
+                }
+                if (expectedBlock) {
+                    ++relativeBlock;
+                }
+            }
+            proof.topologyExact = proof.topologyExact &&
+                relativeBlock == rowEnd;
+        }
+        proof.topologyExact = proof.topologyExact &&
+            streamed.rowOffsets[
+                streamHeader.ranges.y + contactCount
+            ] == streamHeader.ranges.w;
+
+        std::vector<double> response(dimension, 0.0);
+        std::vector<double> residual(dimension, 0.0);
+        double objective = 0.0;
+        for (std::size_t row = 0u; row < dimension; ++row) {
+            for (std::size_t column = 0u;
+                 column < dimension;
+                 ++column) {
+                response[row] +=
+                    operatorValues[row * dimension + column] *
+                    impulses[column];
+            }
+            residual[row] = response[row] + freeVelocity[row];
+            objective += impulses[row] * (
+                0.5 * response[row] + freeVelocity[row]
+            );
+        }
+        double maximumNatural = 0.0;
+        double maximumScale = 1.0;
+        double maximumCone = 0.0;
+        double maximumComplementarity = 0.0;
+        for (std::size_t contact = 0u;
+             contact < contactCount;
+             ++contact) {
+            double rowBound = 0.0;
+            for (std::size_t targetAxis = 0u;
+                 targetAxis < 3u;
+                 ++targetAxis) {
+                double rowSum = 0.0;
+                for (std::size_t column = 0u;
+                     column < dimension;
+                     ++column) {
+                    rowSum += std::abs(operatorValues[
+                        (3u * contact + targetAxis) * dimension + column
+                    ]);
+                }
+                rowBound = std::max(rowBound, rowSum);
+            }
+            const double friction = dense.solverContacts[
+                solverBase + contact
+            ].freeVelocityAndFrictionU.w;
+            const std::array<double, 3> impulse{{
+                impulses[3u * contact + 0u],
+                impulses[3u * contact + 1u],
+                impulses[3u * contact + 2u],
+            }};
+            const std::array<double, 3> contactResidual{{
+                residual[3u * contact + 0u],
+                residual[3u * contact + 1u],
+                residual[3u * contact + 2u],
+            }};
+            const std::array<double, 3> proposed{{
+                impulse[0] - contactResidual[0] / rowBound,
+                impulse[1] - contactResidual[1] / rowBound,
+                impulse[2] - contactResidual[2] / rowBound,
+            }};
+            const auto projected = projectIsotropicConeCPU(
+                proposed,
+                friction
+            );
+            for (std::size_t axis = 0u; axis < 3u; ++axis) {
+                maximumNatural = std::max(
+                    maximumNatural,
+                    rowBound * std::abs(impulse[axis] - projected[axis])
+                );
+                maximumScale = std::max({
+                    maximumScale,
+                    std::abs(freeVelocity[3u * contact + axis]),
+                    std::abs(response[3u * contact + axis]),
+                });
+            }
+            const double tangentImpulse = std::hypot(
+                impulse[1],
+                impulse[2]
+            );
+            maximumCone = std::max({
+                maximumCone,
+                -impulse[0],
+                tangentImpulse - friction * impulse[0],
+            });
+            const double dualSlope = contactResidual[0] - friction *
+                std::hypot(contactResidual[1], contactResidual[2]);
+            const double work = dot3(impulse, contactResidual);
+            const double impulseScale = std::max({
+                1.0,
+                std::abs(impulse[0]),
+                std::abs(impulse[1]),
+                std::abs(impulse[2]),
+            });
+            maximumComplementarity = std::max({
+                maximumComplementarity,
+                -dualSlope,
+                std::abs(work) / (3.0 * impulseScale),
+            });
+        }
+        proof.maximumKKTResidual = std::max(
+            proof.maximumKKTResidual,
+            maximumNatural / maximumScale
+        );
+        proof.maximumConeViolation = std::max(
+            proof.maximumConeViolation,
+            maximumCone
+        );
+        proof.maximumComplementarityResidual = std::max(
+            proof.maximumComplementarityResidual,
+            maximumComplementarity / maximumScale
+        );
+        proof.maximumPositiveObjective = std::max(
+            proof.maximumPositiveObjective,
+            std::max(objective, 0.0)
+        );
+        if (environment == 0u) {
+            std::vector<double> friction(contactCount, 0.0);
+            for (std::size_t contact = 0u;
+                 contact < contactCount;
+                 ++contact) {
+                friction[contact] = dense.solverContacts[
+                    solverBase + contact
+                ].freeVelocityAndFrictionU.w;
+            }
+            const CPUReferenceSolution oracle = solveConeQPReference(
+                operatorValues,
+                freeVelocity,
+                friction
+            );
+            proof.cpuOracleConverged = oracle.converged;
+            proof.cpuOracleIterations = oracle.iterations;
+            proof.cpuOracleSeconds = oracle.seconds;
+            proof.cpuOracleKKTResidual = oracle.kktResidual;
+            for (std::size_t row = 0u; row < dimension; ++row) {
+                proof.maximumCPUOracleImpulseError = std::max(
+                    proof.maximumCPUOracleImpulseError,
+                    std::abs(oracle.impulses[row] - impulses[row])
+                );
+            }
+        }
+    }
+    return proof;
 }
 
 std::uint64_t hashResult(const RunResult& result) {
@@ -798,6 +1605,7 @@ int run(const int argc, const char* const* argv) {
     if (pipelines.buildContacts.threadExecutionWidth != 32u ||
         pipelines.denseSolver.threadExecutionWidth != 32u ||
         pipelines.streamedSolver.threadExecutionWidth != 32u ||
+        pipelines.apply.threadExecutionWidth != 32u ||
         pipelines.apply.maxTotalThreadsPerThreadgroup < 64u) {
         throw std::runtime_error("braided-bag pipelines violate SIMD contract");
     }
@@ -851,11 +1659,18 @@ int run(const int argc, const char* const* argv) {
     bool streamedDeterministic = true;
     for (std::size_t replay = 1u; replay < replayCount; ++replay) {
         denseDeterministic = denseDeterministic &&
-            sameResult(denseReplays[0], denseReplays[replay]);
+            sameResult(denseReplays[0], denseReplays[replay]) &&
+            sameProofSnapshot(denseReplays[0], denseReplays[replay]);
         streamedDeterministic = streamedDeterministic &&
-            sameResult(streamedReplays[0], streamedReplays[replay]);
+            sameResult(streamedReplays[0], streamedReplays[replay]) &&
+            sameProofSnapshot(streamedReplays[0], streamedReplays[replay]);
     }
     const bool denseStreamBitwise = sameResult(
+        denseReplays[0],
+        streamedReplays[0]
+    );
+    const IndependentBagProof independentProof = independentlyVerifyBagSnapshot(
+        initial,
         denseReplays[0],
         streamedReplays[0]
     );
@@ -895,7 +1710,9 @@ int run(const int argc, const char* const* argv) {
             refinedStepCount,
             NUMI_BRAIDED_BAG_PATH_STREAMED
         );
-        refinementDeterministic = sameResult(refinedFirst, refinedSecond);
+        refinementDeterministic =
+            sameResult(refinedFirst, refinedSecond) &&
+            sameProofSnapshot(refinedFirst, refinedSecond);
         refinementPositionLInfDelta = maximumPositionLInfDelta(
             streamedReplays[0],
             refinedFirst
@@ -913,7 +1730,20 @@ int run(const int argc, const char* const* argv) {
                 status.certificateMetrics.y <= 2.0e-4f &&
                 std::isfinite(status.certificateMetrics.z) &&
                 std::isfinite(status.certificateMetrics.w) &&
-                status.certificateMetrics.w <= conditionUpperLimit;
+                status.certificateMetrics.w <= conditionUpperLimit &&
+                std::isfinite(status.energyMetrics.x) &&
+                std::isfinite(status.energyMetrics.y) &&
+                std::isfinite(status.energyMetrics.z) &&
+                std::isfinite(status.energyMetrics.w) &&
+                status.energyMetrics.w <= 2.0e-5f &&
+                std::isfinite(status.frictionMetrics.x) &&
+                status.frictionMetrics.x <= 1.0001f &&
+                (stepCount * static_cast<double>(timestep) < 0.99 ||
+                 (status.contactRegimes.x > 0u &&
+                  status.contactRegimes.y > 0u &&
+                  status.contactRegimes.z > 0u &&
+                  status.contactRegimes.x ==
+                    status.contactRegimes.y + status.contactRegimes.z));
         }
         refinementAccepted = refinementAccepted &&
             refinedFailedSteps == 0u &&
@@ -937,6 +1767,17 @@ int run(const int argc, const char* const* argv) {
     double minimumBallHeight = std::numeric_limits<double>::infinity();
     double maximumBallSpeed = 0.0;
     double maximumNodeSpeed = 0.0;
+    double maximumContactKineticIncrease = 0.0;
+    double maximumAllowedRecoveryWork = 0.0;
+    double maximumEnergyExcess = 0.0;
+    double maximumNormalizedEnergyExcess = 0.0;
+    double maximumConeUtilization = 0.0;
+    double maximumNormalImpulse = 0.0;
+    double maximumTangentImpulse = 0.0;
+    std::uint64_t impulseBearingContacts = 0u;
+    std::uint64_t stickingContacts = 0u;
+    std::uint64_t slidingContacts = 0u;
+    std::uint64_t zeroImpulseCandidates = 0u;
     std::uint32_t minimumActiveContacts =
         std::numeric_limits<std::uint32_t>::max();
     std::uint32_t maximumActiveContacts = 0u;
@@ -990,6 +1831,38 @@ int run(const int argc, const char* const* argv) {
             maximumNodeSpeed,
             status.physicalMetrics.w
         );
+        maximumContactKineticIncrease = std::max<double>(
+            maximumContactKineticIncrease,
+            status.energyMetrics.x
+        );
+        maximumAllowedRecoveryWork = std::max<double>(
+            maximumAllowedRecoveryWork,
+            status.energyMetrics.y
+        );
+        maximumEnergyExcess = std::max<double>(
+            maximumEnergyExcess,
+            status.energyMetrics.z
+        );
+        maximumNormalizedEnergyExcess = std::max<double>(
+            maximumNormalizedEnergyExcess,
+            status.energyMetrics.w
+        );
+        maximumConeUtilization = std::max<double>(
+            maximumConeUtilization,
+            status.frictionMetrics.x
+        );
+        maximumNormalImpulse = std::max<double>(
+            maximumNormalImpulse,
+            status.frictionMetrics.y
+        );
+        maximumTangentImpulse = std::max<double>(
+            maximumTangentImpulse,
+            status.frictionMetrics.z
+        );
+        impulseBearingContacts += status.contactRegimes.x;
+        stickingContacts += status.contactRegimes.y;
+        slidingContacts += status.contactRegimes.z;
+        zeroImpulseCandidates += status.contactRegimes.w;
         minimumActiveContacts = std::min(
             minimumActiveContacts,
             status.topologyMetrics.x
@@ -1031,6 +1904,11 @@ int run(const int argc, const char* const* argv) {
     const double operatorMemoryRatio = static_cast<double>(
         streamedOperatorBytes
     ) / static_cast<double>(denseOperatorBytes);
+    const bool frictionRegimesCovered =
+        stepCount * static_cast<double>(timestep) < 0.99 ||
+        (impulseBearingContacts > 0u && stickingContacts > 0u &&
+         slidingContacts > 0u &&
+         impulseBearingContacts == stickingContacts + slidingContacts);
     const bool passed =
         completed && failedSteps == 0u && escapedMask == 0u &&
         maximumPenetration <= 0.06 && maximumStretch <= 0.50 &&
@@ -1040,6 +1918,28 @@ int run(const int argc, const char* const* argv) {
         std::isfinite(maximumOperatorInfinityNorm) &&
         std::isfinite(maximumConditionUpper) &&
         maximumConditionUpper <= conditionUpperLimit &&
+        std::isfinite(maximumContactKineticIncrease) &&
+        std::isfinite(maximumAllowedRecoveryWork) &&
+        std::isfinite(maximumEnergyExcess) &&
+        std::isfinite(maximumNormalizedEnergyExcess) &&
+        maximumNormalizedEnergyExcess <= 2.0e-5 &&
+        std::isfinite(maximumConeUtilization) &&
+        maximumConeUtilization <= 1.0001 &&
+        std::isfinite(maximumNormalImpulse) &&
+        std::isfinite(maximumTangentImpulse) &&
+        frictionRegimesCovered &&
+        independentProof.inputsBitwise &&
+        independentProof.topologyExact &&
+        independentProof.denseStreamOperatorBitwise &&
+        independentProof.maximumOperatorAbsoluteError <= 2.0e-5 &&
+        independentProof.maximumFreeVelocityAbsoluteError <= 2.0e-5 &&
+        independentProof.maximumKKTResidual <= 2.1e-6 &&
+        independentProof.maximumConeViolation <= 2.0e-6 &&
+        independentProof.maximumComplementarityResidual <= 2.1e-6 &&
+        independentProof.maximumPositiveObjective <= 2.0e-4 &&
+        independentProof.cpuOracleConverged &&
+        independentProof.cpuOracleKKTResidual <= 1.0e-11 &&
+        independentProof.maximumCPUOracleImpulseError <= 1.0e-4 &&
         minimumActiveContacts <= maximumActiveContacts &&
         maximumActiveContacts <= NUMI_BRAIDED_BAG_CONTACT_COUNT &&
         maximumActiveBlocks <= NUMI_BRAIDED_BAG_STREAM_BLOCK_COUNT &&
@@ -1083,6 +1983,50 @@ int run(const int argc, const char* const* argv) {
               << " min_ball_height=" << minimumBallHeight
               << " max_ball_speed=" << maximumBallSpeed
               << " max_node_speed=" << maximumNodeSpeed << '\n'
+              << "max_contact_kinetic_increase="
+              << maximumContactKineticIncrease
+              << " max_allowed_recovery_work="
+              << maximumAllowedRecoveryWork
+              << " max_energy_excess=" << maximumEnergyExcess
+              << " max_normalized_energy_excess="
+              << maximumNormalizedEnergyExcess << '\n'
+              << "max_cone_utilization=" << maximumConeUtilization
+              << " max_normal_impulse=" << maximumNormalImpulse
+              << " max_tangent_impulse=" << maximumTangentImpulse
+              << " impulse_bearing_contacts=" << impulseBearingContacts
+              << " sticking_contacts=" << stickingContacts
+              << " sliding_contacts=" << slidingContacts
+              << " zero_impulse_candidates=" << zeroImpulseCandidates
+              << '\n'
+              << "independent_inputs_bitwise="
+              << (independentProof.inputsBitwise ? "true" : "false")
+              << " independent_topology_exact="
+              << (independentProof.topologyExact ? "true" : "false")
+              << " independent_dense_stream_operator_bitwise="
+              << (independentProof.denseStreamOperatorBitwise
+                  ? "true"
+                  : "false")
+              << " independent_max_operator_error="
+              << independentProof.maximumOperatorAbsoluteError
+              << " independent_max_free_velocity_error="
+              << independentProof.maximumFreeVelocityAbsoluteError << '\n'
+              << "independent_max_kkt_residual="
+              << independentProof.maximumKKTResidual
+              << " independent_max_cone_violation="
+              << independentProof.maximumConeViolation
+              << " independent_max_complementarity_residual="
+              << independentProof.maximumComplementarityResidual
+              << " independent_max_positive_objective="
+              << independentProof.maximumPositiveObjective << '\n'
+              << "cpu_oracle_converged="
+              << (independentProof.cpuOracleConverged ? "true" : "false")
+              << " cpu_oracle_iterations="
+              << independentProof.cpuOracleIterations
+              << " cpu_oracle_seconds=" << independentProof.cpuOracleSeconds
+              << " cpu_oracle_kkt_residual="
+              << independentProof.cpuOracleKKTResidual
+              << " max_cpu_oracle_impulse_error="
+              << independentProof.maximumCPUOracleImpulseError << '\n'
               << "refinement=" << (refinement ? "true" : "false")
               << " refined_steps=" << refinedStepCount
               << " refined_failed_steps=" << refinedFailedSteps
@@ -1113,6 +2057,8 @@ int run(const int argc, const char* const* argv) {
               << pipelines.denseSolver.staticThreadgroupMemoryLength
               << " streamed_solver_threadgroup_memory="
               << pipelines.streamedSolver.staticThreadgroupMemoryLength
+              << " apply_threadgroup_memory="
+              << pipelines.apply.staticThreadgroupMemoryLength
               << '\n'
               << "result=" << (passed ? "PASS" : "FAIL") << '\n';
     return passed ? 0 : 1;
