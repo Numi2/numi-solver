@@ -3,6 +3,7 @@
 #include "metalrobo/engine_types.h"
 #include "metalrobo/rod_gpu_shared.h"
 #include "metalrobo/unified_quality_shared.h"
+#include "numi/temporal_cone_island.h"
 #include "numi/temporal_cone_probe.h"
 
 using namespace metal;
@@ -11634,4 +11635,472 @@ kernel void numi_temporal_cone_probe(
         0u
     );
     outputs[problem] = output;
+}
+
+inline float3 temporalConeIslandResidual(
+    device const float* matrix,
+    const uint matrixBase,
+    const uint row,
+    const uint contactCount,
+    const float3 freeVelocity,
+    threadgroup const float4* impulses
+) {
+    float3 residual = freeVelocity;
+    for (uint sourceContact = 0u;
+         sourceContact < contactCount;
+         ++sourceContact) {
+        const float3 source = impulses[sourceContact].xyz;
+        const uint column = 3u * sourceContact;
+        residual.x +=
+            matrix[
+                matrixBase +
+                (row + 0u) * NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                column + 0u
+            ] * source.x +
+            matrix[
+                matrixBase +
+                (row + 0u) * NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                column + 1u
+            ] * source.y +
+            matrix[
+                matrixBase +
+                (row + 0u) * NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                column + 2u
+            ] * source.z;
+        residual.y +=
+            matrix[
+                matrixBase +
+                (row + 1u) * NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                column + 0u
+            ] * source.x +
+            matrix[
+                matrixBase +
+                (row + 1u) * NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                column + 1u
+            ] * source.y +
+            matrix[
+                matrixBase +
+                (row + 1u) * NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                column + 2u
+            ] * source.z;
+        residual.z +=
+            matrix[
+                matrixBase +
+                (row + 2u) * NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                column + 0u
+            ] * source.x +
+            matrix[
+                matrixBase +
+                (row + 2u) * NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                column + 1u
+            ] * source.y +
+            matrix[
+                matrixBase +
+                (row + 2u) * NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                column + 2u
+            ] * source.z;
+    }
+    return residual;
+}
+
+inline float temporalConeViolation(
+    const float3 impulse,
+    const float frictionU,
+    const float frictionV
+) {
+    const float limitU = frictionU * impulse.x;
+    const float limitV = frictionV * impulse.x;
+    if (limitU > 0.0f && limitV > 0.0f) {
+        return max(
+            sqrt(
+                (impulse.y * impulse.y) / (limitU * limitU) +
+                (impulse.z * impulse.z) / (limitV * limitV)
+            ) - 1.0f,
+            0.0f
+        );
+    }
+    return length(impulse.yz);
+}
+
+// One SIMD32 group owns one complete dense contact-space island. Every lane
+// owns one three-row cone block. Matrix actions visit source contacts in
+// canonical order; no floating-point atomics or unordered reductions enter
+// the physical update. The iteration is block-Jacobi so all contacts consume
+// one immutable impulse generation and publish the next generation together.
+kernel void numi_temporal_cone_island_solve(
+    device const NumiTemporalConeIslandHeader* headers [[buffer(0)]],
+    device const float* matrices [[buffer(1)]],
+    device const NumiTemporalConeIslandContact* contacts [[buffer(2)]],
+    device float4* outputImpulses [[buffer(3)]],
+    device NumiTemporalConeIslandStatus* outputStatuses [[buffer(4)]],
+    constant uint& problemCount [[buffer(5)]],
+    const uint problem [[threadgroup_position_in_grid]],
+    const uint lane [[thread_index_in_simdgroup]]
+) {
+    if (problem >= problemCount) {
+        return;
+    }
+    const NumiTemporalConeIslandHeader header = headers[problem];
+    const uint contactCount = header.control.y;
+    const uint contactBase =
+        problem * NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS;
+    const uint matrixBase =
+        problem * NUMI_TEMPORAL_CONE_ISLAND_MATRIX_ELEMENTS;
+    const bool active = lane < contactCount;
+    if (lane < NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS) {
+        outputImpulses[contactBase + lane] = float4(0.0f);
+    }
+
+    uint localFailure = NUMI_TEMPORAL_CONE_ISLAND_SUCCESS;
+    if (header.control.x != NUMI_TEMPORAL_CONE_ISLAND_ABI_VERSION) {
+        localFailure = NUMI_TEMPORAL_CONE_ISLAND_INVALID_ABI;
+    } else if (
+        contactCount == 0u ||
+        contactCount > NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS ||
+        header.control.z == 0u ||
+        header.control.z > header.control.w ||
+        header.control.w > NUMI_TEMPORAL_CONE_ISLAND_MAX_ITERATIONS ||
+        !finite4(header.tolerances) ||
+        !(header.tolerances.x > 0.0f) ||
+        header.tolerances.y < 0.0f ||
+        !(header.tolerances.z > 0.0f) ||
+        header.tolerances.z > 1.0f
+    ) {
+        localFailure = NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT;
+    }
+
+    NumiTemporalConeIslandContact contact = {};
+    MREvaluatedConstraintIRConeGPU cone = {};
+    float inverse[3][3] = {};
+    if (active && localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
+        contact = contacts[contactBase + lane];
+        if (!finite4(contact.freeVelocityAndFrictionU) ||
+            !finite4(contact.warmImpulseAndFrictionV) ||
+            !finite4(contact.limits) ||
+            contact.freeVelocityAndFrictionU.w < 0.0f ||
+            contact.warmImpulseAndFrictionV.w < 0.0f ||
+            contact.limits.x < 0.0f) {
+            localFailure = NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT;
+        }
+
+        const uint row = 3u * lane;
+        const uint dimension = 3u * contactCount;
+        for (uint localRow = 0u;
+             localRow < 3u &&
+                 localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS;
+             ++localRow) {
+            for (uint column = 0u;
+                 column < dimension;
+                 ++column) {
+                const float value = matrices[
+                    matrixBase +
+                    (row + localRow) *
+                        NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                    column
+                ];
+                const float transposeValue = matrices[
+                    matrixBase +
+                    column * NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                    row + localRow
+                ];
+                const float symmetryScale = max(
+                    1.0f,
+                    max(abs(value), abs(transposeValue))
+                );
+                if (!isfinite(value) ||
+                    !isfinite(transposeValue) ||
+                    abs(value - transposeValue) >
+                        64.0f * kFloatEpsilon * symmetryScale) {
+                    localFailure =
+                        NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT;
+                    break;
+                }
+            }
+        }
+        if (localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
+            float diagonal[3][3];
+            for (uint localRow = 0u; localRow < 3u; ++localRow) {
+                for (uint localColumn = 0u;
+                     localColumn < 3u;
+                     ++localColumn) {
+                    diagonal[localRow][localColumn] = matrices[
+                        matrixBase +
+                        (row + localRow) *
+                            NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                        row + localColumn
+                    ];
+                }
+            }
+            if (!invert3x3(diagonal, inverse)) {
+                localFailure =
+                    NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED;
+            }
+        }
+        cone.effectiveFrictionU = contact.freeVelocityAndFrictionU.w;
+        cone.effectiveFrictionV = contact.warmImpulseAndFrictionV.w;
+        cone.maximumNormalImpulse = contact.limits.x;
+    }
+
+    const uint initialFailureKey = simd_min(
+        localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
+        ? 0xffffffffu
+        : localFailure
+    );
+    const uint initialFailure = initialFailureKey == 0xffffffffu
+        ? NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
+        : initialFailureKey;
+    if (initialFailure != NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
+        if (lane == 0u) {
+            NumiTemporalConeIslandStatus status = {};
+            status.control = uint4(
+                initialFailure,
+                0u,
+                0u,
+                contactCount
+            );
+            outputStatuses[problem] = status;
+        }
+        return;
+    }
+
+    // Bound the spectral radius of the block-preconditioned operator by its
+    // maximum absolute row sum. One shared relaxation then preserves the
+    // symmetric island update and remains stable when many contacts act on a
+    // common mode. This is deterministic topology-dependent conditioning,
+    // not a residual-driven host heuristic.
+    float lanePreconditionedRowSum = 0.0f;
+    if (active) {
+        const uint row = 3u * lane;
+        const uint dimension = 3u * contactCount;
+        for (uint outputAxis = 0u; outputAxis < 3u; ++outputAxis) {
+            float rowSum = 0.0f;
+            for (uint column = 0u; column < dimension; ++column) {
+                float value = 0.0f;
+                for (uint localRow = 0u; localRow < 3u; ++localRow) {
+                    value += inverse[outputAxis][localRow] * matrices[
+                        matrixBase +
+                        (row + localRow) *
+                            NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                        column
+                    ];
+                }
+                rowSum += abs(value);
+            }
+            lanePreconditionedRowSum = max(
+                lanePreconditionedRowSum,
+                rowSum
+            );
+        }
+    }
+    const float preconditionedRowBound = simd_max(
+        lanePreconditionedRowSum
+    );
+    const float effectiveRelaxation = min(
+        header.tolerances.z,
+        1.0f / max(preconditionedRowBound, 1.0f)
+    );
+
+    threadgroup float4 current[
+        NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
+    ];
+    threadgroup float4 next[
+        NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
+    ];
+    threadgroup float4 checkpoint[
+        NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
+    ];
+    if (active) {
+        current[lane] = float4(
+            projectFrictionCone(
+                contact.warmImpulseAndFrictionV.xyz,
+                cone
+            ),
+            0.0f
+        );
+    } else {
+        current[lane] = float4(0.0f);
+    }
+    checkpoint[lane] = current[lane];
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+
+    uint completedIterations = 0u;
+    bool converged = false;
+    for (uint iteration = 0u;
+         iteration < header.control.w;
+         ++iteration) {
+        float laneNaturalDelta = 0.0f;
+        float laneScale = 1.0f;
+        localFailure = NUMI_TEMPORAL_CONE_ISLAND_SUCCESS;
+        if (active) {
+            const uint row = 3u * lane;
+            const float3 impulse = current[lane].xyz;
+            const float3 residual = temporalConeIslandResidual(
+                matrices,
+                matrixBase,
+                row,
+                contactCount,
+                contact.freeVelocityAndFrictionU.xyz,
+                current
+            );
+            const float3 proposed = impulse - float3(
+                inverse[0][0] * residual.x +
+                    inverse[0][1] * residual.y +
+                    inverse[0][2] * residual.z,
+                inverse[1][0] * residual.x +
+                    inverse[1][1] * residual.y +
+                    inverse[1][2] * residual.z,
+                inverse[2][0] * residual.x +
+                    inverse[2][1] * residual.y +
+                    inverse[2][2] * residual.z
+            );
+            const float3 projected = projectFrictionCone(proposed, cone);
+            const float3 naturalDelta = projected - impulse;
+            const float3 candidate =
+                impulse + effectiveRelaxation * naturalDelta;
+            if (!finite3(residual) ||
+                !finite3(projected) ||
+                !finite3(candidate)) {
+                localFailure =
+                    NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
+                next[lane] = current[lane];
+            } else {
+                next[lane] = float4(candidate, 0.0f);
+                laneNaturalDelta = max(
+                    abs(naturalDelta.x),
+                    max(abs(naturalDelta.y), abs(naturalDelta.z))
+                );
+                laneScale = max(
+                    1.0f,
+                    max(
+                        abs(projected.x),
+                        max(abs(projected.y), abs(projected.z))
+                    )
+                );
+            }
+        } else {
+            next[lane] = float4(0.0f);
+        }
+        const uint iterationFailure = simd_max(localFailure);
+        const float maximumNaturalDelta = simd_max(laneNaturalDelta);
+        const float maximumScale = simd_max(laneScale);
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+        completedIterations = iteration + 1u;
+        if (iterationFailure != NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
+            localFailure = iterationFailure;
+            break;
+        }
+        const float tolerance =
+            header.tolerances.x +
+            header.tolerances.y * maximumScale;
+        if (completedIterations >= header.control.z &&
+            maximumNaturalDelta <= tolerance) {
+            converged = true;
+            break;
+        }
+        current[lane] = next[lane];
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+    }
+
+    float laneNaturalResidual = 0.0f;
+    float laneConeViolation = 0.0f;
+    float laneScale = 1.0f;
+    float laneRawResidual = 0.0f;
+    float laneObjective = 0.0f;
+    if (active &&
+        localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
+        const uint row = 3u * lane;
+        const float3 impulse = current[lane].xyz;
+        const float3 residual = temporalConeIslandResidual(
+            matrices,
+            matrixBase,
+            row,
+            contactCount,
+            contact.freeVelocityAndFrictionU.xyz,
+            current
+        );
+        const float3 proposed = impulse - float3(
+            inverse[0][0] * residual.x +
+                inverse[0][1] * residual.y +
+                inverse[0][2] * residual.z,
+            inverse[1][0] * residual.x +
+                inverse[1][1] * residual.y +
+                inverse[1][2] * residual.z,
+            inverse[2][0] * residual.x +
+                inverse[2][1] * residual.y +
+                inverse[2][2] * residual.z
+        );
+        const float3 projected = projectFrictionCone(proposed, cone);
+        const float3 naturalDelta = projected - impulse;
+        laneNaturalResidual = max(
+            abs(naturalDelta.x),
+            max(abs(naturalDelta.y), abs(naturalDelta.z))
+        );
+        laneConeViolation = temporalConeViolation(
+            impulse,
+            cone.effectiveFrictionU,
+            cone.effectiveFrictionV
+        );
+        laneScale = max(
+            1.0f,
+            max(
+                abs(impulse.x),
+                max(abs(impulse.y), abs(impulse.z))
+            )
+        );
+        laneRawResidual = max(
+            abs(residual.x),
+            max(abs(residual.y), abs(residual.z))
+        );
+        const float3 response =
+            residual - contact.freeVelocityAndFrictionU.xyz;
+        laneObjective =
+            0.5f * dot(impulse, response) +
+            dot(impulse, contact.freeVelocityAndFrictionU.xyz);
+    }
+
+    const float maximumNaturalResidual = simd_max(laneNaturalResidual);
+    const float maximumConeViolation = simd_max(laneConeViolation);
+    const float maximumScale = simd_max(laneScale);
+    const float maximumRawResidual = simd_max(laneRawResidual);
+    const float objective = simd_sum(laneObjective);
+    const float normalizedNaturalResidual =
+        maximumNaturalResidual / maximumScale;
+    const bool finalConverged =
+        localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
+        maximumNaturalResidual <=
+            header.tolerances.x +
+            header.tolerances.y * maximumScale;
+    if (active) {
+        outputImpulses[contactBase + lane] = finalConverged
+            ? current[lane]
+            : checkpoint[lane];
+    }
+    if (lane == 0u) {
+        NumiTemporalConeIslandStatus status = {};
+        const uint code =
+            localFailure != NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
+            ? localFailure
+            : finalConverged
+            ? NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
+            : NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE;
+        status.control = uint4(
+            code,
+            completedIterations,
+            finalConverged ? 1u : 0u,
+            contactCount
+        );
+        status.residuals = float4(
+            normalizedNaturalResidual,
+            maximumConeViolation,
+            maximumScale,
+            objective
+        );
+        status.diagnostics = float4(
+            maximumRawResidual,
+            effectiveRelaxation,
+            converged ? 1.0f : 0.0f,
+            0.0f
+        );
+        outputStatuses[problem] = status;
+    }
 }

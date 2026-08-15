@@ -38,12 +38,16 @@ cmake --build build
 ```
 
 The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
-`-fno-fast-math`, plus the native `build/numi-solver-math` harness.
+`-fno-fast-math`, plus two native harnesses:
+
+- `build/numi-solver-math` for isolated local cone blocks;
+- `build/numi-solver-islands` for coupled 1/2/4/8/16/32-contact islands.
 
 Run the default 65,536-problem FP64 comparison and deterministic replay:
 
 ```sh
 ./build/numi-solver-math
+./build/numi-solver-islands
 ctest --test-dir build --output-on-failure
 ```
 
@@ -68,9 +72,12 @@ An installed or relocated harness can load a specific library with
 - Exact Euclidean projection onto isotropic, anisotropic and capped elliptic
   friction cones.
 - Explicit normalized fixed-point convergence residuals.
+- SIMD32 block-Jacobi islands with operator-derived relaxation bounds.
+- Typed nonconvergence and warm-start rollback instead of partial publication.
 
 See [docs/MATHEMATICS.md](docs/MATHEMATICS.md) for the equations and evidence
-boundary and [docs/QUALIFICATION.md](docs/QUALIFICATION.md) for measured Apple
-GPU evidence. The harness exercises local contact mathematics on a real Metal
-device. It is not a complete collision, island-coupling, or time-integration
-benchmark.
+boundary, [docs/ISLAND_SOLVER.md](docs/ISLAND_SOLVER.md) for the coupled
+SIMD32 method, and [docs/QUALIFICATION.md](docs/QUALIFICATION.md) for measured
+Apple GPU evidence. The harnesses exercise contact-space mathematics on a real
+Metal device. They are not collision-generation or time-integration
+benchmarks.

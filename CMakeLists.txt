@@ -27,6 +27,7 @@ set(
     include/metalrobo/gpu_types.h
     include/metalrobo/rod_gpu_shared.h
     include/metalrobo/unified_quality_shared.h
+    include/numi/temporal_cone_island.h
     include/numi/temporal_cone_probe.h
 )
 
@@ -75,6 +76,26 @@ target_compile_definitions(
         NUMI_TEMPORAL_CONE_METALLIB="${NUMI_SOLVER_METALLIB}"
 )
 
+add_executable(numi-solver-islands tools/temporal_cone_islands.mm)
+add_dependencies(numi-solver-islands numi_temporal_cone)
+target_link_libraries(
+    numi-solver-islands
+    PRIVATE
+        numi_temporal_cone_abi
+        "${FOUNDATION_FRAMEWORK}"
+        "${METAL_FRAMEWORK}"
+)
+target_compile_features(numi-solver-islands PRIVATE cxx_std_23)
+target_compile_options(
+    numi-solver-islands
+    PRIVATE -fobjc-arc -Wall -Wextra -Wpedantic
+)
+target_compile_definitions(
+    numi-solver-islands
+    PRIVATE
+        NUMI_TEMPORAL_CONE_METALLIB="${NUMI_SOLVER_METALLIB}"
+)
+
 include(CTest)
 if(BUILD_TESTING)
     add_test(
@@ -88,8 +109,18 @@ if(BUILD_TESTING)
         temporal_cone.math
         PROPERTIES LABELS "metal;physics;math" TIMEOUT 60
     )
+    add_test(
+        NAME temporal_cone.islands
+        COMMAND $<TARGET_FILE:numi-solver-islands>
+            --islands 96
+            --replays 2
+    )
+    set_tests_properties(
+        temporal_cone.islands
+        PROPERTIES LABELS "metal;physics;math;islands" TIMEOUT 60
+    )
 endif()
 
 install(FILES "${NUMI_SOLVER_METALLIB}" DESTINATION lib/numi-solver)
 install(DIRECTORY include/ DESTINATION include)
-install(TARGETS numi-solver-math RUNTIME DESTINATION bin)
+install(TARGETS numi-solver-math numi-solver-islands RUNTIME DESTINATION bin)
