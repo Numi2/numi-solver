@@ -39,10 +39,11 @@ zero_v_axis_cone=true
 zero_u_axis_cone=true
 degenerate_cap=true
 exact_inactive_axis=true
+indefinite_local_block_rejected=true
 ```
 
-The measured isolated local-block throughput was approximately 33.8 million
-problems/s for the adversarial anisotropic batch and 105.0 million problems/s
+The measured isolated local-block throughput was approximately 34.8 million
+problems/s for the adversarial anisotropic batch and 100.6 million problems/s
 for the predominantly isotropic batch. The latter takes the closed-form fast
 path; these are local mathematical blocks, not full environment steps.
 
@@ -92,6 +93,7 @@ dense_deterministic=true
 dense_stream_bitwise=true
 typed_failures=true
 row_bound_overflow_rejected=true
+indefinite_local_block_rejected=true
 positive_objective_rejected=true
 deterministic_failures=true
 failure_rollback=true
@@ -99,13 +101,13 @@ spd_cholesky=true
 min_spd_pivot=0.894427198
 shared_rigid_oracle=true
 under_relaxed_path=true
-average_gpu_seconds=0.005009933
-islands_per_second=817575.75
-contacts_per_second=8579156.09
-contact_iterations_per_second=300420764.39
+average_gpu_seconds=0.004927417
+islands_per_second=831267.23
+contacts_per_second=8722826.34
+contact_iterations_per_second=305451740.20
 streamed_buffer_bytes=10126748
-dense_gpu_seconds=0.010830383
-dense_to_stream_speedup=2.161781928
+dense_gpu_seconds=0.010791633
+dense_to_stream_speedup=2.190119899
 dense_buffer_bytes=159711232
 stream_to_dense_memory=0.063406611
 streamed_blocks=169861
@@ -119,7 +121,7 @@ result=PASS
 ```
 
 The streamed representation used 6.34% of the dense qualification buffers and
-the isolated streamed kernel was 2.162x faster for the same byte-identical
+the isolated streamed kernel was 2.190x faster for the same byte-identical
 FP32 solve. GPU time excludes CPU oracle work and buffer upload. These ratios
 describe this declared topology mix; they are not universal scene claims.
 
@@ -131,8 +133,8 @@ rollback gates. The richer batch remains within 0.4% of the prior
 positive-friction-only `0.004931358`-second measurement while qualifying 2,184
 lower-dimensional contacts.
 
-The combined metallib SHA-256 for this convergence-certificate milestone was
-`f518123506b08a458d358f4b2e4583d7b37c625fd5f1c64fda2b3a65a4ef8361`.
+The combined metallib SHA-256 for this PSD-conditioning milestone was
+`6b334db6664885c27422ad4a3c0feed5a430d35af187fd4b5e9abee0c65c50c9`.
 
 On the earlier 1,024-island positive-friction qualification batch, the
 unaccelerated revision measured `0.004850083` seconds, 431 maximum iterations,
@@ -147,13 +149,14 @@ dispatch remains one SIMD32 group per island.
 The typed failure batch separately verifies malformed symmetry, failed local
 conditioning, bounded iteration exhaustion, invalid ABI, unsorted/duplicate
 CSR, capacity overflow, nonfinite FP32 warm-start arithmetic, finite-entry
-FP32 row-sum overflow, and rejection of a feasible zero-KKT but
-positive-objective stationary point from an indefinite operator. Dense and
-streamed outputs are poisoned before dispatch; deterministic failure replay,
-explicit zero publication for invalid state, and projected warm-start rollback
-for failed final admission must still hold. The analytic shared-rigid case
-verifies the coupled `(1/3, 1/3)` solution rather than the incorrect
-independent-contact `(1/2, 1/2)` result.
+FP32 row-sum overflow, a positive-determinant local block with two small
+negative eigenvalues that the CFM shift would otherwise hide, and a feasible
+zero-KKT but positive-objective stationary point from an indefinite global
+operator. Dense and streamed outputs are poisoned before dispatch;
+deterministic failure replay, explicit zero publication for invalid state, and
+projected warm-start rollback for failed final admission must still hold. The
+analytic shared-rigid case verifies the coupled `(1/3, 1/3)` solution rather
+than the incorrect independent-contact `(1/2, 1/2)` result.
 
 ## Response-column assembly and chained solve gate
 
@@ -194,16 +197,17 @@ deterministic_replay=true
 shared_rigid_oracle=true
 asymmetric_rejected=true
 missing_coupling_rejected=true
+non_psd_regularization_rejected=true
 deterministic_failures=true
 failure_rollback=true
-average_gpu_seconds=0.001729742
-assembly_gpu_seconds=0.000784892
-assembly_fraction=0.453762364
-islands_per_second=591995.91
-blocks_per_second=24124411.61
-assembly_blocks_per_second=53165298.65
-factor_fmas_per_second=1800168170.33
-contact_iterations_per_second=97441718.03
+average_gpu_seconds=0.001693804
+assembly_gpu_seconds=0.000777813
+assembly_fraction=0.459210410
+islands_per_second=604556.32
+blocks_per_second=24636260.27
+assembly_blocks_per_second=53649176.37
+factor_fmas_per_second=1816552189.59
+contact_iterations_per_second=99509143.10
 factor_bytes=3505020
 streamed_operator_bytes=1716156
 dense_operator_bytes=37748736
@@ -219,15 +223,16 @@ result=PASS
 
 Factor inputs plus the assembled sparse operator used 13.83% of the fixed
 dense operator storage for this declared topology mix. The assembly-only
-measurement produced 53.17 million blocks/s and the complete assembly/solve
-chain produced 591,996 islands/s. One unreported warmup command precedes each
+measurement produced 53.65 million blocks/s and the complete assembly/solve
+chain produced 604,556 islands/s. One unreported warmup command precedes each
 timed path. These are isolated kernel measurements, not environment-step or
 energy claims.
 
-The adversarial transaction cases independently corrupt one response column
-and omit a required shared-owner block. Both are deterministically rejected;
-the output stream header remains invalid and the chained solver publishes zero
-impulses.
+The adversarial transaction cases independently corrupt one response column,
+omit a required shared-owner block, and author a positive-determinant
+regularization block with two negative eigenvalues. All are deterministically
+rejected; the output stream header remains invalid and the chained solver
+publishes zero impulses.
 
 ## Rigid response-to-velocity gate
 

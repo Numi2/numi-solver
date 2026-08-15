@@ -857,9 +857,10 @@ inline float frictionConeViolationValues(
     return violation;
 }
 
-inline bool invert3x3(
+inline bool normalizeSymmetricPSD3x3(
     thread const float matrix[3][3],
-    thread float inverse[3][3]
+    thread float normalized[3][3],
+    thread float& inverseScale
 ) {
     float scale = 0.0f;
     for (uint row = 0u; row < 3u; ++row) {
@@ -873,25 +874,87 @@ inline bool invert3x3(
     if (!(scale > kMatrixFloor)) {
         return false;
     }
+    inverseScale = 1.0f / scale;
+    if (!(inverseScale > 0.0f) || !isfinite(inverseScale)) {
+        return false;
+    }
 
-    // Relative contact motion can be rank deficient for articulated
-    // self-contact even though the articulation mass matrix is valid. Work
-    // in a scale-free frame, symmetrize the numerically assembled response,
-    // and apply a small deterministic CFM floor before inversion. This keeps
-    // the coupled normal/tangent solve finite without weakening well-scaled
-    // contacts or turning a valid fall into a transactional physics error.
-    float regularized[3][3];
     for (uint row = 0u; row < 3u; ++row) {
         for (uint column = 0u; column < 3u; ++column) {
-            regularized[row][column] =
-                0.5f *
-                (matrix[row][column] + matrix[column][row]) /
-                scale;
-            if (row == column) {
-                regularized[row][column] +=
-                    kContactMatrixRegularization;
-            }
+            normalized[row][column] =
+                0.5f * matrix[row][column] * inverseScale +
+                0.5f * matrix[column][row] * inverseScale;
         }
+    }
+
+    const float minor01 =
+        normalized[0][0] * normalized[1][1] -
+        normalized[0][1] * normalized[1][0];
+    const float minor02 =
+        normalized[0][0] * normalized[2][2] -
+        normalized[0][2] * normalized[2][0];
+    const float minor12 =
+        normalized[1][1] * normalized[2][2] -
+        normalized[1][2] * normalized[2][1];
+    const float determinant =
+        normalized[0][0] * (
+            normalized[1][1] * normalized[2][2] -
+            normalized[1][2] * normalized[2][1]
+        ) -
+        normalized[0][1] * (
+            normalized[1][0] * normalized[2][2] -
+            normalized[1][2] * normalized[2][0]
+        ) +
+        normalized[0][2] * (
+            normalized[1][0] * normalized[2][1] -
+            normalized[1][1] * normalized[2][0]
+        );
+    const float tolerance = 64.0f * kFloatEpsilon;
+    return
+        normalized[0][0] >= -tolerance &&
+        normalized[1][1] >= -tolerance &&
+        normalized[2][2] >= -tolerance &&
+        minor01 >= -tolerance &&
+        minor02 >= -tolerance &&
+        minor12 >= -tolerance &&
+        determinant >= -tolerance &&
+        isfinite(minor01) &&
+        isfinite(minor02) &&
+        isfinite(minor12) &&
+        isfinite(determinant);
+}
+
+inline bool positiveSemidefinite3x3(
+    thread const float matrix[3][3]
+) {
+    float normalized[3][3];
+    float inverseScale = 0.0f;
+    return normalizeSymmetricPSD3x3(
+        matrix,
+        normalized,
+        inverseScale
+    );
+}
+
+inline bool invert3x3(
+    thread const float matrix[3][3],
+    thread float inverse[3][3]
+) {
+    // Relative contact motion can be rank deficient for articulated
+    // self-contact even though the articulation mass matrix is valid. First
+    // certify that the unshifted symmetric response has no negative
+    // curvature, then apply a small deterministic CFM floor for inversion.
+    float regularized[3][3];
+    float inverseScale = 0.0f;
+    if (!normalizeSymmetricPSD3x3(
+            matrix,
+            regularized,
+            inverseScale
+        )) {
+        return false;
+    }
+    for (uint axis = 0u; axis < 3u; ++axis) {
+        regularized[axis][axis] += kContactMatrixRegularization;
     }
     const float c00 =
         regularized[1][1] * regularized[2][2] -
@@ -906,11 +969,24 @@ inline bool invert3x3(
         regularized[0][0] * c00 +
         regularized[0][1] * c01 +
         regularized[0][2] * c02;
-    if (!(determinant > kMatrixFloor) ||
+    const float leadingMinor1 = regularized[0][0];
+    const float leadingMinor2 =
+        regularized[0][0] * regularized[1][1] -
+        regularized[0][1] * regularized[1][0];
+    // The unshifted PSD gate above owns physical curvature. Sylvester's
+    // criterion here certifies that the shifted inverse is safely SPD.
+    if (!(leadingMinor1 > kMatrixFloor) ||
+        !(leadingMinor2 > kMatrixFloor) ||
+        !(determinant > kMatrixFloor) ||
+        !isfinite(leadingMinor1) ||
+        !isfinite(leadingMinor2) ||
         !isfinite(determinant)) {
         return false;
     }
-    const float reciprocal = 1.0f / (determinant * scale);
+    const float reciprocal = inverseScale / determinant;
+    if (!(reciprocal > 0.0f) || !isfinite(reciprocal)) {
+        return false;
+    }
     inverse[0][0] = c00 * reciprocal;
     inverse[0][1] =
         (regularized[0][2] * regularized[2][1] -
@@ -11830,7 +11906,6 @@ kernel void numi_temporal_cone_island_solve(
 
     NumiTemporalConeIslandContact contact = {};
     MREvaluatedConstraintIRConeGPU cone = {};
-    float inverse[3][3] = {};
     if (active && localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
         contact = contacts[contactBase + lane];
         if (!finite4(contact.freeVelocityAndFrictionU) ||
@@ -11890,7 +11965,7 @@ kernel void numi_temporal_cone_island_solve(
                     ];
                 }
             }
-            if (!invert3x3(diagonal, inverse)) {
+            if (!positiveSemidefinite3x3(diagonal)) {
                 localFailure =
                     NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED;
             }
@@ -12548,7 +12623,6 @@ kernel void numi_temporal_cone_stream_solve(
         return;
     }
 
-    float inverse[3][3] = {};
     if (active) {
         // Enforce A_ij = transpose(A_ji) directly on the packed operator.
         for (uint relativeBlock = rowBegin;
@@ -12609,7 +12683,7 @@ kernel void numi_temporal_cone_stream_solve(
             }
         }
         if (localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
-            !invert3x3(diagonal, inverse)) {
+            !positiveSemidefinite3x3(diagonal)) {
             localFailure =
                 NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED;
         }
@@ -13046,6 +13120,81 @@ kernel void numi_temporal_cone_stream_solve(
     }
 }
 
+inline bool temporalConeRegularizationPSD(
+    device const float* values,
+    const uint base
+) {
+    float scale = 0.0f;
+    for (uint element = 0u; element < 9u; ++element) {
+        const float value = values[base + element];
+        if (!isfinite(value)) {
+            return false;
+        }
+        scale = max(scale, abs(value));
+    }
+    if (scale == 0.0f) {
+        return true;
+    }
+    const float inverseScale = 1.0f / scale;
+    if (!(inverseScale > 0.0f) || !isfinite(inverseScale)) {
+        return false;
+    }
+
+    float matrix[3][3];
+    const float symmetryTolerance =
+        64.0f * kFloatEpsilon * max(1.0f, scale);
+    for (uint row = 0u; row < 3u; ++row) {
+        for (uint column = 0u; column < 3u; ++column) {
+            const float value = values[base + 3u * row + column];
+            const float transpose = values[
+                base + 3u * column + row
+            ];
+            if (abs(value - transpose) > symmetryTolerance) {
+                return false;
+            }
+            matrix[row][column] =
+                0.5f * value * inverseScale +
+                0.5f * transpose * inverseScale;
+        }
+    }
+
+    const float minor01 =
+        matrix[0][0] * matrix[1][1] -
+        matrix[0][1] * matrix[1][0];
+    const float minor02 =
+        matrix[0][0] * matrix[2][2] -
+        matrix[0][2] * matrix[2][0];
+    const float minor12 =
+        matrix[1][1] * matrix[2][2] -
+        matrix[1][2] * matrix[2][1];
+    const float determinant =
+        matrix[0][0] * (
+            matrix[1][1] * matrix[2][2] -
+            matrix[1][2] * matrix[2][1]
+        ) -
+        matrix[0][1] * (
+            matrix[1][0] * matrix[2][2] -
+            matrix[1][2] * matrix[2][0]
+        ) +
+        matrix[0][2] * (
+            matrix[1][0] * matrix[2][1] -
+            matrix[1][1] * matrix[2][0]
+        );
+    const float tolerance = 64.0f * kFloatEpsilon;
+    return
+        matrix[0][0] >= -tolerance &&
+        matrix[1][1] >= -tolerance &&
+        matrix[2][2] >= -tolerance &&
+        minor01 >= -tolerance &&
+        minor02 >= -tolerance &&
+        minor12 >= -tolerance &&
+        determinant >= -tolerance &&
+        isfinite(minor01) &&
+        isfinite(minor02) &&
+        isfinite(minor12) &&
+        isfinite(determinant);
+}
+
 // Deterministically assembles a complete block-CSR Delassus operator from
 // contact Jacobians J_i and already-computed response columns M^-1 J_i^T.
 // Topology is supplied separately and is accepted only when it contains every
@@ -13251,6 +13400,14 @@ kernel void numi_temporal_cone_stream_assemble(
                 )) {
                 localFailure = NUMI_TEMPORAL_CONE_ASSEMBLY_INVALID_INPUT;
             }
+        }
+        if (localFailure == NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS &&
+            !temporalConeRegularizationPSD(
+                regularizationValues,
+                regularizationContactBase
+            )) {
+            localFailure =
+                NUMI_TEMPORAL_CONE_ASSEMBLY_NON_PSD_REGULARIZATION;
         }
     }
     structuralFailure = simd_max(localFailure);

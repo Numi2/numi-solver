@@ -926,6 +926,32 @@ int run(const int argc, const char* const* argv) {
         missingFirst.headers[1].control.x == 0u &&
         missingFirst.solverStatuses[1].control.x ==
             NUMI_TEMPORAL_CONE_ISLAND_INVALID_ABI;
+
+    AssemblyBatch nonPSD = makeBatch(36u);
+    const auto& nonPSDHeader = nonPSD.headers[1];
+    const std::size_t nonPSDRegularizationBase =
+        nonPSDHeader.inputRanges.y;
+    for (std::size_t row = 0u; row < 3u; ++row) {
+        for (std::size_t column = 0u; column < 3u; ++column) {
+            nonPSD.regularizationValues[
+                nonPSDRegularizationBase + 3u * row + column
+            ] = row == column
+                ? (row == 0u ? 1.0f : -0.005f)
+                : 0.0f;
+        }
+    }
+    const GPUResult nonPSDFirst = runGPU(
+        device, queue, assemblyPipeline, solverPipeline, nonPSD
+    );
+    const GPUResult nonPSDReplay = runGPU(
+        device, queue, assemblyPipeline, solverPipeline, nonPSD
+    );
+    const bool nonPSDRegularizationRejected =
+        nonPSDFirst.assemblyStatuses[1].control.x ==
+            NUMI_TEMPORAL_CONE_ASSEMBLY_NON_PSD_REGULARIZATION &&
+        nonPSDFirst.headers[1].control.x == 0u &&
+        nonPSDFirst.solverStatuses[1].control.x ==
+            NUMI_TEMPORAL_CONE_ISLAND_INVALID_ABI;
     const auto sameResult = [](const GPUResult& first,
                                const GPUResult& second) {
         return std::memcmp(
@@ -959,7 +985,8 @@ int run(const int argc, const char* const* argv) {
     };
     const bool deterministicFailures =
         sameResult(asymmetricFirst, asymmetricReplay) &&
-        sameResult(missingFirst, missingReplay);
+        sameResult(missingFirst, missingReplay) &&
+        sameResult(nonPSDFirst, nonPSDReplay);
     const auto zeroFailureImpulses = [](const AssemblyBatch& failedBatch,
                                         const GPUResult& result) {
         const auto& failedHeader = failedBatch.headers[1];
@@ -978,7 +1005,8 @@ int run(const int argc, const char* const* argv) {
     };
     const bool failureRollback =
         zeroFailureImpulses(asymmetric, asymmetricFirst) &&
-        zeroFailureImpulses(missing, missingFirst);
+        zeroFailureImpulses(missing, missingFirst) &&
+        zeroFailureImpulses(nonPSD, nonPSDFirst);
 
     double totalSeconds = 0.0;
     for (const auto& replay : replays) {
@@ -1099,6 +1127,7 @@ int run(const int argc, const char* const* argv) {
         sharedRigidOracle &&
         asymmetricRejected &&
         missingRejected &&
+        nonPSDRegularizationRejected &&
         deterministicFailures &&
         failureRollback;
 
@@ -1132,6 +1161,8 @@ int run(const int argc, const char* const* argv) {
               << (asymmetricRejected ? "true" : "false")
               << " missing_coupling_rejected="
               << (missingRejected ? "true" : "false")
+              << " non_psd_regularization_rejected="
+              << (nonPSDRegularizationRejected ? "true" : "false")
               << " deterministic_failures="
               << (deterministicFailures ? "true" : "false")
               << " failure_rollback="

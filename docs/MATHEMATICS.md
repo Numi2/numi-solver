@@ -41,15 +41,21 @@ Metal path computes
 ```math
 s = \max_{i,j}|A_{ij}|,
 \qquad
-\widehat A = \frac{A + A^T}{2s} + 0.01 I,
+S = \frac{A + A^T}{2s},
+\qquad
+\widehat A = S + 0.01 I,
 \qquad
 P = (s\widehat A)^{-1}.
 ```
 
-It fails closed for nonfinite input, `s <= 1e-10`, or a nonpositive/nonfinite
-regularized determinant. The `0.01 I` term is a deterministic CFM floor: it
-bounds amplification from a weak response mode but introduces deliberate
-compliance in that mode.
+Before applying the shift, all principal minors of `S` must certify
+`S` as positive-semidefinite within the declared FP32 tolerance. This
+distinguishes physical rank
+deficiency from negative curvature: a positive determinant with two negative
+eigenvalues is rejected, and the CFM floor cannot hide it. The shifted matrix
+must then pass the strict Sylvester SPD test with a finite representable
+inverse scale. The `0.01 I` term bounds amplification from a weak response
+mode but introduces deliberate compliance in that mode.
 
 ## Isolated conditioned map
 

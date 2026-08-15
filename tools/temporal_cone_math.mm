@@ -397,18 +397,59 @@ bool conditionedInverse(
     if (!(scale > kMatrixFloor)) {
         return false;
     }
+    const double inverseScale = 1.0 / scale;
+    if (!(inverseScale > 0.0) || !std::isfinite(inverseScale)) {
+        return false;
+    }
 
     std::array<std::array<double, 3>, 3> regularized{};
     for (std::size_t row = 0; row < 3; ++row) {
         for (std::size_t column = 0; column < 3; ++column) {
             regularized[row][column] =
-                0.5 * (matrix[row][column] + matrix[column][row]) /
-                scale;
-            if (row == column) {
-                regularized[row][column] +=
-                    kContactMatrixRegularization;
-            }
+                0.5 * matrix[row][column] * inverseScale +
+                0.5 * matrix[column][row] * inverseScale;
         }
+    }
+
+    const double unshiftedMinor01 =
+        regularized[0][0] * regularized[1][1] -
+        regularized[0][1] * regularized[1][0];
+    const double unshiftedMinor02 =
+        regularized[0][0] * regularized[2][2] -
+        regularized[0][2] * regularized[2][0];
+    const double unshiftedMinor12 =
+        regularized[1][1] * regularized[2][2] -
+        regularized[1][2] * regularized[2][1];
+    const double unshiftedDeterminant =
+        regularized[0][0] * (
+            regularized[1][1] * regularized[2][2] -
+            regularized[1][2] * regularized[2][1]
+        ) -
+        regularized[0][1] * (
+            regularized[1][0] * regularized[2][2] -
+            regularized[1][2] * regularized[2][0]
+        ) +
+        regularized[0][2] * (
+            regularized[1][0] * regularized[2][1] -
+            regularized[1][1] * regularized[2][0]
+        );
+    constexpr double psdTolerance =
+        64.0 * std::numeric_limits<float>::epsilon();
+    if (regularized[0][0] < -psdTolerance ||
+        regularized[1][1] < -psdTolerance ||
+        regularized[2][2] < -psdTolerance ||
+        unshiftedMinor01 < -psdTolerance ||
+        unshiftedMinor02 < -psdTolerance ||
+        unshiftedMinor12 < -psdTolerance ||
+        unshiftedDeterminant < -psdTolerance ||
+        !std::isfinite(unshiftedMinor01) ||
+        !std::isfinite(unshiftedMinor02) ||
+        !std::isfinite(unshiftedMinor12) ||
+        !std::isfinite(unshiftedDeterminant)) {
+        return false;
+    }
+    for (std::size_t axis = 0u; axis < 3u; ++axis) {
+        regularized[axis][axis] += kContactMatrixRegularization;
     }
 
     const double c00 =
@@ -424,10 +465,22 @@ bool conditionedInverse(
         regularized[0][0] * c00 +
         regularized[0][1] * c01 +
         regularized[0][2] * c02;
-    if (!(determinant > kMatrixFloor) || !std::isfinite(determinant)) {
+    const double leadingMinor1 = regularized[0][0];
+    const double leadingMinor2 =
+        regularized[0][0] * regularized[1][1] -
+        regularized[0][1] * regularized[1][0];
+    if (!(leadingMinor1 > kMatrixFloor) ||
+        !(leadingMinor2 > kMatrixFloor) ||
+        !(determinant > kMatrixFloor) ||
+        !std::isfinite(leadingMinor1) ||
+        !std::isfinite(leadingMinor2) ||
+        !std::isfinite(determinant)) {
         return false;
     }
-    const double reciprocal = 1.0 / (determinant * scale);
+    const double reciprocal = inverseScale / determinant;
+    if (!(reciprocal > 0.0) || !std::isfinite(reciprocal)) {
+        return false;
+    }
     inverse[0][0] = c00 * reciprocal;
     inverse[0][1] =
         (regularized[0][2] * regularized[2][1] -
@@ -638,6 +691,13 @@ std::vector<NumiTemporalConeProbeInput> makeProblems(
         identity, {{-1.0f, -5.0e-8f, -0.3f}}, {{0.0f, 0.0f, 0.0f}},
         0.0f, 0.5f
     ));
+    inputs.push_back(makeInput(
+        {{{{1.0f, 0.0f, 0.0f}},
+          {{0.0f, -0.005f, 0.0f}},
+          {{0.0f, 0.0f, -0.005f}}}},
+        {{-1.0f, 0.0f, 0.0f}}, {{0.0f, 0.0f, 0.0f}},
+        0.5f, 0.5f
+    ));
 
     for (std::size_t index = inputs.size(); index < count; ++index) {
         const float a = 0.25f + 0.01f * static_cast<float>(index % 71u);
@@ -800,7 +860,7 @@ int run(const int argc, const char* const* argv) {
             throw std::runtime_error("unknown argument: " + std::string(value));
         }
     }
-    problemCount = std::max<std::size_t>(problemCount, 16u);
+    problemCount = std::max<std::size_t>(problemCount, 17u);
     replayCount = std::max<std::uint32_t>(replayCount, 2u);
     if (problemCount > std::numeric_limits<std::uint32_t>::max()) {
         throw std::runtime_error("case count exceeds the probe ABI");
@@ -960,6 +1020,9 @@ int run(const int argc, const char* const* argv) {
     const bool exactInactiveAxis =
         tinyInactive.impulseAndDelta.y == 0.0f &&
         std::abs(tinyInactive.impulseAndDelta.z) > 1.0e-3f;
+    const bool indefiniteLocalBlockRejected =
+        replays[0].outputs[16].status.x ==
+            NUMI_TEMPORAL_CONE_PROBE_FACTORIZATION_FAILED;
 
     double totalGPUSeconds = 0.0;
     for (const auto& replay : replays) {
@@ -983,7 +1046,8 @@ int run(const int argc, const char* const* argv) {
         zeroVAxisCone &&
         zeroUAxisCone &&
         degenerateCap &&
-        exactInactiveAxis;
+        exactInactiveAxis &&
+        indefiniteLocalBlockRejected;
 
     if (maximumRelativeError > 1.0e-5) {
         const auto worstOracle = solveOracle(inputs[maximumRelativeErrorCase]);
@@ -1021,6 +1085,8 @@ int run(const int argc, const char* const* argv) {
               << " degenerate_cap=" << (degenerateCap ? "true" : "false")
               << " exact_inactive_axis="
               << (exactInactiveAxis ? "true" : "false")
+              << " indefinite_local_block_rejected="
+              << (indefiniteLocalBlockRejected ? "true" : "false")
               << '\n'
               << "average_gpu_seconds=" << averageGPUSeconds
               << " cases_per_second=" << casesPerSecond << '\n'

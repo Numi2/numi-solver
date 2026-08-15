@@ -42,6 +42,7 @@ The kernel rejects:
 - missing diagonal blocks;
 - any missing or extraneous shared-owner CSR coupling;
 - nonfinite inputs or assembled coefficients;
+- authored regularization that is asymmetric or not positive-semidefinite;
 - assembled `W_ij`/`W_ji^T` disagreement above the FP32 symmetry tolerance.
 
 ## Transaction and command-buffer ownership
@@ -56,13 +57,15 @@ publish typed failure and zero impulse output without host intervention.
 There is no CPU readback, second command queue, internal command-buffer commit,
 or wait between response-column assembly and contact solve.
 
-## Positive-definite authority
+## Positive-semidefinite authority
 
-Symmetry is checked on GPU. Positive definiteness follows from the provider
-contract `V=M^-1J^T` with positive-definite mass response and nonnegative
-regularization; arbitrary symmetric response data is not silently declared
-physical. The qualification harness independently reconstructs every dense
-operator and applies FP64 Cholesky before accepting the generated batch.
+Symmetry and the PSD principal-minor certificate for every authored 3x3
+regularization block are checked on GPU. Full-operator positive
+semidefiniteness then follows from the provider contract `V=M^-1J^T` with
+positive-definite mass response. Arbitrary symmetric response columns are not
+silently declared physical. The qualification harness independently
+reconstructs every dense operator and applies FP64 Cholesky before accepting
+the generated batch.
 
 The generic assembly ABI still consumes authored topology, Jacobians, and
 response columns. The rigid response kernel generates rigid 6-DOF terms from

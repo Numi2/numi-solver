@@ -98,7 +98,8 @@ An installed or relocated harness can load a specific library with
 - FP32 Metal execution with explicit finite/capacity failures.
 - Deterministic fixed-capacity work queues and scan-ordered packets.
 - SIMD32-native execution, with homogeneous Wave8/Wave16 cohorts when safe.
-- Coupled 3x3 normal/tangent response blocks with deterministic conditioning.
+- Coupled 3x3 normal/tangent response blocks with unshifted PSD admission and
+  deterministic rank-deficiency conditioning.
 - Per-environment failure publication; no silent contact dropping.
 - Exact Euclidean projection onto isotropic, anisotropic, one-axis degenerate,
   and capped elliptic friction cones.
@@ -128,7 +129,8 @@ An installed or relocated harness can load a specific library with
 - Delayed metric FISTA acceleration with deterministic adaptive and bounded
   restart, while only non-extrapolated iterates can satisfy the KKT gate.
 - Typed nonconvergence and warm-start rollback instead of partial publication.
-- SPD, nonpositive-objective, shared-rigid `1/3`, and FP64 qualification gates.
+- PSD/SPD, nonpositive-objective, shared-rigid `1/3`, and FP64 qualification
+  gates.
 
 See [docs/MATHEMATICS.md](docs/MATHEMATICS.md) for the equations and evidence
 boundary, [docs/ISLAND_SOLVER.md](docs/ISLAND_SOLVER.md) for the coupled

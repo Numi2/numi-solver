@@ -307,13 +307,57 @@ bool conditionedInverse(const Mat3& matrix, Mat3& inverse) {
     if (!(scale > kMatrixFloor)) {
         return false;
     }
+    const double inverseScale = 1.0 / scale;
+    if (!(inverseScale > 0.0) || !std::isfinite(inverseScale)) {
+        return false;
+    }
     Mat3 regularized{};
     for (std::size_t row = 0; row < 3; ++row) {
         for (std::size_t column = 0; column < 3; ++column) {
             regularized[row][column] =
-                0.5 * (matrix[row][column] + matrix[column][row]) / scale +
-                (row == column ? kConditioning : 0.0);
+                0.5 * matrix[row][column] * inverseScale +
+                0.5 * matrix[column][row] * inverseScale;
         }
+    }
+    const double unshiftedMinor01 =
+        regularized[0][0] * regularized[1][1] -
+        regularized[0][1] * regularized[1][0];
+    const double unshiftedMinor02 =
+        regularized[0][0] * regularized[2][2] -
+        regularized[0][2] * regularized[2][0];
+    const double unshiftedMinor12 =
+        regularized[1][1] * regularized[2][2] -
+        regularized[1][2] * regularized[2][1];
+    const double unshiftedDeterminant =
+        regularized[0][0] * (
+            regularized[1][1] * regularized[2][2] -
+            regularized[1][2] * regularized[2][1]
+        ) -
+        regularized[0][1] * (
+            regularized[1][0] * regularized[2][2] -
+            regularized[1][2] * regularized[2][0]
+        ) +
+        regularized[0][2] * (
+            regularized[1][0] * regularized[2][1] -
+            regularized[1][1] * regularized[2][0]
+        );
+    constexpr double psdTolerance =
+        64.0 * std::numeric_limits<float>::epsilon();
+    if (regularized[0][0] < -psdTolerance ||
+        regularized[1][1] < -psdTolerance ||
+        regularized[2][2] < -psdTolerance ||
+        unshiftedMinor01 < -psdTolerance ||
+        unshiftedMinor02 < -psdTolerance ||
+        unshiftedMinor12 < -psdTolerance ||
+        unshiftedDeterminant < -psdTolerance ||
+        !std::isfinite(unshiftedMinor01) ||
+        !std::isfinite(unshiftedMinor02) ||
+        !std::isfinite(unshiftedMinor12) ||
+        !std::isfinite(unshiftedDeterminant)) {
+        return false;
+    }
+    for (std::size_t axis = 0u; axis < 3u; ++axis) {
+        regularized[axis][axis] += kConditioning;
     }
     const double c00 = regularized[1][1] * regularized[2][2] -
         regularized[1][2] * regularized[2][1];
@@ -323,10 +367,22 @@ bool conditionedInverse(const Mat3& matrix, Mat3& inverse) {
         regularized[1][1] * regularized[2][0];
     const double determinant = regularized[0][0] * c00 +
         regularized[0][1] * c01 + regularized[0][2] * c02;
-    if (!(determinant > kMatrixFloor) || !std::isfinite(determinant)) {
+    const double leadingMinor1 = regularized[0][0];
+    const double leadingMinor2 =
+        regularized[0][0] * regularized[1][1] -
+        regularized[0][1] * regularized[1][0];
+    if (!(leadingMinor1 > kMatrixFloor) ||
+        !(leadingMinor2 > kMatrixFloor) ||
+        !(determinant > kMatrixFloor) ||
+        !std::isfinite(leadingMinor1) ||
+        !std::isfinite(leadingMinor2) ||
+        !std::isfinite(determinant)) {
         return false;
     }
-    const double reciprocal = 1.0 / (determinant * scale);
+    const double reciprocal = inverseScale / determinant;
+    if (!(reciprocal > 0.0) || !std::isfinite(reciprocal)) {
+        return false;
+    }
     inverse[0] = {{
         c00 * reciprocal,
         (regularized[0][2] * regularized[2][1] -
@@ -1018,7 +1074,7 @@ StreamBatch makeStreamBatch(const Batch& dense) {
 }
 
 Batch makeFailureBatch() {
-    Batch batch = makeBatch(9u);
+    Batch batch = makeBatch(10u);
 
     // Problem 0: violate the symmetric Delassus contract.
     batch.matrices[1u] += 0.25f;
@@ -1097,6 +1153,20 @@ Batch makeFailureBatch() {
             0.0f
         );
         source.limits = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    }
+
+    // Problem 9: a symmetric local block with two negative eigenvalues has a
+    // positive determinant. True PSD admission must reject it even though a
+    // determinant-only predicate would accept and invert it.
+    const std::size_t indefiniteMatrixBase = 9u * kMatrixElements;
+    for (std::size_t row = 0u; row < 3u; ++row) {
+        for (std::size_t column = 0u; column < 3u; ++column) {
+            batch.matrices[
+                indefiniteMatrixBase + row * kMaxRows + column
+            ] = row == column
+                ? (row == 0u ? 1.0f : -0.005f)
+                : 0.0f;
+        }
     }
     return batch;
 }
@@ -1449,7 +1519,7 @@ int run(const int argc, const char* const* argv) {
         streamPipeline,
         failureStreamBatch
     );
-    const std::array<std::uint32_t, 9> expectedFailureCodes{{
+    const std::array<std::uint32_t, 10> expectedFailureCodes{{
         NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT,
         NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED,
         NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE,
@@ -1459,6 +1529,7 @@ int run(const int argc, const char* const* argv) {
         NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT,
         NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT,
         NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE,
+        NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED,
     }};
     bool typedFailures = true;
     for (std::size_t problem = 0u;
@@ -1474,7 +1545,7 @@ int run(const int argc, const char* const* argv) {
             typedFailures = false;
         }
     }
-    constexpr std::array<std::pair<std::size_t, std::uint32_t>, 6>
+    constexpr std::array<std::pair<std::size_t, std::uint32_t>, 7>
         expectedDenseFailures{{
             {0u, NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT},
             {1u, NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED},
@@ -1482,6 +1553,7 @@ int run(const int argc, const char* const* argv) {
             {6u, NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT},
             {7u, NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT},
             {8u, NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE},
+            {9u, NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED},
         }};
     for (const auto& [problem, expectedCode] : expectedDenseFailures) {
         const std::uint32_t actualCode =
@@ -1499,6 +1571,11 @@ int run(const int argc, const char* const* argv) {
             NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT &&
         denseFailureFirst.statuses[7].control.x ==
             NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
+    const bool indefiniteLocalBlockRejected =
+        failureFirst.statuses[9].control.x ==
+            NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED &&
+        denseFailureFirst.statuses[9].control.x ==
+            NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED;
     const auto& streamEnergyStatus = failureFirst.statuses[8];
     const auto& denseEnergyStatus = denseFailureFirst.statuses[8];
     const bool positiveObjectiveRejected =
@@ -1538,8 +1615,8 @@ int run(const int argc, const char* const* argv) {
                 sizeof(NumiTemporalConeIslandStatus)
         ) == 0;
     bool failureRollback = true;
-    constexpr std::array<std::size_t, 7> zeroRollbackProblems{{
-        0u, 1u, 3u, 4u, 5u, 6u, 7u,
+    constexpr std::array<std::size_t, 8> zeroRollbackProblems{{
+        0u, 1u, 3u, 4u, 5u, 6u, 7u, 9u,
     }};
     for (const std::size_t problem : zeroRollbackProblems) {
         const auto& header = failureStreamBatch.headers[problem];
@@ -1556,8 +1633,8 @@ int run(const int argc, const char* const* argv) {
                 impulse.w == 0.0f;
         }
     }
-    constexpr std::array<std::size_t, 4> denseZeroRollbackProblems{{
-        0u, 1u, 6u, 7u,
+    constexpr std::array<std::size_t, 5> denseZeroRollbackProblems{{
+        0u, 1u, 6u, 7u, 9u,
     }};
     for (const std::size_t problem : denseZeroRollbackProblems) {
         const std::size_t contactBase = problem * kMaxContacts;
@@ -1897,6 +1974,7 @@ int run(const int argc, const char* const* argv) {
         denseStreamBitwise &&
         typedFailures &&
         rowBoundOverflowRejected &&
+        indefiniteLocalBlockRejected &&
         positiveObjectiveRejected &&
         deterministicFailures &&
         failureRollback;
@@ -1934,6 +2012,8 @@ int run(const int argc, const char* const* argv) {
               << " typed_failures=" << (typedFailures ? "true" : "false")
               << " row_bound_overflow_rejected="
               << (rowBoundOverflowRejected ? "true" : "false")
+              << " indefinite_local_block_rejected="
+              << (indefiniteLocalBlockRejected ? "true" : "false")
               << " positive_objective_rejected="
               << (positiveObjectiveRejected ? "true" : "false")
               << " deterministic_failures="

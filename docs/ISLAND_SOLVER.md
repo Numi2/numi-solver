@@ -15,8 +15,9 @@ The island solves the convex contact-space problem
 \frac{1}{2}\lambda^T A\lambda + v_\mathrm{free}^T\lambda,
 ```
 
-where `A` is the symmetric positive-definite Delassus/contact-response
-operator and `C` is the product of the exact per-contact elliptic cones,
+where `A` is the symmetric positive-semidefinite Delassus/contact-response
+operator (positive-definite when regularization removes every null mode) and
+`C` is the product of the exact per-contact elliptic cones,
 lower-dimensional one-axis cones, and normal caps documented in
 [MATHEMATICS.md](MATHEMATICS.md). Because zero is
 feasible, a solved island must also satisfy the energy check
@@ -57,16 +58,21 @@ d_i = \max_{a\in\{n,u,v\}}
 D = \operatorname{blockdiag}(d_0 I_3,\ldots,d_{N-1}I_3).
 ```
 
-For symmetric positive-definite `A`, `D - A` is symmetric diagonally dominant
+For symmetric positive-semidefinite `A`, `D - A` is symmetric diagonally dominant
 with nonnegative diagonal and is therefore positive semidefinite. Hence
 
 ```math
-0 \prec D^{-1/2} A D^{-1/2} \preceq I.
+0 \preceq D^{-1/2} A D^{-1/2} \preceq I.
 ```
 
 The metric is scalar within each cone block, so projection in the `D` metric
 is exactly the existing Euclidean elliptic-cone projection. Conditioning thus
 bounds the parallel step without changing its KKT fixed point.
+
+Each unshifted 3x3 diagonal response block is independently admitted as PSD
+from all principal minors. The island path does not compute or use a local
+inverse; this certificate therefore adds no fictitious regularization to the
+operator being iterated.
 
 ## Deterministic iteration and residual
 
