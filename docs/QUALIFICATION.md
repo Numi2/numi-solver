@@ -275,6 +275,65 @@ generation is included in the latter measurement.
 The combined metallib SHA-256 was
 `556b4672edfb5db1cb98b4f070562880c77bc07a7abb410a97415320c7611cd6`.
 
+## Articulated response-to-generalized-velocity gate
+
+The articulated gate imports the canonical `numisolver` articulated operator
+from the same recorded source revision. For each two-link fixed-base mechanism
+it builds world poses, analytic point Jacobians, the generalized mass matrix,
+and a checked lower Cholesky factor. The response adapter rotates each point
+Jacobian into a right-handed contact frame and solves
+`L L^T X = J^T` for all three contact axes without forming `M^-1`.
+
+Five Metal encoders run on one command buffer: articulated operator, response
+adapter, sparse Delassus assembly, Temporal Cone solve, and canonical
+generalized-velocity publication. The CPU does not observe an intermediate.
+An independent FP64 planar-mechanism model reconstructs the mass matrix,
+analytic Jacobians, central finite-difference Jacobians, response columns,
+Delassus blocks, contact-law target, published velocity, solve residual, and
+generalized kinetic-energy budget. The configuration sweep spans wide joint
+angles. The final three islands contain nonfinite operator state, an invalid
+frame, and an invalid restitution law. The operator payload and complete input
+velocity vector must retain their transactional values.
+
+Measured command:
+
+```sh
+./build/numi-solver-articulated --islands 1024 --replays 50
+```
+
+Apple M4 result:
+
+```text
+islands=1024 valid=1021 contacts=2042 stages=5 command_buffers=1 readbacks=0
+deterministic=yes rollback=yes failed_valid=0
+mass_max_abs_error=0.000000863
+jacobian_max_abs_error=0.000000339
+finite_difference_max_abs_error=0.000000339
+response_max_abs_error=0.000001440
+delassus_max_abs_error=0.000000477
+free_velocity_max_abs_error=0.000000382
+publication_max_abs_error=0.000000209
+fp64_solve_residual=0.000000000000001332
+gpu_response_backward_error=0.000000025
+condition_proxy=28.1417027
+energy_budget_violation=0.000000000
+max_iterations=50
+best_gpu_chain_seconds=0.001304083
+islands_per_second=785225.93
+contacts_per_second=1565850.93
+result=PASS
+```
+
+The timing is the best Metal command-buffer GPU timestamp across 50
+byte-identical replays. It includes all five GPU stages and excludes command
+encoding, CPU oracle work, and buffer allocation. A concurrent external Metal
+probe made slower samples non-isolated, so only the least-contended observed
+timestamp is reported. This is a two-DoF mechanism/contact workload, not an
+environment-step or energy-efficiency claim. The squared Cholesky pivot ratio
+is a cheap conditioning proxy, not a spectral condition-number claim.
+The combined metallib SHA-256 for this milestone was
+`40eb0dcef181a7196783f564672972872e7fa6edc987fe2f541a63c95fd2c4d3`.
+
 ## Evidence boundary
 
 These measurements execute the real conditioned inverse and cone projection
@@ -291,5 +350,10 @@ construction, rigid `M^-1 J^T`, deterministic linear/angular velocity
 publication, implicit spring-damper regularization, restitution/recovery
 targets, their physical energy budget, one-step pose advancement, and
 constant-twist free flight. It does not qualify collision generation or
-refresh, articulated response, or a complete interacting physical trajectory.
-Those remain separate layers.
+constant-twist free flight. The articulated gate qualifies the canonical
+two-link mass/Jacobian operator, factor-backed articulated response columns,
+deterministic generalized-velocity publication, and their independent FP64
+and energy checks. It does not qualify collision generation or refresh,
+articulated configuration integration, general mechanisms above the declared
+32-DoF adapter capacity, or a complete interacting physical trajectory. Those
+remain separate layers.

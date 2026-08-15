@@ -39,7 +39,7 @@ cmake --build build
 ```
 
 The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
-`-fno-fast-math`, plus four native harnesses:
+`-fno-fast-math`, plus five native harnesses:
 
 - `build/numi-solver-math` for isolated local cone blocks;
 - `build/numi-solver-islands` for dense-versus-streamed coupled
@@ -48,6 +48,9 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
   a streamed solve on one command buffer.
 - `build/numi-solver-rigid` for rigid contact frames and mass/inertia through
   deterministic velocity publication on one command buffer.
+- `build/numi-solver-articulated` for canonical articulated mass/Jacobian
+  factorization, response-column solves, cone contact, and deterministic
+  generalized-velocity publication on one command buffer.
 
 Run the default FP64 comparisons and deterministic replays:
 
@@ -56,18 +59,22 @@ Run the default FP64 comparisons and deterministic replays:
 ./build/numi-solver-islands
 ./build/numi-solver-assembly
 ./build/numi-solver-rigid
+./build/numi-solver-articulated
 ctest --test-dir build --output-on-failure
 ```
 
 The local harness accepts `--cases N --replays N --iterations N` and
-`--isotropic`. The island, assembly, and rigid harnesses accept `--islands N`
-and `--replays N`. Together they check separating, impact, sticking, sliding,
+`--isotropic`. The island, assembly, rigid, and articulated harnesses accept
+`--islands N` and `--replays N`. Together they check separating, impact, sticking, sliding,
 anisotropic friction, near-rank-deficient response, capped impulse, polar
 boundary, zero axis, extreme scale, sparse topology, full block capacity,
 shared response, missing coupling, response asymmetry, rigid momentum and
 kinetic-energy budgets, implicit contact-law regularization, thresholded
 restitution, penetration recovery, contact-frame validity, and transactional
-velocity rollback.
+velocity rollback. The articulated gate additionally checks analytic and
+finite-difference two-link Jacobians, an independent FP64 mass matrix,
+factor-solved response columns, conditioning diagnostics, generalized kinetic
+energy, and invalid frame/material rollback.
 
 An installed or relocated harness can load a specific library with
 `--metallib path/to/NumiTemporalCone.metallib`.
@@ -86,6 +93,9 @@ An installed or relocated harness can load a specific library with
   Jacobians and response columns.
 - GPU generation of rigid 6-DOF `J` and `M^-1 J^T` directly from contact
   frames, inverse mass, and world-space inverse inertia.
+- Canonical articulated kinematics and mass assembly, checked Cholesky
+  factorization, and three triangular `M^-1 J^T` solves per contact without
+  forming an inverse.
 - GPU-derived implicit spring-damper CFM, penetration-recovery targets, and
   thresholded restitution from versioned contact material laws.
 - Canonical per-body impulse accumulation with no floating-point atomics.
@@ -104,8 +114,10 @@ SIMD32 method, [docs/OPERATOR_ASSEMBLY.md](docs/OPERATOR_ASSEMBLY.md) for the
 response-column producer, and [docs/QUALIFICATION.md](docs/QUALIFICATION.md)
 for measured Apple GPU evidence. See
 [docs/RIGID_MECHANICS.md](docs/RIGID_MECHANICS.md) for the velocity-level rigid
-contact path. The harnesses exercise contact-space mathematics, rigid operator
-generation, velocity publication, and the streamed solver on a real Metal
-device. They do not yet perform collision detection, generate articulated
-response columns, or refresh contact geometry across a complete interacting
-physical trajectory.
+contact path, and
+[docs/ARTICULATED_MECHANICS.md](docs/ARTICULATED_MECHANICS.md) for the
+factor-backed articulated path. The harnesses exercise contact-space
+mathematics, rigid and articulated operator generation, velocity publication,
+and the streamed solver on a real Metal device. They do not yet perform
+collision detection, refresh contact geometry, integrate articulated
+configuration, or execute a complete interacting physical trajectory.

@@ -19,6 +19,14 @@ The copied source files and their SHA-256 digests at extraction were:
 51040bc1ca54d2d8deec332d44c73a3ac19bbf157a362854afabd00f0f3f2673  include/metalrobo/unified_quality_shared.h
 ```
 
+The articulated-response milestone later copied one additional owning
+numerical source from the same branch and revision, again without switching
+the active Numi Lab checkout:
+
+```text
+14f88429562abf3c53481283f1c403f8c0293dc7533779a0a701d420a2704983  src/metal/ArticulatedOperator.metal
+```
+
 The first independent build used Apple Metal toolchain `32023.883` and
 produced a metallib with SHA-256
 `d36b038304d6494ed73a34c01abe21513a850c217721853a4105a6317983c070`.
@@ -28,4 +36,3 @@ fingerprint.
 The hashes above identify the initial import, not the current working sources.
 All independent changes after extraction are recorded in this repository's Git
 history.
-

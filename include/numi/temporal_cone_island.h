@@ -28,6 +28,11 @@
 #define NUMI_TEMPORAL_CONE_RIGID_VALUES_PER_TERM \
     (3u * NUMI_TEMPORAL_CONE_RIGID_DOF)
 
+#define NUMI_TEMPORAL_CONE_ARTICULATED_ABI_VERSION 1u
+#define NUMI_TEMPORAL_CONE_ARTICULATED_MAX_DOF 32u
+#define NUMI_TEMPORAL_CONE_ARTICULATED_VALUES_PER_CONTACT(dof_count) \
+    (3u * (dof_count))
+
 #define NUMI_TEMPORAL_CONE_INTEGRATION_ABI_VERSION 1u
 
 enum NumiTemporalConeIslandStatusCode : mr_u32 {
@@ -63,6 +68,16 @@ enum NumiTemporalConeIntegrationStatusCode : mr_u32 {
     NUMI_TEMPORAL_CONE_INTEGRATION_INVALID_INPUT = 2u,
     NUMI_TEMPORAL_CONE_INTEGRATION_NONFINITE_RESULT = 3u,
     NUMI_TEMPORAL_CONE_INTEGRATION_UPSTREAM_FAILURE = 4u,
+};
+
+enum NumiTemporalConeArticulatedStatusCode : mr_u32 {
+    NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS = 0u,
+    NUMI_TEMPORAL_CONE_ARTICULATED_INVALID_ABI = 1u,
+    NUMI_TEMPORAL_CONE_ARTICULATED_INVALID_INPUT = 2u,
+    NUMI_TEMPORAL_CONE_ARTICULATED_FACTORIZATION_FAILED = 3u,
+    NUMI_TEMPORAL_CONE_ARTICULATED_NONFINITE_RESULT = 4u,
+    NUMI_TEMPORAL_CONE_ARTICULATED_UPSTREAM_FAILURE = 5u,
+    NUMI_TEMPORAL_CONE_ARTICULATED_ACCURACY_FAILED = 6u,
 };
 
 typedef struct MR_ALIGN16 NumiTemporalConeIslandHeader {
@@ -178,6 +193,48 @@ typedef struct MR_ALIGN16 NumiTemporalConeRigidStatus {
     mr_float4 diagnostics;
 } NumiTemporalConeRigidStatus;
 
+// Adapts the canonical articulated operator's Cholesky factor and analytic
+// world-point Jacobians to the generic J / M^-1 J^T assembly contract. One
+// header describes one contact island and one immutable articulation state.
+typedef struct MR_ALIGN16 NumiTemporalConeArticulatedHeader {
+    // x ABI, y generalized DoFs, z contacts, w stable articulation owner.
+    mr_uint4 control;
+    // x Cholesky-factor base, y point-Jacobian base,
+    // z input-velocity base, w articulated-contact base.
+    mr_uint4 inputRanges;
+    // x span base, y term base, z contact-Jacobian base, w response base.
+    mr_uint4 responseRanges;
+    // x solver-contact base, y output-velocity base,
+    // z contact-law base, w regularization-value base.
+    mr_uint4 solverRanges;
+    // x articulated-operator status index; yzw reserved.
+    mr_uint4 operatorRanges;
+} NumiTemporalConeArticulatedHeader;
+
+typedef struct MR_ALIGN16 NumiTemporalConeArticulatedContact {
+    // x point-query index in the operator's Jacobian packet; yzw reserved.
+    mr_uint4 control;
+    // xyz right-handed orthonormal contact frame; w cone parameter.
+    mr_float4 normalAndFrictionU;
+    mr_float4 tangentUAndFrictionV;
+    mr_float4 tangentVAndMaximumNormal;
+    // xyz additive free contact velocity in (normal, tangent U, tangent V).
+    mr_float4 bias;
+    // xyz warm-start impulse in the same frame; w reserved.
+    mr_float4 warmImpulse;
+} NumiTemporalConeArticulatedContact;
+
+typedef struct MR_ALIGN16 NumiTemporalConeArticulatedStatus {
+    // x status, y DoFs, z contacts, w generated owner terms.
+    mr_uint4 control;
+    // x minimum pivot, y maximum pivot, z squared pivot-ratio proxy,
+    // w upstream articulated-operator relative residual.
+    mr_float4 conditioning;
+    // x maximum frame error, y maximum response backward error,
+    // z maximum generalized-velocity delta, w reserved.
+    mr_float4 diagnostics;
+} NumiTemporalConeArticulatedStatus;
+
 typedef struct MR_ALIGN16 NumiTemporalConeIntegrationHeader {
     // x ABI, y bodies, zw reserved.
     mr_uint4 control;
@@ -234,6 +291,9 @@ static_assert(sizeof(NumiTemporalConeRigidBody) == 80);
 static_assert(sizeof(NumiTemporalConeRigidContact) == 128);
 static_assert(sizeof(NumiTemporalConeRigidLaw) == 48);
 static_assert(sizeof(NumiTemporalConeRigidStatus) == 32);
+static_assert(sizeof(NumiTemporalConeArticulatedHeader) == 80);
+static_assert(sizeof(NumiTemporalConeArticulatedContact) == 96);
+static_assert(sizeof(NumiTemporalConeArticulatedStatus) == 48);
 static_assert(sizeof(NumiTemporalConeIntegrationHeader) == 48);
 static_assert(sizeof(NumiTemporalConeRigidPose) == 32);
 static_assert(sizeof(NumiTemporalConeIntegrationStatus) == 32);

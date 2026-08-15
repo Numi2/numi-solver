@@ -65,7 +65,10 @@ physical. The qualification harness independently reconstructs every dense
 operator and applies FP64 Cholesky before accepting the generated batch.
 
 The generic assembly ABI still consumes authored topology, Jacobians, and
-response columns. The rigid response kernel now generates the rigid 6-DOF
-terms and positive diagonal implicit contact-law regularization directly from
-body/contact/material data. Collision detection, topology creation, and
-articulated `M^-1J^T` remain upstream responsibilities.
+response columns. The rigid response kernel generates rigid 6-DOF terms from
+body/contact/material data. The articulated response adapter consumes the
+canonical articulated operator's analytic world-point Jacobian and checked
+lower Cholesky factor, rotates the Jacobian into the contact frame, and solves
+three triangular systems per contact to obtain `M^-1J^T`. Both paths generate
+positive diagonal implicit contact-law regularization on GPU. Collision
+detection and topology creation remain upstream responsibilities.
