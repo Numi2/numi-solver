@@ -848,6 +848,17 @@ inline float3 projectFrictionCone(
     );
 }
 
+inline float scaledLength2(const float2 value) {
+    const float scale = max(abs(value.x), abs(value.y));
+    if (scale == 0.0f) {
+        return 0.0f;
+    }
+    if (!isfinite(scale)) {
+        return INFINITY;
+    }
+    return scale * length(value / scale);
+}
+
 // Feasibility certificate for full, degenerate, frictionless, and capped
 // elliptic cones. A zero coefficient constrains only its authored tangent
 // axis; it does not erase friction from the orthogonal tangent axis.
@@ -865,34 +876,25 @@ inline float frictionConeViolationValues(
             max(impulse.x - maximumNormalImpulse, 0.0f)
         );
     }
-    float normalizedSquared = 0.0f;
+    float2 normalizedTangent = float2(0.0f);
     bool hasActiveTangent = false;
     if (frictionU > kConeEpsilon) {
         hasActiveTangent = true;
-        if (normal > kConeEpsilon) {
-            const float scaled = impulse.y / (frictionU * normal);
-            normalizedSquared = fma(scaled, scaled, normalizedSquared);
-        } else {
-            violation = max(violation, abs(impulse.y));
-        }
+        normalizedTangent.x = impulse.y / frictionU;
     } else {
         violation = max(violation, abs(impulse.y));
     }
     if (frictionV > kConeEpsilon) {
         hasActiveTangent = true;
-        if (normal > kConeEpsilon) {
-            const float scaled = impulse.z / (frictionV * normal);
-            normalizedSquared = fma(scaled, scaled, normalizedSquared);
-        } else {
-            violation = max(violation, abs(impulse.z));
-        }
+        normalizedTangent.y = impulse.z / frictionV;
     } else {
         violation = max(violation, abs(impulse.z));
     }
-    if (hasActiveTangent && normal > kConeEpsilon) {
+    if (hasActiveTangent) {
+        const float ellipticRadius = scaledLength2(normalizedTangent);
         violation = max(
             violation,
-            max(sqrt(normalizedSquared) - 1.0f, 0.0f)
+            max(ellipticRadius - normal, 0.0f)
         );
     }
     return violation;
@@ -11698,6 +11700,7 @@ kernel void numi_temporal_cone_probe(
     }
     if (input.control.y == 0u ||
         input.control.y > NUMI_TEMPORAL_CONE_PROBE_MAX_ITERATIONS ||
+        input.control.z > 1u ||
         !finite4(input.responseRow0) ||
         !finite4(input.responseRow1) ||
         !finite4(input.responseRow2) ||
@@ -11740,6 +11743,14 @@ kernel void numi_temporal_cone_probe(
     cone.effectiveFrictionU = input.freeVelocityAndFrictionU.w;
     cone.effectiveFrictionV = input.warmImpulseAndFrictionV.w;
     cone.maximumNormalImpulse = input.limits.x;
+    const float authoredConeViolation = input.control.z != 0u
+        ? frictionConeViolationValues(
+              input.warmImpulseAndFrictionV.xyz,
+              cone.effectiveFrictionU,
+              cone.effectiveFrictionV,
+              cone.maximumNormalImpulse
+          )
+        : 0.0f;
 
     float3 impulse = projectFrictionCone(
         input.warmImpulseAndFrictionV.xyz,
@@ -11797,7 +11808,8 @@ kernel void numi_temporal_cone_probe(
 
     output.impulseAndDelta = float4(impulse, maximumDelta);
     output.inverseRow0 = float4(
-        inverse[0][0], inverse[0][1], inverse[0][2], 0.0f
+        inverse[0][0], inverse[0][1], inverse[0][2],
+        authoredConeViolation
     );
     output.inverseRow1 = float4(
         inverse[1][0], inverse[1][1], inverse[1][2], 0.0f

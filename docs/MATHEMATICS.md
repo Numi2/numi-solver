@@ -175,6 +175,7 @@ implementation of the equations above. It checks:
 - finite, nonnegative and capped normal impulses;
 - exact elliptic-cone projection against the FP64 closest point;
 - exact one-axis degenerate cones and their capped interval projection;
+- impulse-dimensional cone feasibility against an independent FP64 value;
 - normalized fixed-point convergence residual;
 - byte-identical repeated GPU output;
 - separating, impact, sticking, sliding, anisotropic, ill-conditioned and

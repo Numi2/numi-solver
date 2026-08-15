@@ -494,30 +494,28 @@ double coneViolation(
         );
     }
     const std::array<double, 2> friction{{frictionU, frictionV}};
-    double normalizedSquared = 0.0;
+    std::array<double, 2> normalizedTangent{};
     bool hasActiveTangent = false;
     for (std::size_t axis = 0u; axis < 2u; ++axis) {
         if (friction[axis] > kConeEpsilon) {
             hasActiveTangent = true;
-            if (normal > kConeEpsilon) {
-                const double scaled = impulse[axis + 1u] /
-                    (friction[axis] * normal);
-                normalizedSquared += scaled * scaled;
-            } else {
-                violation = std::max(
-                    violation, std::abs(impulse[axis + 1u])
-                );
-            }
+            normalizedTangent[axis] =
+                impulse[axis + 1u] / friction[axis];
         } else {
             violation = std::max(
                 violation, std::abs(impulse[axis + 1u])
             );
         }
     }
-    if (hasActiveTangent && normal > kConeEpsilon) {
+    if (hasActiveTangent) {
         violation = std::max(
             violation,
-            std::max(std::sqrt(normalizedSquared) - 1.0, 0.0)
+            std::max(
+                std::hypot(
+                    normalizedTangent[0], normalizedTangent[1]
+                ) - normal,
+                0.0
+            )
         );
     }
     return violation;

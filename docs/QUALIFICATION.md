@@ -13,7 +13,7 @@ The qualification gate requires:
 
 - zero unexpected case failures;
 - maximum FP32-versus-FP64 relative error at most `1e-5`;
-- maximum elliptic-cone violation at most `2e-6`;
+- maximum impulse-dimensional elliptic-cone violation at most `2e-6`;
 - maximum normalized fixed-point residual at most `2e-6`;
 - byte-identical outputs across every replay;
 - separating contact maps to zero;
@@ -34,8 +34,9 @@ replays=5
 solver_iterations=16
 failed_cases=0
 max_fp64_relative_error=0.000003368
-max_cone_violation=0.000000119
+max_cone_violation=0.000000954
 max_relative_fixed_point_residual=0.000000477
+dimensional_violation_probe=500000.000000000
 deterministic_replay=true
 zero_v_axis_cone=true
 zero_u_axis_cone=true
@@ -45,10 +46,17 @@ indefinite_local_block_rejected=true
 extreme_unbounded_projection=true
 extreme_capped_projection=true
 extreme_anisotropic_projection=true
+dimensional_cone_certificate=true
 ```
 
-The measured isolated local-block throughput was approximately 33.4 million
-problems/s for the adversarial anisotropic batch and 96.6 million problems/s
+The dimensional certificate probe authors `lambda=(1e6,1.5e6,0)` with unit
+friction. Its exact cone excess is `500000` impulse units. A radius ratio would
+report only `0.5` and would be incorrectly compared with an impulse tolerance
+larger than one. The measured GPU value is the exact FP32 representation of
+the FP64 oracle value.
+
+The measured isolated local-block throughput was approximately 34.3 million
+problems/s for the adversarial anisotropic batch and 102.8 million problems/s
 for the predominantly isotropic batch. The latter takes the closed-form fast
 path; these are local mathematical blocks, not full environment steps.
 
@@ -82,7 +90,7 @@ max_fp64_impulse_error=0.000001825
 max_fp64_objective_error=0.000000191
 max_fp64_kkt_residual=0.000000000
 max_kkt_residual=0.000001500
-max_cone_violation=0.000000119
+max_cone_violation=0.000000089
 max_positive_objective=0.000000000
 degenerate_cone_contacts=2184
 max_degenerate_inactive_impulse=0.000000000
@@ -106,13 +114,13 @@ spd_cholesky=true
 min_spd_pivot=0.894427198
 shared_rigid_oracle=true
 under_relaxed_path=true
-average_gpu_seconds=0.004970100
-islands_per_second=824128.29
-contacts_per_second=8647914.55
-contact_iterations_per_second=302828515.34
+average_gpu_seconds=0.004913000
+islands_per_second=833706.49
+contacts_per_second=8748422.56
+contact_iterations_per_second=306348056.54
 streamed_buffer_bytes=10126748
-dense_gpu_seconds=0.010805625
-dense_to_stream_speedup=2.174126286
+dense_gpu_seconds=0.010687658
+dense_to_stream_speedup=2.175383334
 dense_buffer_bytes=159711232
 stream_to_dense_memory=0.063406611
 streamed_blocks=169861
@@ -126,7 +134,7 @@ result=PASS
 ```
 
 The streamed representation used 6.34% of the dense qualification buffers and
-the isolated streamed kernel was 2.174x faster for the same byte-identical
+the isolated streamed kernel was 2.175x faster for the same byte-identical
 FP32 solve. GPU time excludes CPU oracle work and buffer upload. These ratios
 describe this declared topology mix; they are not universal scene claims.
 
@@ -138,8 +146,8 @@ rollback gates. The richer batch remains within 0.4% of the prior
 positive-friction-only `0.004931358`-second measurement while qualifying 2,184
 lower-dimensional contacts.
 
-The combined metallib SHA-256 for this extreme-scale cone milestone was
-`a370efb164aeb77754576b6eccdcbc970028844b015847d60b1aea1c57449cc0`.
+The combined metallib SHA-256 for this dimensional-certificate milestone was
+`f25dcb6fcbd9d5b657232bac8f879bd635389495d3637ff09c1a493b7308084b`.
 
 On the earlier 1,024-island positive-friction qualification batch, the
 unaccelerated revision measured `0.004850083` seconds, 431 maximum iterations,
@@ -190,7 +198,7 @@ max_assembly_error=0.000000000
 max_symmetry_error=0.000000000
 min_spd_pivot=0.905538510
 max_kkt_residual=0.000001491
-max_cone_violation=0.000000119
+max_cone_violation=0.000000060
 max_positive_objective=0.000000000
 max_iterations=27
 iteration_p50=13
@@ -205,14 +213,14 @@ missing_coupling_rejected=true
 non_psd_regularization_rejected=true
 deterministic_failures=true
 failure_rollback=true
-average_gpu_seconds=0.001677246
-assembly_gpu_seconds=0.000846771
-assembly_fraction=0.504857909
-islands_per_second=610524.69
-blocks_per_second=24879477.52
-assembly_blocks_per_second=49280157.95
-factor_fmas_per_second=1668617952.47
-contact_iterations_per_second=100491530.03
+average_gpu_seconds=0.001651525
+assembly_gpu_seconds=0.000772938
+assembly_fraction=0.468014418
+islands_per_second=620033.00
+blocks_per_second=25266950.11
+assembly_blocks_per_second=53987546.44
+factor_fmas_per_second=1828009343.65
+contact_iterations_per_second=102056583.54
 factor_bytes=3505020
 streamed_operator_bytes=1716156
 dense_operator_bytes=37748736
@@ -228,8 +236,8 @@ result=PASS
 
 Factor inputs plus the assembled sparse operator used 13.83% of the fixed
 dense operator storage for this declared topology mix. The assembly-only
-measurement produced 49.28 million blocks/s and the complete assembly/solve
-chain produced 610,525 islands/s. One unreported warmup command precedes each
+measurement produced 53.99 million blocks/s and the complete assembly/solve
+chain produced 620,033 islands/s. One unreported warmup command precedes each
 timed path. These are isolated kernel measurements, not environment-step or
 energy claims.
 

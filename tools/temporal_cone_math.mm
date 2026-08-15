@@ -351,31 +351,29 @@ double coneViolation(
             std::max(impulse[0] - maximumNormalImpulse, 0.0)
         );
     }
-    double normalizedSquared = 0.0;
+    std::array<double, 2> normalizedTangent{};
     bool hasActiveTangent = false;
     const std::array<double, 2> friction{{frictionU, frictionV}};
     for (std::size_t axis = 0u; axis < 2u; ++axis) {
         if (friction[axis] > kConeEpsilon) {
             hasActiveTangent = true;
-            if (normal > kConeEpsilon) {
-                const double scaled = impulse[axis + 1u] /
-                    (friction[axis] * normal);
-                normalizedSquared += scaled * scaled;
-            } else {
-                violation = std::max(
-                    violation, std::abs(impulse[axis + 1u])
-                );
-            }
+            normalizedTangent[axis] =
+                impulse[axis + 1u] / friction[axis];
         } else {
             violation = std::max(
                 violation, std::abs(impulse[axis + 1u])
             );
         }
     }
-    if (hasActiveTangent && normal > kConeEpsilon) {
+    if (hasActiveTangent) {
         violation = std::max(
             violation,
-            std::max(std::sqrt(normalizedSquared) - 1.0, 0.0)
+            std::max(
+                std::hypot(
+                    normalizedTangent[0], normalizedTangent[1]
+                ) - normal,
+                0.0
+            )
         );
     }
     return violation;
@@ -743,6 +741,12 @@ std::vector<NumiTemporalConeProbeInput> makeProblems(
         0.8f,
         0.35f
     );
+    appendFixedProjection(
+        {{1.0e6f, 1.5e6f, 0.0f}},
+        1.0f,
+        1.0f
+    );
+    inputs.back().control.z = 1u;
 
     for (std::size_t index = inputs.size(); index < count; ++index) {
         const float a = 0.25f + 0.01f * static_cast<float>(index % 71u);
@@ -905,7 +909,7 @@ int run(const int argc, const char* const* argv) {
             throw std::runtime_error("unknown argument: " + std::string(value));
         }
     }
-    problemCount = std::max<std::size_t>(problemCount, 20u);
+    problemCount = std::max<std::size_t>(problemCount, 21u);
     replayCount = std::max<std::uint32_t>(replayCount, 2u);
     if (problemCount > std::numeric_limits<std::uint32_t>::max()) {
         throw std::runtime_error("case count exceeds the probe ABI");
@@ -1096,6 +1100,20 @@ int run(const int argc, const char* const* argv) {
         extremeProjectionAccepted(18u);
     const bool extremeAnisotropicProjection =
         extremeProjectionAccepted(19u);
+    const double dimensionalViolationOracle = coneViolation(
+        {{1.0e6, 1.5e6, 0.0}},
+        1.0,
+        1.0,
+        0.0
+    );
+    const double dimensionalViolationGPU =
+        replays[0].outputs[20u].inverseRow0.w;
+    const bool dimensionalConeCertificate =
+        normalizedError(
+            dimensionalViolationGPU,
+            dimensionalViolationOracle
+        ) <= 1.0e-6 &&
+        dimensionalViolationGPU > 1.0e5;
 
     double totalGPUSeconds = 0.0;
     for (const auto& replay : replays) {
@@ -1123,7 +1141,8 @@ int run(const int argc, const char* const* argv) {
         indefiniteLocalBlockRejected &&
         extremeUnboundedProjection &&
         extremeCappedProjection &&
-        extremeAnisotropicProjection;
+        extremeAnisotropicProjection &&
+        dimensionalConeCertificate;
 
     if (maximumRelativeError > 1.0e-5) {
         const auto worstOracle = solveOracle(inputs[maximumRelativeErrorCase]);
@@ -1151,6 +1170,8 @@ int run(const int argc, const char* const* argv) {
               << " max_cone_violation=" << maximumConeViolation
               << " max_relative_fixed_point_residual="
               << maximumFixedPointResidual << '\n'
+              << "dimensional_violation_probe="
+              << dimensionalViolationGPU << '\n'
               << "deterministic_replay=" << (deterministic ? "true" : "false")
               << " separating_zero="
               << (separatingAcceptedZero ? "true" : "false")
@@ -1169,6 +1190,8 @@ int run(const int argc, const char* const* argv) {
               << (extremeCappedProjection ? "true" : "false")
               << " extreme_anisotropic_projection="
               << (extremeAnisotropicProjection ? "true" : "false")
+              << " dimensional_cone_certificate="
+              << (dimensionalConeCertificate ? "true" : "false")
               << '\n'
               << "average_gpu_seconds=" << averageGPUSeconds
               << " cases_per_second=" << casesPerSecond << '\n'

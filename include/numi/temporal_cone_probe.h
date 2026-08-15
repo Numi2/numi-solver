@@ -31,13 +31,15 @@ typedef struct MR_ALIGN16 NumiTemporalConeProbeInput {
     // x maximum normal impulse (zero means unbounded); yzw reserved.
     mr_float4 limits;
 
-    // x ABI version, y projected iterations, zw reserved.
+    // x ABI version, y projected iterations, z emits authored violation,
+    // w reserved.
     mr_uint4 control;
 } NumiTemporalConeProbeInput;
 
 typedef struct MR_ALIGN16 NumiTemporalConeProbeOutput {
     // xyz accepted impulse; w maximum impulse delta in the final iteration.
     mr_float4 impulseAndDelta;
+    // xyz conditioned inverse row; w authored warm-start cone violation.
     mr_float4 inverseRow0;
     mr_float4 inverseRow1;
     mr_float4 inverseRow2;
@@ -51,4 +53,3 @@ typedef struct MR_ALIGN16 NumiTemporalConeProbeOutput {
 static_assert(sizeof(NumiTemporalConeProbeInput) == 112);
 static_assert(sizeof(NumiTemporalConeProbeOutput) == 96);
 #endif
-

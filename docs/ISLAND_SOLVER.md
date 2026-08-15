@@ -192,6 +192,26 @@ axis separately. A valid impulse on a one-axis cone is therefore not mistaken
 for frictionless contact, while any impulse on its inactive tangent is a
 certificate failure.
 
+The feasibility value has impulse units, matching `t_C`. For each active
+tangent define `q_i=lambda_i/mu_i`, and set an inactive component of `q` to
+zero while separately admitting `|lambda_i|` as a violation. The certificate
+is
+
+```math
+V_\mathcal C(\lambda)=\max\left(
+-\lambda_n,
+\lambda_n-\lambda_{n,\max},
+\|q\|_2-\max(\lambda_n,0),
+\max_{i:\mu_i=0}|\lambda_i|,
+0
+\right),
+```
+
+with the cap term omitted when the cone is unbounded. The two-dimensional
+norm uses max-component scaling before squaring. This prevents overflow and,
+unlike a dimensionless radius ratio, cannot become easier to satisfy merely
+because the impulse magnitude makes the relative tolerance larger.
+
 ## Transaction and failure behavior
 
 The kernel rejects invalid ABI/ranges, malformed or asymmetric CSR,
