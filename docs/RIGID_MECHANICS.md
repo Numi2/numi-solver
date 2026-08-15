@@ -71,18 +71,47 @@ Assembly begins with an invalid solver header and commits only a complete,
 symmetric operator. Velocity publication requires successful response and
 solver statuses. Any failure republishes the exact input body velocities.
 
-All four stages are separate encoders on one caller-owned command buffer:
+All five stages are separate encoders on one caller-owned command buffer:
 
 ```text
-rigid response -> sparse assembly -> cone solve -> rigid publication
+rigid response -> sparse assembly -> cone solve -> rigid publication -> pose integration
 ```
 
 No CPU readback, internal commit, wait, or second queue occurs between them.
 
+## Pose integration
+
+Successful post-contact velocity advances pose with
+
+```math
+x_{k+1}=x_k+\Delta t\,v_{k+1},
+```
+
+and the world-frame exponential quaternion update
+
+```math
+q_{k+1}=\operatorname{normalize}\left(
+\begin{bmatrix}
+\hat\omega\sin(\|\omega\|\Delta t/2)\\
+\cos(\|\omega\|\Delta t/2)
+\end{bmatrix}
+\otimes q_k\right).
+```
+
+The small-angle branch uses the deterministic series for
+`sin(theta/2)/theta`. Every input quaternion must already satisfy the declared
+unit-norm tolerance. Any invalid pose, velocity, upstream publication, or
+nonfinite result rolls the whole island back to the exact input poses.
+
+The qualification gate also runs 240 consecutive GPU integration encoders for
+one second of constant-twist free flight. It compares the final translation
+and orientation against the closed-form SE(3) trajectory, checks quaternion
+norm, and requires byte-identical replay.
+
 ## Present boundary
 
-This path owns velocity-level rigid response and publication. Contact topology
-and frames are authored inputs to the qualification path; collision detection
-does not yet create them. Body position/orientation integration, gyroscopic
-terms, restitution policy, sleeping, continuous collision detection, and
-articulated response generation are not claimed by this ABI.
+This path owns velocity-level rigid response, publication, and pose
+integration. Contact topology and frames are authored inputs to the
+qualification path; collision detection does not yet create or refresh them.
+Gyroscopic terms, restitution policy, sleeping, continuous collision
+detection, and articulated response generation are not claimed by this ABI.

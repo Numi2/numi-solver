@@ -85,6 +85,8 @@ An installed or relocated harness can load a specific library with
 - GPU generation of rigid 6-DOF `J` and `M^-1 J^T` directly from contact
   frames, inverse mass, and world-space inverse inertia.
 - Canonical per-body impulse accumulation with no floating-point atomics.
+- Symplectic position advance and exponential-map quaternion integration with
+  whole-island rollback.
 - Scale-aware KKT gradient-mapping convergence residuals.
 - SIMD32 block-Jacobi islands with KKT-preserving scalar contact metrics.
 - Typed nonconvergence and warm-start rollback instead of partial publication.
@@ -99,5 +101,5 @@ for measured Apple GPU evidence. See
 contact path. The harnesses exercise contact-space mathematics, rigid operator
 generation, velocity publication, and the streamed solver on a real Metal
 device. They do not yet perform collision detection, generate articulated
-response columns, or integrate body positions and orientations into a complete
+response columns, or refresh contact geometry across a complete interacting
 physical trajectory.

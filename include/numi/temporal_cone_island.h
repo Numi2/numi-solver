@@ -28,6 +28,8 @@
 #define NUMI_TEMPORAL_CONE_RIGID_VALUES_PER_TERM \
     (3u * NUMI_TEMPORAL_CONE_RIGID_DOF)
 
+#define NUMI_TEMPORAL_CONE_INTEGRATION_ABI_VERSION 1u
+
 enum NumiTemporalConeIslandStatusCode : mr_u32 {
     NUMI_TEMPORAL_CONE_ISLAND_SUCCESS = 0u,
     NUMI_TEMPORAL_CONE_ISLAND_INVALID_ABI = 1u,
@@ -53,6 +55,14 @@ enum NumiTemporalConeRigidStatusCode : mr_u32 {
     NUMI_TEMPORAL_CONE_RIGID_INVALID_INPUT = 2u,
     NUMI_TEMPORAL_CONE_RIGID_NONFINITE_RESULT = 3u,
     NUMI_TEMPORAL_CONE_RIGID_UPSTREAM_FAILURE = 4u,
+};
+
+enum NumiTemporalConeIntegrationStatusCode : mr_u32 {
+    NUMI_TEMPORAL_CONE_INTEGRATION_SUCCESS = 0u,
+    NUMI_TEMPORAL_CONE_INTEGRATION_INVALID_ABI = 1u,
+    NUMI_TEMPORAL_CONE_INTEGRATION_INVALID_INPUT = 2u,
+    NUMI_TEMPORAL_CONE_INTEGRATION_NONFINITE_RESULT = 3u,
+    NUMI_TEMPORAL_CONE_INTEGRATION_UPSTREAM_FAILURE = 4u,
 };
 
 typedef struct MR_ALIGN16 NumiTemporalConeIslandHeader {
@@ -156,6 +166,30 @@ typedef struct MR_ALIGN16 NumiTemporalConeRigidStatus {
     mr_float4 diagnostics;
 } NumiTemporalConeRigidStatus;
 
+typedef struct MR_ALIGN16 NumiTemporalConeIntegrationHeader {
+    // x ABI, y bodies, zw reserved.
+    mr_uint4 control;
+    // x input-pose base, y velocity-body base, z output-pose base, w reserved.
+    mr_uint4 ranges;
+    // x timestep; yzw reserved.
+    mr_float4 timestep;
+} NumiTemporalConeIntegrationHeader;
+
+typedef struct MR_ALIGN16 NumiTemporalConeRigidPose {
+    // xyz center-of-mass position; w reserved and preserved.
+    mr_float4 position;
+    // Unit body-to-world quaternion (x, y, z, w).
+    mr_float4 orientation;
+} NumiTemporalConeRigidPose;
+
+typedef struct MR_ALIGN16 NumiTemporalConeIntegrationStatus {
+    // x status, y bodies, zw reserved.
+    mr_uint4 control;
+    // x max input norm error, y max output norm error,
+    // z max linear displacement, w max angular step.
+    mr_float4 diagnostics;
+} NumiTemporalConeIntegrationStatus;
+
 typedef struct MR_ALIGN16 NumiTemporalConeIslandContact {
     // xyz free contact velocity; w friction coefficient in tangent U.
     mr_float4 freeVelocityAndFrictionU;
@@ -186,6 +220,9 @@ static_assert(sizeof(NumiTemporalConeRigidHeader) == 64);
 static_assert(sizeof(NumiTemporalConeRigidBody) == 80);
 static_assert(sizeof(NumiTemporalConeRigidContact) == 128);
 static_assert(sizeof(NumiTemporalConeRigidStatus) == 32);
+static_assert(sizeof(NumiTemporalConeIntegrationHeader) == 48);
+static_assert(sizeof(NumiTemporalConeRigidPose) == 32);
+static_assert(sizeof(NumiTemporalConeIntegrationStatus) == 32);
 static_assert(sizeof(NumiTemporalConeIslandContact) == 48);
 static_assert(sizeof(NumiTemporalConeIslandStatus) == 48);
 #endif

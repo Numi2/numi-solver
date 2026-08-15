@@ -13631,3 +13631,132 @@ kernel void numi_temporal_cone_rigid_publish(
         outputStatuses[problem] = status;
     }
 }
+
+// Advances post-contact rigid velocities with symplectic translation and an
+// exponential-map quaternion update. A whole island publishes atomically at
+// the status level: invalid pose/velocity data or upstream failure preserves
+// every input pose exactly.
+kernel void numi_temporal_cone_rigid_integrate(
+    device const NumiTemporalConeIntegrationHeader* headers [[buffer(0)]],
+    device const NumiTemporalConeRigidPose* inputPoses [[buffer(1)]],
+    device const NumiTemporalConeRigidBody* velocities [[buffer(2)]],
+    device const NumiTemporalConeRigidStatus* publishStatuses [[buffer(3)]],
+    device NumiTemporalConeRigidPose* outputPoses [[buffer(4)]],
+    device NumiTemporalConeIntegrationStatus* outputStatuses [[buffer(5)]],
+    constant uint& problemCount [[buffer(6)]],
+    // x input poses, y velocity bodies, z output poses, w reserved.
+    constant uint4& capacities [[buffer(7)]],
+    const uint problem [[threadgroup_position_in_grid]],
+    const uint lane [[thread_index_in_simdgroup]]
+) {
+    if (problem >= problemCount) {
+        return;
+    }
+    const NumiTemporalConeIntegrationHeader header = headers[problem];
+    const uint bodyCount = header.control.y;
+    const uint inputBase = header.ranges.x;
+    const uint velocityBase = header.ranges.y;
+    const uint outputBase = header.ranges.z;
+    const bool active = lane < bodyCount;
+    uint localFailure = NUMI_TEMPORAL_CONE_INTEGRATION_SUCCESS;
+    if (header.control.x != NUMI_TEMPORAL_CONE_INTEGRATION_ABI_VERSION) {
+        localFailure = NUMI_TEMPORAL_CONE_INTEGRATION_INVALID_ABI;
+    } else if (bodyCount == 0u ||
+        bodyCount > NUMI_TEMPORAL_CONE_RIGID_MAX_BODIES ||
+        inputBase > capacities.x || bodyCount > capacities.x - inputBase ||
+        velocityBase > capacities.y ||
+        bodyCount > capacities.y - velocityBase ||
+        outputBase > capacities.z || bodyCount > capacities.z - outputBase ||
+        !finite4(header.timestep) || !(header.timestep.x > 0.0f)) {
+        localFailure = NUMI_TEMPORAL_CONE_INTEGRATION_INVALID_INPUT;
+    } else if (publishStatuses[problem].control.x !=
+            NUMI_TEMPORAL_CONE_RIGID_SUCCESS ||
+        publishStatuses[problem].control.y != bodyCount) {
+        localFailure = NUMI_TEMPORAL_CONE_INTEGRATION_UPSTREAM_FAILURE;
+    }
+
+    NumiTemporalConeRigidPose input = {};
+    NumiTemporalConeRigidPose candidate = {};
+    float laneInputNormError = 0.0f;
+    if (active && inputBase + lane < capacities.x &&
+        outputBase + lane < capacities.z) {
+        input = inputPoses[inputBase + lane];
+        candidate = input;
+        outputPoses[outputBase + lane] = input;
+    }
+    if (active && localFailure == NUMI_TEMPORAL_CONE_INTEGRATION_SUCCESS) {
+        const NumiTemporalConeRigidBody velocity = velocities[
+            velocityBase + lane
+        ];
+        const float normSquared = dot(input.orientation, input.orientation);
+        laneInputNormError = abs(normSquared - 1.0f);
+        if (!finite4(input.position) || !finite4(input.orientation) ||
+            !finite4(velocity.linearVelocityAndInverseMass) ||
+            !finite4(velocity.angularVelocity) ||
+            laneInputNormError > 2.0e-4f) {
+            localFailure = NUMI_TEMPORAL_CONE_INTEGRATION_INVALID_INPUT;
+        }
+    }
+    uint failure = simd_max(localFailure);
+    const float maximumInputNormError = simd_max(laneInputNormError);
+    float laneOutputNormError = 0.0f;
+    float laneLinearDisplacement = 0.0f;
+    float laneAngularStep = 0.0f;
+    if (active && failure == NUMI_TEMPORAL_CONE_INTEGRATION_SUCCESS) {
+        const NumiTemporalConeRigidBody velocity = velocities[
+            velocityBase + lane
+        ];
+        const float timestep = header.timestep.x;
+        candidate.position.xyz = fma(
+            float3(timestep),
+            velocity.linearVelocityAndInverseMass.xyz,
+            input.position.xyz
+        );
+        float4 orientation = input.orientation;
+        if (!integrateQuaternion(
+                input.orientation,
+                velocity.angularVelocity.xyz,
+                timestep,
+                orientation
+            )) {
+            localFailure = NUMI_TEMPORAL_CONE_INTEGRATION_NONFINITE_RESULT;
+        }
+        candidate.orientation = orientation;
+        laneOutputNormError = abs(dot(orientation, orientation) - 1.0f);
+        laneLinearDisplacement =
+            timestep * length(velocity.linearVelocityAndInverseMass.xyz);
+        laneAngularStep = timestep * length(velocity.angularVelocity.xyz);
+        if (!finite4(candidate.position) ||
+            !finite4(candidate.orientation) ||
+            laneOutputNormError > 64.0f * kFloatEpsilon) {
+            localFailure = NUMI_TEMPORAL_CONE_INTEGRATION_NONFINITE_RESULT;
+        }
+    }
+    failure = simd_max(localFailure);
+    if (active) {
+        outputPoses[outputBase + lane] =
+            failure == NUMI_TEMPORAL_CONE_INTEGRATION_SUCCESS
+            ? candidate
+            : input;
+    }
+    const float maximumOutputNormError = simd_max(laneOutputNormError);
+    const float maximumLinearDisplacement = simd_max(laneLinearDisplacement);
+    const float maximumAngularStep = simd_max(laneAngularStep);
+    if (lane == 0u) {
+        NumiTemporalConeIntegrationStatus status = {};
+        status.control = uint4(failure, bodyCount, 0u, 0u);
+        status.diagnostics = float4(
+            maximumInputNormError,
+            failure == NUMI_TEMPORAL_CONE_INTEGRATION_SUCCESS
+                ? maximumOutputNormError
+                : 0.0f,
+            failure == NUMI_TEMPORAL_CONE_INTEGRATION_SUCCESS
+                ? maximumLinearDisplacement
+                : 0.0f,
+            failure == NUMI_TEMPORAL_CONE_INTEGRATION_SUCCESS
+                ? maximumAngularStep
+                : 0.0f
+        );
+        outputStatuses[problem] = status;
+    }
+}

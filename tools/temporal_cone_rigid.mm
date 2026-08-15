@@ -46,8 +46,10 @@ std::string errorText(NSError* error) {
 
 struct Batch {
     std::vector<NumiTemporalConeRigidHeader> rigidHeaders;
+    std::vector<NumiTemporalConeIntegrationHeader> integrationHeaders;
     std::vector<NumiTemporalConeAssemblyHeader> assemblyHeaders;
     std::vector<NumiTemporalConeRigidBody> bodies;
+    std::vector<NumiTemporalConeRigidPose> poses;
     std::vector<NumiTemporalConeRigidContact> rigidContacts;
     std::vector<NumiTemporalConeAssemblyContactSpan> spans;
     std::vector<NumiTemporalConeAssemblyTerm> terms;
@@ -76,6 +78,8 @@ struct Result {
     std::vector<NumiTemporalConeIslandStatus> solverStatuses;
     std::vector<NumiTemporalConeRigidBody> outputBodies;
     std::vector<NumiTemporalConeRigidStatus> publishStatuses;
+    std::vector<NumiTemporalConeRigidPose> outputPoses;
+    std::vector<NumiTemporalConeIntegrationStatus> integrationStatuses;
     double seconds = 0.0;
 };
 
@@ -227,6 +231,16 @@ void appendProblem(Batch& batch, const std::size_t problem, const bool invalid) 
     const std::uint32_t contactCount =
         static_cast<std::uint32_t>(localContacts.size());
     batch.bodies.insert(batch.bodies.end(), localBodies.begin(), localBodies.end());
+    for (std::uint32_t index = 0u; index < bodyCount; ++index) {
+        NumiTemporalConeRigidPose pose = {};
+        pose.position = f4(
+            0.1f * static_cast<float>(index),
+            0.01f * static_cast<float>(problem % 11u),
+            -0.03f * static_cast<float>(index)
+        );
+        pose.orientation = f4(0.0f, 0.0f, 0.0f, 1.0f);
+        batch.poses.push_back(pose);
+    }
     batch.rigidContacts.insert(
         batch.rigidContacts.end(), localContacts.begin(), localContacts.end()
     );
@@ -284,6 +298,19 @@ void appendProblem(Batch& batch, const std::size_t problem, const bool invalid) 
     );
     batch.rigidHeaders.push_back(rigidHeader);
 
+    NumiTemporalConeIntegrationHeader integrationHeader = {};
+    integrationHeader.control = u4(
+        NUMI_TEMPORAL_CONE_INTEGRATION_ABI_VERSION, bodyCount, 0u, 0u
+    );
+    integrationHeader.ranges = u4(
+        static_cast<std::uint32_t>(bodyBase),
+        static_cast<std::uint32_t>(bodyBase),
+        static_cast<std::uint32_t>(bodyBase),
+        0u
+    );
+    integrationHeader.timestep = f4(1.0f / 240.0f, 0.0f, 0.0f, 0.0f);
+    batch.integrationHeaders.push_back(integrationHeader);
+
     NumiTemporalConeAssemblyHeader assemblyHeader = {};
     assemblyHeader.control = u4(
         NUMI_TEMPORAL_CONE_ASSEMBLY_ABI_VERSION,
@@ -327,7 +354,7 @@ bool exactVector(const std::vector<T>& first, const std::vector<T>& second) {
 Result runGPU(
     id<MTLDevice> device,
     id<MTLCommandQueue> queue,
-    const std::array<id<MTLComputePipelineState>, 4>& pipelines,
+    const std::array<id<MTLComputePipelineState>, 5>& pipelines,
     const Batch& batch
 ) {
     const std::uint32_t problemCount =
@@ -346,8 +373,10 @@ Result runGPU(
         return value;
     };
     id<MTLBuffer> rigidHeaderBuffer = makeBytes(batch.rigidHeaders);
+    id<MTLBuffer> integrationHeaderBuffer = makeBytes(batch.integrationHeaders);
     id<MTLBuffer> assemblyHeaderBuffer = makeBytes(batch.assemblyHeaders);
     id<MTLBuffer> bodyBuffer = makeBytes(batch.bodies);
+    id<MTLBuffer> poseBuffer = makeBytes(batch.poses);
     id<MTLBuffer> rigidContactBuffer = makeBytes(batch.rigidContacts);
     id<MTLBuffer> spanBuffer = makeOutput(batch.spans.size() * sizeof(batch.spans.front()));
     id<MTLBuffer> termBuffer = makeOutput(batch.terms.size() * sizeof(batch.terms.front()));
@@ -381,15 +410,23 @@ Result runGPU(
     id<MTLBuffer> publishStatusBuffer = makeOutput(
         problemCount * sizeof(NumiTemporalConeRigidStatus)
     );
-    if (rigidHeaderBuffer == nil || assemblyHeaderBuffer == nil ||
-        bodyBuffer == nil || rigidContactBuffer == nil || spanBuffer == nil ||
+    id<MTLBuffer> outputPoseBuffer = makeOutput(
+        batch.poses.size() * sizeof(NumiTemporalConeRigidPose)
+    );
+    id<MTLBuffer> integrationStatusBuffer = makeOutput(
+        problemCount * sizeof(NumiTemporalConeIntegrationStatus)
+    );
+    if (rigidHeaderBuffer == nil || integrationHeaderBuffer == nil ||
+        assemblyHeaderBuffer == nil || bodyBuffer == nil || poseBuffer == nil ||
+        rigidContactBuffer == nil || spanBuffer == nil ||
         termBuffer == nil || jacobianBuffer == nil || responseBuffer == nil ||
         solverContactBuffer == nil || responseStatusBuffer == nil ||
         regularizationBuffer == nil || rowBuffer == nil || columnBuffer == nil ||
         blockBuffer == nil || streamHeaderBuffer == nil ||
         assemblyStatusBuffer == nil || impulseBuffer == nil ||
         solverStatusBuffer == nil || outputBodyBuffer == nil ||
-        publishStatusBuffer == nil) {
+        publishStatusBuffer == nil || outputPoseBuffer == nil ||
+        integrationStatusBuffer == nil) {
         throw std::runtime_error("failed to allocate rigid qualification buffers");
     }
 
@@ -497,6 +534,28 @@ Result runGPU(
     [publish dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
                  threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
     [publish endEncoding];
+
+    id<MTLComputeCommandEncoder> integrate = [command computeCommandEncoder];
+    [integrate setComputePipelineState:pipelines[4]];
+    [integrate setBuffer:integrationHeaderBuffer offset:0 atIndex:0];
+    [integrate setBuffer:poseBuffer offset:0 atIndex:1];
+    [integrate setBuffer:outputBodyBuffer offset:0 atIndex:2];
+    [integrate setBuffer:publishStatusBuffer offset:0 atIndex:3];
+    [integrate setBuffer:outputPoseBuffer offset:0 atIndex:4];
+    [integrate setBuffer:integrationStatusBuffer offset:0 atIndex:5];
+    [integrate setBytes:&problemCount length:sizeof(problemCount) atIndex:6];
+    const mr_uint4 integrationCapacities = u4(
+        static_cast<std::uint32_t>(batch.poses.size()),
+        static_cast<std::uint32_t>(batch.bodies.size()),
+        static_cast<std::uint32_t>(batch.poses.size()),
+        0u
+    );
+    [integrate setBytes:&integrationCapacities
+                  length:sizeof(integrationCapacities)
+                 atIndex:7];
+    [integrate dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
+                   threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
+    [integrate endEncoding];
     [command commit];
     [command waitUntilCompleted];
     if (command.status != MTLCommandBufferStatusCompleted || command.error != nil) {
@@ -522,6 +581,90 @@ Result runGPU(
     copy(result.solverStatuses, solverStatusBuffer);
     copy(result.outputBodies, outputBodyBuffer);
     copy(result.publishStatuses, publishStatusBuffer);
+    copy(result.outputPoses, outputPoseBuffer);
+    copy(result.integrationStatuses, integrationStatusBuffer);
+    if (command.GPUEndTime >= command.GPUStartTime) {
+        result.seconds = command.GPUEndTime - command.GPUStartTime;
+    }
+    return result;
+}
+
+struct FreeFlightResult {
+    NumiTemporalConeRigidPose pose = {};
+    NumiTemporalConeIntegrationStatus status = {};
+    double seconds = 0.0;
+};
+
+FreeFlightResult runFreeFlight(
+    id<MTLDevice> device,
+    id<MTLCommandQueue> queue,
+    id<MTLComputePipelineState> integrationPipeline,
+    const std::uint32_t stepCount
+) {
+    NumiTemporalConeIntegrationHeader header = {};
+    header.control = u4(NUMI_TEMPORAL_CONE_INTEGRATION_ABI_VERSION, 1u, 0u, 0u);
+    header.ranges = u4(0u, 0u, 0u, 0u);
+    header.timestep = f4(1.0f / 240.0f, 0.0f, 0.0f, 0.0f);
+    NumiTemporalConeRigidPose initial = {};
+    initial.position = f4(0.2f, -0.1f, 0.4f, 7.0f);
+    initial.orientation = f4(0.0f, 0.0f, 0.0f, 1.0f);
+    const NumiTemporalConeRigidBody velocity = body(
+        f4(1.0f, -0.5f, 0.25f, 1.0f),
+        f4(0.15f, -0.2f, 0.4f)
+    );
+    NumiTemporalConeRigidStatus upstream = {};
+    upstream.control = u4(NUMI_TEMPORAL_CONE_RIGID_SUCCESS, 1u, 0u, 0u);
+    id<MTLBuffer> headerBuffer = [device newBufferWithBytes:&header
+                                                    length:sizeof(header)
+                                                   options:MTLResourceStorageModeShared];
+    id<MTLBuffer> poseA = [device newBufferWithBytes:&initial
+                                              length:sizeof(initial)
+                                             options:MTLResourceStorageModeShared];
+    id<MTLBuffer> poseB = [device newBufferWithLength:sizeof(initial)
+                                                options:MTLResourceStorageModeShared];
+    id<MTLBuffer> velocityBuffer = [device newBufferWithBytes:&velocity
+                                                      length:sizeof(velocity)
+                                                     options:MTLResourceStorageModeShared];
+    id<MTLBuffer> upstreamBuffer = [device newBufferWithBytes:&upstream
+                                                      length:sizeof(upstream)
+                                                     options:MTLResourceStorageModeShared];
+    id<MTLBuffer> statusBuffer = [device
+        newBufferWithLength:sizeof(NumiTemporalConeIntegrationStatus)
+                    options:MTLResourceStorageModeShared];
+    if (headerBuffer == nil || poseA == nil || poseB == nil ||
+        velocityBuffer == nil || upstreamBuffer == nil || statusBuffer == nil) {
+        throw std::runtime_error("failed to allocate free-flight buffers");
+    }
+    const std::uint32_t problemCount = 1u;
+    const mr_uint4 capacities = u4(1u, 1u, 1u, 0u);
+    id<MTLCommandBuffer> command = [queue commandBuffer];
+    for (std::uint32_t step = 0u; step < stepCount; ++step) {
+        const bool even = step % 2u == 0u;
+        id<MTLComputeCommandEncoder> integrate = [command computeCommandEncoder];
+        [integrate setComputePipelineState:integrationPipeline];
+        [integrate setBuffer:headerBuffer offset:0 atIndex:0];
+        [integrate setBuffer:even ? poseA : poseB offset:0 atIndex:1];
+        [integrate setBuffer:velocityBuffer offset:0 atIndex:2];
+        [integrate setBuffer:upstreamBuffer offset:0 atIndex:3];
+        [integrate setBuffer:even ? poseB : poseA offset:0 atIndex:4];
+        [integrate setBuffer:statusBuffer offset:0 atIndex:5];
+        [integrate setBytes:&problemCount length:sizeof(problemCount) atIndex:6];
+        [integrate setBytes:&capacities length:sizeof(capacities) atIndex:7];
+        [integrate dispatchThreadgroups:MTLSizeMake(1u, 1u, 1u)
+                       threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
+        [integrate endEncoding];
+    }
+    [command commit];
+    [command waitUntilCompleted];
+    if (command.status != MTLCommandBufferStatusCompleted || command.error != nil) {
+        throw std::runtime_error("Metal free flight failed: " + errorText(command.error));
+    }
+    const id<MTLBuffer> finalPose = stepCount % 2u == 0u ? poseA : poseB;
+    FreeFlightResult result;
+    result.pose = *static_cast<const NumiTemporalConeRigidPose*>(finalPose.contents);
+    result.status = *static_cast<const NumiTemporalConeIntegrationStatus*>(
+        statusBuffer.contents
+    );
     if (command.GPUEndTime >= command.GPUStartTime) {
         result.seconds = command.GPUEndTime - command.GPUStartTime;
     }
@@ -668,13 +811,14 @@ int run(const int argc, const char* const* argv) {
     if (library == nil) {
         throw std::runtime_error("failed to load metallib: " + errorText(error));
     }
-    const std::array<NSString*, 4> names = {
+    const std::array<NSString*, 5> names = {
         @"numi_temporal_cone_rigid_response",
         @"numi_temporal_cone_stream_assemble",
         @"numi_temporal_cone_stream_solve",
-        @"numi_temporal_cone_rigid_publish"
+        @"numi_temporal_cone_rigid_publish",
+        @"numi_temporal_cone_rigid_integrate"
     };
-    std::array<id<MTLComputePipelineState>, 4> pipelines;
+    std::array<id<MTLComputePipelineState>, 5> pipelines;
     for (std::size_t index = 0u; index < pipelines.size(); ++index) {
         id<MTLFunction> function = [library newFunctionWithName:names[index]];
         pipelines[index] = [device newComputePipelineStateWithFunction:function error:&error];
@@ -690,6 +834,14 @@ int run(const int argc, const char* const* argv) {
         replays.push_back(runGPU(device, queue, pipelines, batch));
     }
     const Result& result = replays.front();
+    constexpr std::uint32_t kFreeFlightSteps = 240u;
+    (void)runFreeFlight(device, queue, pipelines[4], kFreeFlightSteps);
+    const FreeFlightResult freeFlight = runFreeFlight(
+        device, queue, pipelines[4], kFreeFlightSteps
+    );
+    const FreeFlightResult freeFlightReplay = runFreeFlight(
+        device, queue, pipelines[4], kFreeFlightSteps
+    );
     bool deterministic = true;
     for (std::size_t replay = 1u; replay < replays.size(); ++replay) {
         deterministic = deterministic &&
@@ -705,12 +857,16 @@ int run(const int argc, const char* const* argv) {
             exactVector(result.impulses, replays[replay].impulses) &&
             exactVector(result.solverStatuses, replays[replay].solverStatuses) &&
             exactVector(result.outputBodies, replays[replay].outputBodies) &&
-            exactVector(result.publishStatuses, replays[replay].publishStatuses);
+            exactVector(result.publishStatuses, replays[replay].publishStatuses) &&
+            exactVector(result.outputPoses, replays[replay].outputPoses) &&
+            exactVector(result.integrationStatuses, replays[replay].integrationStatuses);
     }
 
     double maximumOperatorError = 0.0;
     double maximumFreeVelocityError = 0.0;
     double maximumPublicationError = 0.0;
+    double maximumPoseError = 0.0;
+    double maximumQuaternionNormError = 0.0;
     double maximumMomentumError = 0.0;
     double maximumEnergyIncrease = 0.0;
     double maximumKKT = 0.0;
@@ -732,10 +888,17 @@ int run(const int argc, const char* const* argv) {
                     NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
                 result.publishStatuses[problem].control.x ==
                     NUMI_TEMPORAL_CONE_RIGID_UPSTREAM_FAILURE &&
+                result.integrationStatuses[problem].control.x ==
+                    NUMI_TEMPORAL_CONE_INTEGRATION_UPSTREAM_FAILURE &&
                 std::memcmp(
                     batch.bodies.data() + rigidHeader.inputRanges.x,
                     result.outputBodies.data() + rigidHeader.solverRanges.y,
                     rigidHeader.control.y * sizeof(NumiTemporalConeRigidBody)
+                ) == 0 &&
+                std::memcmp(
+                    batch.poses.data() + rigidHeader.inputRanges.x,
+                    result.outputPoses.data() + rigidHeader.solverRanges.y,
+                    rigidHeader.control.y * sizeof(NumiTemporalConeRigidPose)
                 ) == 0;
             continue;
         }
@@ -747,7 +910,9 @@ int run(const int argc, const char* const* argv) {
             result.solverStatuses[problem].control.x ==
                 NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
             result.publishStatuses[problem].control.x ==
-                NUMI_TEMPORAL_CONE_RIGID_SUCCESS;
+                NUMI_TEMPORAL_CONE_RIGID_SUCCESS &&
+            result.integrationStatuses[problem].control.x ==
+                NUMI_TEMPORAL_CONE_INTEGRATION_SUCCESS;
         if (!success) {
             ++failedValid;
             continue;
@@ -874,6 +1039,49 @@ int run(const int argc, const char* const* argv) {
                 std::abs(expectedAngular[1] - after.angularVelocity.y),
                 std::abs(expectedAngular[2] - after.angularVelocity.z)
             });
+            const auto& inputPose = batch.poses[rigidHeader.inputRanges.x + index];
+            const auto& outputPose = result.outputPoses[rigidHeader.solverRanges.y + index];
+            const double timestep = batch.integrationHeaders[problem].timestep.x;
+            const std::array<double, 3> angular = xyz(after.angularVelocity);
+            const double angle = timestep * std::sqrt(dot(angular, angular));
+            const double halfAngle = 0.5 * angle;
+            const double rotationScale = angle > 1.0e-6
+                ? std::sin(halfAngle) / (angle / timestep)
+                : timestep * (0.5 - angle * angle / 48.0);
+            const std::array<double, 4> expectedOrientation = {
+                angular[0] * rotationScale,
+                angular[1] * rotationScale,
+                angular[2] * rotationScale,
+                std::cos(halfAngle)
+            };
+            maximumPoseError = std::max({
+                maximumPoseError,
+                std::abs(
+                    inputPose.position.x + timestep * after.linearVelocityAndInverseMass.x -
+                    outputPose.position.x
+                ),
+                std::abs(
+                    inputPose.position.y + timestep * after.linearVelocityAndInverseMass.y -
+                    outputPose.position.y
+                ),
+                std::abs(
+                    inputPose.position.z + timestep * after.linearVelocityAndInverseMass.z -
+                    outputPose.position.z
+                ),
+                std::abs(expectedOrientation[0] - outputPose.orientation.x),
+                std::abs(expectedOrientation[1] - outputPose.orientation.y),
+                std::abs(expectedOrientation[2] - outputPose.orientation.z),
+                std::abs(expectedOrientation[3] - outputPose.orientation.w)
+            });
+            maximumQuaternionNormError = std::max(
+                maximumQuaternionNormError,
+                std::abs(
+                    static_cast<double>(outputPose.orientation.x) * outputPose.orientation.x +
+                    static_cast<double>(outputPose.orientation.y) * outputPose.orientation.y +
+                    static_cast<double>(outputPose.orientation.z) * outputPose.orientation.z +
+                    static_cast<double>(outputPose.orientation.w) * outputPose.orientation.w - 1.0
+                )
+            );
             const double mass = 1.0 / before.linearVelocityAndInverseMass.w;
             momentumBefore[0] += mass * before.linearVelocityAndInverseMass.x;
             momentumBefore[1] += mass * before.linearVelocityAndInverseMass.y;
@@ -912,6 +1120,40 @@ int run(const int argc, const char* const* argv) {
         static_cast<double>(result.outputBodies[0].linearVelocityAndInverseMass.x) -
         1.0 / 3.0
     );
+    const double flightTime = static_cast<double>(kFreeFlightSteps) / 240.0;
+    const std::array<double, 3> flightAngular = {0.15, -0.2, 0.4};
+    const double flightAngularSpeed = std::sqrt(dot(flightAngular, flightAngular));
+    const double flightHalfAngle = 0.5 * flightTime * flightAngularSpeed;
+    const double flightScale = std::sin(flightHalfAngle) / flightAngularSpeed;
+    const std::array<double, 4> expectedFlightOrientation = {
+        flightAngular[0] * flightScale,
+        flightAngular[1] * flightScale,
+        flightAngular[2] * flightScale,
+        std::cos(flightHalfAngle)
+    };
+    const double freeFlightError = std::max({
+        std::abs(static_cast<double>(freeFlight.pose.position.x) - 1.2),
+        std::abs(static_cast<double>(freeFlight.pose.position.y) + 0.6),
+        std::abs(static_cast<double>(freeFlight.pose.position.z) - 0.65),
+        std::abs(static_cast<double>(freeFlight.pose.position.w) - 7.0),
+        std::abs(freeFlight.pose.orientation.x - expectedFlightOrientation[0]),
+        std::abs(freeFlight.pose.orientation.y - expectedFlightOrientation[1]),
+        std::abs(freeFlight.pose.orientation.z - expectedFlightOrientation[2]),
+        std::abs(freeFlight.pose.orientation.w - expectedFlightOrientation[3])
+    });
+    const double freeFlightNormError = std::abs(
+        static_cast<double>(freeFlight.pose.orientation.x) * freeFlight.pose.orientation.x +
+        static_cast<double>(freeFlight.pose.orientation.y) * freeFlight.pose.orientation.y +
+        static_cast<double>(freeFlight.pose.orientation.z) * freeFlight.pose.orientation.z +
+        static_cast<double>(freeFlight.pose.orientation.w) * freeFlight.pose.orientation.w - 1.0
+    );
+    const bool freeFlightDeterministic =
+        std::memcmp(&freeFlight.pose, &freeFlightReplay.pose, sizeof(freeFlight.pose)) == 0 &&
+        std::memcmp(
+            &freeFlight.status,
+            &freeFlightReplay.status,
+            sizeof(freeFlight.status)
+        ) == 0;
     const double averageSeconds = std::accumulate(
         replays.begin(), replays.end(), 0.0,
         [](double total, const Result& replay) { return total + replay.seconds; }
@@ -919,6 +1161,10 @@ int run(const int argc, const char* const* argv) {
     const bool pass = deterministic && failureRollback && failedValid == 0u &&
         maximumOperatorError <= 2.0e-6 && maximumFreeVelocityError <= 2.0e-6 &&
         maximumPublicationError <= 2.0e-6 && maximumMomentumError <= 2.0e-6 &&
+        maximumPoseError <= 2.0e-6 && maximumQuaternionNormError <= 2.0e-6 &&
+        freeFlight.status.control.x == NUMI_TEMPORAL_CONE_INTEGRATION_SUCCESS &&
+        freeFlightError <= 2.0e-5 && freeFlightNormError <= 2.0e-6 &&
+        freeFlightDeterministic &&
         maximumEnergyIncrease <= 2.0e-5 && maximumKKT <= 6.0e-6 &&
         maximumCone <= 2.0e-6 && analyticImpulseError <= 3.0e-6 &&
         analyticVelocityError <= 4.0e-6;
@@ -932,6 +1178,13 @@ int run(const int argc, const char* const* argv) {
               << "operator_max_abs_error=" << maximumOperatorError
               << " free_velocity_max_abs_error=" << maximumFreeVelocityError
               << " publication_max_abs_error=" << maximumPublicationError << '\n'
+              << "pose_max_abs_error=" << maximumPoseError
+              << " quaternion_norm_max_error=" << maximumQuaternionNormError << '\n'
+              << "free_flight_steps=" << kFreeFlightSteps
+              << " free_flight_max_abs_error=" << freeFlightError
+              << " free_flight_norm_error=" << freeFlightNormError
+              << " free_flight_deterministic="
+              << (freeFlightDeterministic ? "yes" : "no") << '\n'
               << "analytic_impulse_error=" << analyticImpulseError
               << " analytic_velocity_error=" << analyticVelocityError << '\n'
               << "momentum_max_abs_error=" << maximumMomentumError
@@ -945,7 +1198,7 @@ int run(const int argc, const char* const* argv) {
               << "deterministic=" << (deterministic ? "yes" : "no")
               << " invalid_frame_rollback=" << (failureRollback ? "yes" : "no")
               << " failed_valid=" << failedValid << '\n'
-              << "one_command_buffer=yes cpu_readback_between_stages=no\n"
+              << "one_command_buffer=yes cpu_readback_between_stages=no stages=5\n"
               << "average_chain_seconds=" << averageSeconds
               << " islands_per_second=" << problemCount / averageSeconds
               << " contacts_per_second=" << batch.validContactCount / averageSeconds
