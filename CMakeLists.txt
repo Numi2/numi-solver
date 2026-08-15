@@ -12,6 +12,9 @@ if(NOT APPLE)
 endif()
 
 find_program(XCRUN_EXECUTABLE xcrun REQUIRED)
+enable_language(OBJCXX)
+find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
+find_library(METAL_FRAMEWORK Metal REQUIRED)
 
 set(NUMI_SOLVER_SHADER_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
 set(NUMI_SOLVER_AIR "${NUMI_SOLVER_SHADER_DIR}/NumiTemporalCone.air")
@@ -24,6 +27,7 @@ set(
     include/metalrobo/gpu_types.h
     include/metalrobo/rod_gpu_shared.h
     include/metalrobo/unified_quality_shared.h
+    include/numi/temporal_cone_probe.h
 )
 
 add_custom_command(
@@ -54,6 +58,35 @@ target_include_directories(
         "$<INSTALL_INTERFACE:include>"
 )
 
+add_executable(numi-solver-math tools/temporal_cone_math.mm)
+add_dependencies(numi-solver-math numi_temporal_cone)
+target_link_libraries(
+    numi-solver-math
+    PRIVATE
+        numi_temporal_cone_abi
+        "${FOUNDATION_FRAMEWORK}"
+        "${METAL_FRAMEWORK}"
+)
+target_compile_features(numi-solver-math PRIVATE cxx_std_23)
+target_compile_options(numi-solver-math PRIVATE -fobjc-arc -Wall -Wextra -Wpedantic)
+target_compile_definitions(
+    numi-solver-math
+    PRIVATE
+        NUMI_TEMPORAL_CONE_METALLIB="${NUMI_SOLVER_METALLIB}"
+)
+
+include(CTest)
+if(BUILD_TESTING)
+    add_test(
+        NAME temporal_cone.math
+        COMMAND $<TARGET_FILE:numi-solver-math> --cases 4096 --replays 2
+    )
+    set_tests_properties(
+        temporal_cone.math
+        PROPERTIES LABELS "metal;physics;math" TIMEOUT 60
+    )
+endif()
+
 install(FILES "${NUMI_SOLVER_METALLIB}" DESTINATION lib/numi-solver)
 install(DIRECTORY include/ DESTINATION include)
-
+install(TARGETS numi-solver-math RUNTIME DESTINATION bin)

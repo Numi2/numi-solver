@@ -10,17 +10,19 @@ or website.
 
 ## Solver boundary
 
-`src/metal/MetalWorldContact.metal` is preserved byte-for-byte from the source
-revision recorded in [PROVENANCE.md](PROVENANCE.md). The file owns the complete
-contact pipeline required by Temporal Cone, including deterministic island and
-tile construction, Wave8/16/32 cohort selection, coupled normal/tangent cone
-updates, distributed-island reduction, stiff-island ordered replay, warm-start
-publication, and transactional status reduction.
+The initial `src/metal/MetalWorldContact.metal` import was preserved
+byte-for-byte from the source revision recorded in
+[PROVENANCE.md](PROVENANCE.md). Independent development is tracked from that
+snapshot. The file owns the complete contact pipeline required by Temporal
+Cone, including deterministic island and tile construction, Wave8/16/32 cohort
+selection, coupled normal/tangent cone updates, distributed-island reduction,
+stiff-island ordered replay, warm-start publication, and transactional status
+reduction.
 
-The extracted kernel still speaks the original versioned MetalWorld ABI. This
-keeps numerical behavior and integration contracts intact while the solver is
-developed independently. A small standalone host API is a future boundary; it
-has not been invented during extraction.
+The solver still speaks the original versioned MetalWorld ABI. A narrow probe
+ABI exposes only its local 3x3 response conditioning and elliptic friction
+projection for direct mathematical work. The probe calls the production Metal
+helpers; it does not carry a second shader implementation.
 
 ## Build
 
@@ -36,7 +38,22 @@ cmake --build build
 ```
 
 The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
-`-fno-fast-math`.
+`-fno-fast-math`, plus the native `build/numi-solver-math` harness.
+
+Run the default 65,536-problem FP64 comparison and deterministic replay:
+
+```sh
+./build/numi-solver-math
+ctest --test-dir build --output-on-failure
+```
+
+Use `--cases N --replays N` to change the deterministic batch. The harness
+checks separating, normal-impact, sticking, sliding, anisotropic-friction,
+near-rank-deficient, and capped-impulse cases before filling the remainder
+with coupled positive-definite contact responses.
+
+An installed or relocated harness can load a specific library with
+`--metallib path/to/NumiTemporalCone.metallib`.
 
 ## Numerical contract
 
@@ -45,9 +62,9 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
 - SIMD32-native execution, with homogeneous Wave8/Wave16 cohorts when safe.
 - Coupled 3x3 normal/tangent response blocks with deterministic conditioning.
 - Per-environment failure publication; no silent contact dropping.
-- Exact elliptic friction-cone projection and residual reporting.
+- Elliptic friction-bound projection and residual reporting.
 
-Building the metallib proves source/toolchain compatibility. It does not by
-itself prove a complete physical step, deterministic replay, or a hardware
-outcome; those require a host integration and executable physics probe.
-
+See [docs/MATHEMATICS.md](docs/MATHEMATICS.md) for the equations and evidence
+boundary. The harness exercises local contact mathematics on a real Metal
+device. It is not a complete collision, island-coupling, or time-integration
+benchmark.

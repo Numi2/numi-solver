@@ -8,7 +8,7 @@ active Numi Lab checkout.
 - Source revision: `0e2bd8b24f13fa2c839eb21be9f521762545af73`
 - Extraction date: `2026-08-15`
 
-The copied source files and their SHA-256 digests at extraction are:
+The copied source files and their SHA-256 digests at extraction were:
 
 ```text
 17ee01457c73da786158619f8cf49977e0b58092b15af749b979e49b32c98073  src/metal/MetalWorldContact.metal
@@ -24,4 +24,8 @@ produced a metallib with SHA-256
 `d36b038304d6494ed73a34c01abe21513a850c217721853a4105a6317983c070`.
 Metallib bytes are toolchain-dependent and are not treated as a stable source
 fingerprint.
+
+The hashes above identify the initial import, not the current working sources.
+All independent changes after extraction are recorded in this repository's Git
+history.
 

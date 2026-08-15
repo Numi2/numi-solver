@@ -3,6 +3,7 @@
 #include "metalrobo/engine_types.h"
 #include "metalrobo/rod_gpu_shared.h"
 #include "metalrobo/unified_quality_shared.h"
+#include "numi/temporal_cone_probe.h"
 
 using namespace metal;
 
@@ -11235,4 +11236,156 @@ kernel void mr_world_publish_unified_quality_queue_status(
             MR_UNIFIED_QUALITY_INVALID_INDEX;
     }
     statuses[environment] = status;
+}
+
+// Standalone mathematical boundary for the exact Temporal Cone local block.
+// It deliberately calls the same conditioned inverse and friction projection
+// helpers as the production island solver instead of maintaining test-only
+// copies of the Metal mathematics.
+kernel void numi_temporal_cone_probe(
+    device const NumiTemporalConeProbeInput* inputs [[buffer(0)]],
+    device NumiTemporalConeProbeOutput* outputs [[buffer(1)]],
+    constant uint& problemCount [[buffer(2)]],
+    const uint problem [[thread_position_in_grid]]
+) {
+    if (problem >= problemCount) {
+        return;
+    }
+
+    const NumiTemporalConeProbeInput input = inputs[problem];
+    NumiTemporalConeProbeOutput output = {};
+    output.status.x = NUMI_TEMPORAL_CONE_PROBE_INVALID_INPUT;
+    if (input.control.x != NUMI_TEMPORAL_CONE_PROBE_ABI_VERSION) {
+        output.status.x = NUMI_TEMPORAL_CONE_PROBE_INVALID_ABI;
+        outputs[problem] = output;
+        return;
+    }
+    if (input.control.y == 0u ||
+        input.control.y > NUMI_TEMPORAL_CONE_PROBE_MAX_ITERATIONS ||
+        !finite4(input.responseRow0) ||
+        !finite4(input.responseRow1) ||
+        !finite4(input.responseRow2) ||
+        !finite4(input.freeVelocityAndFrictionU) ||
+        !finite4(input.warmImpulseAndFrictionV) ||
+        !finite4(input.limits) ||
+        input.freeVelocityAndFrictionU.w < 0.0f ||
+        input.warmImpulseAndFrictionV.w < 0.0f ||
+        input.limits.x < 0.0f) {
+        outputs[problem] = output;
+        return;
+    }
+
+    float response[3][3] = {
+        {
+            input.responseRow0.x,
+            input.responseRow0.y,
+            input.responseRow0.z,
+        },
+        {
+            input.responseRow1.x,
+            input.responseRow1.y,
+            input.responseRow1.z,
+        },
+        {
+            input.responseRow2.x,
+            input.responseRow2.y,
+            input.responseRow2.z,
+        },
+    };
+    float inverse[3][3];
+    if (!invert3x3(response, inverse)) {
+        output.status.x =
+            NUMI_TEMPORAL_CONE_PROBE_FACTORIZATION_FAILED;
+        outputs[problem] = output;
+        return;
+    }
+
+    MREvaluatedConstraintIRConeGPU cone = {};
+    cone.effectiveFrictionU = input.freeVelocityAndFrictionU.w;
+    cone.effectiveFrictionV = input.warmImpulseAndFrictionV.w;
+    cone.maximumNormalImpulse = input.limits.x;
+
+    float3 impulse = projectFrictionCone(
+        input.warmImpulseAndFrictionV.xyz,
+        cone
+    );
+    float maximumDelta = 0.0f;
+    for (uint iteration = 0u;
+         iteration < input.control.y;
+         ++iteration) {
+        const float3 responseImpulse = float3(
+            dot(input.responseRow0.xyz, impulse),
+            dot(input.responseRow1.xyz, impulse),
+            dot(input.responseRow2.xyz, impulse)
+        );
+        const float3 rhs =
+            -(input.freeVelocityAndFrictionU.xyz + responseImpulse);
+        const float3 proposed = impulse + float3(
+            inverse[0][0] * rhs.x +
+                inverse[0][1] * rhs.y +
+                inverse[0][2] * rhs.z,
+            inverse[1][0] * rhs.x +
+                inverse[1][1] * rhs.y +
+                inverse[1][2] * rhs.z,
+            inverse[2][0] * rhs.x +
+                inverse[2][1] * rhs.y +
+                inverse[2][2] * rhs.z
+        );
+        const float3 candidate = projectFrictionCone(proposed, cone);
+        const float3 delta = candidate - impulse;
+        maximumDelta = max(
+            abs(delta.x),
+            max(abs(delta.y), abs(delta.z))
+        );
+        impulse = candidate;
+        if (!finite3(impulse) || !isfinite(maximumDelta)) {
+            output.status.x =
+                NUMI_TEMPORAL_CONE_PROBE_NONFINITE_RESULT;
+            outputs[problem] = output;
+            return;
+        }
+    }
+
+    const float3 residual =
+        input.freeVelocityAndFrictionU.xyz + float3(
+            dot(input.responseRow0.xyz, impulse),
+            dot(input.responseRow1.xyz, impulse),
+            dot(input.responseRow2.xyz, impulse)
+        );
+    const float limitU = cone.effectiveFrictionU * impulse.x;
+    const float limitV = cone.effectiveFrictionV * impulse.x;
+    float coneViolation = 0.0f;
+    if (limitU > 0.0f && limitV > 0.0f) {
+        coneViolation = max(
+            sqrt(
+                (impulse.y * impulse.y) / (limitU * limitU) +
+                (impulse.z * impulse.z) / (limitV * limitV)
+            ) - 1.0f,
+            0.0f
+        );
+    } else {
+        coneViolation = length(impulse.yz);
+    }
+
+    output.impulseAndDelta = float4(impulse, maximumDelta);
+    output.inverseRow0 = float4(
+        inverse[0][0], inverse[0][1], inverse[0][2], 0.0f
+    );
+    output.inverseRow1 = float4(
+        inverse[1][0], inverse[1][1], inverse[1][2], 0.0f
+    );
+    output.inverseRow2 = float4(
+        inverse[2][0], inverse[2][1], inverse[2][2], 0.0f
+    );
+    output.residualAndConeViolation = float4(
+        residual,
+        coneViolation
+    );
+    output.status = uint4(
+        NUMI_TEMPORAL_CONE_PROBE_SUCCESS,
+        input.control.y,
+        0u,
+        0u
+    );
+    outputs[problem] = output;
 }
