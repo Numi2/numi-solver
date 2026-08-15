@@ -1072,7 +1072,7 @@ StreamBatch makeStreamBatch(const Batch& dense) {
 }
 
 Batch makeFailureBatch() {
-    Batch batch = makeBatch(10u);
+    Batch batch = makeBatch(11u);
 
     // Problem 0: violate the symmetric Delassus contract.
     batch.matrices[1u] += 0.25f;
@@ -1104,27 +1104,28 @@ Batch makeFailureBatch() {
     overflow.warmImpulseAndFrictionV.z = 0.0f;
 
     // Problem 7: every authored coefficient is finite and every local 3x3
-    // diagonal remains factorizable, but deterministic FP32 absolute-row
-    // accumulation overflows. The derived step metric must fail closed.
+    // diagonal and cross-contact 2x2 minor is PSD, but deterministic FP32
+    // absolute-row accumulation overflows. The derived step metric must fail
+    // closed.
     const std::size_t overflowMatrixBase = 7u * kMatrixElements;
     const float largeFinite =
-        0.5f * std::numeric_limits<float>::max();
-    for (std::size_t targetAxis = 0u; targetAxis < 3u; ++targetAxis) {
-        for (std::size_t sourceAxis = 0u; sourceAxis < 3u; ++sourceAxis) {
+        0.25f * std::numeric_limits<float>::max();
+    const std::size_t overflowDimension =
+        3u * batch.headers[7].control.y;
+    for (std::size_t row = 0u; row < overflowDimension; ++row) {
+        for (std::size_t column = 0u;
+             column < overflowDimension;
+             ++column) {
             batch.matrices[
-                overflowMatrixBase +
-                targetAxis * kMaxRows + 3u + sourceAxis
-            ] = largeFinite;
-            batch.matrices[
-                overflowMatrixBase +
-                (3u + sourceAxis) * kMaxRows + targetAxis
+                overflowMatrixBase + row * kMaxRows + column
             ] = largeFinite;
         }
     }
 
-    // Problem 8: an indefinite symmetric operator admits a feasible fixed
-    // point with zero KKT mapping but positive objective. It violates the
-    // declared convex/SPD energy certificate and must not receive success.
+    // Problem 8: a higher-order indefinite symmetric operator satisfies every
+    // scalar 2x2 principal-minor bound yet admits a feasible fixed point with
+    // zero KKT mapping and positive objective. The final energy certificate
+    // must still reject it.
     const std::size_t energyMatrixBase = 8u * kMatrixElements;
     const std::size_t energyContactBase = 8u * kMaxContacts;
     for (std::size_t row = 0u; row < 12u; ++row) {
@@ -1134,18 +1135,33 @@ Batch makeFailureBatch() {
             ] = row == column ? 1.0f : 0.0f;
         }
     }
-    batch.matrices[energyMatrixBase + 3u] = -2.0f;
-    batch.matrices[energyMatrixBase + 3u * kMaxRows] = -2.0f;
+    constexpr std::array<std::size_t, 3> energyNormals{{0u, 3u, 6u}};
+    for (std::size_t target = 0u; target < energyNormals.size(); ++target) {
+        for (std::size_t source = target + 1u;
+             source < energyNormals.size();
+             ++source) {
+            batch.matrices[
+                energyMatrixBase +
+                energyNormals[target] * kMaxRows +
+                energyNormals[source]
+            ] = -0.75f;
+            batch.matrices[
+                energyMatrixBase +
+                energyNormals[source] * kMaxRows +
+                energyNormals[target]
+            ] = -0.75f;
+        }
+    }
     for (std::size_t contact = 0u; contact < 4u; ++contact) {
         auto& source = batch.contacts[energyContactBase + contact];
         source.freeVelocityAndFrictionU = f4(
-            contact < 2u ? 1.0f : 0.0f,
+            contact < 3u ? 0.5f : 0.0f,
             0.0f,
             0.0f,
             0.0f
         );
         source.warmImpulseAndFrictionV = f4(
-            contact < 2u ? 1.0f : 0.0f,
+            contact < 3u ? 1.0f : 0.0f,
             0.0f,
             0.0f,
             0.0f
@@ -1166,6 +1182,24 @@ Batch makeFailureBatch() {
                 : 0.0f;
         }
     }
+
+    // Problem 10: symmetric local blocks are identity, but one cross-contact
+    // coefficient has magnitude two against unit diagonal responses. No PSD
+    // Delassus operator can violate |A_ij|^2 <= A_ii A_jj.
+    const std::size_t curvatureMatrixBase = 10u * kMatrixElements;
+    const std::size_t curvatureDimension =
+        3u * batch.headers[10].control.y;
+    for (std::size_t row = 0u; row < curvatureDimension; ++row) {
+        for (std::size_t column = 0u;
+             column < curvatureDimension;
+             ++column) {
+            batch.matrices[
+                curvatureMatrixBase + row * kMaxRows + column
+            ] = row == column ? 1.0f : 0.0f;
+        }
+    }
+    batch.matrices[curvatureMatrixBase + 3u] = 2.0f;
+    batch.matrices[curvatureMatrixBase + 3u * kMaxRows] = 2.0f;
     return batch;
 }
 
@@ -1517,7 +1551,7 @@ int run(const int argc, const char* const* argv) {
         streamPipeline,
         failureStreamBatch
     );
-    const std::array<std::uint32_t, 10> expectedFailureCodes{{
+    const std::array<std::uint32_t, 11> expectedFailureCodes{{
         NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT,
         NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED,
         NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE,
@@ -1527,6 +1561,7 @@ int run(const int argc, const char* const* argv) {
         NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT,
         NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT,
         NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE,
+        NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED,
         NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED,
     }};
     bool typedFailures = true;
@@ -1543,7 +1578,7 @@ int run(const int argc, const char* const* argv) {
             typedFailures = false;
         }
     }
-    constexpr std::array<std::pair<std::size_t, std::uint32_t>, 7>
+    constexpr std::array<std::pair<std::size_t, std::uint32_t>, 8>
         expectedDenseFailures{{
             {0u, NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT},
             {1u, NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED},
@@ -1552,6 +1587,7 @@ int run(const int argc, const char* const* argv) {
             {7u, NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT},
             {8u, NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE},
             {9u, NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED},
+            {10u, NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED},
         }};
     for (const auto& [problem, expectedCode] : expectedDenseFailures) {
         const std::uint32_t actualCode =
@@ -1573,6 +1609,11 @@ int run(const int argc, const char* const* argv) {
         failureFirst.statuses[9].control.x ==
             NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED &&
         denseFailureFirst.statuses[9].control.x ==
+            NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED;
+    const bool crossContactCurvatureRejected =
+        failureFirst.statuses[10].control.x ==
+            NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED &&
+        denseFailureFirst.statuses[10].control.x ==
             NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED;
     const auto& streamEnergyStatus = failureFirst.statuses[8];
     const auto& denseEnergyStatus = denseFailureFirst.statuses[8];
@@ -1613,8 +1654,8 @@ int run(const int argc, const char* const* argv) {
                 sizeof(NumiTemporalConeIslandStatus)
         ) == 0;
     bool failureRollback = true;
-    constexpr std::array<std::size_t, 8> zeroRollbackProblems{{
-        0u, 1u, 3u, 4u, 5u, 6u, 7u, 9u,
+    constexpr std::array<std::size_t, 9> zeroRollbackProblems{{
+        0u, 1u, 3u, 4u, 5u, 6u, 7u, 9u, 10u,
     }};
     for (const std::size_t problem : zeroRollbackProblems) {
         const auto& header = failureStreamBatch.headers[problem];
@@ -1631,8 +1672,8 @@ int run(const int argc, const char* const* argv) {
                 impulse.w == 0.0f;
         }
     }
-    constexpr std::array<std::size_t, 5> denseZeroRollbackProblems{{
-        0u, 1u, 6u, 7u, 9u,
+    constexpr std::array<std::size_t, 6> denseZeroRollbackProblems{{
+        0u, 1u, 6u, 7u, 9u, 10u,
     }};
     for (const std::size_t problem : denseZeroRollbackProblems) {
         const std::size_t contactBase = problem * kMaxContacts;
@@ -1973,6 +2014,7 @@ int run(const int argc, const char* const* argv) {
         typedFailures &&
         rowBoundOverflowRejected &&
         indefiniteLocalBlockRejected &&
+        crossContactCurvatureRejected &&
         positiveObjectiveRejected &&
         deterministicFailures &&
         failureRollback;
@@ -2012,6 +2054,8 @@ int run(const int argc, const char* const* argv) {
               << (rowBoundOverflowRejected ? "true" : "false")
               << " indefinite_local_block_rejected="
               << (indefiniteLocalBlockRejected ? "true" : "false")
+              << " cross_contact_curvature_rejected="
+              << (crossContactCurvatureRejected ? "true" : "false")
               << " positive_objective_rejected="
               << (positiveObjectiveRejected ? "true" : "false")
               << " deterministic_failures="

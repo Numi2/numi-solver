@@ -979,6 +979,23 @@ inline bool positiveSemidefinite3x3(
     );
 }
 
+// Every scalar 2x2 principal minor of a PSD Delassus operator obeys the
+// Cauchy-Schwarz bound |A_ij| <= sqrt(A_ii) sqrt(A_jj). Form the bound from
+// separately rooted diagonals so the diagonal product cannot overflow first.
+inline bool temporalConePairCurvatureValid3(
+    const float targetDiagonalRoot,
+    const float3 coupling,
+    const float3 sourceDiagonalRoot
+) {
+    const float3 targetRoot = float3(targetDiagonalRoot);
+    const float3 exactBound = targetRoot * sourceDiagonalRoot;
+    const float3 toleranceScale = max(abs(coupling), exactBound);
+    const float3 admittedBound =
+        exactBound +
+        (256.0f * kFloatEpsilon) * toleranceScale;
+    return all(abs(coupling) <= admittedBound);
+}
+
 inline bool invert3x3(
     thread const float matrix[3][3],
     thread float inverse[3][3]
@@ -11959,6 +11976,7 @@ kernel void numi_temporal_cone_island_solve(
 
     NumiTemporalConeIslandContact contact = {};
     MREvaluatedConstraintIRConeGPU cone = {};
+    float diagonal[3][3] = {};
     if (active && localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
         contact = contacts[contactBase + lane];
         if (!finite4(contact.freeVelocityAndFrictionU) ||
@@ -12005,7 +12023,6 @@ kernel void numi_temporal_cone_island_solve(
             }
         }
         if (localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
-            float diagonal[3][3];
             for (uint localRow = 0u; localRow < 3u; ++localRow) {
                 for (uint localColumn = 0u;
                      localColumn < 3u;
@@ -12021,6 +12038,77 @@ kernel void numi_temporal_cone_island_solve(
             if (!positiveSemidefinite3x3(diagonal)) {
                 localFailure =
                     NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED;
+            }
+        }
+        if (localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
+            const float3 diagonalRoot = sqrt(max(
+                float3(
+                    diagonal[0][0],
+                    diagonal[1][1],
+                    diagonal[2][2]
+                ),
+                float3(0.0f)
+            ));
+            for (uint source = lane + 1u;
+                 source < contactCount &&
+                     localFailure ==
+                         NUMI_TEMPORAL_CONE_ISLAND_SUCCESS;
+                 ++source) {
+                const uint sourceRow = 3u * source;
+                const float3 sourceDiagonalRoot = sqrt(max(
+                    float3(
+                        matrices[
+                            matrixBase +
+                            (sourceRow + 0u) *
+                                NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                            sourceRow + 0u
+                        ],
+                        matrices[
+                            matrixBase +
+                            (sourceRow + 1u) *
+                                NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                            sourceRow + 1u
+                        ],
+                        matrices[
+                            matrixBase +
+                            (sourceRow + 2u) *
+                                NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                            sourceRow + 2u
+                        ]
+                    ),
+                    float3(0.0f)
+                ));
+                for (uint localRow = 0u; localRow < 3u; ++localRow) {
+                    const float3 coupling = float3(
+                        matrices[
+                            matrixBase +
+                            (row + localRow) *
+                                NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                            sourceRow + 0u
+                        ],
+                        matrices[
+                            matrixBase +
+                            (row + localRow) *
+                                NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                            sourceRow + 1u
+                        ],
+                        matrices[
+                            matrixBase +
+                            (row + localRow) *
+                                NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS +
+                            sourceRow + 2u
+                        ]
+                    );
+                    if (!temporalConePairCurvatureValid3(
+                            diagonalRoot[localRow],
+                            coupling,
+                            sourceDiagonalRoot
+                        )) {
+                        localFailure =
+                            NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED;
+                        break;
+                    }
+                }
             }
         }
         cone.effectiveFrictionU = contact.freeVelocityAndFrictionU.w;
@@ -12493,6 +12581,35 @@ inline float3 temporalConeStreamResidual(
     return residual;
 }
 
+inline uint temporalConeFindRelativeBlock(
+    device const uint* rowOffsets,
+    device const uint* columnIndices,
+    const uint rowOffsetBase,
+    const uint blockBase,
+    const uint row,
+    const uint source
+) {
+    const uint rowBegin = rowOffsets[rowOffsetBase + row];
+    const uint rowEnd = rowOffsets[rowOffsetBase + row + 1u];
+    uint lower = rowBegin;
+    uint upper = rowEnd;
+    while (lower < upper) {
+        const uint middle = lower + (upper - lower) / 2u;
+        const uint candidateSource = columnIndices[
+            blockBase + middle
+        ];
+        if (candidateSource < source) {
+            lower = middle + 1u;
+        } else {
+            upper = middle;
+        }
+    }
+    return lower < rowEnd &&
+        columnIndices[blockBase + lower] == source
+        ? lower
+        : 0xffffffffu;
+}
+
 // One SIMD32 group owns one packed block-CSR contact island. Rows and source
 // contacts are both canonical and immutable throughout the solve. Missing
 // blocks are exact zeros, so the streamed matrix action is mathematically
@@ -12676,6 +12793,22 @@ kernel void numi_temporal_cone_stream_solve(
         return;
     }
 
+    // Reuse the rollback checkpoint arena as immutable scalar diagonals during
+    // preflight; every lane overwrites it with the projected warm start before
+    // the first physical iteration.
+    threadgroup float4 checkpoint[
+        NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
+    ];
+    checkpoint[lane] = active
+        ? float4(
+              sqrt(max(diagonal[0][0], 0.0f)),
+              sqrt(max(diagonal[1][1], 0.0f)),
+              sqrt(max(diagonal[2][2], 0.0f)),
+              0.0f
+          )
+        : float4(0.0f);
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+
     if (active) {
         // Enforce A_ij = transpose(A_ji) directly on the packed operator.
         for (uint relativeBlock = rowBegin;
@@ -12684,32 +12817,19 @@ kernel void numi_temporal_cone_stream_solve(
              ++relativeBlock) {
             const uint block = blockBase + relativeBlock;
             const uint source = columnIndices[block];
-            const uint reverseBegin = rowOffsets[rowOffsetBase + source];
-            const uint reverseEnd = rowOffsets[
-                rowOffsetBase + source + 1u
-            ];
-            uint reverseBlock = 0xffffffffu;
-            uint lower = reverseBegin;
-            uint upper = reverseEnd;
-            while (lower < upper) {
-                const uint middle = lower + (upper - lower) / 2u;
-                const uint candidateSource = columnIndices[
-                    blockBase + middle
-                ];
-                if (candidateSource < lane) {
-                    lower = middle + 1u;
-                } else {
-                    upper = middle;
-                }
-            }
-            if (lower < reverseEnd &&
-                columnIndices[blockBase + lower] == lane) {
-                reverseBlock = blockBase + lower;
-            }
-            if (reverseBlock == 0xffffffffu) {
+            const uint reverseRelative = temporalConeFindRelativeBlock(
+                rowOffsets,
+                columnIndices,
+                rowOffsetBase,
+                blockBase,
+                source,
+                lane
+            );
+            if (reverseRelative == 0xffffffffu) {
                 localFailure = NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT;
                 break;
             }
+            const uint reverseBlock = blockBase + reverseRelative;
             const uint valueBase =
                 block * NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS;
             const uint reverseValueBase =
@@ -12730,6 +12850,25 @@ kernel void numi_temporal_cone_stream_solve(
                         64.0f * kFloatEpsilon * symmetryScale) {
                         localFailure =
                             NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT;
+                        break;
+                    }
+                }
+            }
+            if (lane < source &&
+                localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
+                for (uint row = 0u; row < 3u; ++row) {
+                    const float3 coupling = float3(
+                        blockValues[valueBase + 3u * row + 0u],
+                        blockValues[valueBase + 3u * row + 1u],
+                        blockValues[valueBase + 3u * row + 2u]
+                    );
+                    if (!temporalConePairCurvatureValid3(
+                            checkpoint[lane][row],
+                            coupling,
+                            checkpoint[source].xyz
+                        )) {
+                        localFailure =
+                            NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED;
                         break;
                     }
                 }
@@ -12819,9 +12958,6 @@ kernel void numi_temporal_cone_stream_solve(
         NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
     ];
     threadgroup float4 search[
-        NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
-    ];
-    threadgroup float4 checkpoint[
         NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
     ];
     if (active) {

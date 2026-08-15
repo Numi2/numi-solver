@@ -100,6 +100,8 @@ An installed or relocated harness can load a specific library with
 - SIMD32-native execution, with homogeneous Wave8/Wave16 cohorts when safe.
 - Coupled 3x3 normal/tangent response blocks with unshifted PSD admission and
   deterministic rank-deficiency conditioning.
+- Scale-safe cross-contact Cauchy-Schwarz curvature admission before
+  iteration, backed by the final whole-island energy certificate.
 - Per-environment failure publication; no silent contact dropping.
 - Exact Euclidean projection onto isotropic, anisotropic, one-axis degenerate,
   and capped elliptic friction cones.

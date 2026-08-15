@@ -2,7 +2,7 @@
 
 ## Apple M4 local-block gate
 
-Measured on 2026-08-15 with Apple Metal toolchain `32023.883`:
+Measured on 2026-08-16 with Apple Metal toolchain `32023.883`:
 
 ```sh
 ./build/numi-solver-math --cases 65536 --replays 5 --iterations 16
@@ -55,14 +55,14 @@ report only `0.5` and would be incorrectly compared with an impulse tolerance
 larger than one. The measured GPU value is the exact FP32 representation of
 the FP64 oracle value.
 
-The measured isolated local-block throughput was approximately 34.3 million
-problems/s for the adversarial anisotropic batch and 102.8 million problems/s
+The measured isolated local-block throughput was approximately 33.5 million
+problems/s for the adversarial anisotropic batch and 103.4 million problems/s
 for the predominantly isotropic batch. The latter takes the closed-form fast
 path; these are local mathematical blocks, not full environment steps.
 
 ## Coupled streamed SIMD32 island gate
 
-Measured on 2026-08-15, the coupled batch mixes 1/2/4/8/16/32-contact chain,
+Measured on 2026-08-16, the coupled batch mixes 1/2/4/8/16/32-contact chain,
 ring, star, banded, clustered, tree, and occasional full-clique operators.
 Every operator is assembled as a positive diagonal plus deterministic sparse
 outer products, then independently checked by FP64 Cholesky. Coupling
@@ -107,6 +107,7 @@ dense_stream_bitwise=true
 typed_failures=true
 row_bound_overflow_rejected=true
 indefinite_local_block_rejected=true
+cross_contact_curvature_rejected=true
 positive_objective_rejected=true
 deterministic_failures=true
 failure_rollback=true
@@ -114,13 +115,13 @@ spd_cholesky=true
 min_spd_pivot=0.894427198
 shared_rigid_oracle=true
 under_relaxed_path=true
-average_gpu_seconds=0.004913000
-islands_per_second=833706.49
-contacts_per_second=8748422.56
-contact_iterations_per_second=306348056.54
+average_gpu_seconds=0.005047083
+islands_per_second=811557.83
+contacts_per_second=8516007.58
+contact_iterations_per_second=298209460.32
 streamed_buffer_bytes=10126748
-dense_gpu_seconds=0.010687658
-dense_to_stream_speedup=2.175383334
+dense_gpu_seconds=0.011034075
+dense_to_stream_speedup=2.186228012
 dense_buffer_bytes=159711232
 stream_to_dense_memory=0.063406611
 streamed_blocks=169861
@@ -134,7 +135,7 @@ result=PASS
 ```
 
 The streamed representation used 6.34% of the dense qualification buffers and
-the isolated streamed kernel was 2.175x faster for the same byte-identical
+the isolated streamed kernel was 2.186x faster for the same byte-identical
 FP32 solve. GPU time excludes CPU oracle work and buffer upload. These ratios
 describe this declared topology mix; they are not universal scene claims.
 
@@ -146,8 +147,14 @@ rollback gates. The richer batch remains within 0.4% of the prior
 positive-friction-only `0.004931358`-second measurement while qualifying 2,184
 lower-dimensional contacts.
 
-The combined metallib SHA-256 for this dimensional-certificate milestone was
-`f25dcb6fcbd9d5b657232bac8f879bd635389495d3637ff09c1a493b7308084b`.
+Eight repeated streamed measurements after adding the curvature gate ranged
+from `0.004878792` to `0.005195750` seconds, with a `0.005042454`-second
+median. The prior `0.004913000`-second point remains inside that observed
+run-to-run band; the added certificate retains the 2,560-byte threadgroup
+footprint.
+
+The combined metallib SHA-256 for this cross-contact-curvature milestone was
+`05f15378c67c40539949c1a853b2048957157aeb6740e1b2684c3ae7f1758652`.
 
 On the earlier 1,024-island positive-friction qualification batch, the
 unaccelerated revision measured `0.004850083` seconds, 431 maximum iterations,
@@ -161,11 +168,14 @@ dispatch remains one SIMD32 group per island.
 
 The typed failure batch separately verifies malformed symmetry, failed local
 conditioning, bounded iteration exhaustion, invalid ABI, unsorted/duplicate
-CSR, capacity overflow, an exact cone projection outside FP32 range, finite-entry
-FP32 row-sum overflow, a positive-determinant local block with two small
-negative eigenvalues that the CFM shift would otherwise hide, and a feasible
-zero-KKT but positive-objective stationary point from an indefinite global
-operator. Dense and streamed outputs are poisoned before dispatch;
+CSR, capacity overflow, an exact cone projection outside FP32 range,
+finite-entry FP32 row-sum overflow, a positive-determinant local block with two
+small negative eigenvalues that the CFM shift would otherwise hide, and an
+impossible unit-diagonal/coupling-2 cross-contact block. A separate
+three-contact equicorrelation operator has valid 2x2 principal minors but a
+negative higher-order mode; its feasible zero-KKT, positive-objective point is
+rejected by final energy admission. Dense and streamed outputs are poisoned
+before dispatch;
 deterministic failure replay, explicit zero publication for invalid state, and
 projected warm-start rollback for failed final admission must still hold. The
 analytic shared-rigid case verifies the coupled `(1/3, 1/3)` solution rather
@@ -213,14 +223,14 @@ missing_coupling_rejected=true
 non_psd_regularization_rejected=true
 deterministic_failures=true
 failure_rollback=true
-average_gpu_seconds=0.001651525
-assembly_gpu_seconds=0.000772938
-assembly_fraction=0.468014418
-islands_per_second=620033.00
-blocks_per_second=25266950.11
-assembly_blocks_per_second=53987546.44
-factor_fmas_per_second=1828009343.65
-contact_iterations_per_second=102056583.54
+average_gpu_seconds=0.001706492
+assembly_gpu_seconds=0.000788167
+assembly_fraction=0.461863757
+islands_per_second=600061.53
+blocks_per_second=24453093.33
+assembly_blocks_per_second=52944386.60
+factor_fmas_per_second=1792688124.99
+contact_iterations_per_second=98769307.39
 factor_bytes=3505020
 streamed_operator_bytes=1716156
 dense_operator_bytes=37748736
@@ -236,8 +246,8 @@ result=PASS
 
 Factor inputs plus the assembled sparse operator used 13.83% of the fixed
 dense operator storage for this declared topology mix. The assembly-only
-measurement produced 53.99 million blocks/s and the complete assembly/solve
-chain produced 620,033 islands/s. One unreported warmup command precedes each
+measurement produced 52.94 million blocks/s and the complete assembly/solve
+chain produced 600,062 islands/s. One unreported warmup command precedes each
 timed path. These are isolated kernel measurements, not environment-step or
 energy claims.
 

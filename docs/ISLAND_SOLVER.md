@@ -74,6 +74,27 @@ from all principal minors. The island path does not compute or use a local
 inverse; this certificate therefore adds no fictitious regularization to the
 operator being iterated.
 
+PSD also requires every cross-contact scalar coupling to obey the
+Cauchy-Schwarz principal-minor bound
+
+```math
+|A_{ij}|^2\le A_{ii}A_{jj}.
+```
+
+Dense and streamed kernels check each unordered cross-contact pair exactly
+once before iteration, with the three source axes checked as one vector. They
+form `sqrt(A_ii) sqrt(A_jj)` from separately rooted diagonals, avoiding the
+overflow-prone product `A_ii A_jj`; the comparison tolerance is relative to
+the larger of that bound and `|A_ij|`. The streamed path temporarily stores
+the diagonal roots in the rollback checkpoint arena, adding no retained
+threadgroup memory.
+
+This is a necessary global-curvature condition, not a claim that checking only
+2x2 minors proves an arbitrary matrix PSD. The physical assembly path retains
+its `J M^-1 J^T + R` construction and independent full-matrix FP64 Cholesky
+qualification. A higher-order indefinite operator that satisfies every 2x2
+bound is still rejected by the final whole-island positive-energy certificate.
+
 ## Deterministic iteration and residual
 
 One SIMD32 group owns one island and one lane owns one contact. At iteration
@@ -215,7 +236,8 @@ because the impulse magnitude makes the relative tolerance larger.
 ## Transaction and failure behavior
 
 The kernel rejects invalid ABI/ranges, malformed or asymmetric CSR,
-nonfinite input, failed local conditioning, nonfinite derived row scaling,
+nonfinite input, failed local or cross-contact curvature admission,
+nonfinite derived row scaling,
 nonfinite iteration/final arithmetic, failed KKT/feasibility/energy admission,
 and bounded iteration exhaustion with typed status. A valid but uncertified
 island republishes its projected warm-start checkpoint. Invalid or nonfinite
