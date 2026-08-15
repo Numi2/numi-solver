@@ -872,6 +872,8 @@ int run(const int argc, const char* const* argv) {
     double maximumKKT = 0.0;
     double maximumCone = 0.0;
     std::uint32_t maximumIterations = 0u;
+    std::uint32_t maximumAccelerationRestarts = 0u;
+    std::size_t acceleratedIslands = 0u;
     std::size_t failedValid = 0u;
     bool failureRollback = true;
     std::vector<std::uint32_t> iterations;
@@ -920,6 +922,14 @@ int run(const int argc, const char* const* argv) {
         maximumKKT = std::max<double>(maximumKKT, result.solverStatuses[problem].residuals.x);
         maximumCone = std::max<double>(maximumCone, result.solverStatuses[problem].residuals.y);
         maximumIterations = std::max(maximumIterations, result.solverStatuses[problem].control.y);
+        const auto restartCount = static_cast<std::uint32_t>(
+            result.solverStatuses[problem].diagnostics.w
+        );
+        maximumAccelerationRestarts = std::max(
+            maximumAccelerationRestarts,
+            restartCount
+        );
+        acceleratedIslands += restartCount > 0u ? 1u : 0u;
         iterations.push_back(result.solverStatuses[problem].control.y);
         for (std::uint32_t index = 0u; index < rigidHeader.control.z; ++index) {
             const auto& c = batch.rigidContacts[rigidHeader.inputRanges.y + index];
@@ -1194,7 +1204,10 @@ int run(const int argc, const char* const* argv) {
               << " iterations_max=" << maximumIterations
               << " p50=" << percentile(0.50)
               << " p95=" << percentile(0.95)
-              << " p99=" << percentile(0.99) << '\n'
+              << " p99=" << percentile(0.99)
+              << " accelerated_islands=" << acceleratedIslands
+              << " max_acceleration_restarts="
+              << maximumAccelerationRestarts << '\n'
               << "deterministic=" << (deterministic ? "yes" : "no")
               << " invalid_frame_rollback=" << (failureRollback ? "yes" : "no")
               << " failed_valid=" << failedValid << '\n'

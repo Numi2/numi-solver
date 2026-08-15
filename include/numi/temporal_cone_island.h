@@ -205,7 +205,8 @@ typedef struct MR_ALIGN16 NumiTemporalConeIslandStatus {
     // x normalized KKT gradient-mapping residual, y cone violation,
     // z maximum impulse magnitude, w objective.
     mr_float4 residuals;
-    // x maximum raw contact residual, y relaxation, zw reserved.
+    // x maximum raw contact residual, y relaxation, z iteration-gate reached,
+    // w deterministic acceleration restart count.
     mr_float4 diagnostics;
 } NumiTemporalConeIslandStatus;
 

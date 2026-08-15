@@ -89,6 +89,8 @@ An installed or relocated harness can load a specific library with
   whole-island rollback.
 - Scale-aware KKT gradient-mapping convergence residuals.
 - SIMD32 block-Jacobi islands with KKT-preserving scalar contact metrics.
+- Delayed metric FISTA acceleration with deterministic adaptive and bounded
+  restart, while only non-extrapolated iterates can satisfy the KKT gate.
 - Typed nonconvergence and warm-start rollback instead of partial publication.
 - SPD, nonpositive-objective, shared-rigid `1/3`, and FP64 qualification gates.
 

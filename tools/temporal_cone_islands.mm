@@ -606,7 +606,7 @@ Batch makeBatch(const std::size_t problemCount) {
         batch.headers[problem].tolerances = f4(
             5.0e-7f,
             1.0e-6f,
-            1.0f,
+            problem == 0u ? 0.8f : 1.0f,
             0.0f
         );
 
@@ -1466,6 +1466,8 @@ int run(const int argc, const char* const* argv) {
     double maximumConeViolation = 0.0;
     double maximumPositiveObjective = 0.0;
     std::uint32_t maximumIterations = 0u;
+    std::uint32_t maximumAccelerationRestarts = 0u;
+    std::size_t acceleratedIslands = 0u;
     std::vector<std::uint32_t> iterationCounts;
     iterationCounts.reserve(problemCount);
     std::uint64_t contactIterations = 0u;
@@ -1500,6 +1502,14 @@ int run(const int argc, const char* const* argv) {
             std::max(static_cast<double>(actual.residuals.w), 0.0)
         );
         maximumIterations = std::max(maximumIterations, actual.control.y);
+        const auto restartCount = static_cast<std::uint32_t>(
+            actual.diagnostics.w
+        );
+        maximumAccelerationRestarts = std::max(
+            maximumAccelerationRestarts,
+            restartCount
+        );
+        acceleratedIslands += restartCount > 0u ? 1u : 0u;
         iterationCounts.push_back(actual.control.y);
         contactsSolved += actual.control.w;
         contactIterations +=
@@ -1593,6 +1603,12 @@ int run(const int argc, const char* const* argv) {
         std::abs(sharedFirst.z) <= 1.0e-7 &&
         std::abs(sharedSecond.y) <= 1.0e-7 &&
         std::abs(sharedSecond.z) <= 1.0e-7;
+    const bool underRelaxedPath =
+        streamReplays[0].statuses[0].control.x ==
+            NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
+        std::abs(streamReplays[0].statuses[0].diagnostics.y - 0.8f) <=
+            std::numeric_limits<float>::epsilon() &&
+        streamReplays[0].statuses[0].diagnostics.w == 0.0f;
     std::uint64_t denseActiveBlocks = 0u;
     for (const auto& header : batch.headers) {
         denseActiveBlocks +=
@@ -1639,6 +1655,7 @@ int run(const int argc, const char* const* argv) {
         maximumPositiveObjective <= 2.0e-5 &&
         positiveDefinite &&
         sharedRigidOracle &&
+        underRelaxedPath &&
         fullCapacityCovered &&
         denseDeterministic &&
         deterministic &&
@@ -1662,7 +1679,10 @@ int run(const int argc, const char* const* argv) {
               << " max_iterations=" << maximumIterations
               << " iteration_p50=" << iterationP50
               << " iteration_p95=" << iterationP95
-              << " iteration_p99=" << iterationP99 << '\n'
+              << " iteration_p99=" << iterationP99
+              << " accelerated_islands=" << acceleratedIslands
+              << " max_acceleration_restarts="
+              << maximumAccelerationRestarts << '\n'
               << "deterministic_replay="
               << (deterministic ? "true" : "false")
               << " dense_deterministic="
@@ -1678,7 +1698,9 @@ int run(const int argc, const char* const* argv) {
               << (positiveDefinite ? "true" : "false")
               << " min_spd_pivot=" << minimumSPDPivot
               << " shared_rigid_oracle="
-              << (sharedRigidOracle ? "true" : "false") << '\n'
+              << (sharedRigidOracle ? "true" : "false")
+              << " under_relaxed_path="
+              << (underRelaxedPath ? "true" : "false") << '\n'
               << "average_gpu_seconds=" << averageSeconds
               << " islands_per_second=" << islandsPerSecond
               << " contacts_per_second=" << contactsPerSecond
@@ -1693,6 +1715,12 @@ int run(const int argc, const char* const* argv) {
               << " block_fill=" << blockFill
               << " max_island_blocks=" << maximumIslandBlocks
               << " full_capacity_islands=" << fullCapacityIslands << '\n'
+              << "stream_threadgroup_memory="
+              << streamPipeline.staticThreadgroupMemoryLength
+              << " dense_threadgroup_memory="
+              << pipeline.staticThreadgroupMemoryLength
+              << " stream_max_threads="
+              << streamPipeline.maxTotalThreadsPerThreadgroup << '\n'
               << "result=" << (passed ? "PASS" : "FAIL") << '\n';
     return passed ? 0 : 1;
 }

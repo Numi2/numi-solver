@@ -770,6 +770,8 @@ int run(const int argc, const char* const* argv) {
     double minimumPivot = std::numeric_limits<double>::infinity();
     std::uint64_t contacts = 0u;
     std::uint64_t contactIterations = 0u;
+    std::uint32_t maximumAccelerationRestarts = 0u;
+    std::size_t acceleratedIslands = 0u;
     std::vector<std::uint32_t> iterationCounts;
     iterationCounts.reserve(problemCount);
     for (std::size_t problem = 0u; problem < problemCount; ++problem) {
@@ -806,6 +808,14 @@ int run(const int argc, const char* const* argv) {
         contactIterations +=
             static_cast<std::uint64_t>(input.control.y) * solver.control.y;
         iterationCounts.push_back(solver.control.y);
+        const auto restartCount = static_cast<std::uint32_t>(
+            solver.diagnostics.w
+        );
+        maximumAccelerationRestarts = std::max(
+            maximumAccelerationRestarts,
+            restartCount
+        );
+        acceleratedIslands += restartCount > 0u ? 1u : 0u;
         const std::size_t matrixBase = problem * kMatrixElements;
         for (std::size_t target = 0u; target < input.control.y; ++target) {
             const std::size_t rowBegin = batch.rowOffsets[
@@ -1110,6 +1120,9 @@ int run(const int argc, const char* const* argv) {
               << " iteration_p50=" << iterationP50
               << " iteration_p95=" << iterationP95
               << " iteration_p99=" << iterationP99
+              << " accelerated_islands=" << acceleratedIslands
+              << " max_acceleration_restarts="
+              << maximumAccelerationRestarts
               << '\n'
               << "deterministic_replay="
               << (deterministic ? "true" : "false")

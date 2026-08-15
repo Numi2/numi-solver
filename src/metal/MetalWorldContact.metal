@@ -11900,6 +11900,12 @@ kernel void numi_temporal_cone_island_solve(
     threadgroup float4 next[
         NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
     ];
+    threadgroup float4 previous[
+        NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
+    ];
+    threadgroup float4 search[
+        NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
+    ];
     threadgroup float4 checkpoint[
         NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
     ];
@@ -11918,6 +11924,8 @@ kernel void numi_temporal_cone_island_solve(
         current[lane] = float4(0.0f);
     }
     checkpoint[lane] = current[lane];
+    previous[lane] = current[lane];
+    search[lane] = current[lane];
     threadgroup_barrier(mem_flags::mem_threadgroup);
     const uint checkpointFailure = simd_max(localFailure);
     if (checkpointFailure != NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
@@ -11939,23 +11947,48 @@ kernel void numi_temporal_cone_island_solve(
 
     uint completedIterations = 0u;
     bool converged = false;
+    const bool accelerationEnabled = effectiveRelaxation == 1.0f;
+    float accelerationClock = 1.0f;
+    float momentumScale = 0.0f;
+    uint accelerationRestarts = 0u;
     for (uint iteration = 0u;
          iteration < header.control.w;
          ++iteration) {
         float laneNaturalDelta = 0.0f;
         float laneScale = 1.0f;
+        float laneRestartMeasure = 0.0f;
         localFailure = NUMI_TEMPORAL_CONE_ISLAND_SUCCESS;
+        const bool extrapolated = momentumScale != 0.0f;
+        if (active && extrapolated) {
+            search[lane] = current[lane] + momentumScale * (
+                current[lane] - previous[lane]
+            );
+        }
+        if (extrapolated) {
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+        }
         if (active) {
             const uint row = 3u * lane;
-            const float3 impulse = current[lane].xyz;
-            const float3 residual = temporalConeIslandResidual(
-                matrices,
-                matrixBase,
-                row,
-                contactCount,
-                contact.freeVelocityAndFrictionU.xyz,
-                current
-            );
+            const float3 impulse = extrapolated
+                ? search[lane].xyz
+                : current[lane].xyz;
+            const float3 residual = extrapolated
+                ? temporalConeIslandResidual(
+                    matrices,
+                    matrixBase,
+                    row,
+                    contactCount,
+                    contact.freeVelocityAndFrictionU.xyz,
+                    search
+                )
+                : temporalConeIslandResidual(
+                    matrices,
+                    matrixBase,
+                    row,
+                    contactCount,
+                    contact.freeVelocityAndFrictionU.xyz,
+                    current
+                );
             const float3 proposed = impulse - stepScale * residual;
             const float3 projected = projectFrictionCone(proposed, cone);
             const float3 naturalDelta = projected - impulse;
@@ -11969,6 +12002,12 @@ kernel void numi_temporal_cone_island_solve(
                 next[lane] = current[lane];
             } else {
                 next[lane] = float4(candidate, 0.0f);
+                if (extrapolated) {
+                    laneRestartMeasure = dot(
+                        impulse - candidate,
+                        candidate - current[lane].xyz
+                    );
+                }
                 laneNaturalDelta = max(
                     abs(naturalDelta.x),
                     max(abs(naturalDelta.y), abs(naturalDelta.z))
@@ -11998,6 +12037,7 @@ kernel void numi_temporal_cone_island_solve(
         const uint iterationFailure = simd_max(localFailure);
         const float maximumNaturalDelta = simd_max(laneNaturalDelta);
         const float maximumScale = simd_max(laneScale);
+        const float restartMeasure = simd_sum(laneRestartMeasure);
         threadgroup_barrier(mem_flags::mem_threadgroup);
         completedIterations = iteration + 1u;
         if (iterationFailure != NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
@@ -12007,13 +12047,45 @@ kernel void numi_temporal_cone_island_solve(
         const float tolerance =
             header.tolerances.x +
             header.tolerances.y * maximumScale;
-        if (completedIterations >= header.control.z &&
-            maximumNaturalDelta <= tolerance) {
+        const bool candidateReady =
+            completedIterations >= header.control.z &&
+            maximumNaturalDelta <= tolerance;
+        const bool iterationConverged =
+            momentumScale == 0.0f && candidateReady;
+        if (iterationConverged) {
             converged = true;
             break;
         }
+        previous[lane] = current[lane];
         current[lane] = next[lane];
         threadgroup_barrier(mem_flags::mem_threadgroup);
+        if (accelerationEnabled) {
+            // Restart on misaligned proximal progress, provisional tolerance,
+            // or the fixed bound. Only beta=0 can pass the exact KKT gate.
+            const bool restartAcceleration =
+                candidateReady ||
+                restartMeasure > 0.0f ||
+                completedIterations < 16u ||
+                completedIterations % 64u == 0u;
+            if (restartAcceleration) {
+                if (extrapolated) {
+                    ++accelerationRestarts;
+                }
+                accelerationClock = 1.0f;
+                momentumScale = 0.0f;
+            } else {
+                const float nextClock = 0.5f * (
+                    1.0f + sqrt(fma(
+                        4.0f * accelerationClock,
+                        accelerationClock,
+                        1.0f
+                    ))
+                );
+                momentumScale =
+                    (accelerationClock - 1.0f) / nextClock;
+                accelerationClock = nextClock;
+            }
+        }
     }
 
     float laneNaturalResidual = 0.0f;
@@ -12119,7 +12191,7 @@ kernel void numi_temporal_cone_island_solve(
             maximumRawResidual,
             effectiveRelaxation,
             converged ? 1.0f : 0.0f,
-            0.0f
+            float(accelerationRestarts)
         );
         outputStatuses[problem] = status;
     }
@@ -12468,6 +12540,12 @@ kernel void numi_temporal_cone_stream_solve(
     threadgroup float4 next[
         NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
     ];
+    threadgroup float4 previous[
+        NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
+    ];
+    threadgroup float4 search[
+        NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
+    ];
     threadgroup float4 checkpoint[
         NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS
     ];
@@ -12486,6 +12564,8 @@ kernel void numi_temporal_cone_stream_solve(
         current[lane] = float4(0.0f);
     }
     checkpoint[lane] = current[lane];
+    previous[lane] = current[lane];
+    search[lane] = current[lane];
     threadgroup_barrier(mem_flags::mem_threadgroup);
     const uint checkpointFailure = simd_max(localFailure);
     if (checkpointFailure != NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
@@ -12507,23 +12587,49 @@ kernel void numi_temporal_cone_stream_solve(
 
     uint completedIterations = 0u;
     bool converged = false;
+    const bool accelerationEnabled = effectiveRelaxation == 1.0f;
+    float accelerationClock = 1.0f;
+    float momentumScale = 0.0f;
+    uint accelerationRestarts = 0u;
     for (uint iteration = 0u;
          iteration < header.control.w;
          ++iteration) {
         float laneNaturalDelta = 0.0f;
         float laneScale = 1.0f;
+        float laneRestartMeasure = 0.0f;
         localFailure = NUMI_TEMPORAL_CONE_ISLAND_SUCCESS;
-        if (active) {
-            const float3 impulse = current[lane].xyz;
-            const float3 residual = temporalConeStreamResidual(
-                columnIndices,
-                blockValues,
-                blockBase,
-                rowBegin,
-                rowEnd,
-                contact.freeVelocityAndFrictionU.xyz,
-                current
+        const bool extrapolated = momentumScale != 0.0f;
+        if (active && extrapolated) {
+            search[lane] = current[lane] + momentumScale * (
+                current[lane] - previous[lane]
             );
+        }
+        if (extrapolated) {
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+        }
+        if (active) {
+            const float3 impulse = extrapolated
+                ? search[lane].xyz
+                : current[lane].xyz;
+            const float3 residual = extrapolated
+                ? temporalConeStreamResidual(
+                    columnIndices,
+                    blockValues,
+                    blockBase,
+                    rowBegin,
+                    rowEnd,
+                    contact.freeVelocityAndFrictionU.xyz,
+                    search
+                )
+                : temporalConeStreamResidual(
+                    columnIndices,
+                    blockValues,
+                    blockBase,
+                    rowBegin,
+                    rowEnd,
+                    contact.freeVelocityAndFrictionU.xyz,
+                    current
+                );
             const float3 proposed = impulse - stepScale * residual;
             const float3 projected = projectFrictionCone(proposed, cone);
             const float3 naturalDelta = projected - impulse;
@@ -12537,6 +12643,12 @@ kernel void numi_temporal_cone_stream_solve(
                 next[lane] = current[lane];
             } else {
                 next[lane] = float4(candidate, 0.0f);
+                if (extrapolated) {
+                    laneRestartMeasure = dot(
+                        impulse - candidate,
+                        candidate - current[lane].xyz
+                    );
+                }
                 laneNaturalDelta = max(
                     abs(naturalDelta.x),
                     max(abs(naturalDelta.y), abs(naturalDelta.z))
@@ -12566,6 +12678,7 @@ kernel void numi_temporal_cone_stream_solve(
         const uint iterationFailure = simd_max(localFailure);
         const float maximumNaturalDelta = simd_max(laneNaturalDelta);
         const float maximumScale = simd_max(laneScale);
+        const float restartMeasure = simd_sum(laneRestartMeasure);
         threadgroup_barrier(mem_flags::mem_threadgroup);
         completedIterations = iteration + 1u;
         if (iterationFailure != NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
@@ -12575,13 +12688,44 @@ kernel void numi_temporal_cone_stream_solve(
         const float tolerance =
             header.tolerances.x +
             header.tolerances.y * maximumScale;
-        if (completedIterations >= header.control.z &&
-            maximumNaturalDelta <= tolerance) {
+        const bool candidateReady =
+            completedIterations >= header.control.z &&
+            maximumNaturalDelta <= tolerance;
+        const bool iterationConverged =
+            momentumScale == 0.0f && candidateReady;
+        if (iterationConverged) {
             converged = true;
             break;
         }
+        previous[lane] = current[lane];
         current[lane] = next[lane];
         threadgroup_barrier(mem_flags::mem_threadgroup);
+        if (accelerationEnabled) {
+            // Match the dense qualification path exactly.
+            const bool restartAcceleration =
+                candidateReady ||
+                restartMeasure > 0.0f ||
+                completedIterations < 16u ||
+                completedIterations % 64u == 0u;
+            if (restartAcceleration) {
+                if (extrapolated) {
+                    ++accelerationRestarts;
+                }
+                accelerationClock = 1.0f;
+                momentumScale = 0.0f;
+            } else {
+                const float nextClock = 0.5f * (
+                    1.0f + sqrt(fma(
+                        4.0f * accelerationClock,
+                        accelerationClock,
+                        1.0f
+                    ))
+                );
+                momentumScale =
+                    (accelerationClock - 1.0f) / nextClock;
+                accelerationClock = nextClock;
+            }
+        }
     }
 
     float laneNaturalResidual = 0.0f;
@@ -12687,7 +12831,7 @@ kernel void numi_temporal_cone_stream_solve(
             maximumRawResidual,
             effectiveRelaxation,
             converged ? 1.0f : 0.0f,
-            0.0f
+            float(accelerationRestarts)
         );
         outputStatuses[problem] = status;
     }

@@ -64,15 +64,17 @@ Apple M4 result:
 ```text
 islands=1024 contacts=10725 replays=10 failed_islands=0
 max_fp64_impulse_error=0.000001834
-max_fp64_objective_error=0.000000150
+max_fp64_objective_error=0.000000134
 max_fp64_kkt_residual=0.000000000
 max_kkt_residual=0.000001500
 max_cone_violation=0.000000119
 max_positive_objective=0.000000000
-max_iterations=431
+max_iterations=103
 iteration_p50=20
-iteration_p95=94
-iteration_p99=262
+iteration_p95=44
+iteration_p99=74
+accelerated_islands=561
+max_acceleration_restarts=5
 deterministic_replay=true
 dense_deterministic=true
 dense_stream_bitwise=true
@@ -82,26 +84,39 @@ failure_rollback=true
 spd_cholesky=true
 min_spd_pivot=0.894427198
 shared_rigid_oracle=true
-average_gpu_seconds=0.004850083
-islands_per_second=211130.39
-contacts_per_second=2211302.20
-contact_iterations_per_second=159474991.07
+under_relaxed_path=true
+average_gpu_seconds=0.001778100
+islands_per_second=575895.62
+contacts_per_second=6031719.25
+contact_iterations_per_second=212065125.67
 streamed_buffer_bytes=2550140
-dense_gpu_seconds=0.008173462
-dense_to_stream_speedup=1.685221035
+dense_gpu_seconds=0.003081000
+dense_to_stream_speedup=1.732748447
 dense_buffer_bytes=39927808
 stream_to_dense_memory=0.063868770
 streamed_blocks=42961
 block_fill=0.185069033
 max_island_blocks=1024
 full_capacity_islands=5
+stream_threadgroup_memory=2560
+dense_threadgroup_memory=2560
+stream_max_threads=1024
 result=PASS
 ```
 
 The streamed representation used 6.39% of the dense qualification buffers and
-the isolated streamed kernel was 1.685x faster for the same byte-identical
+the isolated streamed kernel was 1.733x faster for the same byte-identical
 FP32 solve. GPU time excludes CPU oracle work and buffer upload. These ratios
 describe this declared topology mix; they are not universal scene claims.
+
+On the same Apple M4 qualification batch, the preceding unaccelerated revision
+measured `0.004850083` seconds, 431 maximum iterations, and p99 262. The
+delayed/adaptively restarted metric acceleration measured `0.001778100`
+seconds, 103 maximum iterations, and p99 74: 2.73x streamed throughput, 4.18x
+lower maximum iteration count, and 3.54x lower p99. The operator, cone,
+tolerances, FP64 oracle, and failure gates were unchanged. Pipeline reflection
+reports 2,560 bytes of static threadgroup memory and a 1,024-thread hardware
+limit; the solver dispatch remains one SIMD32 group per island.
 
 The typed failure batch separately verifies malformed symmetry, failed local
 conditioning, bounded iteration exhaustion, invalid ABI, unsorted/duplicate
@@ -140,24 +155,26 @@ min_spd_pivot=0.905538510
 max_kkt_residual=0.000001491
 max_cone_violation=0.000000119
 max_positive_objective=0.000000000
-max_iterations=35
+max_iterations=27
 iteration_p50=13
 iteration_p95=20
-iteration_p99=30
+iteration_p99=26
+accelerated_islands=68
+max_acceleration_restarts=2
 deterministic_replay=true
 shared_rigid_oracle=true
 asymmetric_rejected=true
 missing_coupling_rejected=true
 deterministic_failures=true
 failure_rollback=true
-average_gpu_seconds=0.001726683
-assembly_gpu_seconds=0.000767038
-assembly_fraction=0.444225927
-islands_per_second=593044.47
-blocks_per_second=24167141.23
-assembly_blocks_per_second=54402815.65
-factor_fmas_per_second=1842070290.26
-contact_iterations_per_second=99759461.74
+average_gpu_seconds=0.001670204
+assembly_gpu_seconds=0.000764442
+assembly_fraction=0.457693573
+islands_per_second=613098.71
+blocks_per_second=24984371.10
+assembly_blocks_per_second=54587550.65
+factor_fmas_per_second=1848325386.38
+contact_iterations_per_second=100915209.21
 factor_bytes=3505020
 streamed_operator_bytes=1716156
 dense_operator_bytes=37748736
@@ -173,8 +190,8 @@ result=PASS
 
 Factor inputs plus the assembled sparse operator used 13.83% of the fixed
 dense operator storage for this declared topology mix. The assembly-only
-measurement produced 54.40 million blocks/s and the complete assembly/solve
-chain produced 593,044 islands/s. One unreported warmup command precedes each
+measurement produced 54.59 million blocks/s and the complete assembly/solve
+chain produced 613,099 islands/s. One unreported warmup command precedes each
 timed path. These are isolated kernel measurements, not environment-step or
 energy claims.
 
@@ -213,8 +230,8 @@ Apple M4 result:
 islands=1024 valid_bodies=2607 valid_contacts=3402 blocks=38944
 operator_max_abs_error=0.000000098
 free_velocity_max_abs_error=0.000000053
-publication_max_abs_error=0.000000092
-pose_max_abs_error=0.000000030
+publication_max_abs_error=0.000000095
+pose_max_abs_error=0.000000019
 quaternion_norm_max_error=0.000000037
 free_flight_steps=240
 free_flight_max_abs_error=0.000001955
@@ -222,29 +239,33 @@ free_flight_norm_error=0.000000051
 free_flight_deterministic=yes
 analytic_impulse_error=0.000000010
 analytic_velocity_error=0.000000020
-momentum_max_abs_error=0.000000037
+momentum_max_abs_error=0.000000036
 energy_max_increase=0.000000000
-kkt_max=0.000003955
+kkt_max=0.000003595
 cone_max=0.000000000
-iterations_max=959 p50=8 p95=246 p99=959
+iterations_max=105 p50=8 p95=53 p99=105
+accelerated_islands=428 max_acceleration_restarts=3
 deterministic=yes
 invalid_frame_rollback=yes
 failed_valid=0
 one_command_buffer=yes
 cpu_readback_between_stages=no stages=5
-average_chain_seconds=0.013030367
-islands_per_second=78585.66
-contacts_per_second=261082.45
+average_chain_seconds=0.001798013
+islands_per_second=569517.73
+contacts_per_second=1892089.17
 result=PASS
 ```
 
 The reported chain time includes all five GPU stages and excludes CPU oracle
-work. The high iteration tail is retained: the redundant 32-contact cliques
-exercise a deliberately less-conditioned shared response rather than being
-removed from the timing population.
+work. The redundant 32-contact cliques remain in the timing population.
+Delayed metric acceleration and deterministic adaptive restart reduce their
+observed maximum from 959 iterations before this change to 105 without
+loosening the KKT gate or removing the ill-conditioned cases. Complete
+five-stage chain time fell from `0.013030367` to `0.001798013` seconds on the
+same declared batch, a 7.25x throughput increase.
 
 The combined metallib SHA-256 was
-`3859c1a704419becc7f0df7a4decc44d9e725badcda08f59693161680b961192`.
+`356cfd7ea843f2ad0323f6162a14fb5cc85ca66409aad30fdd14e3709cbe05c8`.
 
 ## Evidence boundary
 

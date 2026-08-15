@@ -86,6 +86,40 @@ p^k = \Pi_{\mathcal C}
 \qquad 0 < \omega \le 1.
 ```
 
+The first 16 iterations retain this unaccelerated map, preserving the common
+short-island path. When `omega=1` and the island remains unresolved, the
+solver switches to the same `D`-metric accelerated proximal map:
+
+```math
+y^k=\lambda^k+\beta_k(\lambda^k-\lambda^{k-1}),
+```
+
+```math
+\lambda^{k+1}=\Pi_{\mathcal C}
+\left(y^k-D^{-1}(Ay^k+v_\mathrm{free})\right),
+```
+
+```math
+t_{k+1}=\frac{1+\sqrt{1+4t_k^2}}{2},
+\qquad
+\beta_{k+1}=\frac{t_k-1}{t_{k+1}}.
+```
+
+Acceleration is disabled for under-relaxed inputs. The whole SIMD group
+restarts momentum when
+
+```math
+\sum_i (y_i^k-\lambda_i^{k+1})^T
+(\lambda_i^{k+1}-\lambda_i^k)>0,
+```
+
+when an extrapolated point first reaches the provisional tolerance, or after
+64 iterations without an earlier restart. The first condition detects
+momentum that is no longer aligned with proximal progress. The second forces
+the next certificate to evaluate the accepted feasible iterate with
+`beta=0`; an extrapolated search point never terminates the solve. The fixed
+restart bounds momentum when the adaptive test remains silent.
+
 Rows visit source contacts in strictly increasing order. SIMD reductions have
 fixed topology. No floating-point atomics, unordered append queues,
 host-visible intermediate counts, or lane-0 serial island solve enters the
@@ -111,6 +145,9 @@ Unlike an unscaled update norm, this certificate cannot become artificially
 small merely because an operator row has a small step size. The candidate is
 not applied after the current iterate satisfies the gate, so the published
 impulses, objective, and residual all refer to the same vector.
+
+The status diagnostic records the number of accelerated restarts. Easy
+islands that finish before momentum begins report zero.
 
 ## Transaction and failure behavior
 
