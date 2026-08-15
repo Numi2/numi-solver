@@ -79,7 +79,9 @@ ctest --test-dir build --output-on-failure
 The local harness accepts `--cases N --replays N --iterations N` and
 `--isotropic`. The island, assembly, rigid, and articulated harnesses accept
 `--islands N` and `--replays N`. The bag accepts `--environments N`,
-`--steps N`, `--replays N`, and optional `--dump-obj PATH`. Together they
+`--steps N`, `--replays N`, `--timestep DT`, optional `--refinement`,
+`--preset baseline|stiff-braid|low-cfm|high-friction`, and optional
+`--dump-obj PATH`. Together they
 check separating, impact, sticking, sliding,
 anisotropic friction, near-rank-deficient response, capped impulse, polar
 boundary, exact one-axis friction, extreme scale, sparse topology, full block
@@ -115,6 +117,8 @@ An installed or relocated harness can load a specific library with
 - Impulse-dimensional cone feasibility certificates matched to the absolute
   and relative convergence tolerances.
 - Packed, sorted 3x3 block-CSR Delassus operators with exact dense parity.
+- Stable GPU compaction of current/predicted active contacts followed by exact
+  dynamic CSR construction, including a certified zero-contact island state.
 - Deterministic GPU composition of `J M^-1 J^T + R` from shared-owner
   Jacobians and response columns.
 - Full assembled-operator PSD admission by normalized, packed, deterministic
@@ -138,6 +142,8 @@ An installed or relocated harness can load a specific library with
 - Symplectic position advance and exponential-map quaternion integration with
   whole-island rollback.
 - Scale-aware KKT, cone-feasibility, and nonpositive-energy success gates.
+- Runtime Delassus infinity-norm measurement and a rigorous
+  `kappa_2 <= ||W||_infinity / CFM` conditioning upper gate.
 - Independent dual-feasibility and variational-inequality complementarity
   admission, evaluated at the accepted iterate rather than inferred from an
   update norm.

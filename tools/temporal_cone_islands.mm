@@ -1054,7 +1054,7 @@ StreamBatch makeStreamBatch(const Batch& dense) {
         const std::uint32_t contactCount = denseHeader.control.y;
         const std::size_t matrixBase = problem * kMatrixElements;
         const std::size_t denseContactBase = problem * kMaxContacts;
-        if (contactCount == 0u || contactCount > kMaxContacts) {
+        if (contactCount > kMaxContacts) {
             throw std::runtime_error(
                 "cannot stream an invalid dense contact count"
             );
@@ -1589,6 +1589,69 @@ int run(const int argc, const char* const* argv) {
         ));
     }
 
+    // An empty contact set is a valid island state: no impulse is required,
+    // every cone/VI certificate is exactly zero, and both operator layouts
+    // must publish the same deterministic success record. Keep a second,
+    // nonempty island in the batch so every bound Metal buffer has storage.
+    Batch zeroContactBatch = makeBatch(2u);
+    zeroContactBatch.headers[0].control.y = 0u;
+    const StreamBatch zeroContactStreamBatch =
+        makeStreamBatch(zeroContactBatch);
+    const GPUResult zeroDenseFirst = runGPU(
+        device,
+        queue,
+        pipeline,
+        zeroContactBatch
+    );
+    const GPUResult zeroDenseReplay = runGPU(
+        device,
+        queue,
+        pipeline,
+        zeroContactBatch
+    );
+    const GPUResult zeroStreamFirst = runStreamGPU(
+        device,
+        queue,
+        streamPipeline,
+        zeroContactStreamBatch
+    );
+    const GPUResult zeroStreamReplay = runStreamGPU(
+        device,
+        queue,
+        streamPipeline,
+        zeroContactStreamBatch
+    );
+    const auto& zeroStatus = zeroDenseFirst.statuses[0];
+    const bool zeroContactAccepted =
+        zeroStatus.control.x == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
+        zeroStatus.control.y == zeroContactBatch.headers[0].control.z &&
+        zeroStatus.control.z == 1u &&
+        zeroStatus.control.w == 0u &&
+        zeroStatus.residuals.x == 0.0f &&
+        zeroStatus.residuals.y == 0.0f &&
+        zeroStatus.residuals.z == 0.0f &&
+        zeroStatus.residuals.w == 0.0f &&
+        zeroStatus.diagnostics.x == 0.0f &&
+        zeroStatus.diagnostics.y ==
+            zeroContactBatch.headers[0].tolerances.z &&
+        zeroStatus.diagnostics.z == 0.0f &&
+        zeroStatus.diagnostics.w == 0.0f &&
+        std::memcmp(
+            &zeroDenseFirst.statuses[0],
+            &zeroDenseReplay.statuses[0],
+            sizeof(NumiTemporalConeIslandStatus)
+        ) == 0 &&
+        std::memcmp(
+            &zeroStreamFirst.statuses[0],
+            &zeroStreamReplay.statuses[0],
+            sizeof(NumiTemporalConeIslandStatus)
+        ) == 0 &&
+        std::memcmp(
+            &zeroDenseFirst.statuses[0],
+            &zeroStreamFirst.statuses[0],
+            sizeof(NumiTemporalConeIslandStatus)
+        ) == 0;
+
     const Batch failureBatch = makeFailureBatch();
     const GPUResult denseFailureFirst = runGPU(
         device,
@@ -2106,6 +2169,7 @@ int run(const int argc, const char* const* argv) {
         sharedRigidOracle &&
         underRelaxedPath &&
         fullCapacityCovered &&
+        zeroContactAccepted &&
         denseDeterministic &&
         deterministic &&
         denseStreamBitwise &&
@@ -2153,6 +2217,8 @@ int run(const int argc, const char* const* argv) {
               << (denseDeterministic ? "true" : "false")
               << " dense_stream_bitwise="
               << (denseStreamBitwise ? "true" : "false")
+              << " zero_contact_accepted="
+              << (zeroContactAccepted ? "true" : "false")
               << " typed_failures=" << (typedFailures ? "true" : "false")
               << " row_bound_overflow_rejected="
               << (rowBoundOverflowRejected ? "true" : "false")

@@ -108,6 +108,7 @@ max_acceleration_restarts=5
 deterministic_replay=true
 dense_deterministic=true
 dense_stream_bitwise=true
+zero_contact_accepted=true
 typed_failures=true
 row_bound_overflow_rejected=true
 indefinite_local_block_rejected=true
@@ -119,13 +120,13 @@ spd_cholesky=true
 min_spd_pivot=0.894427198
 shared_rigid_oracle=true
 under_relaxed_path=true
-average_gpu_seconds=0.005340233
-islands_per_second=767007.68
-contacts_per_second=8048524.73
-contact_iterations_per_second=285431348.44
+average_gpu_seconds=0.017951792
+islands_per_second=228166.64
+contacts_per_second=2394245.70
+contact_iterations_per_second=84909073.73
 streamed_buffer_bytes=10126748
-dense_gpu_seconds=0.011481417
-dense_to_stream_speedup=2.149984090
+dense_gpu_seconds=0.036040575
+dense_to_stream_speedup=2.007631091
 dense_buffer_bytes=159711232
 stream_to_dense_memory=0.063406611
 streamed_blocks=169861
@@ -139,7 +140,7 @@ result=PASS
 ```
 
 The streamed representation used 6.34% of the dense qualification buffers and
-the isolated streamed kernel was 2.150x faster for the same byte-identical
+the isolated streamed kernel was 2.008x faster for the same byte-identical
 FP32 solve. GPU time excludes CPU oracle work and buffer upload. These ratios
 describe this declared topology mix; they are not universal scene claims.
 
@@ -190,52 +191,101 @@ than the incorrect independent-contact `(1/2, 1/2)` result.
 ## Braided-bag trajectory gate
 
 The braided-bag gate advances a deformable 56-node, 100-edge lattice around
-six falling balls for one simulated second. Each environment rebuilds 27
-contacts and the complete shared-particle Delassus operator on the GPU every
-microstep. Dense and 309-block streamed paths begin from identical state and
-must produce byte-identical nodes, balls, statuses, and final hashes.
+six falling balls. Each environment evaluates 27 canonical contact candidates,
+stably compacts the current/predicted active set, and builds the complete
+shared-particle Delassus operator and exact block CSR on the GPU every
+microstep. Dense and streamed paths begin from identical state and must
+produce byte-identical nodes, balls, statuses, and final hashes. The empty
+contact set is explicitly admitted and independently checked in the island
+harness.
 
 Measured command:
 
 ```sh
 ./build/numi-solver-braided-bag \
-  --environments 128 --steps 480 --replays 2
+  --environments 128 --steps 480 --replays 3
 ```
 
-Every one of three paired Apple M4 invocations reported:
+Apple M4 result:
 
 ```text
 failed_steps=0
 escaped_mask=0
-max_penetration=0.002773538
-max_relative_stretch=0.135187015
-max_kkt_residual=0.000001095
+min_active_contacts=0
+max_active_contacts=21
+average_active_contacts=12.405257161
+max_active_blocks=181
+max_penetration=0.002769157
+max_relative_stretch=0.136324883
+max_kkt_residual=0.000001998
 max_cone_violation=0.000000030
-max_complementarity_residual=0.000001095
+max_complementarity_residual=0.000002000
 max_positive_objective=0.000000000
-max_iterations=428
+max_operator_infinity_norm=121.167037964
+max_condition_upper=2423.340820312
+max_iterations=493
 dense_deterministic=true
 streamed_deterministic=true
 dense_stream_bitwise=true
-state_hash=0x8c77acd537089a60
+state_hash=0x205fd70f99aa7f64
+dense_gpu_seconds=0.895662792
+streamed_gpu_seconds=0.515733347
+dense_to_stream_speedup=1.736678065
 dense_operator_bytes=4718592
 streamed_operator_bytes=1596416
 stream_to_dense_operator_memory=0.338324653
 ```
 
-Paired dense/stream times were `0.888583479/0.444437354`,
-`0.886406542/0.456465333`, and `0.954061042/0.521337750` seconds. Thus the
-streamed path used 33.8% of dense operator storage and measured 1.83–2.00x
-faster while producing identical FP32 trajectories and certificates. The
-median invocation was 134,599 streamed versus 69,144 dense environment
-microsteps/s. These are complete bag physics microsteps, not RL transitions.
+The runtime condition gate is rigorous for this model:
+
+```math
+W=JM^{-1}J^T+\mathrm{CFM}I,
+\qquad
+\kappa_2(W)\le\frac{\|W\|_\infty}{\mathrm{CFM}}.
+```
+
+The response term is PSD, so CFM bounds the smallest eigenvalue, while the
+reported infinity row norm bounds the largest eigenvalue. This is an upper
+bound rather than an estimated condition number.
+
+The final Apple M4 scaling sweep used 480 steps and three replay averages per
+path:
+
+| Environments | Dense s | Streamed s | Speedup | Streamed env-microsteps/s |
+|---:|---:|---:|---:|---:|
+| 16 | 0.619194222 | 0.366568153 | 1.689x | 20,951 |
+| 32 | 0.493069292 | 0.336931917 | 1.463x | 45,588 |
+| 64 | 0.618551097 | 0.376852750 | 1.641x | 81,517 |
+| 128 | 0.895662792 | 0.515733347 | 1.737x | 119,131 |
+| 256 | 1.757964042 | 0.940558750 | 1.869x | 130,646 |
+
+All rows had zero failed steps/escapes, deterministic replay, and exact
+dense/streamed parity. Allocated CSR storage was 33.8% of dense storage; the
+dynamic topology visited at most 181 of its 309-block capacity.
+
+The conditioning/friction matrix also passed with zero failures/escapes and
+exact parity:
+
+| Preset | Condition upper | Max KKT | Max VI | Iterations | Speedup |
+|---|---:|---:|---:|---:|---:|
+| baseline | 2423.34 | 1.998e-6 | 2.000e-6 | 493 | 1.737x |
+| stiff-braid | 2233.95 | 1.954e-6 | 1.982e-6 | 422 | 1.612x |
+| low-cfm | 6007.80 | 1.998e-6 | 2.000e-6 | 680 | 1.410x |
+| high-friction | 1979.88 | 2.000e-6 | 2.000e-6 | 440 | 1.436x |
+
+A four-second/1,920-step run passed with zero failures and escapes, condition
+upper bound `2460.12`, maximum KKT `1.990e-6`, maximum VI `1.999e-6`, and 543
+maximum iterations. A deterministic half-timestep replay differed by
+`0.025897510 m` in final position L-infinity norm, below its declared
+`0.075 m` refinement gate. The complete CTest suite contains 14 passing tests,
+including these stress, long-horizon, refinement, rollback, and Metal gates.
 
 This is matched evidence for Numi streamed CSR over Numi dense storage on the
 declared bag topology. No claim against an external simulator follows without
 a matched implementation and measurement. The exact mechanics and
 approximation boundary are documented in [BRAIDED_BAG.md](BRAIDED_BAG.md).
 The qualified combined metallib SHA-256 is
-`c06b3631bcaeb9906ef323cb9bf0f044722507c5102890ca347e81bbbfd26313`.
+`7dcbeb2528af383aedcbfbfda6e6836ad0b132cf4a15dc27a0524cdddbc2eee6`.
 
 ## Response-column assembly and chained solve gate
 

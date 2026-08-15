@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_BRAIDED_BAG_ABI_VERSION 1u
+#define NUMI_BRAIDED_BAG_ABI_VERSION 3u
 #define NUMI_BRAIDED_BAG_RING_SIZE 8u
 #define NUMI_BRAIDED_BAG_LEVEL_COUNT 7u
 #define NUMI_BRAIDED_BAG_NODE_COUNT \
@@ -97,8 +97,13 @@ typedef struct MR_ALIGN16 NumiBraidedBagStatus {
     // z maximum ball speed, w maximum braid-node speed.
     mr_float4 physicalMetrics;
     // x maximum normalized cone complementarity/VI residual,
-    // y maximum positive contact objective, zw reserved.
+    // y maximum positive contact objective,
+    // z maximum Delassus infinity-norm row sum,
+    // w maximum rigorous condition-number upper bound from CFM.
     mr_float4 certificateMetrics;
+    // x minimum active contacts, y maximum active contacts,
+    // z accumulated active contacts, w maximum active CSR blocks.
+    mr_uint4 topologyMetrics;
 } NumiBraidedBagStatus;
 
 #ifndef __METAL_VERSION__
@@ -107,5 +112,5 @@ static_assert(sizeof(NumiBraidedBagNode) == 32);
 static_assert(sizeof(NumiBraidedBagBall) == 32);
 static_assert(sizeof(NumiBraidedBagEdge) == 32);
 static_assert(sizeof(NumiBraidedBagContact) == 96);
-static_assert(sizeof(NumiBraidedBagStatus) == 64);
+static_assert(sizeof(NumiBraidedBagStatus) == 80);
 #endif

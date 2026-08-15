@@ -171,34 +171,25 @@ inline void bagPairBalls(
     }
 }
 
-inline uint bagContactBallMask(const uint contact) {
-    if (contact < NUMI_BRAIDED_BAG_BALL_COUNT) {
-        return 1u << contact;
-    }
-    const uint pairBase = NUMI_BRAIDED_BAG_BALL_COUNT;
-    if (contact < pairBase + NUMI_BRAIDED_BAG_BALL_PAIR_COUNT) {
-        uint first;
-        uint second;
-        bagPairBalls(contact - pairBase, first, second);
-        return (1u << first) | (1u << second);
-    }
-    const uint ball = contact -
-        pairBase - NUMI_BRAIDED_BAG_BALL_PAIR_COUNT;
-    return 1u << ball;
-}
-
-inline bool bagContactsMayShare(
-    const uint target,
-    const uint source
+inline bool bagContactsShareParticle(
+    threadgroup const NumiBraidedBagContact& target,
+    threadgroup const NumiBraidedBagContact& source
 ) {
-    if (target == source) {
-        return true;
+    const uint targetCount = uint(target.weights.w);
+    const uint sourceCount = uint(source.weights.w);
+    for (uint targetParticipant = 0u;
+         targetParticipant < targetCount;
+         ++targetParticipant) {
+        for (uint sourceParticipant = 0u;
+             sourceParticipant < sourceCount;
+             ++sourceParticipant) {
+            if (target.particles[targetParticipant] ==
+                source.particles[sourceParticipant]) {
+                return true;
+            }
+        }
     }
-    if (target < NUMI_BRAIDED_BAG_BALL_COUNT &&
-        source < NUMI_BRAIDED_BAG_BALL_COUNT) {
-        return true;
-    }
-    return (bagContactBallMask(target) & bagContactBallMask(source)) != 0u;
+    return false;
 }
 
 } // namespace
@@ -305,13 +296,19 @@ kernel void numi_braided_bag_build_contacts(
     device NumiTemporalConeStreamHeader* outputStreamHeaders [[buffer(12)]],
     device float* outputStreamBlocks [[buffer(13)]],
     constant uint& path [[buffer(14)]],
-    device const uint* streamRowOffsets [[buffer(15)]],
+    device uint* streamRowOffsets [[buffer(15)]],
+    device float* outputMaximumRowSum [[buffer(16)]],
+    device uint* outputStreamColumnIndices [[buffer(17)]],
+    device uint* outputActiveBlockCounts [[buffer(18)]],
     const uint environment [[threadgroup_position_in_grid]],
     const uint lane [[thread_index_in_simdgroup]]
 ) {
     if (environment >= config.control.y) {
         return;
     }
+    threadgroup NumiBraidedBagContact candidates[
+        NUMI_BRAIDED_BAG_CONTACT_COUNT
+    ];
     threadgroup NumiBraidedBagContact contacts[
         NUMI_BRAIDED_BAG_CONTACT_COUNT
     ];
@@ -328,7 +325,6 @@ kernel void numi_braided_bag_build_contacts(
         contact.particles = uint4(NUMI_BRAIDED_BAG_INVALID_PARTICLE);
         float3 authoredNormal = float3(0.0f, 0.0f, 1.0f);
         float separation = 0.0f;
-        uint identity = 0u;
         if (lane < NUMI_BRAIDED_BAG_BALL_COUNT) {
             const uint ball = lane;
             const NumiBraidedBagBall ballState = balls[ballBase + ball];
@@ -391,8 +387,12 @@ kernel void numi_braided_bag_build_contacts(
                 -closestWeight,
                 3.0f
             );
-            contact.identity = uint4(0u, closestEdge, 0u, 0u);
-            identity = closestEdge;
+            contact.identity = uint4(
+                0u,
+                ball * NUMI_BRAIDED_BAG_EDGE_COUNT + closestEdge,
+                0u,
+                0u
+            );
         } else if (lane <
             NUMI_BRAIDED_BAG_BALL_COUNT +
                 NUMI_BRAIDED_BAG_BALL_PAIR_COUNT) {
@@ -419,7 +419,6 @@ kernel void numi_braided_bag_build_contacts(
             );
             contact.weights = float4(1.0f, -1.0f, 0.0f, 2.0f);
             contact.identity = uint4(1u, pair, 0u, 0u);
-            identity = 0x10000u | pair;
         } else {
             const uint ball = lane -
                 NUMI_BRAIDED_BAG_BALL_COUNT -
@@ -436,7 +435,6 @@ kernel void numi_braided_bag_build_contacts(
             );
             contact.weights = float4(1.0f, 0.0f, 0.0f, 1.0f);
             contact.identity = uint4(2u, ball, 0u, 0u);
-            identity = 0x20000u | ball;
         }
         float3 normal;
         float3 tangentU;
@@ -445,44 +443,108 @@ kernel void numi_braided_bag_build_contacts(
         contact.normalAndSeparation = float4(normal, separation);
         contact.tangentU = float4(tangentU, 0.0f);
         contact.tangentV = float4(tangentV, 0.0f);
-        contacts[lane] = contact;
-        outputGeometry[compactContactBase + lane] = contact;
-        const float3 relativeVelocity = bagRelativeVelocity(
-            contacts[lane],
+        candidates[lane] = contact;
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+
+    bool candidateActive = false;
+    float3 relativeVelocity = float3(0.0f);
+    if (lane < NUMI_BRAIDED_BAG_CONTACT_COUNT) {
+        relativeVelocity = bagRelativeVelocity(
+            candidates[lane],
             candidateNodeVelocities,
             candidateBallVelocities,
             environment
         );
+        const float predictedSeparation =
+            candidates[lane].normalAndSeparation.w +
+            config.timing.x * min(
+                dot(
+                    relativeVelocity,
+                    candidates[lane].normalAndSeparation.xyz
+                ),
+                0.0f
+            );
+        candidateActive = predictedSeparation <= 0.01f;
+    }
+    const uint compactIndex = simd_prefix_exclusive_sum(
+        candidateActive ? 1u : 0u
+    );
+    const uint contactCount = simd_sum(candidateActive ? 1u : 0u);
+    if (candidateActive) {
+        const NumiBraidedBagContact contact = candidates[lane];
+        contacts[compactIndex] = contact;
+        outputGeometry[compactContactBase + compactIndex] = contact;
         const float inverseTimestep = 1.0f / config.timing.x;
+        const float separation = contact.normalAndSeparation.w;
         const float bias = separation >= 0.0f
             ? separation * inverseTimestep
             : max(
                 config.contact.x * separation * inverseTimestep,
                 -config.contact.w
             );
+        const uint identity =
+            (contact.identity.x << 16u) | contact.identity.y;
+        float3 warmImpulse = float3(0.0f);
+        for (uint previous = 0u;
+             previous < NUMI_BRAIDED_BAG_CONTACT_COUNT;
+             ++previous) {
+            if (warmIdentities[compactContactBase + previous] == identity) {
+                warmImpulse = warmImpulses[
+                    compactContactBase + previous
+                ].xyz;
+                break;
+            }
+        }
         NumiTemporalConeIslandContact solverContact = {};
         solverContact.freeVelocityAndFrictionU = float4(
-            dot(relativeVelocity, normal) + bias,
-            dot(relativeVelocity, tangentU),
-            dot(relativeVelocity, tangentV),
+            dot(relativeVelocity, contact.normalAndSeparation.xyz) + bias,
+            dot(relativeVelocity, contact.tangentU.xyz),
+            dot(relativeVelocity, contact.tangentV.xyz),
             config.braidMaterial.w
         );
         solverContact.warmImpulseAndFrictionV = float4(
-            warmIdentities[compactContactBase + lane] == identity
-                ? warmImpulses[compactContactBase + lane].xyz
-                : float3(0.0f),
+            warmImpulse,
             config.braidMaterial.w
         );
         solverContact.limits = float4(0.0f);
-        outputContacts[solverContactBase + lane] = solverContact;
+        outputContacts[solverContactBase + compactIndex] = solverContact;
     }
     threadgroup_barrier(mem_flags::mem_threadgroup);
 
+    uint rowBlockCount = 0u;
+    if (lane < contactCount) {
+        for (uint source = 0u; source < contactCount; ++source) {
+            if (lane == source ||
+                bagContactsShareParticle(contacts[lane], contacts[source])) {
+                ++rowBlockCount;
+            }
+        }
+    }
+    const uint rowBlockBegin = simd_prefix_exclusive_sum(rowBlockCount);
+    const uint blockCount = simd_sum(rowBlockCount);
+    const uint rowOffsetBase =
+        environment * (NUMI_BRAIDED_BAG_CONTACT_COUNT + 1u);
+    const uint blockBase =
+        environment * NUMI_BRAIDED_BAG_STREAM_BLOCK_COUNT;
+    if (lane < contactCount) {
+        streamRowOffsets[rowOffsetBase + lane] = rowBlockBegin;
+        uint rowBlock = rowBlockBegin;
+        for (uint source = 0u; source < contactCount; ++source) {
+            if (lane == source ||
+                bagContactsShareParticle(contacts[lane], contacts[source])) {
+                outputStreamColumnIndices[blockBase + rowBlock] = source;
+                ++rowBlock;
+            }
+        }
+    }
     if (lane == 0u) {
+        streamRowOffsets[rowOffsetBase + contactCount] = blockCount;
+        outputActiveBlockCounts[environment] = blockCount;
         NumiTemporalConeIslandHeader denseHeader = {};
         denseHeader.control = uint4(
             NUMI_TEMPORAL_CONE_ISLAND_ABI_VERSION,
-            NUMI_BRAIDED_BAG_CONTACT_COUNT,
+            contactCount,
             config.control.z,
             config.control.w
         );
@@ -492,20 +554,21 @@ kernel void numi_braided_bag_build_contacts(
         NumiTemporalConeStreamHeader streamHeader = {};
         streamHeader.control = uint4(
             NUMI_TEMPORAL_CONE_STREAM_ABI_VERSION,
-            NUMI_BRAIDED_BAG_CONTACT_COUNT,
+            contactCount,
             config.control.z,
             config.control.w
         );
         streamHeader.ranges = uint4(
             solverContactBase,
-            environment * (NUMI_BRAIDED_BAG_CONTACT_COUNT + 1u),
-            environment * NUMI_BRAIDED_BAG_STREAM_BLOCK_COUNT,
-            NUMI_BRAIDED_BAG_STREAM_BLOCK_COUNT
+            rowOffsetBase,
+            blockBase,
+            blockCount
         );
         streamHeader.tolerances = config.solver;
         outputStreamHeaders[environment] = streamHeader;
     }
 
+    float laneMaximumRowSum = 0.0f;
     if (path == NUMI_BRAIDED_BAG_PATH_DENSE) {
         const uint matrixBase =
             environment * NUMI_TEMPORAL_CONE_ISLAND_MATRIX_ELEMENTS;
@@ -515,10 +578,9 @@ kernel void numi_braided_bag_build_contacts(
             outputDenseMatrices[matrixBase + element] = 0.0f;
         }
         threadgroup_barrier(mem_flags::mem_device);
-        if (lane < NUMI_BRAIDED_BAG_CONTACT_COUNT) {
-            for (uint source = 0u;
-                 source < NUMI_BRAIDED_BAG_CONTACT_COUNT;
-                 ++source) {
+        if (lane < contactCount) {
+            float3 rowSums = float3(0.0f);
+            for (uint source = 0u; source < contactCount; ++source) {
                 for (uint targetAxis = 0u;
                      targetAxis < 3u;
                      ++targetAxis) {
@@ -537,6 +599,7 @@ kernel void numi_braided_bag_build_contacts(
                         if (lane == source && targetAxis == sourceAxis) {
                             coefficient += config.contact.y;
                         }
+                        rowSums[targetAxis] += abs(coefficient);
                         outputDenseMatrices[
                             matrixBase +
                             (3u * lane + targetAxis) *
@@ -546,19 +609,19 @@ kernel void numi_braided_bag_build_contacts(
                     }
                 }
             }
+            laneMaximumRowSum = max(
+                rowSums.x,
+                max(rowSums.y, rowSums.z)
+            );
         }
-    } else if (lane < NUMI_BRAIDED_BAG_CONTACT_COUNT) {
-        const uint blockBase =
-            environment * NUMI_BRAIDED_BAG_STREAM_BLOCK_COUNT;
-        uint rowBlock = streamRowOffsets[
-            environment * (NUMI_BRAIDED_BAG_CONTACT_COUNT + 1u) + lane
-        ];
-        for (uint source = 0u;
-             source < NUMI_BRAIDED_BAG_CONTACT_COUNT;
-             ++source) {
-            if (!bagContactsMayShare(lane, source)) {
-                continue;
-            }
+    } else if (lane < contactCount) {
+        const uint rowBegin = streamRowOffsets[rowOffsetBase + lane];
+        const uint rowEnd = streamRowOffsets[rowOffsetBase + lane + 1u];
+        float3 rowSums = float3(0.0f);
+        for (uint rowBlock = rowBegin; rowBlock < rowEnd; ++rowBlock) {
+            const uint source = outputStreamColumnIndices[
+                blockBase + rowBlock
+            ];
             const uint valueBase =
                 (blockBase + rowBlock) * 9u;
             for (uint targetAxis = 0u;
@@ -579,13 +642,21 @@ kernel void numi_braided_bag_build_contacts(
                     if (lane == source && targetAxis == sourceAxis) {
                         coefficient += config.contact.y;
                     }
+                    rowSums[targetAxis] += abs(coefficient);
                     outputStreamBlocks[
                         valueBase + 3u * targetAxis + sourceAxis
                     ] = coefficient;
                 }
             }
-            ++rowBlock;
         }
+        laneMaximumRowSum = max(
+            rowSums.x,
+            max(rowSums.y, rowSums.z)
+        );
+    }
+    const float maximumRowSum = simd_max(laneMaximumRowSum);
+    if (lane == 0u) {
+        outputMaximumRowSum[environment] = maximumRowSum;
     }
 }
 
@@ -602,6 +673,8 @@ kernel void numi_braided_bag_apply(
     device float4* warmImpulses [[buffer(9)]],
     device uint* warmIdentities [[buffer(10)]],
     device NumiBraidedBagStatus* statuses [[buffer(11)]],
+    device const float* maximumRowSums [[buffer(12)]],
+    device const uint* activeBlockCounts [[buffer(13)]],
     const uint environment [[threadgroup_position_in_grid]],
     const uint threadIndex [[thread_index_in_threadgroup]]
 ) {
@@ -615,7 +688,8 @@ kernel void numi_braided_bag_apply(
         environment * NUMI_BRAIDED_BAG_CONTACT_COUNT;
     const uint solverContactBase =
         environment * NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS;
-    if (threadIndex < NUMI_BRAIDED_BAG_CONTACT_COUNT) {
+    const uint contactCount = solverStatuses[environment].control.w;
+    if (threadIndex < contactCount) {
         contacts[threadIndex] = geometry[
             compactContactBase + threadIndex
         ];
@@ -639,7 +713,7 @@ kernel void numi_braided_bag_apply(
         );
         if (inverseMass > 0.0f) {
             for (uint contactIndex = 0u;
-                 contactIndex < NUMI_BRAIDED_BAG_CONTACT_COUNT;
+                 contactIndex < contactCount;
                  ++contactIndex) {
                 const NumiBraidedBagContact contact = contacts[contactIndex];
                 const uint count = uint(contact.weights.w);
@@ -705,13 +779,38 @@ kernel void numi_braided_bag_apply(
             status.certificateMetrics.y,
             max(solverStatuses[environment].residuals.w, 0.0f)
         );
+        const float maximumRowSum = maximumRowSums[environment];
+        const float conditionBound = config.contact.y > 0.0f
+            ? maximumRowSum / config.contact.y
+            : INFINITY;
+        status.certificateMetrics.z = max(
+            status.certificateMetrics.z,
+            maximumRowSum
+        );
+        status.certificateMetrics.w = max(
+            status.certificateMetrics.w,
+            conditionBound
+        );
+        status.topologyMetrics.x = min(
+            status.topologyMetrics.x,
+            contactCount
+        );
+        status.topologyMetrics.y = max(
+            status.topologyMetrics.y,
+            contactCount
+        );
+        status.topologyMetrics.z += contactCount;
+        status.topologyMetrics.w = max(
+            status.topologyMetrics.w,
+            activeBlockCounts[environment]
+        );
         if (!accepted) {
             status.control.x += 1u;
         }
         for (uint contactIndex = 0u;
              contactIndex < NUMI_BRAIDED_BAG_CONTACT_COUNT;
              ++contactIndex) {
-            if (accepted) {
+            if (accepted && contactIndex < contactCount) {
                 warmImpulses[compactContactBase + contactIndex] =
                     solvedImpulses[solverContactBase + contactIndex];
                 const NumiBraidedBagContact contact = contacts[contactIndex];
@@ -723,10 +822,12 @@ kernel void numi_braided_bag_apply(
                 warmIdentities[compactContactBase + contactIndex] =
                     NUMI_BRAIDED_BAG_INVALID_PARTICLE;
             }
-            status.solverMetrics.x = max(
-                status.solverMetrics.x,
-                max(-contacts[contactIndex].normalAndSeparation.w, 0.0f)
-            );
+            if (contactIndex < contactCount) {
+                status.solverMetrics.x = max(
+                    status.solverMetrics.x,
+                    max(-contacts[contactIndex].normalAndSeparation.w, 0.0f)
+                );
+            }
         }
         const uint nodeBase =
             environment * NUMI_BRAIDED_BAG_NODE_COUNT;

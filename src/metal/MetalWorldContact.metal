@@ -12032,7 +12032,6 @@ kernel void numi_temporal_cone_island_solve(
     if (header.control.x != NUMI_TEMPORAL_CONE_ISLAND_ABI_VERSION) {
         localFailure = NUMI_TEMPORAL_CONE_ISLAND_INVALID_ABI;
     } else if (
-        contactCount == 0u ||
         contactCount > NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS ||
         header.control.z == 0u ||
         header.control.z > header.control.w ||
@@ -12785,7 +12784,6 @@ kernel void numi_temporal_cone_stream_solve(
     if (header.control.x != NUMI_TEMPORAL_CONE_STREAM_ABI_VERSION) {
         localFailure = NUMI_TEMPORAL_CONE_ISLAND_INVALID_ABI;
     } else if (
-        contactCount == 0u ||
         contactCount > NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS ||
         blockCount < contactCount ||
         blockCount > NUMI_TEMPORAL_CONE_STREAM_MAX_BLOCKS ||

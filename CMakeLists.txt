@@ -356,6 +356,50 @@ if(BUILD_TESTING)
             LABELS "metal;physics;braid;rigid;contact;streamed"
             TIMEOUT 60
     )
+    foreach(NUMI_BAG_PRESET IN ITEMS stiff-braid low-cfm high-friction)
+        string(REPLACE "-" "_" NUMI_BAG_TEST_SUFFIX "${NUMI_BAG_PRESET}")
+        add_test(
+            NAME temporal_cone.braided_bag_${NUMI_BAG_TEST_SUFFIX}
+            COMMAND $<TARGET_FILE:numi-solver-braided-bag>
+                --environments 4
+                --steps 480
+                --replays 2
+                --preset ${NUMI_BAG_PRESET}
+        )
+        set_tests_properties(
+            temporal_cone.braided_bag_${NUMI_BAG_TEST_SUFFIX}
+            PROPERTIES
+                LABELS "metal;physics;braid;contact;conditioning;streamed"
+                TIMEOUT 60
+        )
+    endforeach()
+    add_test(
+        NAME temporal_cone.braided_bag_refinement
+        COMMAND $<TARGET_FILE:numi-solver-braided-bag>
+            --environments 1
+            --steps 480
+            --replays 2
+            --refinement
+    )
+    set_tests_properties(
+        temporal_cone.braided_bag_refinement
+        PROPERTIES
+            LABELS "metal;physics;braid;contact;refinement;streamed"
+            TIMEOUT 60
+    )
+    add_test(
+        NAME temporal_cone.braided_bag_long_horizon
+        COMMAND $<TARGET_FILE:numi-solver-braided-bag>
+            --environments 4
+            --steps 1920
+            --replays 2
+    )
+    set_tests_properties(
+        temporal_cone.braided_bag_long_horizon
+        PROPERTIES
+            LABELS "metal;physics;braid;contact;long_horizon;streamed"
+            TIMEOUT 60
+    )
     set_tests_properties(
         temporal_cone.rigid
         PROPERTIES LABELS "metal;physics;rigid;assembly;streamed" TIMEOUT 60

@@ -44,6 +44,12 @@ Missing blocks are exact zeros. The kernel validates capacities, row
 monotonicity, source ordering, finiteness, diagonal presence, symmetry, and
 the local response factor before any physical iterate is published.
 
+`N=0` is an explicit valid island state. It executes the declared minimum
+iteration count, publishes no impulses, and returns exact-zero KKT, cone, VI,
+objective, and restart diagnostics with a successful certificate. Dense and
+streamed status bytes must match exactly. Dense ABI v3 and streamed ABI v4
+make this empty-set behavior part of the numerical contract.
+
 ## KKT-preserving conditioning
 
 A general 3x3 inverse followed by an ordinary Euclidean cone projection does
@@ -241,8 +247,8 @@ objective is a typed arithmetic failure rather than a false convergence.
 
 The status diagnostic records normalized `R_VI` and the number of accelerated
 restarts. Easy islands that finish before momentum begins report zero
-restarts. Dense ABI v2 and streamed ABI v3 make this diagnostic and the
-complementarity success gate explicit.
+restarts. Dense ABI v3 and streamed ABI v4 make this diagnostic, the
+complementarity success gate, and valid zero-contact islands explicit.
 
 The final feasibility diagnostic evaluates normal nonnegativity, the authored
 normal cap, every positive-friction normalized axis, and every zero-friction
