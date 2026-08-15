@@ -41,9 +41,10 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
 `-fno-fast-math`, plus two native harnesses:
 
 - `build/numi-solver-math` for isolated local cone blocks;
-- `build/numi-solver-islands` for coupled 1/2/4/8/16/32-contact islands.
+- `build/numi-solver-islands` for dense-versus-streamed coupled
+  1/2/4/8/16/32-contact islands.
 
-Run the default 65,536-problem FP64 comparison and deterministic replay:
+Run the default FP64 comparisons and deterministic replays:
 
 ```sh
 ./build/numi-solver-math
@@ -51,13 +52,12 @@ Run the default 65,536-problem FP64 comparison and deterministic replay:
 ctest --test-dir build --output-on-failure
 ```
 
-Use `--cases N --replays N --iterations N` to change the deterministic batch
-and convergence budget. Add `--isotropic` to measure the closed-form friction
-fast path. The harness
-checks separating, normal-impact, sticking, sliding, anisotropic-friction,
-near-rank-deficient, capped-impulse, polar-boundary, zero-axis and extreme-scale
-cases before filling the remainder with coupled positive-definite contact
-responses.
+The local harness accepts `--cases N --replays N --iterations N` and
+`--isotropic`. The island harness accepts `--islands N --replays N`. Together
+they check separating, impact, sticking, sliding, anisotropic friction,
+near-rank-deficient response, capped impulse, polar boundary, zero axis,
+extreme scale, sparse topology, full block capacity, and shared-response
+cases.
 
 An installed or relocated harness can load a specific library with
 `--metallib path/to/NumiTemporalCone.metallib`.
@@ -71,13 +71,16 @@ An installed or relocated harness can load a specific library with
 - Per-environment failure publication; no silent contact dropping.
 - Exact Euclidean projection onto isotropic, anisotropic and capped elliptic
   friction cones.
-- Explicit normalized fixed-point convergence residuals.
-- SIMD32 block-Jacobi islands with operator-derived relaxation bounds.
+- Packed, sorted 3x3 block-CSR Delassus operators with exact dense parity.
+- Scale-aware KKT gradient-mapping convergence residuals.
+- SIMD32 block-Jacobi islands with KKT-preserving scalar contact metrics.
 - Typed nonconvergence and warm-start rollback instead of partial publication.
+- SPD, nonpositive-objective, shared-rigid `1/3`, and FP64 qualification gates.
 
 See [docs/MATHEMATICS.md](docs/MATHEMATICS.md) for the equations and evidence
 boundary, [docs/ISLAND_SOLVER.md](docs/ISLAND_SOLVER.md) for the coupled
 SIMD32 method, and [docs/QUALIFICATION.md](docs/QUALIFICATION.md) for measured
-Apple GPU evidence. The harnesses exercise contact-space mathematics on a real
-Metal device. They are not collision-generation or time-integration
-benchmarks.
+Apple GPU evidence. The harnesses exercise contact-space mathematics and the
+streamed operator consumer on a real Metal device. They do not yet generate
+collision Jacobians, publish rigid/articulated velocity updates, or integrate
+a complete physical trajectory.

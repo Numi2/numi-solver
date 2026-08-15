@@ -42,6 +42,14 @@ struct Batch {
     std::vector<NumiTemporalConeIslandContact> contacts;
 };
 
+struct StreamBatch {
+    std::vector<NumiTemporalConeStreamHeader> headers;
+    std::vector<std::uint32_t> rowOffsets;
+    std::vector<std::uint32_t> columnIndices;
+    std::vector<float> blockValues;
+    std::vector<NumiTemporalConeIslandContact> contacts;
+};
+
 struct GPUResult {
     std::vector<mr_float4> impulses;
     std::vector<NumiTemporalConeIslandStatus> statuses;
@@ -52,7 +60,7 @@ struct OracleResult {
     std::vector<Vec3> impulses;
     std::uint32_t status = NUMI_TEMPORAL_CONE_ISLAND_SUCCESS;
     std::uint32_t iterations = 0u;
-    double naturalResidual = 0.0;
+    double kktResidual = 0.0;
     double coneViolation = 0.0;
     double objective = 0.0;
 };
@@ -342,6 +350,47 @@ Vec3 matrixAction(
     return result;
 }
 
+double minimumCholeskyPivot(
+    const Batch& batch,
+    const std::size_t problem
+) {
+    const std::size_t dimension =
+        3u * batch.headers[problem].control.y;
+    const std::size_t matrixBase = problem * kMatrixElements;
+    std::vector<double> lower(dimension * dimension, 0.0);
+    double minimumPivot = std::numeric_limits<double>::infinity();
+    for (std::size_t row = 0u; row < dimension; ++row) {
+        for (std::size_t column = 0u; column <= row; ++column) {
+            const double value = batch.matrices[
+                matrixBase + row * kMaxRows + column
+            ];
+            const double transposeValue = batch.matrices[
+                matrixBase + column * kMaxRows + row
+            ];
+            if (!std::isfinite(value) || value != transposeValue) {
+                return -1.0;
+            }
+            double reduced = value;
+            for (std::size_t inner = 0u; inner < column; ++inner) {
+                reduced -= lower[row * dimension + inner] *
+                    lower[column * dimension + inner];
+            }
+            if (row == column) {
+                if (!(reduced > kMatrixFloor) || !std::isfinite(reduced)) {
+                    return -1.0;
+                }
+                const double pivot = std::sqrt(reduced);
+                lower[row * dimension + column] = pivot;
+                minimumPivot = std::min(minimumPivot, pivot);
+            } else {
+                lower[row * dimension + column] = reduced /
+                    lower[column * dimension + column];
+            }
+        }
+    }
+    return minimumPivot;
+}
+
 double coneViolation(
     const Vec3& impulse,
     const double frictionU,
@@ -362,11 +411,15 @@ double coneViolation(
 }
 
 OracleResult solveOracle(const Batch& batch, const std::size_t problem) {
+    constexpr std::uint32_t oracleMaximumIterations = 20000u;
+    constexpr double oracleAbsoluteTolerance = 1.0e-11;
+    constexpr double oracleRelativeTolerance = 1.0e-10;
     OracleResult result;
     const auto& header = batch.headers[problem];
     const std::size_t contactCount = header.control.y;
     const std::size_t contactBase = problem * kMaxContacts;
-    std::vector<Mat3> inverses(contactCount);
+    std::vector<Mat3> validationInverses(contactCount);
+    std::vector<double> stepScales(contactCount, 0.0);
     result.impulses.resize(contactCount);
     for (std::size_t contact = 0; contact < contactCount; ++contact) {
         const std::size_t row = 3u * contact;
@@ -379,7 +432,7 @@ OracleResult solveOracle(const Batch& batch, const std::size_t problem) {
                 ];
             }
         }
-        if (!conditionedInverse(diagonal, inverses[contact])) {
+        if (!conditionedInverse(diagonal, validationInverses[contact])) {
             result.status = NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED;
             return result;
         }
@@ -396,38 +449,32 @@ OracleResult solveOracle(const Batch& batch, const std::size_t problem) {
         );
     }
 
-    double preconditionedRowBound = 0.0;
     for (std::size_t contact = 0; contact < contactCount; ++contact) {
         const std::size_t row = 3u * contact;
+        double contactRowBound = 0.0;
         for (std::size_t outputAxis = 0; outputAxis < 3; ++outputAxis) {
             double rowSum = 0.0;
             for (std::size_t column = 0;
                  column < 3u * contactCount;
                  ++column) {
-                double value = 0.0;
-                for (std::size_t localRow = 0; localRow < 3; ++localRow) {
-                    value += inverses[contact][outputAxis][localRow] *
-                        batch.matrices[
-                            problem * kMatrixElements +
-                            (row + localRow) * kMaxRows + column
-                        ];
-                }
-                rowSum += std::abs(value);
+                rowSum += std::abs(batch.matrices[
+                    problem * kMatrixElements +
+                    (row + outputAxis) * kMaxRows + column
+                ]);
             }
-            preconditionedRowBound = std::max(
-                preconditionedRowBound,
+            contactRowBound = std::max(
+                contactRowBound,
                 rowSum
             );
         }
+        stepScales[contact] = 1.0 /
+            std::max(contactRowBound, kMatrixFloor);
     }
-    const double effectiveRelaxation = std::min(
-        static_cast<double>(header.tolerances.z),
-        1.0 / std::max(preconditionedRowBound, 1.0)
-    );
+    const double effectiveRelaxation = header.tolerances.z;
 
     std::vector<Vec3> next(contactCount);
     for (std::uint32_t iteration = 0u;
-         iteration < header.control.w;
+         iteration < oracleMaximumIterations;
          ++iteration) {
         double maximumNatural = 0.0;
         double maximumScale = 1.0;
@@ -438,11 +485,8 @@ OracleResult solveOracle(const Batch& batch, const std::size_t problem) {
             residual[1] += source.freeVelocityAndFrictionU.y;
             residual[2] += source.freeVelocityAndFrictionU.z;
             Vec3 proposed = result.impulses[contact];
-            for (std::size_t row = 0; row < 3; ++row) {
-                for (std::size_t column = 0; column < 3; ++column) {
-                    proposed[row] -= inverses[contact][row][column] *
-                        residual[column];
-                }
+            for (std::size_t axis = 0; axis < 3; ++axis) {
+                proposed[axis] -= stepScales[contact] * residual[axis];
             }
             const Vec3 projected = projectCone(
                 proposed,
@@ -450,22 +494,34 @@ OracleResult solveOracle(const Batch& batch, const std::size_t problem) {
                 source.warmImpulseAndFrictionV.w,
                 source.limits.x
             );
+            const Vec3 response{{
+                residual[0] - source.freeVelocityAndFrictionU.x,
+                residual[1] - source.freeVelocityAndFrictionU.y,
+                residual[2] - source.freeVelocityAndFrictionU.z,
+            }};
+            maximumScale = std::max({
+                maximumScale,
+                std::abs(static_cast<double>(source.freeVelocityAndFrictionU.x)),
+                std::abs(static_cast<double>(source.freeVelocityAndFrictionU.y)),
+                std::abs(static_cast<double>(source.freeVelocityAndFrictionU.z)),
+                std::abs(response[0]),
+                std::abs(response[1]),
+                std::abs(response[2]),
+            });
             for (std::size_t axis = 0; axis < 3; ++axis) {
                 const double natural =
                     projected[axis] - result.impulses[contact][axis];
                 next[contact][axis] = result.impulses[contact][axis] +
                     effectiveRelaxation * natural;
-                maximumNatural = std::max(maximumNatural, std::abs(natural));
-                maximumScale = std::max(
-                    maximumScale,
-                    std::abs(projected[axis])
+                maximumNatural = std::max(
+                    maximumNatural,
+                    std::abs(natural) / stepScales[contact]
                 );
             }
         }
         result.iterations = iteration + 1u;
-        if (result.iterations >= header.control.z &&
-            maximumNatural <= header.tolerances.x +
-                header.tolerances.y * maximumScale) {
+        if (maximumNatural <= oracleAbsoluteTolerance +
+                oracleRelativeTolerance * maximumScale) {
             break;
         }
         result.impulses = next;
@@ -482,11 +538,8 @@ OracleResult solveOracle(const Batch& batch, const std::size_t problem) {
             action[2] + source.freeVelocityAndFrictionU.z,
         }};
         Vec3 proposed = result.impulses[contact];
-        for (std::size_t row = 0; row < 3; ++row) {
-            for (std::size_t column = 0; column < 3; ++column) {
-                proposed[row] -= inverses[contact][row][column] *
-                    residual[column];
-            }
+        for (std::size_t axis = 0; axis < 3; ++axis) {
+            proposed[axis] -= stepScales[contact] * residual[axis];
         }
         const Vec3 projected = projectCone(
             proposed,
@@ -494,14 +547,20 @@ OracleResult solveOracle(const Batch& batch, const std::size_t problem) {
             source.warmImpulseAndFrictionV.w,
             source.limits.x
         );
+        maximumScale = std::max({
+            maximumScale,
+            std::abs(static_cast<double>(source.freeVelocityAndFrictionU.x)),
+            std::abs(static_cast<double>(source.freeVelocityAndFrictionU.y)),
+            std::abs(static_cast<double>(source.freeVelocityAndFrictionU.z)),
+            std::abs(action[0]),
+            std::abs(action[1]),
+            std::abs(action[2]),
+        });
         for (std::size_t axis = 0; axis < 3; ++axis) {
             maximumNatural = std::max(
                 maximumNatural,
-                std::abs(projected[axis] - result.impulses[contact][axis])
-            );
-            maximumScale = std::max(
-                maximumScale,
-                std::abs(result.impulses[contact][axis])
+                std::abs(projected[axis] - result.impulses[contact][axis]) /
+                    stepScales[contact]
             );
         }
         result.coneViolation = std::max(
@@ -522,9 +581,9 @@ OracleResult solveOracle(const Batch& batch, const std::size_t problem) {
             result.impulses[contact][1] * source.freeVelocityAndFrictionU.y +
             result.impulses[contact][2] * source.freeVelocityAndFrictionU.z;
     }
-    result.naturalResidual = maximumNatural / maximumScale;
-    result.status = maximumNatural <= header.tolerances.x +
-        header.tolerances.y * maximumScale
+    result.kktResidual = maximumNatural / maximumScale;
+    result.status = maximumNatural <= oracleAbsoluteTolerance +
+        oracleRelativeTolerance * maximumScale
         ? NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
         : NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE;
     return result;
@@ -542,7 +601,7 @@ Batch makeBatch(const std::size_t problemCount) {
             NUMI_TEMPORAL_CONE_ISLAND_ABI_VERSION,
             contactCount,
             4u,
-            256u
+            512u
         );
         batch.headers[problem].tolerances = f4(
             5.0e-7f,
@@ -551,32 +610,155 @@ Batch makeBatch(const std::size_t problemCount) {
             0.0f
         );
 
-        const std::size_t dimension = 3u * contactCount;
         const std::size_t matrixBase = problem * kMatrixElements;
-        std::vector<double> couplingVector(dimension);
-        for (std::size_t row = 0; row < dimension; ++row) {
-            couplingVector[row] =
-                0.25 * std::sin(
-                    0.13 * static_cast<double>((problem + 1u) * (row + 3u))
-                );
-        }
         constexpr std::array<double, 6> couplingStrengths{{
-            0.08, 0.25, 0.5, 1.0, 2.0, 4.0,
+            0.25, 0.5, 1.0, 2.0, 4.0, 8.0,
         }};
-        const double rankCoupling =
-            couplingStrengths[problem % couplingStrengths.size()];
-        for (std::size_t row = 0; row < dimension; ++row) {
-            const std::size_t axis = row % 3u;
-            const double diagonal =
-                (axis == 0u ? 0.8 : axis == 1u ? 1.0 : 1.2) +
-                0.02 * static_cast<double>((row / 3u + problem) % 7u);
-            for (std::size_t column = 0; column < dimension; ++column) {
-                const double value =
-                    (row == column ? diagonal : 0.0) +
-                    rankCoupling * couplingVector[row] * couplingVector[column];
+        for (std::size_t contact = 0u;
+             contact < contactCount;
+             ++contact) {
+            for (std::size_t axis = 0u; axis < 3u; ++axis) {
+                const double diagonal =
+                    (axis == 0u ? 0.8 : axis == 1u ? 1.0 : 1.2) +
+                    0.02 * static_cast<double>((contact + problem) % 7u);
                 batch.matrices[
-                    matrixBase + row * kMaxRows + column
-                ] = static_cast<float>(value);
+                    matrixBase +
+                    (3u * contact + axis) * kMaxRows +
+                    3u * contact + axis
+                ] = static_cast<float>(diagonal);
+            }
+        }
+
+        std::vector<std::pair<std::size_t, std::size_t>> edges;
+        const auto addEdge = [&](std::size_t first, std::size_t second) {
+            if (first == second || first >= contactCount ||
+                second >= contactCount) {
+                return;
+            }
+            if (first > second) {
+                std::swap(first, second);
+            }
+            edges.emplace_back(first, second);
+        };
+        const std::size_t graphMode = (problem / 6u) % 6u;
+        if (contactCount > 1u) {
+            if (graphMode == 0u) {
+                for (std::size_t contact = 1u;
+                     contact < contactCount;
+                     ++contact) {
+                    addEdge(contact - 1u, contact);
+                }
+            } else if (graphMode == 1u) {
+                for (std::size_t contact = 1u;
+                     contact < contactCount;
+                     ++contact) {
+                    addEdge(contact - 1u, contact);
+                }
+                addEdge(0u, contactCount - 1u);
+            } else if (graphMode == 2u) {
+                for (std::size_t contact = 1u;
+                     contact < contactCount;
+                     ++contact) {
+                    addEdge(0u, contact);
+                }
+            } else if (graphMode == 3u) {
+                for (std::size_t contact = 0u;
+                     contact < contactCount;
+                     ++contact) {
+                    addEdge(contact, contact + 1u);
+                    addEdge(contact, contact + 2u);
+                }
+            } else if (graphMode == 4u) {
+                for (std::size_t group = 0u;
+                     group < contactCount;
+                     group += 4u) {
+                    const std::size_t end = std::min(
+                        group + 4u,
+                        static_cast<std::size_t>(contactCount)
+                    );
+                    for (std::size_t first = group; first < end; ++first) {
+                        for (std::size_t second = first + 1u;
+                             second < end;
+                             ++second) {
+                            addEdge(first, second);
+                        }
+                    }
+                    addEdge(group, end);
+                }
+            } else {
+                for (std::size_t contact = 1u;
+                     contact < contactCount;
+                     ++contact) {
+                    addEdge(contact - 1u, contact);
+                    addEdge(contact / 2u, contact);
+                }
+            }
+        }
+        // Retain occasional worst-capacity shared-mode cliques so sparse
+        // qualification cannot accidentally depend on bounded row degree.
+        if (contactCount == kMaxContacts && problem % 41u == 35u) {
+            for (std::size_t first = 0u; first < contactCount; ++first) {
+                for (std::size_t second = first + 1u;
+                     second < contactCount;
+                     ++second) {
+                    addEdge(first, second);
+                }
+            }
+        }
+        std::sort(edges.begin(), edges.end());
+        edges.erase(std::unique(edges.begin(), edges.end()), edges.end());
+
+        const double couplingStrength = couplingStrengths[
+            problem % couplingStrengths.size()
+        ];
+        const auto addMatrixValue = [&](const std::size_t target,
+                                        const std::size_t targetAxis,
+                                        const std::size_t source,
+                                        const std::size_t sourceAxis,
+                                        const double value) {
+            batch.matrices[
+                matrixBase +
+                (3u * target + targetAxis) * kMaxRows +
+                3u * source + sourceAxis
+            ] += static_cast<float>(value);
+        };
+        for (std::size_t edgeIndex = 0u;
+             edgeIndex < edges.size();
+             ++edgeIndex) {
+            const auto [first, second] = edges[edgeIndex];
+            for (std::size_t mode = 0u; mode < 2u; ++mode) {
+                Vec3 firstMode{};
+                Vec3 secondMode{};
+                for (std::size_t axis = 0u; axis < 3u; ++axis) {
+                    const double phase = static_cast<double>(
+                        1u + problem + 3u * edgeIndex + 7u * mode + axis
+                    );
+                    firstMode[axis] = 0.22 * std::sin(0.31 * phase);
+                    secondMode[axis] = 0.22 * std::cos(0.27 * phase);
+                    if ((problem + edgeIndex + mode) % 2u != 0u) {
+                        secondMode[axis] = -secondMode[axis];
+                    }
+                }
+                const double weight = couplingStrength *
+                    (mode == 0u ? 1.0 : 0.45);
+                for (std::size_t row = 0u; row < 3u; ++row) {
+                    for (std::size_t column = 0u; column < 3u; ++column) {
+                        const double firstDiagonal =
+                            weight * firstMode[row] * firstMode[column];
+                        const double secondDiagonal =
+                            weight * secondMode[row] * secondMode[column];
+                        const double cross =
+                            weight * firstMode[row] * secondMode[column];
+                        addMatrixValue(
+                            first, row, first, column, firstDiagonal
+                        );
+                        addMatrixValue(
+                            second, row, second, column, secondDiagonal
+                        );
+                        addMatrixValue(first, row, second, column, cross);
+                        addMatrixValue(second, column, first, row, cross);
+                    }
+                }
             }
         }
 
@@ -623,30 +805,177 @@ Batch makeBatch(const std::size_t problemCount) {
                 0.0f
             );
         }
+        if (problem == 1u && contactCount == 2u) {
+            // Shared-rigid analytic oracle. Independent contacts would each
+            // produce 1/2, while the coupled normal operator [[2,1],[1,2]]
+            // has the unique physical solution (1/3, 1/3).
+            for (std::size_t row = 0u; row < 6u; ++row) {
+                for (std::size_t column = 0u; column < 6u; ++column) {
+                    batch.matrices[
+                        matrixBase + row * kMaxRows + column
+                    ] = 0.0f;
+                }
+            }
+            for (std::size_t contact = 0u; contact < 2u; ++contact) {
+                const std::size_t row = 3u * contact;
+                batch.matrices[
+                    matrixBase + row * kMaxRows + row
+                ] = 2.0f;
+                batch.matrices[
+                    matrixBase + (row + 1u) * kMaxRows + row + 1u
+                ] = 1.0f;
+                batch.matrices[
+                    matrixBase + (row + 2u) * kMaxRows + row + 2u
+                ] = 1.0f;
+                auto& shared = batch.contacts[contactBase + contact];
+                shared.freeVelocityAndFrictionU =
+                    f4(-1.0f, 0.0f, 0.0f, 0.0f);
+                shared.warmImpulseAndFrictionV =
+                    f4(0.0f, 0.0f, 0.0f, 0.0f);
+                shared.limits = f4(0.0f, 0.0f, 0.0f, 0.0f);
+            }
+            batch.matrices[matrixBase + 3u] = 1.0f;
+            batch.matrices[matrixBase + 3u * kMaxRows] = 1.0f;
+        }
     }
     return batch;
 }
 
+StreamBatch makeStreamBatch(const Batch& dense) {
+    StreamBatch stream;
+    stream.headers.reserve(dense.headers.size());
+    for (std::size_t problem = 0u;
+         problem < dense.headers.size();
+         ++problem) {
+        const auto& denseHeader = dense.headers[problem];
+        const std::uint32_t contactCount = denseHeader.control.y;
+        const std::size_t matrixBase = problem * kMatrixElements;
+        const std::size_t denseContactBase = problem * kMaxContacts;
+        if (contactCount == 0u || contactCount > kMaxContacts) {
+            throw std::runtime_error(
+                "cannot stream an invalid dense contact count"
+            );
+        }
+        constexpr std::size_t maximumABIValue =
+            std::numeric_limits<std::uint32_t>::max();
+        if (stream.contacts.size() >
+                maximumABIValue - contactCount ||
+            stream.rowOffsets.size() >
+                maximumABIValue - (contactCount + 1u) ||
+            stream.columnIndices.size() >
+                maximumABIValue - NUMI_TEMPORAL_CONE_STREAM_MAX_BLOCKS) {
+            throw std::runtime_error("streamed island batch exceeds the ABI");
+        }
+        NumiTemporalConeStreamHeader header{};
+        header.control = u4(
+            NUMI_TEMPORAL_CONE_STREAM_ABI_VERSION,
+            contactCount,
+            denseHeader.control.z,
+            denseHeader.control.w
+        );
+        header.ranges.x = static_cast<std::uint32_t>(
+            stream.contacts.size()
+        );
+        header.ranges.y = static_cast<std::uint32_t>(
+            stream.rowOffsets.size()
+        );
+        header.ranges.z = static_cast<std::uint32_t>(
+            stream.columnIndices.size()
+        );
+        header.tolerances = denseHeader.tolerances;
+        stream.contacts.insert(
+            stream.contacts.end(),
+            dense.contacts.begin() + denseContactBase,
+            dense.contacts.begin() + denseContactBase + contactCount
+        );
+
+        const std::size_t islandBlockBase = stream.columnIndices.size();
+        for (std::size_t target = 0u;
+             target < contactCount;
+             ++target) {
+            stream.rowOffsets.push_back(static_cast<std::uint32_t>(
+                stream.columnIndices.size() - islandBlockBase
+            ));
+            for (std::size_t source = 0u;
+                 source < contactCount;
+                 ++source) {
+                bool nonzero = false;
+                std::array<float, 9> block{};
+                for (std::size_t targetAxis = 0u;
+                     targetAxis < 3u;
+                     ++targetAxis) {
+                    for (std::size_t sourceAxis = 0u;
+                         sourceAxis < 3u;
+                         ++sourceAxis) {
+                        const float value = dense.matrices[
+                            matrixBase +
+                            (3u * target + targetAxis) * kMaxRows +
+                            3u * source + sourceAxis
+                        ];
+                        block[3u * targetAxis + sourceAxis] = value;
+                        nonzero = nonzero || value != 0.0f;
+                    }
+                }
+                if (!nonzero) {
+                    continue;
+                }
+                stream.columnIndices.push_back(
+                    static_cast<std::uint32_t>(source)
+                );
+                stream.blockValues.insert(
+                    stream.blockValues.end(),
+                    block.begin(),
+                    block.end()
+                );
+            }
+        }
+        stream.rowOffsets.push_back(static_cast<std::uint32_t>(
+            stream.columnIndices.size() - islandBlockBase
+        ));
+        const std::size_t islandBlocks =
+            stream.columnIndices.size() - islandBlockBase;
+        if (islandBlocks > NUMI_TEMPORAL_CONE_STREAM_MAX_BLOCKS) {
+            throw std::runtime_error(
+                "streamed island exceeds the block capacity"
+            );
+        }
+        header.ranges.w = static_cast<std::uint32_t>(islandBlocks);
+        stream.headers.push_back(header);
+    }
+    return stream;
+}
+
 Batch makeFailureBatch() {
-    Batch batch = makeBatch(3u);
+    Batch batch = makeBatch(7u);
 
     // Problem 0: violate the symmetric Delassus contract.
     batch.matrices[1u] += 0.25f;
 
-    // Problem 1: retain a symmetric operator but erase the first local block,
-    // forcing an explicit block-factorization failure.
+    // Problem 1: retain a symmetric, present local block whose conditioned
+    // determinant is negative, forcing an explicit factorization failure.
     const std::size_t matrixBase = kMatrixElements;
     for (std::size_t row = 0u; row < 3u; ++row) {
         for (std::size_t column = 0u; column < 3u; ++column) {
             batch.matrices[
                 matrixBase + row * kMaxRows + column
-            ] = 0.0f;
+            ] = row == column
+                ? (row == 1u ? -1.0f : 1.0f)
+                : 0.0f;
         }
     }
 
     // Problem 2: one iteration cannot certify the coupled four-contact map.
     batch.headers[2].control.z = 1u;
     batch.headers[2].control.w = 1u;
+
+    // Problem 6: finite authored data whose cone norm overflows in FP32 must
+    // fail transactionally instead of publishing a nonfinite warm start.
+    auto& overflow = batch.contacts[6u * kMaxContacts];
+    overflow.warmImpulseAndFrictionV.x = 0.0f;
+    overflow.warmImpulseAndFrictionV.y =
+        std::numeric_limits<float>::max();
+    overflow.warmImpulseAndFrictionV.z =
+        std::numeric_limits<float>::max();
     return batch;
 }
 
@@ -738,6 +1067,122 @@ GPUResult runGPU(
     return result;
 }
 
+GPUResult runStreamGPU(
+    id<MTLDevice> device,
+    id<MTLCommandQueue> queue,
+    id<MTLComputePipelineState> pipeline,
+    const StreamBatch& batch
+) {
+    const std::size_t problemCount = batch.headers.size();
+    constexpr std::size_t maximumABIValue =
+        std::numeric_limits<std::uint32_t>::max();
+    if (problemCount > maximumABIValue ||
+        batch.contacts.size() > maximumABIValue ||
+        batch.rowOffsets.size() > maximumABIValue ||
+        batch.columnIndices.size() > maximumABIValue ||
+        batch.blockValues.size() !=
+            NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS *
+                batch.columnIndices.size()) {
+        throw std::runtime_error("streamed buffer layout violates the ABI");
+    }
+    id<MTLBuffer> headerBuffer = [device
+        newBufferWithBytes:batch.headers.data()
+                   length:batch.headers.size() *
+                       sizeof(NumiTemporalConeStreamHeader)
+                  options:MTLResourceStorageModeShared];
+    id<MTLBuffer> rowOffsetBuffer = [device
+        newBufferWithBytes:batch.rowOffsets.data()
+                   length:batch.rowOffsets.size() * sizeof(std::uint32_t)
+                  options:MTLResourceStorageModeShared];
+    id<MTLBuffer> columnBuffer = [device
+        newBufferWithBytes:batch.columnIndices.data()
+                   length:batch.columnIndices.size() * sizeof(std::uint32_t)
+                  options:MTLResourceStorageModeShared];
+    id<MTLBuffer> blockBuffer = [device
+        newBufferWithBytes:batch.blockValues.data()
+                   length:batch.blockValues.size() * sizeof(float)
+                  options:MTLResourceStorageModeShared];
+    id<MTLBuffer> contactBuffer = [device
+        newBufferWithBytes:batch.contacts.data()
+                   length:batch.contacts.size() *
+                       sizeof(NumiTemporalConeIslandContact)
+                  options:MTLResourceStorageModeShared];
+    id<MTLBuffer> impulseBuffer = [device
+        newBufferWithLength:batch.contacts.size() * sizeof(mr_float4)
+                    options:MTLResourceStorageModeShared];
+    id<MTLBuffer> statusBuffer = [device
+        newBufferWithLength:problemCount *
+            sizeof(NumiTemporalConeIslandStatus)
+                    options:MTLResourceStorageModeShared];
+    if (headerBuffer == nil || rowOffsetBuffer == nil ||
+        columnBuffer == nil || blockBuffer == nil ||
+        contactBuffer == nil || impulseBuffer == nil ||
+        statusBuffer == nil) {
+        throw std::runtime_error("failed to allocate streamed island buffers");
+    }
+    std::memset(
+        impulseBuffer.contents,
+        0,
+        batch.contacts.size() * sizeof(mr_float4)
+    );
+    std::memset(
+        statusBuffer.contents,
+        0,
+        problemCount * sizeof(NumiTemporalConeIslandStatus)
+    );
+    id<MTLCommandBuffer> commandBuffer = [queue commandBuffer];
+    id<MTLComputeCommandEncoder> encoder =
+        [commandBuffer computeCommandEncoder];
+    if (commandBuffer == nil || encoder == nil) {
+        throw std::runtime_error(
+            "failed to create streamed island command encoder"
+        );
+    }
+    [encoder setComputePipelineState:pipeline];
+    [encoder setBuffer:headerBuffer offset:0 atIndex:0];
+    [encoder setBuffer:rowOffsetBuffer offset:0 atIndex:1];
+    [encoder setBuffer:columnBuffer offset:0 atIndex:2];
+    [encoder setBuffer:blockBuffer offset:0 atIndex:3];
+    [encoder setBuffer:contactBuffer offset:0 atIndex:4];
+    [encoder setBuffer:impulseBuffer offset:0 atIndex:5];
+    [encoder setBuffer:statusBuffer offset:0 atIndex:6];
+    const std::uint32_t count = static_cast<std::uint32_t>(problemCount);
+    [encoder setBytes:&count length:sizeof(count) atIndex:7];
+    const mr_uint4 capacities = u4(
+        static_cast<std::uint32_t>(batch.contacts.size()),
+        static_cast<std::uint32_t>(batch.rowOffsets.size()),
+        static_cast<std::uint32_t>(batch.columnIndices.size()),
+        static_cast<std::uint32_t>(batch.contacts.size())
+    );
+    [encoder setBytes:&capacities length:sizeof(capacities) atIndex:8];
+    [encoder dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
+              threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
+    [encoder endEncoding];
+    [commandBuffer commit];
+    [commandBuffer waitUntilCompleted];
+    if (commandBuffer.status != MTLCommandBufferStatusCompleted ||
+        commandBuffer.error != nil) {
+        throw std::runtime_error(
+            "Metal streamed island solve failed: " +
+            errorText(commandBuffer.error)
+        );
+    }
+    GPUResult result;
+    const auto* impulses = static_cast<const mr_float4*>(
+        impulseBuffer.contents
+    );
+    result.impulses.assign(impulses, impulses + batch.contacts.size());
+    const auto* statuses =
+        static_cast<const NumiTemporalConeIslandStatus*>(
+            statusBuffer.contents
+        );
+    result.statuses.assign(statuses, statuses + problemCount);
+    if (commandBuffer.GPUEndTime >= commandBuffer.GPUStartTime) {
+        result.seconds = commandBuffer.GPUEndTime - commandBuffer.GPUStartTime;
+    }
+    return result;
+}
+
 int run(const int argc, const char* const* argv) {
     std::size_t problemCount = 256u;
     std::uint32_t replayCount = 3u;
@@ -787,6 +1232,13 @@ int run(const int argc, const char* const* argv) {
     if (function == nil) {
         throw std::runtime_error("metallib lacks the island solver kernel");
     }
+    id<MTLFunction> streamFunction =
+        [library newFunctionWithName:@"numi_temporal_cone_stream_solve"];
+    if (streamFunction == nil) {
+        throw std::runtime_error(
+            "metallib lacks the streamed island solver kernel"
+        );
+    }
     id<MTLComputePipelineState> pipeline = [device
         newComputePipelineStateWithFunction:function
                                       error:&error];
@@ -795,11 +1247,29 @@ int run(const int argc, const char* const* argv) {
             "failed to create a SIMD32 island pipeline: " + errorText(error)
         );
     }
+    id<MTLComputePipelineState> streamPipeline = [device
+        newComputePipelineStateWithFunction:streamFunction
+                                      error:&error];
+    if (streamPipeline == nil ||
+        streamPipeline.threadExecutionWidth != 32u) {
+        throw std::runtime_error(
+            "failed to create a SIMD32 streamed island pipeline: " +
+            errorText(error)
+        );
+    }
 
     const Batch batch = makeBatch(problemCount);
+    const StreamBatch streamBatch = makeStreamBatch(batch);
+    double minimumSPDPivot = std::numeric_limits<double>::infinity();
+    bool positiveDefinite = true;
     std::vector<OracleResult> oracle;
     oracle.reserve(problemCount);
     for (std::size_t problem = 0; problem < problemCount; ++problem) {
+        const double pivot = minimumCholeskyPivot(batch, problem);
+        positiveDefinite = positiveDefinite && pivot > 0.0;
+        if (pivot > 0.0) {
+            minimumSPDPivot = std::min(minimumSPDPivot, pivot);
+        }
         oracle.push_back(solveOracle(batch, problem));
     }
     std::vector<GPUResult> replays;
@@ -807,32 +1277,66 @@ int run(const int argc, const char* const* argv) {
     for (std::uint32_t replay = 0u; replay < replayCount; ++replay) {
         replays.push_back(runGPU(device, queue, pipeline, batch));
     }
+    std::vector<GPUResult> streamReplays;
+    streamReplays.reserve(replayCount);
+    for (std::uint32_t replay = 0u; replay < replayCount; ++replay) {
+        streamReplays.push_back(runStreamGPU(
+            device,
+            queue,
+            streamPipeline,
+            streamBatch
+        ));
+    }
 
     const Batch failureBatch = makeFailureBatch();
-    const GPUResult failureFirst = runGPU(
+    StreamBatch failureStreamBatch = makeStreamBatch(failureBatch);
+    failureStreamBatch.headers[3].control.x = 0xffffffffu;
+    const auto& malformedHeader = failureStreamBatch.headers[4];
+    const std::size_t malformedRowOffset = malformedHeader.ranges.y;
+    const std::size_t malformedBlockBase = malformedHeader.ranges.z;
+    const std::size_t malformedBegin =
+        failureStreamBatch.rowOffsets[malformedRowOffset];
+    failureStreamBatch.columnIndices[
+        malformedBlockBase + malformedBegin + 1u
+    ] = failureStreamBatch.columnIndices[
+        malformedBlockBase + malformedBegin
+    ];
+    failureStreamBatch.headers[5].ranges.w =
+        NUMI_TEMPORAL_CONE_STREAM_MAX_BLOCKS + 1u;
+    const GPUResult failureFirst = runStreamGPU(
         device,
         queue,
-        pipeline,
-        failureBatch
+        streamPipeline,
+        failureStreamBatch
     );
-    const GPUResult failureReplay = runGPU(
+    const GPUResult failureReplay = runStreamGPU(
         device,
         queue,
-        pipeline,
-        failureBatch
+        streamPipeline,
+        failureStreamBatch
     );
-    const std::array<std::uint32_t, 3> expectedFailureCodes{{
+    const std::array<std::uint32_t, 7> expectedFailureCodes{{
         NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT,
         NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED,
         NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE,
+        NUMI_TEMPORAL_CONE_ISLAND_INVALID_ABI,
+        NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT,
+        NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT,
+        NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT,
     }};
     bool typedFailures = true;
     for (std::size_t problem = 0u;
          problem < expectedFailureCodes.size();
          ++problem) {
-        typedFailures = typedFailures &&
-            failureFirst.statuses[problem].control.x ==
-                expectedFailureCodes[problem];
+        const std::uint32_t actualCode =
+            failureFirst.statuses[problem].control.x;
+        if (actualCode != expectedFailureCodes[problem]) {
+            std::cerr
+                << "failure_case=" << problem
+                << " expected_status=" << expectedFailureCodes[problem]
+                << " actual_status=" << actualCode << '\n';
+            typedFailures = false;
+        }
     }
     const bool deterministicFailures =
         std::memcmp(
@@ -847,10 +1351,16 @@ int run(const int argc, const char* const* argv) {
                 sizeof(NumiTemporalConeIslandStatus)
         ) == 0;
     bool failureRollback = true;
-    for (std::size_t problem = 0u; problem < 2u; ++problem) {
-        for (std::size_t contact = 0u; contact < kMaxContacts; ++contact) {
+    constexpr std::array<std::size_t, 6> zeroRollbackProblems{{
+        0u, 1u, 3u, 4u, 5u, 6u,
+    }};
+    for (const std::size_t problem : zeroRollbackProblems) {
+        const auto& header = failureStreamBatch.headers[problem];
+        for (std::size_t contact = 0u;
+             contact < header.control.y;
+             ++contact) {
             const auto& impulse = failureFirst.impulses[
-                problem * kMaxContacts + contact
+                header.ranges.x + contact
             ];
             failureRollback = failureRollback &&
                 impulse.x == 0.0f &&
@@ -860,12 +1370,15 @@ int run(const int argc, const char* const* argv) {
         }
     }
     const std::size_t rollbackProblem = 2u;
-    const std::size_t rollbackContactBase = rollbackProblem * kMaxContacts;
+    const std::size_t rollbackDenseContactBase =
+        rollbackProblem * kMaxContacts;
+    const std::size_t rollbackStreamContactBase =
+        failureStreamBatch.headers[rollbackProblem].ranges.x;
     for (std::size_t contact = 0u;
          contact < failureBatch.headers[rollbackProblem].control.y;
          ++contact) {
         const auto& source = failureBatch.contacts[
-            rollbackContactBase + contact
+            rollbackDenseContactBase + contact
         ];
         const Vec3 checkpoint = projectCone(
             {{
@@ -878,7 +1391,7 @@ int run(const int argc, const char* const* argv) {
             source.limits.x
         );
         const auto& actual = failureFirst.impulses[
-            rollbackContactBase + contact
+            rollbackStreamContactBase + contact
         ];
         failureRollback = failureRollback &&
             std::abs(actual.x - checkpoint[0]) <= 1.0e-6 &&
@@ -886,9 +1399,9 @@ int run(const int argc, const char* const* argv) {
             std::abs(actual.z - checkpoint[2]) <= 1.0e-6;
     }
 
-    bool deterministic = true;
+    bool denseDeterministic = true;
     for (std::size_t replay = 1; replay < replays.size(); ++replay) {
-        deterministic = deterministic &&
+        denseDeterministic = denseDeterministic &&
             std::memcmp(
                 replays[0].impulses.data(),
                 replays[replay].impulses.data(),
@@ -901,23 +1414,74 @@ int run(const int argc, const char* const* argv) {
                     sizeof(NumiTemporalConeIslandStatus)
             ) == 0;
     }
+    bool deterministic = true;
+    for (std::size_t replay = 1u;
+         replay < streamReplays.size();
+         ++replay) {
+        deterministic = deterministic &&
+            std::memcmp(
+                streamReplays[0].impulses.data(),
+                streamReplays[replay].impulses.data(),
+                streamReplays[0].impulses.size() * sizeof(mr_float4)
+            ) == 0 &&
+            std::memcmp(
+                streamReplays[0].statuses.data(),
+                streamReplays[replay].statuses.data(),
+                streamReplays[0].statuses.size() *
+                    sizeof(NumiTemporalConeIslandStatus)
+            ) == 0;
+    }
+    bool denseStreamBitwise = true;
+    for (std::size_t problem = 0u;
+         problem < problemCount;
+         ++problem) {
+        denseStreamBitwise = denseStreamBitwise &&
+            std::memcmp(
+                &replays[0].statuses[problem],
+                &streamReplays[0].statuses[problem],
+                sizeof(NumiTemporalConeIslandStatus)
+            ) == 0;
+        const std::size_t denseContactBase = problem * kMaxContacts;
+        const std::size_t streamContactBase =
+            streamBatch.headers[problem].ranges.x;
+        for (std::size_t contact = 0u;
+             contact < batch.headers[problem].control.y;
+             ++contact) {
+            denseStreamBitwise = denseStreamBitwise &&
+                std::memcmp(
+                    &replays[0].impulses[denseContactBase + contact],
+                    &streamReplays[0].impulses[
+                        streamContactBase + contact
+                    ],
+                    sizeof(mr_float4)
+                ) == 0;
+        }
+    }
 
     std::size_t failedIslands = 0u;
     double maximumImpulseError = 0.0;
     double maximumObjectiveError = 0.0;
-    double maximumNaturalResidual = 0.0;
+    double maximumFP64KKTResidual = 0.0;
+    double maximumKKTResidual = 0.0;
     double maximumConeViolation = 0.0;
+    double maximumPositiveObjective = 0.0;
     std::uint32_t maximumIterations = 0u;
+    std::vector<std::uint32_t> iterationCounts;
+    iterationCounts.reserve(problemCount);
     std::uint64_t contactIterations = 0u;
     std::uint64_t contactsSolved = 0u;
     for (std::size_t problem = 0; problem < problemCount; ++problem) {
         const auto& expected = oracle[problem];
-        const auto& actual = replays[0].statuses[problem];
+        const auto& actual = streamReplays[0].statuses[problem];
         bool valid = expected.status == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
             actual.control.x == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
             actual.control.z == 1u;
-        maximumNaturalResidual = std::max(
-            maximumNaturalResidual,
+        maximumFP64KKTResidual = std::max(
+            maximumFP64KKTResidual,
+            expected.kktResidual
+        );
+        maximumKKTResidual = std::max(
+            maximumKKTResidual,
             static_cast<double>(actual.residuals.x)
         );
         maximumConeViolation = std::max(
@@ -931,15 +1495,22 @@ int run(const int argc, const char* const* argv) {
                 expected.objective
             ) / std::max(1.0, std::abs(expected.objective))
         );
+        maximumPositiveObjective = std::max(
+            maximumPositiveObjective,
+            std::max(static_cast<double>(actual.residuals.w), 0.0)
+        );
         maximumIterations = std::max(maximumIterations, actual.control.y);
+        iterationCounts.push_back(actual.control.y);
         contactsSolved += actual.control.w;
         contactIterations +=
             static_cast<std::uint64_t>(actual.control.w) * actual.control.y;
+        const std::size_t streamContactBase =
+            streamBatch.headers[problem].ranges.x;
         for (std::size_t contact = 0;
              contact < batch.headers[problem].control.y;
              ++contact) {
-            const auto& gpu = replays[0].impulses[
-                problem * kMaxContacts + contact
+            const auto& gpu = streamReplays[0].impulses[
+                streamContactBase + contact
             ];
             const auto& cpu = expected.impulses[contact];
             const std::array<double, 3> values{{gpu.x, gpu.y, gpu.z}};
@@ -968,11 +1539,17 @@ int run(const int argc, const char* const* argv) {
         }
     }
 
-    double totalSeconds = 0.0;
+    double denseTotalSeconds = 0.0;
     for (const auto& replay : replays) {
-        totalSeconds += replay.seconds;
+        denseTotalSeconds += replay.seconds;
     }
-    const double averageSeconds = totalSeconds / replays.size();
+    double streamTotalSeconds = 0.0;
+    for (const auto& replay : streamReplays) {
+        streamTotalSeconds += replay.seconds;
+    }
+    const double denseAverageSeconds = denseTotalSeconds / replays.size();
+    const double averageSeconds =
+        streamTotalSeconds / streamReplays.size();
     const double islandsPerSecond = averageSeconds > 0.0
         ? static_cast<double>(problemCount) / averageSeconds
         : 0.0;
@@ -982,19 +1559,90 @@ int run(const int argc, const char* const* argv) {
     const double contactIterationsPerSecond = averageSeconds > 0.0
         ? static_cast<double>(contactIterations) / averageSeconds
         : 0.0;
-    const std::uint64_t bufferBytes =
+    const std::uint64_t denseBufferBytes =
         batch.headers.size() * sizeof(NumiTemporalConeIslandHeader) +
         batch.matrices.size() * sizeof(float) +
         batch.contacts.size() * sizeof(NumiTemporalConeIslandContact) +
         batch.contacts.size() * sizeof(mr_float4) +
         batch.headers.size() * sizeof(NumiTemporalConeIslandStatus);
+    const std::uint64_t streamBufferBytes =
+        streamBatch.headers.size() * sizeof(NumiTemporalConeStreamHeader) +
+        streamBatch.rowOffsets.size() * sizeof(std::uint32_t) +
+        streamBatch.columnIndices.size() * sizeof(std::uint32_t) +
+        streamBatch.blockValues.size() * sizeof(float) +
+        streamBatch.contacts.size() *
+            sizeof(NumiTemporalConeIslandContact) +
+        streamBatch.contacts.size() * sizeof(mr_float4) +
+        streamBatch.headers.size() * sizeof(NumiTemporalConeIslandStatus);
+    const double speedup = averageSeconds > 0.0
+        ? denseAverageSeconds / averageSeconds
+        : 0.0;
+    const double memoryRatio = denseBufferBytes > 0u
+        ? static_cast<double>(streamBufferBytes) /
+            static_cast<double>(denseBufferBytes)
+        : 0.0;
+    const std::size_t sharedContactBase =
+        streamBatch.headers[1].ranges.x;
+    const auto& sharedFirst = streamReplays[0].impulses[sharedContactBase];
+    const auto& sharedSecond =
+        streamReplays[0].impulses[sharedContactBase + 1u];
+    const bool sharedRigidOracle =
+        std::abs(static_cast<double>(sharedFirst.x) - 1.0 / 3.0) <= 2.0e-6 &&
+        std::abs(static_cast<double>(sharedSecond.x) - 1.0 / 3.0) <= 2.0e-6 &&
+        std::abs(sharedFirst.y) <= 1.0e-7 &&
+        std::abs(sharedFirst.z) <= 1.0e-7 &&
+        std::abs(sharedSecond.y) <= 1.0e-7 &&
+        std::abs(sharedSecond.z) <= 1.0e-7;
+    std::uint64_t denseActiveBlocks = 0u;
+    for (const auto& header : batch.headers) {
+        denseActiveBlocks +=
+            static_cast<std::uint64_t>(header.control.y) * header.control.y;
+    }
+    const double blockFill = denseActiveBlocks > 0u
+        ? static_cast<double>(streamBatch.columnIndices.size()) /
+            static_cast<double>(denseActiveBlocks)
+        : 0.0;
+    std::sort(iterationCounts.begin(), iterationCounts.end());
+    const auto iterationPercentile = [&](const std::size_t numerator) {
+        const std::size_t rank = std::max<std::size_t>(
+            1u,
+            (numerator * iterationCounts.size() + 99u) / 100u
+        );
+        return iterationCounts[
+            std::min(rank, iterationCounts.size()) - 1u
+        ];
+    };
+    const std::uint32_t iterationP50 = iterationPercentile(50u);
+    const std::uint32_t iterationP95 = iterationPercentile(95u);
+    const std::uint32_t iterationP99 = iterationPercentile(99u);
+    std::uint32_t maximumIslandBlocks = 0u;
+    std::uint32_t fullCapacityIslands = 0u;
+    for (const auto& header : streamBatch.headers) {
+        maximumIslandBlocks = std::max(
+            maximumIslandBlocks,
+            header.ranges.w
+        );
+        if (header.ranges.w == NUMI_TEMPORAL_CONE_STREAM_MAX_BLOCKS) {
+            ++fullCapacityIslands;
+        }
+    }
+    const bool fullCapacityCovered =
+        problemCount < 36u ||
+        maximumIslandBlocks == NUMI_TEMPORAL_CONE_STREAM_MAX_BLOCKS;
     const bool passed =
         failedIslands == 0u &&
         maximumImpulseError <= 2.0e-5 &&
         maximumObjectiveError <= 2.0e-5 &&
-        maximumNaturalResidual <= 2.0e-6 &&
+        maximumFP64KKTResidual <= 2.0e-10 &&
+        maximumKKTResidual <= 2.0e-6 &&
         maximumConeViolation <= 2.0e-6 &&
+        maximumPositiveObjective <= 2.0e-5 &&
+        positiveDefinite &&
+        sharedRigidOracle &&
+        fullCapacityCovered &&
+        denseDeterministic &&
         deterministic &&
+        denseStreamBitwise &&
         typedFailures &&
         deterministicFailures &&
         failureRollback;
@@ -1007,22 +1655,44 @@ int run(const int argc, const char* const* argv) {
               << " failed_islands=" << failedIslands << '\n'
               << "max_fp64_impulse_error=" << maximumImpulseError
               << " max_fp64_objective_error=" << maximumObjectiveError
-              << " max_natural_residual=" << maximumNaturalResidual
+              << " max_fp64_kkt_residual=" << maximumFP64KKTResidual
+              << " max_kkt_residual=" << maximumKKTResidual
               << " max_cone_violation=" << maximumConeViolation
-              << " max_iterations=" << maximumIterations << '\n'
+              << " max_positive_objective=" << maximumPositiveObjective
+              << " max_iterations=" << maximumIterations
+              << " iteration_p50=" << iterationP50
+              << " iteration_p95=" << iterationP95
+              << " iteration_p99=" << iterationP99 << '\n'
               << "deterministic_replay="
               << (deterministic ? "true" : "false")
+              << " dense_deterministic="
+              << (denseDeterministic ? "true" : "false")
+              << " dense_stream_bitwise="
+              << (denseStreamBitwise ? "true" : "false")
               << " typed_failures=" << (typedFailures ? "true" : "false")
               << " deterministic_failures="
               << (deterministicFailures ? "true" : "false")
               << " failure_rollback="
-              << (failureRollback ? "true" : "false") << '\n'
+              << (failureRollback ? "true" : "false")
+              << " spd_cholesky="
+              << (positiveDefinite ? "true" : "false")
+              << " min_spd_pivot=" << minimumSPDPivot
+              << " shared_rigid_oracle="
+              << (sharedRigidOracle ? "true" : "false") << '\n'
               << "average_gpu_seconds=" << averageSeconds
               << " islands_per_second=" << islandsPerSecond
               << " contacts_per_second=" << contactsPerSecond
               << " contact_iterations_per_second="
               << contactIterationsPerSecond
-              << " buffer_bytes=" << bufferBytes << '\n'
+              << " streamed_buffer_bytes=" << streamBufferBytes << '\n'
+              << "dense_gpu_seconds=" << denseAverageSeconds
+              << " dense_to_stream_speedup=" << speedup
+              << " dense_buffer_bytes=" << denseBufferBytes
+              << " stream_to_dense_memory=" << memoryRatio
+              << " streamed_blocks=" << streamBatch.columnIndices.size()
+              << " block_fill=" << blockFill
+              << " max_island_blocks=" << maximumIslandBlocks
+              << " full_capacity_islands=" << fullCapacityIslands << '\n'
               << "result=" << (passed ? "PASS" : "FAIL") << '\n';
     return passed ? 0 : 1;
 }

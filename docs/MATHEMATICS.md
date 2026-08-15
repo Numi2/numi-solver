@@ -51,10 +51,9 @@ regularized determinant. The `0.01 I` term is a deterministic CFM floor: it
 bounds amplification from a weak response mode but introduces deliberate
 compliance in that mode.
 
-## Projected update
+## Isolated conditioned map
 
-The isolated probe executes the same local update used by the production
-solver:
+The isolated probe executes the imported local conditioned map:
 
 ```math
 \lambda^{k+1} =
@@ -92,6 +91,12 @@ authored normal cap, a second monotone scalar projection finds the closest
 tangent point on the capped ellipse. A zero friction axis retains the prior
 ABI behavior and disables both tangential impulses.
 
+The probe qualifies this map as an FP32 numerical building block. A general
+3x3 `P` followed by Euclidean projection is not, by itself, a KKT certificate
+for the quadratic objective with Hessian `A`. The coupled island solver avoids
+that mismatch by using a scalar metric on each complete cone block; see
+[ISLAND_SOLVER.md](ISLAND_SOLVER.md).
+
 ## Convergence residual
 
 The local fixed-point residual is the final projected update:
@@ -124,6 +129,8 @@ implementation of the equations above. It checks:
   capped-contact, polar-boundary and extreme-anisotropy cases;
 - isolated kernel time and problem throughput.
 
-This qualifies the local Temporal Cone block. It does not yet qualify contact
-generation, multi-contact island coupling, velocity publication, integration,
-or a complete physical trajectory.
+This qualifies the local Temporal Cone block. Coupled contact-space KKT,
+streamed-operator, SPD, objective, and deterministic-island evidence is
+reported separately in [QUALIFICATION.md](QUALIFICATION.md). Collision
+generation, rigid/articulated velocity publication, integration, and a
+complete physical trajectory remain separate qualification layers.

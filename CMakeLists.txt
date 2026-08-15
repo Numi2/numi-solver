@@ -117,7 +117,7 @@ if(BUILD_TESTING)
     )
     set_tests_properties(
         temporal_cone.islands
-        PROPERTIES LABELS "metal;physics;math;islands" TIMEOUT 60
+        PROPERTIES LABELS "metal;physics;math;islands;streamed" TIMEOUT 60
     )
 endif()
 

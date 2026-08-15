@@ -17,35 +17,57 @@ The island solves the convex contact-space problem
 
 where `A` is the symmetric positive-definite Delassus/contact-response
 operator and `C` is the product of the exact per-contact elliptic cones and
-normal caps documented in [MATHEMATICS.md](MATHEMATICS.md).
-
-## Block conditioning and stability
-
-Each contact owns the conditioned inverse `P_i` of its local 3x3 diagonal
-block. The complete block-Jacobi preconditioner is
+normal caps documented in [MATHEMATICS.md](MATHEMATICS.md). Because zero is
+feasible, a solved island must also satisfy the energy check
 
 ```math
-P = \operatorname{blockdiag}(P_0,\ldots,P_{N-1}).
+\frac{1}{2}\lambda^T A\lambda + v_\mathrm{free}^T\lambda \le 0
 ```
 
-The GPU computes a deterministic absolute-row-sum bound
+up to the declared FP32 tolerance.
+
+## Packed streamed operator
+
+The production-facing ABI stores `A` as sorted 3x3 block CSR:
+
+- one packed header per island;
+- one contiguous contact range;
+- `N + 1` relative row offsets;
+- strictly increasing source-contact indices in each row;
+- nine row-major FP32 values per present block.
+
+Every row must contain its diagonal, and every `A_ij` block must have a
+consistent transposed partner `A_ji` within the declared symmetry tolerance.
+Missing blocks are exact zeros. The kernel validates capacities, row
+monotonicity, source ordering, finiteness, diagonal presence, symmetry, and
+the local response factor before any physical iterate is published.
+
+## KKT-preserving conditioning
+
+A general 3x3 inverse followed by an ordinary Euclidean cone projection does
+not, in general, preserve the minimizer of the stated convex problem. The
+island solver therefore uses one positive scalar metric for all three axes of
+each contact. Define
 
 ```math
-L_\infty = \|PA\|_\infty
+d_i = \max_{a\in\{n,u,v\}}
+      \sum_{j,b}|A_{(i,a),(j,b)}|,
+\qquad
+D = \operatorname{blockdiag}(d_0 I_3,\ldots,d_{N-1}I_3).
 ```
 
-and limits the authored relaxation to
+For symmetric positive-definite `A`, `D - A` is symmetric diagonally dominant
+with nonnegative diagonal and is therefore positive semidefinite. Hence
 
 ```math
-\omega = \min\left(\omega_\mathrm{authored},
-                    \frac{1}{\max(L_\infty,1)}\right).
+0 \prec D^{-1/2} A D^{-1/2} \preceq I.
 ```
 
-This prevents strongly shared contact modes from destabilizing the parallel
-update. It is derived entirely from the immutable operator; there is no
-host-tuned per-scene branch or residual-dependent floating-point race.
+The metric is scalar within each cone block, so projection in the `D` metric
+is exactly the existing Euclidean elliptic-cone projection. Conditioning thus
+bounds the parallel step without changing its KKT fixed point.
 
-## Deterministic iteration
+## Deterministic iteration and residual
 
 One SIMD32 group owns one island and one lane owns one contact. At iteration
 `k`, every lane reads the same immutable impulse generation and evaluates
@@ -55,39 +77,52 @@ r^k = A\lambda^k + v_\mathrm{free},
 ```
 
 ```math
-d^k =
-\Pi_{\mathcal C}(\lambda^k-Pr^k)-\lambda^k,
+p^k = \Pi_{\mathcal C}
+      \left(\lambda^k-D^{-1}r^k\right),
 ```
 
 ```math
-\lambda^{k+1}=\lambda^k+\omega d^k.
+\lambda^{k+1}=(1-\omega)\lambda^k+\omega p^k,
+\qquad 0 < \omega \le 1.
 ```
 
-All matrix rows visit source contacts in ascending stable order. SIMD maximum
-and sum reductions have fixed topology. No floating-point atomics, unordered
-append queues, host-visible intermediate counts, or lane-0 serial island solve
-enters the iteration.
+Rows visit source contacts in strictly increasing order. SIMD reductions have
+fixed topology. No floating-point atomics, unordered append queues,
+host-visible intermediate counts, or lane-0 serial island solve enters the
+physical iteration.
 
-The natural convergence certificate is
+The convergence certificate is the scaled KKT gradient mapping
 
 ```math
-R_\mathrm{natural}=
-\frac{\|d^k\|_\infty}{\max(1,\|\lambda^k\|_\infty)}.
+G_D(\lambda)=D\left(
+\lambda-\Pi_{\mathcal C}(\lambda-D^{-1}r(\lambda))
+\right),
 ```
 
-The candidate is not applied after its current iterate satisfies the gate.
-The published impulses and convergence certificate therefore refer to the
-same vector.
+normalized as
+
+```math
+R_\mathrm{KKT}=
+\frac{\|G_D(\lambda)\|_\infty}
+{\max(1,\|v_\mathrm{free}\|_\infty,\|A\lambda\|_\infty)}.
+```
+
+Unlike an unscaled update norm, this certificate cannot become artificially
+small merely because an operator row has a small step size. The candidate is
+not applied after the current iterate satisfies the gate, so the published
+impulses, objective, and residual all refer to the same vector.
 
 ## Transaction and failure behavior
 
-The kernel rejects nonfinite or nonsymmetric operators, invalid contracts,
-and failed local conditioning with typed status. Iteration exhaustion returns
-`NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE`. Any rejected island republishes
-its projected warm-start checkpoint instead of exposing a partial iterate.
+The kernel rejects invalid ABI/ranges, malformed or asymmetric CSR,
+nonfinite input, failed local conditioning, nonfinite arithmetic, and bounded
+iteration exhaustion with typed status. A valid but unconverged island
+republishes its projected warm-start checkpoint. Invalid or nonfinite initial
+state publishes zero. No partial iterate is exposed as a solved result.
 
-The standalone dense matrix is a qualification representation. It makes every
-cross-contact coefficient directly inspectable and supports an independent
-FP64 oracle. Production sparse/streamed operators may replace storage, but
-must preserve the same matrix action, stable summation order, cone map,
-convergence certificate, and rollback contract.
+The dense kernel remains an executable qualification oracle. The harness
+constructs the same operator in dense and streamed form and requires
+byte-identical FP32 impulses, statuses, KKT residuals, objectives, iteration
+counts, and rollback behavior. An independent FP64 solve, Cholesky SPD check,
+cone feasibility, nonpositive objective check, and the analytic two-contact
+shared-rigid solution `(1/3, 1/3)` provide separate mathematical evidence.
