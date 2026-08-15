@@ -47,6 +47,7 @@ extreme_unbounded_projection=true
 extreme_capped_projection=true
 extreme_anisotropic_projection=true
 dimensional_cone_certificate=true
+inactive_axis_interior_projection=true
 ```
 
 The dimensional certificate probe authors `lambda=(1e6,1.5e6,0)` with unit
@@ -87,20 +88,23 @@ Apple M4 result:
 ```text
 islands=4096 contacts=42981 replays=5 failed_islands=0
 max_fp64_impulse_error=0.000001825
-max_fp64_objective_error=0.000000191
+max_fp64_objective_error=0.000000167
 max_fp64_kkt_residual=0.000000000
-max_kkt_residual=0.000001500
+max_kkt_residual=0.000001498
+max_fp64_complementarity_residual=0.000000000
+max_complementarity_residual=0.000001499
+max_complementarity_error=0.000001499
 max_cone_violation=0.000000089
 max_positive_objective=0.000000000
 degenerate_cone_contacts=2184
 max_degenerate_inactive_impulse=0.000000000
-max_degenerate_active_impulse=0.508176446
-max_iterations=105
+max_degenerate_active_impulse=0.245595247
+max_iterations=104
 iteration_p50=20
-iteration_p95=44
-iteration_p99=72
-accelerated_islands=2269
-max_acceleration_restarts=6
+iteration_p95=45
+iteration_p99=74
+accelerated_islands=2308
+max_acceleration_restarts=5
 deterministic_replay=true
 dense_deterministic=true
 dense_stream_bitwise=true
@@ -115,13 +119,13 @@ spd_cholesky=true
 min_spd_pivot=0.894427198
 shared_rigid_oracle=true
 under_relaxed_path=true
-average_gpu_seconds=0.005047083
-islands_per_second=811557.83
-contacts_per_second=8516007.58
-contact_iterations_per_second=298209460.32
+average_gpu_seconds=0.005340233
+islands_per_second=767007.68
+contacts_per_second=8048524.73
+contact_iterations_per_second=285431348.44
 streamed_buffer_bytes=10126748
-dense_gpu_seconds=0.011034075
-dense_to_stream_speedup=2.186228012
+dense_gpu_seconds=0.011481417
+dense_to_stream_speedup=2.149984090
 dense_buffer_bytes=159711232
 stream_to_dense_memory=0.063406611
 streamed_blocks=169861
@@ -135,17 +139,19 @@ result=PASS
 ```
 
 The streamed representation used 6.34% of the dense qualification buffers and
-the isolated streamed kernel was 2.186x faster for the same byte-identical
+the isolated streamed kernel was 2.150x faster for the same byte-identical
 FP32 solve. GPU time excludes CPU oracle work and buffer upload. These ratios
 describe this declared topology mix; they are not universal scene claims.
 
-The first correct one-axis implementation reused the 28-step anisotropic
-bisection and measured `0.006112458` seconds on this same batch. Replacing it
-with the exact two-dimensional wedge formula measured `0.004948617` seconds,
-a 1.235x solver-kernel speedup with unchanged FP64, KKT, determinism, and
-rollback gates. The richer batch remains within 0.4% of the prior
-positive-friction-only `0.004931358`-second measurement while qualifying 2,184
-lower-dimensional contacts.
+The earlier one-axis path reused the 28-step anisotropic bisection and measured
+`0.006112458` seconds on this batch. Replacing it with a two-dimensional wedge
+formula measured `0.004948617` seconds, but the braided trajectory later
+exposed a missing interior case: a nonzero inactive tangent could force the
+active pair to the wedge boundary. The corrected projection independently
+drops the inactive coordinate, preserves an interior active pair, and only
+then applies the wedge/cap formula. The fixed local adversary and 2,184
+degenerate coupled contacts now pass the FP64, KKT, complementarity,
+determinism, and rollback gates.
 
 Eight repeated streamed measurements after adding the curvature gate ranged
 from `0.004878792` to `0.005195750` seconds, with a `0.005042454`-second
@@ -180,6 +186,56 @@ deterministic failure replay, explicit zero publication for invalid state, and
 projected warm-start rollback for failed final admission must still hold. The
 analytic shared-rigid case verifies the coupled `(1/3, 1/3)` solution rather
 than the incorrect independent-contact `(1/2, 1/2)` result.
+
+## Braided-bag trajectory gate
+
+The braided-bag gate advances a deformable 56-node, 100-edge lattice around
+six falling balls for one simulated second. Each environment rebuilds 27
+contacts and the complete shared-particle Delassus operator on the GPU every
+microstep. Dense and 309-block streamed paths begin from identical state and
+must produce byte-identical nodes, balls, statuses, and final hashes.
+
+Measured command:
+
+```sh
+./build/numi-solver-braided-bag \
+  --environments 128 --steps 480 --replays 2
+```
+
+Every one of three paired Apple M4 invocations reported:
+
+```text
+failed_steps=0
+escaped_mask=0
+max_penetration=0.002773538
+max_relative_stretch=0.135187015
+max_kkt_residual=0.000001095
+max_cone_violation=0.000000030
+max_complementarity_residual=0.000001095
+max_positive_objective=0.000000000
+max_iterations=428
+dense_deterministic=true
+streamed_deterministic=true
+dense_stream_bitwise=true
+state_hash=0x8c77acd537089a60
+dense_operator_bytes=4718592
+streamed_operator_bytes=1596416
+stream_to_dense_operator_memory=0.338324653
+```
+
+Paired dense/stream times were `0.888583479/0.444437354`,
+`0.886406542/0.456465333`, and `0.954061042/0.521337750` seconds. Thus the
+streamed path used 33.8% of dense operator storage and measured 1.83–2.00x
+faster while producing identical FP32 trajectories and certificates. The
+median invocation was 134,599 streamed versus 69,144 dense environment
+microsteps/s. These are complete bag physics microsteps, not RL transitions.
+
+This is matched evidence for Numi streamed CSR over Numi dense storage on the
+declared bag topology. No claim against an external simulator follows without
+a matched implementation and measurement. The exact mechanics and
+approximation boundary are documented in [BRAIDED_BAG.md](BRAIDED_BAG.md).
+The qualified combined metallib SHA-256 is
+`c06b3631bcaeb9906ef323cb9bf0f044722507c5102890ca347e81bbbfd26313`.
 
 ## Response-column assembly and chained solve gate
 

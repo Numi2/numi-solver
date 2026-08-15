@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_TEMPORAL_CONE_ISLAND_ABI_VERSION 1u
+#define NUMI_TEMPORAL_CONE_ISLAND_ABI_VERSION 2u
 #define NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS 32u
 #define NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS \
     (3u * NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS)
@@ -14,7 +14,7 @@
       (NUMI_TEMPORAL_CONE_ISLAND_MAX_ROWS + 1u)) / 2u)
 #define NUMI_TEMPORAL_CONE_ISLAND_MAX_ITERATIONS 1024u
 
-#define NUMI_TEMPORAL_CONE_STREAM_ABI_VERSION 2u
+#define NUMI_TEMPORAL_CONE_STREAM_ABI_VERSION 3u
 #define NUMI_TEMPORAL_CONE_STREAM_MAX_BLOCKS \
     (NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS * \
      NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS)
@@ -288,7 +288,8 @@ typedef struct MR_ALIGN16 NumiTemporalConeIslandStatus {
     // x normalized KKT gradient-mapping residual, y cone violation,
     // z maximum impulse magnitude, w objective.
     mr_float4 residuals;
-    // x maximum raw contact residual, y relaxation, z iteration-gate reached,
+    // x maximum raw contact residual, y relaxation,
+    // z normalized cone complementarity/VI residual,
     // w deterministic acceleration restart count.
     mr_float4 diagnostics;
 } NumiTemporalConeIslandStatus;

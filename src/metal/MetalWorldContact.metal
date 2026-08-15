@@ -647,6 +647,47 @@ projectFrictionConeValuesUnscaled(
         );
     }
 
+    const bool activeU = friction.x > kConeEpsilon;
+    const bool activeV = friction.y > kConeEpsilon;
+    if (activeU != activeV) {
+        const float mu = activeU ? friction.x : friction.y;
+        const float tangent = activeU ? impulse.y : impulse.z;
+        float3 projected = float3(
+            impulse.x,
+            activeU ? tangent : 0.0f,
+            activeV ? tangent : 0.0f
+        );
+        if (!(impulse.x >= 0.0f &&
+              abs(tangent) <= mu * impulse.x)) {
+            if (impulse.x + mu * abs(tangent) <= 0.0f) {
+                projected = float3(0.0f);
+            } else {
+                const float normal =
+                    (impulse.x + mu * abs(tangent)) /
+                    (1.0f + mu * mu);
+                const float projectedTangent =
+                    copysign(mu * normal, tangent);
+                projected = float3(
+                    normal,
+                    activeU ? projectedTangent : 0.0f,
+                    activeV ? projectedTangent : 0.0f
+                );
+            }
+        }
+        if (maximumNormalImpulse > 0.0f &&
+            projected.x > maximumNormalImpulse) {
+            projected.x = maximumNormalImpulse;
+            const float limitedTangent = clamp(
+                tangent,
+                -mu * maximumNormalImpulse,
+                mu * maximumNormalImpulse
+            );
+            projected.y = activeU ? limitedTangent : 0.0f;
+            projected.z = activeV ? limitedTangent : 0.0f;
+        }
+        return projected;
+    }
+
     float normalizedTangentSquared = 0.0f;
     normalizedTangentSquared +=
         friction.x > kConeEpsilon
@@ -667,8 +708,6 @@ projectFrictionConeValuesUnscaled(
         if (impulse.x + weightedDual <= 0.0f) {
             projected = float3(0.0f);
         } else {
-            const bool activeU = friction.x > kConeEpsilon;
-            const bool activeV = friction.y > kConeEpsilon;
             const float frictionScale = max(
                 max(friction.x, friction.y),
                 1.0f
@@ -677,20 +716,7 @@ projectFrictionConeValuesUnscaled(
                 activeU && activeV &&
                 abs(friction.x - friction.y) <=
                     8.0f * kFloatEpsilon * frictionScale;
-            if (activeU != activeV) {
-                const float mu = activeU ? friction.x : friction.y;
-                const float tangent = activeU ? impulse.y : impulse.z;
-                const float normal =
-                    (impulse.x + mu * abs(tangent)) /
-                    (1.0f + mu * mu);
-                const float projectedTangent =
-                    copysign(mu * normal, tangent);
-                projected = float3(
-                    normal,
-                    activeU ? projectedTangent : 0.0f,
-                    activeV ? projectedTangent : 0.0f
-                );
-            } else if (isotropic) {
+            if (isotropic) {
                 const float mu =
                     0.5f * (friction.x + friction.y);
                 const float normal =
@@ -11927,6 +11953,52 @@ inline float temporalConeViolation(
     );
 }
 
+// Exact first-order variational-inequality gap for the authored elliptic
+// Coulomb set. For an uncapped cone, dual feasibility is
+// r_n >= ||(mu_u r_u, mu_v r_v)|| and complementarity is lambda.r = 0.
+// For a capped cone, minimizing dot(r, z) over the complete feasible set gives
+// cap * min(r_n - ||(mu_u r_u, mu_v r_v)||, 0). Divide the work gap by a
+// three-axis impulse support scale so this certificate has velocity units and
+// can share the KKT tolerance without becoming small through the step size.
+inline float temporalConeComplementarityResidual(
+    const float3 impulse,
+    const float3 residual,
+    const float frictionU,
+    const float frictionV,
+    const float maximumNormalImpulse
+) {
+    const float2 friction = max(
+        float2(frictionU, frictionV),
+        float2(0.0f)
+    );
+    const float dualTangent = scaledLength2(
+        friction * residual.yz
+    );
+    const float dualSlope = residual.x - dualTangent;
+    const float work = dot(impulse, residual);
+    float supportScale = max(
+        abs(impulse.x),
+        max(abs(impulse.y), abs(impulse.z))
+    );
+    float dualViolation = max(-dualSlope, 0.0f);
+    float gap = work;
+    if (maximumNormalImpulse > 0.0f) {
+        supportScale = max(
+            supportScale,
+            maximumNormalImpulse * max(
+                1.0f,
+                max(friction.x, friction.y)
+            )
+        );
+        dualViolation = 0.0f;
+        gap -= maximumNormalImpulse * min(dualSlope, 0.0f);
+    }
+    return max(
+        dualViolation,
+        abs(gap) / (3.0f * max(1.0f, supportScale))
+    );
+}
+
 // One SIMD32 group owns one complete dense contact-space island. Every lane
 // owns one three-row cone block. Matrix actions visit source contacts in
 // canonical order; no floating-point atomics or unordered reductions enter
@@ -12235,7 +12307,6 @@ kernel void numi_temporal_cone_island_solve(
     }
 
     uint completedIterations = 0u;
-    bool converged = false;
     const bool accelerationEnabled = effectiveRelaxation == 1.0f;
     float accelerationClock = 1.0f;
     float momentumScale = 0.0f;
@@ -12349,10 +12420,51 @@ kernel void numi_temporal_cone_island_solve(
         const bool candidateReady =
             completedIterations >= header.control.z &&
             maximumNaturalDelta <= tolerance;
+        float laneComplementarityDelta = 0.0f;
+        if (active && candidateReady) {
+            const uint row = 3u * lane;
+            const float3 impulse = extrapolated
+                ? search[lane].xyz
+                : current[lane].xyz;
+            const float3 residual = extrapolated
+                ? temporalConeIslandResidual(
+                    matrices,
+                    matrixBase,
+                    row,
+                    contactCount,
+                    contact.freeVelocityAndFrictionU.xyz,
+                    search
+                )
+                : temporalConeIslandResidual(
+                    matrices,
+                    matrixBase,
+                    row,
+                    contactCount,
+                    contact.freeVelocityAndFrictionU.xyz,
+                    current
+                );
+            laneComplementarityDelta =
+                temporalConeComplementarityResidual(
+                    impulse,
+                    residual,
+                    cone.effectiveFrictionU,
+                    cone.effectiveFrictionV,
+                    cone.maximumNormalImpulse
+                );
+            if (!isfinite(laneComplementarityDelta)) {
+                laneComplementarityDelta = INFINITY;
+            }
+        }
+        const float maximumComplementarityDelta = simd_max(
+            laneComplementarityDelta
+        );
+        const bool certifiedCandidateReady =
+            candidateReady &&
+            maximumComplementarityDelta <= tolerance;
         const bool iterationConverged =
-            momentumScale == 0.0f && candidateReady;
+            momentumScale == 0.0f &&
+            certifiedCandidateReady;
         if (iterationConverged) {
-            converged = true;
             break;
         }
         previous[lane] = current[lane];
@@ -12362,7 +12474,7 @@ kernel void numi_temporal_cone_island_solve(
             // Restart on misaligned proximal progress, provisional tolerance,
             // or the fixed bound. Only beta=0 can pass the exact KKT gate.
             const bool restartAcceleration =
-                candidateReady ||
+                certifiedCandidateReady ||
                 restartMeasure > 0.0f ||
                 completedIterations < 16u ||
                 completedIterations % 64u == 0u;
@@ -12393,6 +12505,7 @@ kernel void numi_temporal_cone_island_solve(
     float laneImpulseScale = 0.0f;
     float laneRawResidual = 0.0f;
     float laneObjective = 0.0f;
+    float laneComplementarityResidual = 0.0f;
     if (active &&
         localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
         const uint row = 3u * lane;
@@ -12447,6 +12560,14 @@ kernel void numi_temporal_cone_island_solve(
         laneObjective =
             0.5f * dot(impulse, response) +
             dot(impulse, contact.freeVelocityAndFrictionU.xyz);
+        laneComplementarityResidual =
+            temporalConeComplementarityResidual(
+                impulse,
+                residual,
+                cone.effectiveFrictionU,
+                cone.effectiveFrictionV,
+                cone.maximumNormalImpulse
+            );
         if (!finite3(residual) ||
             !finite3(projected) ||
             !finite3(naturalDelta) ||
@@ -12455,7 +12576,8 @@ kernel void numi_temporal_cone_island_solve(
             !isfinite(laneImpulseScale) ||
             !isfinite(laneRawResidual) ||
             !isfinite(laneKKTScale) ||
-            !isfinite(laneObjective)) {
+            !isfinite(laneObjective) ||
+            !isfinite(laneComplementarityResidual)) {
             localFailure =
                 NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
             laneNaturalResidual = 0.0f;
@@ -12464,6 +12586,7 @@ kernel void numi_temporal_cone_island_solve(
             laneRawResidual = 0.0f;
             laneKKTScale = 1.0f;
             laneObjective = 0.0f;
+            laneComplementarityResidual = 0.0f;
         }
     }
 
@@ -12474,6 +12597,9 @@ kernel void numi_temporal_cone_island_solve(
     const float maximumImpulseScale = simd_max(laneImpulseScale);
     const float maximumRawResidual = simd_max(laneRawResidual);
     const float objective = simd_sum(laneObjective);
+    const float maximumComplementarityResidual = simd_max(
+        laneComplementarityResidual
+    );
     const float kktTolerance =
         header.tolerances.x +
         header.tolerances.y * maximumKKTScale;
@@ -12491,6 +12617,7 @@ kernel void numi_temporal_cone_island_solve(
         isfinite(maximumImpulseScale) &&
         isfinite(maximumRawResidual) &&
         isfinite(objective) &&
+        isfinite(maximumComplementarityResidual) &&
         isfinite(kktTolerance) &&
         isfinite(coneTolerance) &&
         isfinite(objectiveTolerance);
@@ -12503,9 +12630,13 @@ kernel void numi_temporal_cone_island_solve(
     const float normalizedNaturalResidual = finiteCertificate
         ? maximumNaturalResidual / maximumKKTScale
         : 0.0f;
+    const float normalizedComplementarityResidual = finiteCertificate
+        ? maximumComplementarityResidual / maximumKKTScale
+        : 0.0f;
     const bool finalConverged =
         finalFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
         maximumNaturalResidual <= kktTolerance &&
+        maximumComplementarityResidual <= kktTolerance &&
         maximumConeViolation <= coneTolerance &&
         objective <= objectiveTolerance;
     if (active) {
@@ -12539,7 +12670,7 @@ kernel void numi_temporal_cone_island_solve(
             ? float4(
                 maximumRawResidual,
                 effectiveRelaxation,
-                converged ? 1.0f : 0.0f,
+                normalizedComplementarityResidual,
                 float(accelerationRestarts)
             )
             : float4(0.0f);
@@ -12997,7 +13128,6 @@ kernel void numi_temporal_cone_stream_solve(
     }
 
     uint completedIterations = 0u;
-    bool converged = false;
     const bool accelerationEnabled = effectiveRelaxation == 1.0f;
     float accelerationClock = 1.0f;
     float momentumScale = 0.0f;
@@ -13112,10 +13242,52 @@ kernel void numi_temporal_cone_stream_solve(
         const bool candidateReady =
             completedIterations >= header.control.z &&
             maximumNaturalDelta <= tolerance;
+        float laneComplementarityDelta = 0.0f;
+        if (active && candidateReady) {
+            const float3 impulse = extrapolated
+                ? search[lane].xyz
+                : current[lane].xyz;
+            const float3 residual = extrapolated
+                ? temporalConeStreamResidual(
+                    columnIndices,
+                    blockValues,
+                    blockBase,
+                    rowBegin,
+                    rowEnd,
+                    contact.freeVelocityAndFrictionU.xyz,
+                    search
+                )
+                : temporalConeStreamResidual(
+                    columnIndices,
+                    blockValues,
+                    blockBase,
+                    rowBegin,
+                    rowEnd,
+                    contact.freeVelocityAndFrictionU.xyz,
+                    current
+                );
+            laneComplementarityDelta =
+                temporalConeComplementarityResidual(
+                    impulse,
+                    residual,
+                    cone.effectiveFrictionU,
+                    cone.effectiveFrictionV,
+                    cone.maximumNormalImpulse
+                );
+            if (!isfinite(laneComplementarityDelta)) {
+                laneComplementarityDelta = INFINITY;
+            }
+        }
+        const float maximumComplementarityDelta = simd_max(
+            laneComplementarityDelta
+        );
+        const bool certifiedCandidateReady =
+            candidateReady &&
+            maximumComplementarityDelta <= tolerance;
         const bool iterationConverged =
-            momentumScale == 0.0f && candidateReady;
+            momentumScale == 0.0f &&
+            certifiedCandidateReady;
         if (iterationConverged) {
-            converged = true;
             break;
         }
         previous[lane] = current[lane];
@@ -13124,7 +13296,7 @@ kernel void numi_temporal_cone_stream_solve(
         if (accelerationEnabled) {
             // Match the dense qualification path exactly.
             const bool restartAcceleration =
-                candidateReady ||
+                certifiedCandidateReady ||
                 restartMeasure > 0.0f ||
                 completedIterations < 16u ||
                 completedIterations % 64u == 0u;
@@ -13155,6 +13327,7 @@ kernel void numi_temporal_cone_stream_solve(
     float laneImpulseScale = 0.0f;
     float laneRawResidual = 0.0f;
     float laneObjective = 0.0f;
+    float laneComplementarityResidual = 0.0f;
     if (active &&
         localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS) {
         const float3 impulse = current[lane].xyz;
@@ -13209,6 +13382,14 @@ kernel void numi_temporal_cone_stream_solve(
         laneObjective =
             0.5f * dot(impulse, response) +
             dot(impulse, contact.freeVelocityAndFrictionU.xyz);
+        laneComplementarityResidual =
+            temporalConeComplementarityResidual(
+                impulse,
+                residual,
+                cone.effectiveFrictionU,
+                cone.effectiveFrictionV,
+                cone.maximumNormalImpulse
+            );
         if (!finite3(residual) ||
             !finite3(projected) ||
             !finite3(naturalDelta) ||
@@ -13217,7 +13398,8 @@ kernel void numi_temporal_cone_stream_solve(
             !isfinite(laneImpulseScale) ||
             !isfinite(laneRawResidual) ||
             !isfinite(laneKKTScale) ||
-            !isfinite(laneObjective)) {
+            !isfinite(laneObjective) ||
+            !isfinite(laneComplementarityResidual)) {
             localFailure =
                 NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
             laneNaturalResidual = 0.0f;
@@ -13226,6 +13408,7 @@ kernel void numi_temporal_cone_stream_solve(
             laneRawResidual = 0.0f;
             laneKKTScale = 1.0f;
             laneObjective = 0.0f;
+            laneComplementarityResidual = 0.0f;
         }
     }
 
@@ -13236,6 +13419,9 @@ kernel void numi_temporal_cone_stream_solve(
     const float maximumImpulseScale = simd_max(laneImpulseScale);
     const float maximumRawResidual = simd_max(laneRawResidual);
     const float objective = simd_sum(laneObjective);
+    const float maximumComplementarityResidual = simd_max(
+        laneComplementarityResidual
+    );
     const float kktTolerance =
         header.tolerances.x +
         header.tolerances.y * maximumKKTScale;
@@ -13253,6 +13439,7 @@ kernel void numi_temporal_cone_stream_solve(
         isfinite(maximumImpulseScale) &&
         isfinite(maximumRawResidual) &&
         isfinite(objective) &&
+        isfinite(maximumComplementarityResidual) &&
         isfinite(kktTolerance) &&
         isfinite(coneTolerance) &&
         isfinite(objectiveTolerance);
@@ -13265,9 +13452,13 @@ kernel void numi_temporal_cone_stream_solve(
     const float normalizedNaturalResidual = finiteCertificate
         ? maximumNaturalResidual / maximumKKTScale
         : 0.0f;
+    const float normalizedComplementarityResidual = finiteCertificate
+        ? maximumComplementarityResidual / maximumKKTScale
+        : 0.0f;
     const bool finalConverged =
         finalFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
         maximumNaturalResidual <= kktTolerance &&
+        maximumComplementarityResidual <= kktTolerance &&
         maximumConeViolation <= coneTolerance &&
         objective <= objectiveTolerance;
     if (active) {
@@ -13301,7 +13492,7 @@ kernel void numi_temporal_cone_stream_solve(
             ? float4(
                 maximumRawResidual,
                 effectiveRelaxation,
-                converged ? 1.0f : 0.0f,
+                normalizedComplementarityResidual,
                 float(accelerationRestarts)
             )
             : float4(0.0f);

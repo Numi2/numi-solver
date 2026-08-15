@@ -62,6 +62,7 @@ struct OracleResult {
     std::uint32_t iterations = 0u;
     double kktResidual = 0.0;
     double coneViolation = 0.0;
+    double complementarityResidual = 0.0;
     double objective = 0.0;
 };
 
@@ -197,6 +198,46 @@ Vec3 projectCone(
         }};
     }
 
+    const bool activeU = friction[0] > kConeEpsilon;
+    const bool activeV = friction[1] > kConeEpsilon;
+    if (activeU != activeV) {
+        const double mu = activeU ? friction[0] : friction[1];
+        const double tangent = activeU ? value[1] : value[2];
+        Vec3 projected{{
+            value[0],
+            activeU ? tangent : 0.0,
+            activeV ? tangent : 0.0,
+        }};
+        if (!(value[0] >= 0.0 &&
+              std::abs(tangent) <= mu * value[0])) {
+            if (value[0] + mu * std::abs(tangent) <= 0.0) {
+                projected = {};
+            } else {
+                const double normal =
+                    (value[0] + mu * std::abs(tangent)) /
+                    (1.0 + mu * mu);
+                const double projectedTangent =
+                    std::copysign(mu * normal, tangent);
+                projected = {{
+                    normal,
+                    activeU ? projectedTangent : 0.0,
+                    activeV ? projectedTangent : 0.0,
+                }};
+            }
+        }
+        if (maximumNormal > 0.0 && projected[0] > maximumNormal) {
+            projected[0] = maximumNormal;
+            const double limitedTangent = std::clamp(
+                tangent,
+                -mu * maximumNormal,
+                mu * maximumNormal
+            );
+            projected[1] = activeU ? limitedTangent : 0.0;
+            projected[2] = activeV ? limitedTangent : 0.0;
+        }
+        return projected;
+    }
+
     double normalized = 0.0;
     for (std::size_t axis = 0u; axis < 2u; ++axis) {
         if (friction[axis] > kConeEpsilon) {
@@ -215,27 +256,12 @@ Vec3 projectCone(
         if (value[0] + dual <= 0.0) {
             projected = {};
         } else {
-            const bool activeU = friction[0] > kConeEpsilon;
-            const bool activeV = friction[1] > kConeEpsilon;
             const bool isotropic =
                 activeU && activeV &&
                 std::abs(friction[0] - friction[1]) <=
                 8.0 * std::numeric_limits<float>::epsilon() *
                     std::max({friction[0], friction[1], 1.0});
-            if (activeU != activeV) {
-                const double mu = activeU ? friction[0] : friction[1];
-                const double tangent = activeU ? value[1] : value[2];
-                const double normal =
-                    (value[0] + mu * std::abs(tangent)) /
-                    (1.0 + mu * mu);
-                const double projectedTangent =
-                    std::copysign(mu * normal, tangent);
-                projected = {{
-                    normal,
-                    activeU ? projectedTangent : 0.0,
-                    activeV ? projectedTangent : 0.0,
-                }};
-            } else if (isotropic) {
+            if (isotropic) {
                 const double tangent = std::hypot(value[1], value[2]);
                 const double mu = 0.5 * (friction[0] + friction[1]);
                 const double normal =
@@ -521,6 +547,43 @@ double coneViolation(
     return violation;
 }
 
+double complementarityResidual(
+    const Vec3& impulse,
+    const Vec3& residual,
+    const double frictionU,
+    const double frictionV,
+    const double maximumNormal
+) {
+    const double dualTangent = std::hypot(
+        std::max(frictionU, 0.0) * residual[1],
+        std::max(frictionV, 0.0) * residual[2]
+    );
+    const double dualSlope = residual[0] - dualTangent;
+    const double work =
+        impulse[0] * residual[0] +
+        impulse[1] * residual[1] +
+        impulse[2] * residual[2];
+    double supportScale = std::max({
+        std::abs(impulse[0]),
+        std::abs(impulse[1]),
+        std::abs(impulse[2]),
+    });
+    double dualViolation = std::max(-dualSlope, 0.0);
+    double gap = work;
+    if (maximumNormal > 0.0) {
+        supportScale = std::max(
+            supportScale,
+            maximumNormal * std::max({1.0, frictionU, frictionV})
+        );
+        dualViolation = 0.0;
+        gap -= maximumNormal * std::min(dualSlope, 0.0);
+    }
+    return std::max(
+        dualViolation,
+        std::abs(gap) / (3.0 * std::max(1.0, supportScale))
+    );
+}
+
 OracleResult solveOracle(const Batch& batch, const std::size_t problem) {
     constexpr std::uint32_t oracleMaximumIterations = 20000u;
     constexpr double oracleAbsoluteTolerance = 1.0e-11;
@@ -640,6 +703,7 @@ OracleResult solveOracle(const Batch& batch, const std::size_t problem) {
 
     double maximumNatural = 0.0;
     double maximumScale = 1.0;
+    double maximumComplementarity = 0.0;
     for (std::size_t contact = 0; contact < contactCount; ++contact) {
         const auto& source = batch.contacts[contactBase + contact];
         const Vec3 action = matrixAction(batch, problem, contact, result.impulses);
@@ -683,6 +747,17 @@ OracleResult solveOracle(const Batch& batch, const std::size_t problem) {
                 source.limits.x
             )
         );
+        const double contactComplementarity = complementarityResidual(
+            result.impulses[contact],
+            residual,
+            source.freeVelocityAndFrictionU.w,
+            source.warmImpulseAndFrictionV.w,
+            source.limits.x
+        );
+        maximumComplementarity = std::max(
+            maximumComplementarity,
+            contactComplementarity
+        );
         result.objective +=
             0.5 * (
                 result.impulses[contact][0] * action[0] +
@@ -694,6 +769,8 @@ OracleResult solveOracle(const Batch& batch, const std::size_t problem) {
             result.impulses[contact][2] * source.freeVelocityAndFrictionU.z;
     }
     result.kktResidual = maximumNatural / maximumScale;
+    result.complementarityResidual =
+        maximumComplementarity / maximumScale;
     result.status = maximumNatural <= oracleAbsoluteTolerance +
         oracleRelativeTolerance * maximumScale
         ? NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
@@ -1790,6 +1867,9 @@ int run(const int argc, const char* const* argv) {
     double maximumObjectiveError = 0.0;
     double maximumFP64KKTResidual = 0.0;
     double maximumKKTResidual = 0.0;
+    double maximumFP64ComplementarityResidual = 0.0;
+    double maximumComplementarityResidual = 0.0;
+    double maximumComplementarityError = 0.0;
     double maximumConeViolation = 0.0;
     double maximumPositiveObjective = 0.0;
     std::uint32_t maximumIterations = 0u;
@@ -1815,6 +1895,21 @@ int run(const int argc, const char* const* argv) {
         maximumKKTResidual = std::max(
             maximumKKTResidual,
             static_cast<double>(actual.residuals.x)
+        );
+        maximumFP64ComplementarityResidual = std::max(
+            maximumFP64ComplementarityResidual,
+            expected.complementarityResidual
+        );
+        maximumComplementarityResidual = std::max(
+            maximumComplementarityResidual,
+            static_cast<double>(actual.diagnostics.z)
+        );
+        maximumComplementarityError = std::max(
+            maximumComplementarityError,
+            std::abs(
+                static_cast<double>(actual.diagnostics.z) -
+                expected.complementarityResidual
+            )
         );
         maximumConeViolation = std::max(
             maximumConeViolation,
@@ -1999,6 +2094,9 @@ int run(const int argc, const char* const* argv) {
         maximumObjectiveError <= 2.0e-5 &&
         maximumFP64KKTResidual <= 2.0e-10 &&
         maximumKKTResidual <= 2.0e-6 &&
+        maximumFP64ComplementarityResidual <= 2.0e-10 &&
+        maximumComplementarityResidual <= 2.0e-6 &&
+        maximumComplementarityError <= 2.0e-5 &&
         maximumConeViolation <= 2.0e-6 &&
         maximumPositiveObjective <= 2.0e-5 &&
         degenerateConeContacts > 0u &&
@@ -2029,6 +2127,12 @@ int run(const int argc, const char* const* argv) {
               << " max_fp64_objective_error=" << maximumObjectiveError
               << " max_fp64_kkt_residual=" << maximumFP64KKTResidual
               << " max_kkt_residual=" << maximumKKTResidual
+              << " max_fp64_complementarity_residual="
+              << maximumFP64ComplementarityResidual
+              << " max_complementarity_residual="
+              << maximumComplementarityResidual
+              << " max_complementarity_error="
+              << maximumComplementarityError
               << " max_cone_violation=" << maximumConeViolation
               << " max_positive_objective=" << maximumPositiveObjective
               << " degenerate_cone_contacts=" << degenerateConeContacts

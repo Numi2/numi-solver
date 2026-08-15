@@ -18,10 +18,15 @@ find_library(METAL_FRAMEWORK Metal REQUIRED)
 
 set(NUMI_SOLVER_SHADER_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
 set(NUMI_SOLVER_AIR "${NUMI_SOLVER_SHADER_DIR}/NumiTemporalCone.air")
+set(NUMI_SOLVER_BRAIDED_BAG_AIR "${NUMI_SOLVER_SHADER_DIR}/NumiBraidedBag.air")
 set(NUMI_SOLVER_ARTICULATED_AIR "${NUMI_SOLVER_SHADER_DIR}/NumiArticulatedOperator.air")
 set(NUMI_SOLVER_INVERSE_ABA_AIR "${NUMI_SOLVER_SHADER_DIR}/NumiArticulatedInverseABA.air")
 set(NUMI_SOLVER_METALLIB "${NUMI_SOLVER_SHADER_DIR}/NumiTemporalCone.metallib")
 set(NUMI_SOLVER_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/metal/MetalWorldContact.metal")
+set(
+    NUMI_SOLVER_BRAIDED_BAG_SOURCE
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/metal/BraidedBag.metal"
+)
 set(
     NUMI_SOLVER_ARTICULATED_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/src/metal/ArticulatedOperator.metal"
@@ -40,6 +45,7 @@ set(
     include/metalrobo/unified_quality_shared.h
     include/numi/temporal_cone_island.h
     include/numi/temporal_cone_probe.h
+    include/numi/braided_bag.h
 )
 
 add_custom_command(
@@ -52,6 +58,13 @@ add_custom_command(
         -I "${CMAKE_CURRENT_SOURCE_DIR}/include"
         -c "${NUMI_SOLVER_SOURCE}"
         -o "${NUMI_SOLVER_AIR}"
+    COMMAND "${XCRUN_EXECUTABLE}" -sdk macosx metal
+        -std=metal4.0
+        -O3
+        -fno-fast-math
+        -I "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        -c "${NUMI_SOLVER_BRAIDED_BAG_SOURCE}"
+        -o "${NUMI_SOLVER_BRAIDED_BAG_AIR}"
     COMMAND "${XCRUN_EXECUTABLE}" -sdk macosx metal
         -std=metal4.0
         -O3
@@ -71,11 +84,13 @@ add_custom_command(
         -o "${NUMI_SOLVER_INVERSE_ABA_AIR}"
     COMMAND "${XCRUN_EXECUTABLE}" -sdk macosx metallib
         "${NUMI_SOLVER_AIR}"
+        "${NUMI_SOLVER_BRAIDED_BAG_AIR}"
         "${NUMI_SOLVER_ARTICULATED_AIR}"
         "${NUMI_SOLVER_INVERSE_ABA_AIR}"
         -o "${NUMI_SOLVER_METALLIB}"
     DEPENDS
         "${NUMI_SOLVER_SOURCE}"
+        "${NUMI_SOLVER_BRAIDED_BAG_SOURCE}"
         "${NUMI_SOLVER_ARTICULATED_SOURCE}"
         "${NUMI_SOLVER_INVERSE_ABA_SOURCE}"
         ${NUMI_SOLVER_HEADERS}
@@ -166,6 +181,26 @@ target_compile_options(
 )
 target_compile_definitions(
     numi-solver-rigid
+    PRIVATE
+        NUMI_TEMPORAL_CONE_METALLIB="${NUMI_SOLVER_METALLIB}"
+)
+
+add_executable(numi-solver-braided-bag tools/braided_bag.mm)
+add_dependencies(numi-solver-braided-bag numi_temporal_cone)
+target_link_libraries(
+    numi-solver-braided-bag
+    PRIVATE
+        numi_temporal_cone_abi
+        "${FOUNDATION_FRAMEWORK}"
+        "${METAL_FRAMEWORK}"
+)
+target_compile_features(numi-solver-braided-bag PRIVATE cxx_std_23)
+target_compile_options(
+    numi-solver-braided-bag
+    PRIVATE -fobjc-arc -Wall -Wextra -Wpedantic
+)
+target_compile_definitions(
+    numi-solver-braided-bag
     PRIVATE
         NUMI_TEMPORAL_CONE_METALLIB="${NUMI_SOLVER_METALLIB}"
 )
@@ -308,6 +343,19 @@ if(BUILD_TESTING)
             --islands 96
             --replays 2
     )
+    add_test(
+        NAME temporal_cone.braided_bag
+        COMMAND $<TARGET_FILE:numi-solver-braided-bag>
+            --environments 16
+            --steps 480
+            --replays 2
+    )
+    set_tests_properties(
+        temporal_cone.braided_bag
+        PROPERTIES
+            LABELS "metal;physics;braid;rigid;contact;streamed"
+            TIMEOUT 60
+    )
     set_tests_properties(
         temporal_cone.rigid
         PROPERTIES LABELS "metal;physics;rigid;assembly;streamed" TIMEOUT 60
@@ -370,6 +418,7 @@ install(
         numi-solver-islands
         numi-solver-assembly
         numi-solver-rigid
+        numi-solver-braided-bag
         numi-solver-articulated
         numi-solver-articulated-capacity
         numi-solver-articulated-conditioning

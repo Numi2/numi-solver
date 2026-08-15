@@ -214,6 +214,47 @@ std::array<double, 3> projectCone(
         }};
     }
 
+    const bool activeU = friction[0] > kConeEpsilon;
+    const bool activeV = friction[1] > kConeEpsilon;
+    if (activeU != activeV) {
+        const double mu = activeU ? friction[0] : friction[1];
+        const double tangent = activeU ? impulse[1] : impulse[2];
+        std::array<double, 3> projected{{
+            impulse[0],
+            activeU ? tangent : 0.0,
+            activeV ? tangent : 0.0,
+        }};
+        if (!(impulse[0] >= 0.0 &&
+              std::abs(tangent) <= mu * impulse[0])) {
+            if (impulse[0] + mu * std::abs(tangent) <= 0.0) {
+                projected = {};
+            } else {
+                const double normal =
+                    (impulse[0] + mu * std::abs(tangent)) /
+                    (1.0 + mu * mu);
+                const double projectedTangent =
+                    std::copysign(mu * normal, tangent);
+                projected = {{
+                    normal,
+                    activeU ? projectedTangent : 0.0,
+                    activeV ? projectedTangent : 0.0,
+                }};
+            }
+        }
+        if (maximumNormalImpulse > 0.0 &&
+            projected[0] > maximumNormalImpulse) {
+            projected[0] = maximumNormalImpulse;
+            const double limitedTangent = std::clamp(
+                tangent,
+                -mu * maximumNormalImpulse,
+                mu * maximumNormalImpulse
+            );
+            projected[1] = activeU ? limitedTangent : 0.0;
+            projected[2] = activeV ? limitedTangent : 0.0;
+        }
+        return projected;
+    }
+
     double normalizedTangentSquared = 0.0;
     for (std::size_t axis = 0; axis < 2; ++axis) {
         if (friction[axis] > kConeEpsilon) {
@@ -237,27 +278,12 @@ std::array<double, 3> projectCone(
         if (impulse[0] + weightedDual <= 0.0) {
             projected = {};
         } else {
-            const bool activeU = friction[0] > kConeEpsilon;
-            const bool activeV = friction[1] > kConeEpsilon;
             const bool isotropic =
                 activeU && activeV &&
                 std::abs(friction[0] - friction[1]) <=
                     8.0 * std::numeric_limits<float>::epsilon() *
                     std::max({friction[0], friction[1], 1.0});
-            if (activeU != activeV) {
-                const double mu = activeU ? friction[0] : friction[1];
-                const double tangent = activeU ? impulse[1] : impulse[2];
-                const double normal =
-                    (impulse[0] + mu * std::abs(tangent)) /
-                    (1.0 + mu * mu);
-                const double projectedTangent =
-                    std::copysign(mu * normal, tangent);
-                projected = {{
-                    normal,
-                    activeU ? projectedTangent : 0.0,
-                    activeV ? projectedTangent : 0.0,
-                }};
-            } else if (isotropic) {
+            if (isotropic) {
                 const double tangentNorm = std::hypot(
                     impulse[1], impulse[2]
                 );
@@ -747,6 +773,11 @@ std::vector<NumiTemporalConeProbeInput> makeProblems(
         1.0f
     );
     inputs.back().control.z = 1u;
+    appendFixedProjection(
+        {{1.0f, 2.0f, 0.1f}},
+        0.0f,
+        0.5f
+    );
 
     for (std::size_t index = inputs.size(); index < count; ++index) {
         const float a = 0.25f + 0.01f * static_cast<float>(index % 71u);
@@ -909,7 +940,7 @@ int run(const int argc, const char* const* argv) {
             throw std::runtime_error("unknown argument: " + std::string(value));
         }
     }
-    problemCount = std::max<std::size_t>(problemCount, 21u);
+    problemCount = std::max<std::size_t>(problemCount, 22u);
     replayCount = std::max<std::uint32_t>(replayCount, 2u);
     if (problemCount > std::numeric_limits<std::uint32_t>::max()) {
         throw std::runtime_error("case count exceeds the probe ABI");
@@ -1114,6 +1145,11 @@ int run(const int argc, const char* const* argv) {
             dimensionalViolationOracle
         ) <= 1.0e-6 &&
         dimensionalViolationGPU > 1.0e5;
+    const auto& oneAxisInterior = replays[0].outputs[21u];
+    const bool inactiveAxisDoesNotForceBoundary =
+        std::abs(oneAxisInterior.impulseAndDelta.x - 1.0f) <= 1.0e-6f &&
+        oneAxisInterior.impulseAndDelta.y == 0.0f &&
+        std::abs(oneAxisInterior.impulseAndDelta.z - 0.1f) <= 1.0e-6f;
 
     double totalGPUSeconds = 0.0;
     for (const auto& replay : replays) {
@@ -1142,7 +1178,8 @@ int run(const int argc, const char* const* argv) {
         extremeUnboundedProjection &&
         extremeCappedProjection &&
         extremeAnisotropicProjection &&
-        dimensionalConeCertificate;
+        dimensionalConeCertificate &&
+        inactiveAxisDoesNotForceBoundary;
 
     if (maximumRelativeError > 1.0e-5) {
         const auto worstOracle = solveOracle(inputs[maximumRelativeErrorCase]);
@@ -1192,6 +1229,8 @@ int run(const int argc, const char* const* argv) {
               << (extremeAnisotropicProjection ? "true" : "false")
               << " dimensional_cone_certificate="
               << (dimensionalConeCertificate ? "true" : "false")
+              << " inactive_axis_interior_projection="
+              << (inactiveAxisDoesNotForceBoundary ? "true" : "false")
               << '\n'
               << "average_gpu_seconds=" << averageGPUSeconds
               << " cases_per_second=" << casesPerSecond << '\n'

@@ -142,9 +142,10 @@ restarts momentum when
 (\lambda_i^{k+1}-\lambda_i^k)>0,
 ```
 
-when an extrapolated point first reaches the provisional tolerance, or after
-64 iterations without an earlier restart. The first condition detects
-momentum that is no longer aligned with proximal progress. The second forces
+when an extrapolated point first reaches both provisional KKT and
+complementarity tolerances, or after 64 iterations without an earlier restart.
+The first condition detects momentum that is no longer aligned with proximal
+progress. The second forces
 the next certificate to evaluate the accepted feasible iterate with
 `beta=0`; an extrapolated search point never terminates the solve. The fixed
 restart bounds momentum when the adaptive test remains silent.
@@ -175,7 +176,7 @@ small merely because an operator row has a small step size. The candidate is
 not applied after the current iterate satisfies the gate, so the published
 impulses, objective, and residual all refer to the same vector.
 
-Success requires three simultaneous finite certificates. With
+Success requires four simultaneous finite certificates. With
 
 ```math
 t_\mathrm{KKT}=t_\mathrm{abs}+t_\mathrm{rel}
@@ -189,10 +190,43 @@ t_\mathcal C=t_\mathrm{abs}+t_\mathrm{rel}
 t_E=3N\,t_\mathrm{KKT}\|\lambda\|_\infty,
 ```
 
-the kernel admits the candidate only when
+define, for each contact residual `r_i`,
+
+```math
+s_i=r_{i,n}-\sqrt{(\mu_{i,u}r_{i,u})^2+
+(\mu_{i,v}r_{i,v})^2},
+```
+
+```math
+g_i=
+\begin{cases}
+\lambda_i^T r_i,&\lambda_{i,n,\max}=0,\\
+\lambda_i^T r_i-
+\lambda_{i,n,\max}\min(s_i,0),&\lambda_{i,n,\max}>0.
+\end{cases}
+```
+
+For an uncapped cone, `s_i >= 0` is dual feasibility and `g_i = 0` is
+complementarity. For a capped cone, the second expression is the exact
+variational-inequality gap after minimizing `r_i^T z` over the entire capped
+cone. The velocity-dimensional certificate is
+
+```math
+R_\mathrm{VI}=\max_i\left(
+\mathbf{1}_{\mathrm{uncapped}}\max(-s_i,0),
+\frac{|g_i|}{3\max(1,\|\lambda_i\|_\infty,S_i)}
+\right),
+```
+
+where `S_i` is zero for an uncapped cone and is the cap multiplied by
+`max(1, mu_u, mu_v)` otherwise.
+
+The kernel admits the candidate only when
 
 ```math
 \|G_D(\lambda)\|_\infty\le t_\mathrm{KKT},
+\qquad
+R_\mathrm{VI}\le t_\mathrm{KKT},
 \qquad
 V_\mathcal C(\lambda)\le t_\mathcal C,
 \qquad
@@ -205,8 +239,10 @@ into a solved contact state. Any nonfinite row bound, reciprocal step,
 iteration diagnostic, reduced residual, feasibility value, impulse scale, or
 objective is a typed arithmetic failure rather than a false convergence.
 
-The status diagnostic records the number of accelerated restarts. Easy
-islands that finish before momentum begins report zero.
+The status diagnostic records normalized `R_VI` and the number of accelerated
+restarts. Easy islands that finish before momentum begins report zero
+restarts. Dense ABI v2 and streamed ABI v3 make this diagnostic and the
+complementarity success gate explicit.
 
 The final feasibility diagnostic evaluates normal nonnegativity, the authored
 normal cap, every positive-friction normalized axis, and every zero-friction
@@ -233,6 +269,13 @@ with the cap term omitted when the cone is unbounded. The two-dimensional
 norm uses max-component scaling before squaring. This prevents overflow and,
 unlike a dimensionless radius ratio, cannot become easier to satisfy merely
 because the impulse magnitude makes the relative tolerance larger.
+
+For a one-axis cone, Euclidean projection first sets the inactive tangent to
+exact zero. It then preserves an already feasible active `(normal, tangent)`
+pair or projects only that pair onto its two-dimensional wedge. Treating a
+nonzero inactive input as evidence that the active pair lies outside the cone
+incorrectly forces interior points to the wedge boundary; the fixed adversary
+`(1,2,0.1)` with `mu=(0,0.5)` must project to `(1,0,0.1)`.
 
 ## Transaction and failure behavior
 

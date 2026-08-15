@@ -39,7 +39,7 @@ cmake --build build
 ```
 
 The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
-`-fno-fast-math`, plus eight native harnesses:
+`-fno-fast-math`, plus nine native harnesses:
 
 - `build/numi-solver-math` for isolated local cone blocks;
 - `build/numi-solver-islands` for dense-versus-streamed coupled
@@ -48,6 +48,8 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
   a streamed solve on one command buffer.
 - `build/numi-solver-rigid` for rigid contact frames and mass/inertia through
   deterministic velocity publication on one command buffer.
+- `build/numi-solver-braided-bag` for an end-to-end deformable braided bag
+  containing six falling balls, with matched dense and streamed trajectories.
 - `build/numi-solver-articulated` for canonical articulated mass/Jacobian
   factorization, response-column solves, cone contact, and deterministic
   generalized-velocity publication on one command buffer.
@@ -66,6 +68,7 @@ Run the default FP64 comparisons and deterministic replays:
 ./build/numi-solver-islands
 ./build/numi-solver-assembly
 ./build/numi-solver-rigid
+./build/numi-solver-braided-bag
 ./build/numi-solver-articulated
 ./build/numi-solver-articulated-capacity
 ./build/numi-solver-articulated-conditioning
@@ -75,7 +78,9 @@ ctest --test-dir build --output-on-failure
 
 The local harness accepts `--cases N --replays N --iterations N` and
 `--isotropic`. The island, assembly, rigid, and articulated harnesses accept
-`--islands N` and `--replays N`. Together they check separating, impact, sticking, sliding,
+`--islands N` and `--replays N`. The bag accepts `--environments N`,
+`--steps N`, `--replays N`, and optional `--dump-obj PATH`. Together they
+check separating, impact, sticking, sliding,
 anisotropic friction, near-rank-deficient response, capped impulse, polar
 boundary, exact one-axis friction, extreme scale, sparse topology, full block
 capacity,
@@ -133,6 +138,9 @@ An installed or relocated harness can load a specific library with
 - Symplectic position advance and exponential-map quaternion integration with
   whole-island rollback.
 - Scale-aware KKT, cone-feasibility, and nonpositive-energy success gates.
+- Independent dual-feasibility and variational-inequality complementarity
+  admission, evaluated at the accepted iterate rather than inferred from an
+  update norm.
 - SIMD32 block-Jacobi islands with KKT-preserving scalar contact metrics.
 - Delayed metric FISTA acceleration with deterministic adaptive and bounded
   restart, while only non-extrapolated iterates can satisfy the KKT gate.
@@ -143,15 +151,17 @@ An installed or relocated harness can load a specific library with
 See [docs/MATHEMATICS.md](docs/MATHEMATICS.md) for the equations and evidence
 boundary, [docs/ISLAND_SOLVER.md](docs/ISLAND_SOLVER.md) for the coupled
 SIMD32 method, [docs/OPERATOR_ASSEMBLY.md](docs/OPERATOR_ASSEMBLY.md) for the
-response-column producer, and [docs/QUALIFICATION.md](docs/QUALIFICATION.md)
-for measured Apple GPU evidence. See
+response-column producer, [docs/BRAIDED_BAG.md](docs/BRAIDED_BAG.md) for the
+executable deformable containment benchmark, and
+[docs/QUALIFICATION.md](docs/QUALIFICATION.md) for measured Apple GPU evidence.
+See
 [docs/RIGID_MECHANICS.md](docs/RIGID_MECHANICS.md) for the velocity-level rigid
 contact path, and
 [docs/ARTICULATED_MECHANICS.md](docs/ARTICULATED_MECHANICS.md) for the
 factor-backed articulated path. The harnesses exercise contact-space
 mathematics, rigid and articulated operator generation, velocity publication,
 inverse-ABA response actions, and both complete dense and inverse-candidate
-streamed solves on a real Metal device. They do not perform collision
-detection, refresh contact geometry, integrate
-articulated configuration, or execute a complete interacting physical
-trajectory.
+streamed solves on a real Metal device. The braided-bag harness adds a complete
+interacting trajectory with GPU contact refresh and deformable point-mass
+mechanics. The other harnesses remain scoped probes and do not refresh general
+collision geometry or integrate articulated configuration.
