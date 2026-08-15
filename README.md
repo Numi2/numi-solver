@@ -39,7 +39,7 @@ cmake --build build
 ```
 
 The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
-`-fno-fast-math`, plus five native harnesses:
+`-fno-fast-math`, plus seven native harnesses:
 
 - `build/numi-solver-math` for isolated local cone blocks;
 - `build/numi-solver-islands` for dense-versus-streamed coupled
@@ -51,6 +51,10 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
 - `build/numi-solver-articulated` for canonical articulated mass/Jacobian
   factorization, response-column solves, cone contact, and deterministic
   generalized-velocity publication on one command buffer.
+- `build/numi-solver-articulated-capacity` for the complete 32-DoF,
+  32-contact, 1,024-block articulated frontier.
+- `build/numi-solver-articulated-conditioning` for deterministic rejection
+  and rollback of forward-inaccurate ill-conditioned mass response.
 
 Run the default FP64 comparisons and deterministic replays:
 
@@ -60,6 +64,8 @@ Run the default FP64 comparisons and deterministic replays:
 ./build/numi-solver-assembly
 ./build/numi-solver-rigid
 ./build/numi-solver-articulated
+./build/numi-solver-articulated-capacity
+./build/numi-solver-articulated-conditioning
 ctest --test-dir build --output-on-failure
 ```
 
@@ -71,10 +77,11 @@ boundary, zero axis, extreme scale, sparse topology, full block capacity,
 shared response, missing coupling, response asymmetry, rigid momentum and
 kinetic-energy budgets, implicit contact-law regularization, thresholded
 restitution, penetration recovery, contact-frame validity, and transactional
-velocity rollback. The articulated gate additionally checks analytic and
-finite-difference two-link Jacobians, an independent FP64 mass matrix,
-factor-solved response columns, conditioning diagnostics, generalized kinetic
-energy, and invalid frame/material rollback.
+velocity rollback. The articulated gates additionally check analytic and
+finite-difference serial-chain Jacobians, independent FP64 mass matrices,
+factor-solved response columns, exact infinity-norm condition estimates,
+generalized kinetic energy, 32-DoF/32-contact capacity, typed conditioning
+rejection, and invalid state/frame/material rollback.
 
 An installed or relocated harness can load a specific library with
 `--metallib path/to/NumiTemporalCone.metallib`.
@@ -96,6 +103,8 @@ An installed or relocated harness can load a specific library with
 - Canonical articulated kinematics and mass assembly, checked Cholesky
   factorization, and three triangular `M^-1 J^T` solves per contact without
   forming an inverse.
+- Deterministic compensated articulated mass accumulation and an exact
+  factor-derived `kappa_infinity` admission gate before response publication.
 - GPU-derived implicit spring-damper CFM, penetration-recovery targets, and
   thresholded restitution from versioned contact material laws.
 - Canonical per-body impulse accumulation with no floating-point atomics.

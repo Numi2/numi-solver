@@ -278,11 +278,13 @@ The combined metallib SHA-256 was
 ## Articulated response-to-generalized-velocity gate
 
 The articulated gate imports the canonical `numisolver` articulated operator
-from the same recorded source revision. For each two-link fixed-base mechanism
-it builds world poses, analytic point Jacobians, the generalized mass matrix,
-and a checked lower Cholesky factor. The response adapter rotates each point
-Jacobian into a right-handed contact frame and solves
-`L L^T X = J^T` for all three contact axes without forming `M^-1`.
+from the same recorded source revision, then independently improves its long
+mass reductions and Cholesky dot products with deterministic compensated
+accumulation. For each fixed-base serial mechanism it builds world poses,
+analytic point Jacobians, the generalized mass matrix, and a checked lower
+Cholesky factor. The response adapter rotates each point Jacobian into a
+right-handed contact frame and solves `L L^T X = J^T` for all three contact
+axes without forming `M^-1`.
 
 Five Metal encoders run on one command buffer: articulated operator, response
 adapter, sparse Delassus assembly, Temporal Cone solve, and canonical
@@ -295,44 +297,74 @@ angles. The final three islands contain nonfinite operator state, an invalid
 frame, and an invalid restitution law. The operator payload and complete input
 velocity vector must retain their transactional values.
 
+ABI v2 also reconstructs the exact FP32 infinity norm of `M` and applies one
+unit solve per DoF to compute `||M^-1||_inf`. A response is not publishable
+when their product exceeds `16384`, even if its backward residual is small.
+The conditioning rejection gate proves this distinction with the same 32-DoF
+mechanism under low authored armature.
+
 Measured command:
 
 ```sh
-./build/numi-solver-articulated --islands 1024 --replays 50
+./build/numi-solver-articulated --islands 1024 --replays 20
+./build/numi-solver-articulated-capacity --islands 256 --replays 10
+./build/numi-solver-articulated-conditioning --islands 64 --replays 10
 ```
 
 Apple M4 result:
 
 ```text
-islands=1024 valid=1021 contacts=2042 stages=5 command_buffers=1 readbacks=0
+two_link: dofs=2 islands=1024 valid=1021 contacts=2042
 deterministic=yes rollback=yes failed_valid=0
-mass_max_abs_error=0.000000863
-jacobian_max_abs_error=0.000000339
-finite_difference_max_abs_error=0.000000339
-response_max_abs_error=0.000001440
-delassus_max_abs_error=0.000000477
-free_velocity_max_abs_error=0.000000382
-publication_max_abs_error=0.000000209
-fp64_solve_residual=0.000000000000001332
-gpu_response_backward_error=0.000000025
-condition_proxy=28.1417027
-energy_budget_violation=0.000000000
-max_iterations=50
-best_gpu_chain_seconds=0.001304083
-islands_per_second=785225.93
-contacts_per_second=1565850.93
+mass_max_scaled_error=0.000000214
+jacobian_max_scaled_error=0.000000134
+finite_difference_max_abs_error=0.000001870
+response_max_scaled_error=0.000000912
+delassus_max_scaled_error=0.000000086
+free_velocity_max_abs_error=0.000000125
+publication_max_abs_error=0.000000075
+gpu_response_backward_error=0.000000017
+condition_infinity=26.5987854
+condition_max_scaled_error=0.000000714
+energy_budget_violation=0 max_iterations=47
+best_gpu_chain_seconds=0.001381417
+islands_per_second=741268.07 contacts_per_second=1478192.78
+
+capacity: dofs=32 islands=256 valid=253 contacts=8096 blocks_per_island=1024
+deterministic=yes rollback=yes failed_valid=0
+mass_max_scaled_error=0.000002448
+jacobian_max_scaled_error=0.000001215
+finite_difference_max_abs_error=0.000043445
+response_max_scaled_error=0.000018380
+delassus_max_scaled_error=0.000000297
+free_velocity_max_abs_error=0.000002601
+publication_max_abs_error=0.000000283
+fp64_solve_residual=0.0000000000000400
+gpu_response_backward_error=0.000000000481
+condition_infinity=15855.1621
+condition_max_scaled_error=0.000044039
+energy_budget_violation=0 max_iterations=47
+best_gpu_chain_seconds=0.025609167
+islands_per_second=9996.42 contacts_per_second=316136.80
+operator_threadgroup_bytes=6928
+factor_bytes=1048576 jacobian_response_bytes=6291456 block_bytes=9437184
+
+conditioning_rejection: dofs=32 islands=64 rejected_valid=61
+maximum_condition_infinity=182525.984 threshold=16384
+deterministic=yes rollback=yes
 result=PASS
 ```
 
-The timing is the best Metal command-buffer GPU timestamp across 50
+Each timing is the best Metal command-buffer GPU timestamp across the declared
 byte-identical replays. It includes all five GPU stages and excludes command
 encoding, CPU oracle work, and buffer allocation. A concurrent external Metal
 probe made slower samples non-isolated, so only the least-contended observed
-timestamp is reported. This is a two-DoF mechanism/contact workload, not an
-environment-step or energy-efficiency claim. The squared Cholesky pivot ratio
-is a cheap conditioning proxy, not a spectral condition-number claim.
+timestamps are reported. The capacity mechanism uses explicitly authored
+`0.32`-to-`0.48 kg m^2` generalized armature; this is part of its physical
+operator, not hidden numerical regularization. These are mechanism/contact
+workloads, not environment-step or energy-efficiency claims.
 The combined metallib SHA-256 for this milestone was
-`40eb0dcef181a7196783f564672972872e7fa6edc987fe2f541a63c95fd2c4d3`.
+`ce42170f68e599d5e12fcec4f4b235ffee34593b926e3f2d0c80c78748ff4060`.
 
 ## Evidence boundary
 
@@ -349,11 +381,11 @@ timeline. The rigid gate additionally qualifies contact-frame Jacobian
 construction, rigid `M^-1 J^T`, deterministic linear/angular velocity
 publication, implicit spring-damper regularization, restitution/recovery
 targets, their physical energy budget, one-step pose advancement, and
-constant-twist free flight. It does not qualify collision generation or
-constant-twist free flight. The articulated gate qualifies the canonical
-two-link mass/Jacobian operator, factor-backed articulated response columns,
-deterministic generalized-velocity publication, and their independent FP64
-and energy checks. It does not qualify collision generation or refresh,
-articulated configuration integration, general mechanisms above the declared
-32-DoF adapter capacity, or a complete interacting physical trajectory. Those
-remain separate layers.
+constant-twist free flight. The articulated gates qualify serial-chain
+mass/Jacobian operators through the 32-DoF/32-contact adapter capacity,
+factor-backed response columns, exact infinity-condition admission,
+deterministic generalized-velocity publication, and their independent FP64,
+finite-difference, residual, and energy checks. They do not qualify collision
+generation or refresh, articulated configuration integration, arbitrary
+imported mechanisms, mechanisms above the declared adapter capacity, or a
+complete interacting physical trajectory. Those remain separate layers.

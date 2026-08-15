@@ -172,6 +172,57 @@ target_compile_definitions(
         NUMI_TEMPORAL_CONE_METALLIB="${NUMI_SOLVER_METALLIB}"
 )
 
+add_executable(
+    numi-solver-articulated-capacity
+    tools/temporal_cone_articulated.mm
+)
+add_dependencies(numi-solver-articulated-capacity numi_temporal_cone)
+target_link_libraries(
+    numi-solver-articulated-capacity
+    PRIVATE
+        numi_temporal_cone_abi
+        "${FOUNDATION_FRAMEWORK}"
+        "${METAL_FRAMEWORK}"
+)
+target_compile_features(numi-solver-articulated-capacity PRIVATE cxx_std_23)
+target_compile_options(
+    numi-solver-articulated-capacity
+    PRIVATE -fobjc-arc -Wall -Wextra -Wpedantic
+)
+target_compile_definitions(
+    numi-solver-articulated-capacity
+    PRIVATE
+        NUMI_ARTICULATED_ARMATURE_SCALE=16.0
+        NUMI_ARTICULATED_CHAIN_DOF=32u
+        NUMI_TEMPORAL_CONE_METALLIB="${NUMI_SOLVER_METALLIB}"
+)
+
+add_executable(
+    numi-solver-articulated-conditioning
+    tools/temporal_cone_articulated.mm
+)
+add_dependencies(numi-solver-articulated-conditioning numi_temporal_cone)
+target_link_libraries(
+    numi-solver-articulated-conditioning
+    PRIVATE
+        numi_temporal_cone_abi
+        "${FOUNDATION_FRAMEWORK}"
+        "${METAL_FRAMEWORK}"
+)
+target_compile_features(numi-solver-articulated-conditioning PRIVATE cxx_std_23)
+target_compile_options(
+    numi-solver-articulated-conditioning
+    PRIVATE -fobjc-arc -Wall -Wextra -Wpedantic
+)
+target_compile_definitions(
+    numi-solver-articulated-conditioning
+    PRIVATE
+        NUMI_ARTICULATED_ARMATURE_SCALE=1.0
+        NUMI_ARTICULATED_CHAIN_DOF=32u
+        NUMI_ARTICULATED_EXPECT_CONDITION_FAILURE=1
+        NUMI_TEMPORAL_CONE_METALLIB="${NUMI_SOLVER_METALLIB}"
+)
+
 include(CTest)
 if(BUILD_TESTING)
     add_test(
@@ -225,6 +276,30 @@ if(BUILD_TESTING)
         temporal_cone.articulated
         PROPERTIES LABELS "metal;physics;articulated;assembly;streamed" TIMEOUT 60
     )
+    add_test(
+        NAME temporal_cone.articulated_capacity
+        COMMAND $<TARGET_FILE:numi-solver-articulated-capacity>
+            --islands 16
+            --replays 2
+    )
+    set_tests_properties(
+        temporal_cone.articulated_capacity
+        PROPERTIES
+            LABELS "metal;physics;articulated;capacity;assembly;streamed"
+            TIMEOUT 60
+    )
+    add_test(
+        NAME temporal_cone.articulated_conditioning
+        COMMAND $<TARGET_FILE:numi-solver-articulated-conditioning>
+            --islands 8
+            --replays 2
+    )
+    set_tests_properties(
+        temporal_cone.articulated_conditioning
+        PROPERTIES
+            LABELS "metal;physics;articulated;conditioning;rollback"
+            TIMEOUT 60
+    )
 endif()
 
 install(FILES "${NUMI_SOLVER_METALLIB}" DESTINATION lib/numi-solver)
@@ -236,5 +311,7 @@ install(
         numi-solver-assembly
         numi-solver-rigid
         numi-solver-articulated
+        numi-solver-articulated-capacity
+        numi-solver-articulated-conditioning
     RUNTIME DESTINATION bin
 )

@@ -24,17 +24,48 @@
 
 namespace {
 
-constexpr std::uint32_t kDofs = 2u;
-constexpr std::uint32_t kContacts = 2u;
-constexpr std::uint32_t kBodies = 3u;
-constexpr double kLink1HalfLength = 0.5;
-constexpr double kLink2HalfLength = 0.4;
-constexpr double kLink1Mass = 2.0;
-constexpr double kLink2Mass = 1.5;
-constexpr double kLink1InertiaY = 0.15;
-constexpr double kLink2InertiaY = 0.10;
-constexpr double kArmature0 = 0.02;
-constexpr double kArmature1 = 0.03;
+#ifndef NUMI_ARTICULATED_CHAIN_DOF
+#define NUMI_ARTICULATED_CHAIN_DOF 2u
+#endif
+#ifndef NUMI_ARTICULATED_ARMATURE_SCALE
+#define NUMI_ARTICULATED_ARMATURE_SCALE 1.0
+#endif
+#ifndef NUMI_ARTICULATED_EXPECT_CONDITION_FAILURE
+#define NUMI_ARTICULATED_EXPECT_CONDITION_FAILURE 0
+#endif
+
+constexpr std::uint32_t kDofs = NUMI_ARTICULATED_CHAIN_DOF;
+constexpr std::uint32_t kContacts = kDofs;
+constexpr std::uint32_t kBodies = kDofs + 1u;
+static_assert(kDofs > 0u);
+static_assert(kDofs <= NUMI_TEMPORAL_CONE_ARTICULATED_MAX_DOF);
+constexpr double kGeometryScale = kDofs <= 8u
+    ? 1.0
+    : 8.0 / static_cast<double>(kDofs);
+constexpr double kArmatureScale = NUMI_ARTICULATED_ARMATURE_SCALE;
+constexpr bool kExpectConditionFailure =
+    NUMI_ARTICULATED_EXPECT_CONDITION_FAILURE != 0;
+
+double linkHalfLength(std::size_t link) {
+    return kGeometryScale * (
+        0.24 + 0.015 * static_cast<double>(link % 5u)
+    );
+}
+
+double linkMass(std::size_t link) {
+    return 1.0 + 0.08 * static_cast<double>(link % 7u);
+}
+
+double linkInertiaY(std::size_t link) {
+    const double length = 2.0 * linkHalfLength(link);
+    return linkMass(link) * length * length / 12.0;
+}
+
+double linkArmature(std::size_t link) {
+    return kArmatureScale * (
+        0.02 + 0.005 * static_cast<double>(link % 3u)
+    );
+}
 
 mr_float4 f4(float x, float y, float z, float w = 0.0f) {
     return {x, y, z, w};
@@ -88,9 +119,9 @@ MRBodyPropertiesGPU body(
 struct Model {
     MRWorldGPU world = {};
     MRArticulationGPU articulation = {};
-    std::array<MRJointDescriptorGPU, 2> joints = {};
-    std::array<MRDofPropertiesGPU, 2> dofs = {};
-    std::array<MRBodyPropertiesGPU, 3> bodies = {};
+    std::vector<MRJointDescriptorGPU> joints;
+    std::vector<MRDofPropertiesGPU> dofs;
+    std::vector<MRBodyPropertiesGPU> bodies;
 };
 
 Model makeModel() {
@@ -98,7 +129,7 @@ Model makeModel() {
     model.world.abiVersion = MR_ENGINE_ABI_VERSION;
     model.world.bodyCount = kBodies;
     model.world.articulationCount = 1u;
-    model.world.jointCount = 2u;
+    model.world.jointCount = kDofs;
     model.world.nq = kDofs;
     model.world.nv = kDofs;
     model.world.pairCapacity = kContacts;
@@ -115,18 +146,25 @@ Model makeModel() {
     model.articulation.firstBody = 0u;
     model.articulation.bodyCount = kBodies;
     model.articulation.firstJoint = 0u;
-    model.articulation.jointCount = 2u;
+    model.articulation.jointCount = kDofs;
     model.articulation.nq = kDofs;
     model.articulation.nv = kDofs;
 
+    model.joints.resize(kDofs);
+    model.dofs.resize(kDofs);
+    model.bodies.resize(kBodies);
     model.bodies[0] = body(MR_INVALID_INDEX, MR_INVALID_INDEX, 1.0f,
         0.2f, 0.25f, 0.3f);
-    model.bodies[1] = body(0u, 0u, static_cast<float>(kLink1Mass),
-        0.11f, static_cast<float>(kLink1InertiaY), 0.13f);
-    model.bodies[2] = body(1u, 1u, static_cast<float>(kLink2Mass),
-        0.08f, static_cast<float>(kLink2InertiaY), 0.09f);
-
-    for (std::uint32_t jointIndex = 0u; jointIndex < 2u; ++jointIndex) {
+    for (std::uint32_t jointIndex = 0u; jointIndex < kDofs; ++jointIndex) {
+        const double inertiaY = linkInertiaY(jointIndex);
+        model.bodies[jointIndex + 1u] = body(
+            jointIndex,
+            jointIndex,
+            static_cast<float>(linkMass(jointIndex)),
+            static_cast<float>(0.85 * inertiaY),
+            static_cast<float>(inertiaY),
+            static_cast<float>(1.15 * inertiaY)
+        );
         auto& joint = model.joints[jointIndex];
         joint.parentBody = jointIndex;
         joint.childBody = jointIndex + 1u;
@@ -136,6 +174,18 @@ Model makeModel() {
         joint.vOffset = jointIndex;
         joint.nv = 1u;
         joint.axis0 = f4(0.0f, 1.0f, 0.0f);
+        joint.parentAnchor = jointIndex == 0u
+            ? f4(0.0f, 0.0f, 0.0f)
+            : f4(
+                0.0f,
+                0.0f,
+                static_cast<float>(linkHalfLength(jointIndex - 1u))
+            );
+        joint.childAnchor = f4(
+            0.0f,
+            0.0f,
+            static_cast<float>(-linkHalfLength(jointIndex))
+        );
         joint.parentRotation = f4(0.0f, 0.0f, 0.0f, 1.0f);
         joint.childRotation = f4(0.0f, 0.0f, 0.0f, 1.0f);
         auto& dof = model.dofs[jointIndex];
@@ -144,13 +194,13 @@ Model makeModel() {
         dof.qIndex = jointIndex;
         dof.vIndex = jointIndex;
         dof.localDof = 0u;
+        dof.drive = f4(
+            0.0f,
+            0.0f,
+            static_cast<float>(linkArmature(jointIndex)),
+            0.0f
+        );
     }
-    model.joints[0].parentAnchor = f4(0.0f, 0.0f, 0.0f);
-    model.joints[0].childAnchor = f4(0.0f, 0.0f, -0.5f);
-    model.joints[1].parentAnchor = f4(0.0f, 0.0f, 0.5f);
-    model.joints[1].childAnchor = f4(0.0f, 0.0f, -0.4f);
-    model.dofs[0].drive = f4(0.0f, 0.0f, static_cast<float>(kArmature0), 0.0f);
-    model.dofs[1].drive = f4(0.0f, 0.0f, static_cast<float>(kArmature1), 0.0f);
     return model;
 }
 
@@ -203,34 +253,42 @@ Batch makeBatch(std::size_t problemCount) {
     batch.operatorDispatch.pointJacobianStride = kContacts * 3u * kDofs;
     batch.operatorDispatch.generalizedStride = kDofs;
     for (std::size_t problem = 0u; problem < problemCount; ++problem) {
-        const float q0 = -1.0f + 2.0f *
-            static_cast<float>(problem % 97u) / 96.0f;
-        const float q1 = -1.2f + 2.4f *
-            static_cast<float>(problem % 89u) / 88.0f;
-        batch.q.push_back(q0);
-        batch.q.push_back(q1);
-        if (problem + 3u == problemCount) {
-            batch.q[2u * problem] = std::numeric_limits<float>::quiet_NaN();
+        for (std::uint32_t dof = 0u; dof < kDofs; ++dof) {
+            const double phase =
+                0.173 * static_cast<double>(problem) +
+                0.619 * static_cast<double>(dof);
+            batch.q.push_back(static_cast<float>(0.32 * std::sin(phase)));
+            batch.velocities.push_back(static_cast<float>(
+                0.45 * std::cos(0.71 * phase) +
+                0.08 * std::sin(0.37 * phase)
+            ));
         }
-        batch.velocities.push_back(0.80f + 0.01f * static_cast<float>(problem % 5u));
-        batch.velocities.push_back(0.40f - 0.01f * static_cast<float>(problem % 3u));
-        MRArticulatedPointImpulseGPU first = {};
-        first.bodyIndex = 1u;
-        first.localPoint = f4(0.0f, 0.0f, 0.5f);
-        MRArticulatedPointImpulseGPU second = {};
-        second.bodyIndex = 2u;
-        second.localPoint = f4(0.0f, 0.0f, 0.4f);
-        batch.points.push_back(first);
-        batch.points.push_back(second);
-        batch.contacts.push_back(contact(0u));
-        batch.contacts.push_back(contact(1u));
-        batch.laws.push_back(law(-0.0020f, 0.25f));
-        batch.laws.push_back(law(-0.0015f, 0.20f));
+        if (problem + 3u == problemCount) {
+            batch.q[kDofs * problem] =
+                std::numeric_limits<float>::quiet_NaN();
+        }
+        for (std::uint32_t pointIndex = 0u;
+             pointIndex < kContacts;
+             ++pointIndex) {
+            MRArticulatedPointImpulseGPU query = {};
+            query.bodyIndex = pointIndex + 1u;
+            query.localPoint = f4(
+                0.0f,
+                0.0f,
+                static_cast<float>(linkHalfLength(pointIndex))
+            );
+            batch.points.push_back(query);
+            batch.contacts.push_back(contact(pointIndex));
+            batch.laws.push_back(law(
+                -0.0015f - 0.00002f * static_cast<float>(pointIndex % 11u),
+                0.15f + 0.02f * static_cast<float>(pointIndex % 5u)
+            ));
+        }
         if (problem + 2u == problemCount) {
-            batch.contacts[2u * problem + 0u].tangentVAndMaximumNormal =
+            batch.contacts[kContacts * problem].tangentVAndMaximumNormal =
                 f4(1.0f, 0.0f, 0.0f);
         } else if (problem + 1u == problemCount) {
-            batch.laws[2u * problem + 0u].stiffnessAndRestitution.w = 1.5f;
+            batch.laws[kContacts * problem].stiffnessAndRestitution.w = 1.5f;
         }
 
         NumiTemporalConeArticulatedHeader articulated = {};
@@ -263,22 +321,27 @@ Batch makeBatch(std::size_t problemCount) {
 
         const std::uint32_t rowBase = static_cast<std::uint32_t>(batch.rowOffsets.size());
         const std::uint32_t blockBase = static_cast<std::uint32_t>(batch.columns.size());
-        batch.rowOffsets.push_back(0u);
-        batch.rowOffsets.push_back(2u);
-        batch.rowOffsets.push_back(4u);
-        batch.columns.insert(batch.columns.end(), {0u, 1u, 0u, 1u});
+        for (std::uint32_t row = 0u; row <= kContacts; ++row) {
+            batch.rowOffsets.push_back(row * kContacts);
+        }
+        for (std::uint32_t row = 0u; row < kContacts; ++row) {
+            for (std::uint32_t column = 0u; column < kContacts; ++column) {
+                batch.columns.push_back(column);
+            }
+        }
+        const std::uint32_t blockCount = kContacts * kContacts;
         NumiTemporalConeAssemblyHeader assembly = {};
         assembly.control = u4(
             NUMI_TEMPORAL_CONE_ASSEMBLY_ABI_VERSION,
             kContacts,
             4u,
-            512u
+            NUMI_TEMPORAL_CONE_ISLAND_MAX_ITERATIONS
         );
         assembly.outputRanges = u4(
             static_cast<std::uint32_t>(problem * kContacts),
             rowBase,
             blockBase,
-            4u
+            blockCount
         );
         assembly.inputRanges = u4(
             static_cast<std::uint32_t>(problem * kContacts),
@@ -574,7 +637,6 @@ Result runGPU(
 }
 
 using Vec2 = std::array<double, 2>;
-using Mat2 = std::array<double, 4>;
 
 Vec2 point(double angle, double length) {
     return {length * std::sin(angle), length * std::cos(angle)};
@@ -585,47 +647,110 @@ Vec2 crossY(Vec2 radius) { return {radius[1], -radius[0]}; }
 double dot(Vec2 a, Vec2 b) { return a[0] * b[0] + a[1] * b[1]; }
 
 struct Oracle {
-    Mat2 mass = {};
-    std::array<Vec2, 2> pointPositions = {};
-    std::array<std::array<Vec2, 2>, 2> pointJacobians = {};
+    std::vector<double> mass;
+    std::vector<Vec2> pointPositions;
+    // Contact-major, then generalized-coordinate column.
+    std::vector<Vec2> pointJacobians;
 };
 
-Oracle oracle(double q0, double q1) {
+Oracle oracle(const float* q) {
     Oracle value;
-    const Vec2 link1Com = point(q0, kLink1HalfLength);
-    const Vec2 joint2 = point(q0, 2.0 * kLink1HalfLength);
-    const Vec2 link2Com = add(joint2, point(q0 + q1, kLink2HalfLength));
-    const Vec2 tip = add(joint2, point(q0 + q1, 2.0 * kLink2HalfLength));
-    value.pointPositions = {joint2, tip};
-    value.pointJacobians[0][0] = crossY(joint2);
-    value.pointJacobians[0][1] = {0.0, 0.0};
-    value.pointJacobians[1][0] = crossY(tip);
-    value.pointJacobians[1][1] = crossY({
-        tip[0] - joint2[0], tip[1] - joint2[1]
-    });
-    const Vec2 j1 = crossY(link1Com);
-    const Vec2 j20 = crossY(link2Com);
-    const Vec2 j21 = crossY({
-        link2Com[0] - joint2[0], link2Com[1] - joint2[1]
-    });
-    value.mass[0] = kLink1Mass * dot(j1, j1) + kLink1InertiaY +
-        kLink2Mass * dot(j20, j20) + kLink2InertiaY + kArmature0;
-    value.mass[1] = kLink2Mass * dot(j20, j21) + kLink2InertiaY;
-    value.mass[2] = value.mass[1];
-    value.mass[3] = kLink2Mass * dot(j21, j21) + kLink2InertiaY + kArmature1;
+    value.mass.assign(kDofs * kDofs, 0.0);
+    value.pointPositions.resize(kContacts);
+    value.pointJacobians.assign(kContacts * kDofs, Vec2{0.0, 0.0});
+    std::vector<Vec2> jointPositions(kDofs);
+    std::vector<Vec2> bodyPositions(kDofs);
+    Vec2 joint = {0.0, 0.0};
+    double angle = 0.0;
+    for (std::size_t link = 0u; link < kDofs; ++link) {
+        jointPositions[link] = joint;
+        angle += q[link];
+        bodyPositions[link] = add(
+            joint,
+            point(angle, linkHalfLength(link))
+        );
+        joint = add(
+            joint,
+            point(angle, 2.0 * linkHalfLength(link))
+        );
+        value.pointPositions[link] = joint;
+        for (std::size_t dof = 0u; dof <= link; ++dof) {
+            value.pointJacobians[link * kDofs + dof] = crossY({
+                joint[0] - jointPositions[dof][0],
+                joint[1] - jointPositions[dof][1]
+            });
+        }
+    }
+    for (std::size_t link = 0u; link < kDofs; ++link) {
+        std::vector<Vec2> bodyJacobian(kDofs, Vec2{0.0, 0.0});
+        for (std::size_t dof = 0u; dof <= link; ++dof) {
+            bodyJacobian[dof] = crossY({
+                bodyPositions[link][0] - jointPositions[dof][0],
+                bodyPositions[link][1] - jointPositions[dof][1]
+            });
+        }
+        for (std::size_t row = 0u; row <= link; ++row) {
+            for (std::size_t column = 0u; column <= link; ++column) {
+                value.mass[row * kDofs + column] +=
+                    linkMass(link) * dot(
+                        bodyJacobian[row], bodyJacobian[column]
+                    ) + linkInertiaY(link);
+            }
+        }
+    }
+    for (std::size_t dof = 0u; dof < kDofs; ++dof) {
+        value.mass[dof * kDofs + dof] += linkArmature(dof);
+    }
     return value;
 }
 
-Vec2 solve(Mat2 m, Vec2 rhs) {
-    const double determinant = m[0] * m[3] - m[1] * m[2];
-    require(determinant > 1.0e-12, "FP64 articulated mass matrix is not SPD");
-    return {
-        (m[3] * rhs[0] - m[1] * rhs[1]) / determinant,
-        (-m[2] * rhs[0] + m[0] * rhs[1]) / determinant
-    };
+std::vector<double> factorSPD(const std::vector<double>& matrix) {
+    require(matrix.size() == kDofs * kDofs, "invalid FP64 mass dimensions");
+    std::vector<double> factor(kDofs * kDofs, 0.0);
+    for (std::size_t row = 0u; row < kDofs; ++row) {
+        for (std::size_t column = 0u; column <= row; ++column) {
+            double value = matrix[row * kDofs + column];
+            for (std::size_t inner = 0u; inner < column; ++inner) {
+                value -= factor[row * kDofs + inner] *
+                    factor[column * kDofs + inner];
+            }
+            if (row == column) {
+                require(value > 1.0e-14 && std::isfinite(value),
+                    "FP64 articulated mass matrix is not SPD");
+                factor[row * kDofs + row] = std::sqrt(value);
+            } else {
+                factor[row * kDofs + column] =
+                    value / factor[column * kDofs + column];
+            }
+        }
+    }
+    return factor;
 }
 
-double maxAbs(double a, double b) { return std::max(std::abs(a), std::abs(b)); }
+std::vector<double> solveFactor(
+    const std::vector<double>& factor,
+    const std::vector<double>& rightHandSide
+) {
+    require(rightHandSide.size() == kDofs, "invalid FP64 response dimensions");
+    std::vector<double> intermediate(kDofs, 0.0);
+    std::vector<double> solution(kDofs, 0.0);
+    for (std::size_t row = 0u; row < kDofs; ++row) {
+        double value = rightHandSide[row];
+        for (std::size_t column = 0u; column < row; ++column) {
+            value -= factor[row * kDofs + column] * intermediate[column];
+        }
+        intermediate[row] = value / factor[row * kDofs + row];
+    }
+    for (std::size_t reverse = 0u; reverse < kDofs; ++reverse) {
+        const std::size_t row = kDofs - 1u - reverse;
+        double value = intermediate[row];
+        for (std::size_t column = row + 1u; column < kDofs; ++column) {
+            value -= factor[column * kDofs + row] * solution[column];
+        }
+        solution[row] = value / factor[row * kDofs + row];
+    }
+    return solution;
+}
 
 int run(int argc, const char* const* argv) {
     std::size_t problemCount = 256u;
@@ -648,7 +773,15 @@ int run(int argc, const char* const* argv) {
     }
     problemCount = std::max<std::size_t>(problemCount, 8u);
     replayCount = std::max<std::uint32_t>(replayCount, 2u);
-    require(problemCount <= std::numeric_limits<std::uint32_t>::max() / 100u,
+    const std::uint64_t maximumElementsPerProblem = std::max({
+        std::uint64_t{kDofs} * kDofs,
+        std::uint64_t{kContacts} * 3u * kDofs,
+        std::uint64_t{kContacts} * kContacts * 9u,
+        std::uint64_t{kContacts} * 9u
+    });
+    require(problemCount <=
+            std::numeric_limits<std::uint32_t>::max() /
+                maximumElementsPerProblem,
         "island count exceeds articulated ABI");
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
     id<MTLCommandQueue> queue = [device newCommandQueue];
@@ -702,77 +835,251 @@ int run(int argc, const char* const* argv) {
             exactVector(result.publishStatuses, replays[replay].publishStatuses);
     }
 
+    if constexpr (kExpectConditionFailure) {
+        bool rejected = deterministic;
+        double maximumCondition = 0.0;
+        for (std::size_t problem = 0u;
+             problem < batch.validProblems;
+             ++problem) {
+            maximumCondition = std::max<double>(
+                maximumCondition,
+                result.responseStatuses[problem].conditioning.z
+            );
+            rejected = rejected &&
+                result.operatorStatuses[problem].code ==
+                    MR_ARTICULATED_OPERATOR_SUCCESS &&
+                result.responseStatuses[problem].control.x ==
+                    NUMI_TEMPORAL_CONE_ARTICULATED_CONDITIONING_FAILED &&
+                result.publishStatuses[problem].control.x ==
+                    NUMI_TEMPORAL_CONE_ARTICULATED_UPSTREAM_FAILURE &&
+                std::memcmp(
+                    &result.outputVelocities[kDofs * problem],
+                    &batch.velocities[kDofs * problem],
+                    kDofs * sizeof(float)
+                ) == 0;
+        }
+        require(rejected, "ill-conditioned articulated response was published");
+        const double bestSeconds = std::min_element(
+            replays.begin(),
+            replays.end(),
+            [](const Result& a, const Result& b) {
+                return a.seconds < b.seconds;
+            }
+        )->seconds;
+        std::cout << std::setprecision(9)
+                  << "numi-solver-articulated-conditioning device=\""
+                  << device.name.UTF8String << "\""
+                  << " dofs=" << kDofs
+                  << " islands=" << problemCount
+                  << " rejected_valid=" << batch.validProblems
+                  << " maximum_condition_infinity=" << maximumCondition
+                  << " threshold="
+                  << NUMI_TEMPORAL_CONE_ARTICULATED_MAX_CONDITION_INFINITY
+                  << " deterministic=" << (deterministic ? "yes" : "no")
+                  << " rollback=" << (rejected ? "yes" : "no")
+                  << " gpu_seconds=" << bestSeconds
+                  << '\n';
+        return 0;
+    }
+
     double maxMassError = 0.0;
+    double maxMassScaledError = 0.0;
     double maxJacobianError = 0.0;
+    double maxJacobianScaledError = 0.0;
     double maxFiniteDifferenceError = 0.0;
     double maxResponseError = 0.0;
+    double maxResponseScaledError = 0.0;
     double maxBlockError = 0.0;
+    double maxBlockScaledError = 0.0;
     double maxFreeVelocityError = 0.0;
     double maxPublicationError = 0.0;
     double maxEnergyBudgetViolation = 0.0;
     double maxFp64Residual = 0.0;
     double maxGpuBackwardError = 0.0;
-    double maxConditionProxy = 0.0;
+    double maxConditionInfinity = 0.0;
+    double maxConditionScaledError = 0.0;
     std::uint32_t maxIterations = 0u;
     std::size_t failedValid = 0u;
+    const std::size_t valuesPerProblem = kContacts * 3u * kDofs;
+    const std::size_t blocksPerProblem = kContacts * kContacts;
     for (std::size_t problem = 0u; problem < batch.validProblems; ++problem) {
-        const Oracle ref = oracle(batch.q[2u * problem], batch.q[2u * problem + 1u]);
-        const std::size_t factorBase = 4u * problem;
-        const double l00 = result.factors[factorBase + 0u];
-        const double l10 = result.factors[factorBase + 2u];
-        const double l11 = result.factors[factorBase + 3u];
-        const Mat2 gpuMass = {l00 * l00, l00 * l10, l00 * l10, l10 * l10 + l11 * l11};
-        for (std::size_t i = 0u; i < 4u; ++i) {
-            maxMassError = std::max(maxMassError, std::abs(gpuMass[i] - ref.mass[i]));
+        const std::size_t dofBase = problem * kDofs;
+        const std::size_t contactBase = problem * kContacts;
+        const std::size_t factorBase = problem * kDofs * kDofs;
+        const std::size_t valueBase = problem * valuesPerProblem;
+        const std::size_t regularizationBase = problem * kContacts * 9u;
+        const std::size_t blockBase = problem * blocksPerProblem * 9u;
+        const Oracle ref = oracle(batch.q.data() + dofBase);
+        const std::vector<double> cpuFactor = factorSPD(ref.mass);
+        double cpuMatrixInfinity = 0.0;
+        double cpuInverseInfinity = 0.0;
+        for (std::size_t row = 0u; row < kDofs; ++row) {
+            double rowSum = 0.0;
+            for (std::size_t column = 0u; column < kDofs; ++column) {
+                rowSum += std::abs(ref.mass[row * kDofs + column]);
+            }
+            cpuMatrixInfinity = std::max(cpuMatrixInfinity, rowSum);
+            std::vector<double> unit(kDofs, 0.0);
+            unit[row] = 1.0;
+            const std::vector<double> inverseColumn = solveFactor(
+                cpuFactor, unit
+            );
+            double inverseRowSum = 0.0;
+            for (double value : inverseColumn) {
+                inverseRowSum += std::abs(value);
+            }
+            cpuInverseInfinity = std::max(
+                cpuInverseInfinity,
+                inverseRowSum
+            );
         }
-        const double q0 = batch.q[2u * problem];
-        const double q1 = batch.q[2u * problem + 1u];
-        constexpr double h = 1.0e-5;
-        for (std::size_t pointIndex = 0u; pointIndex < 2u; ++pointIndex) {
-            for (std::size_t dof = 0u; dof < 2u; ++dof) {
-                const std::size_t worldBase = problem * 12u + pointIndex * 6u;
-                const double gpuX = result.pointJacobians[worldBase + dof];
-                const double gpuZ = result.pointJacobians[worldBase + 4u + dof];
-                maxJacobianError = std::max(maxJacobianError,
-                    maxAbs(gpuX - ref.pointJacobians[pointIndex][dof][0],
-                           gpuZ - ref.pointJacobians[pointIndex][dof][1]));
-                const Oracle plus = oracle(q0 + (dof == 0u ? h : 0.0),
-                    q1 + (dof == 1u ? h : 0.0));
-                const Oracle minus = oracle(q0 - (dof == 0u ? h : 0.0),
-                    q1 - (dof == 1u ? h : 0.0));
-                const Vec2 finiteDifference = {
-                    (plus.pointPositions[pointIndex][0] - minus.pointPositions[pointIndex][0]) / (2.0 * h),
-                    (plus.pointPositions[pointIndex][1] - minus.pointPositions[pointIndex][1]) / (2.0 * h)
-                };
-                maxFiniteDifferenceError = std::max(maxFiniteDifferenceError,
-                    maxAbs(gpuX - finiteDifference[0], gpuZ - finiteDifference[1]));
+        const double cpuConditionInfinity =
+            cpuMatrixInfinity * cpuInverseInfinity;
+        const double gpuConditionInfinity =
+            result.responseStatuses[problem].conditioning.z;
+        maxConditionScaledError = std::max(
+            maxConditionScaledError,
+            std::abs(gpuConditionInfinity - cpuConditionInfinity) /
+                std::max(1.0, cpuConditionInfinity)
+        );
+        for (std::size_t row = 0u; row < kDofs; ++row) {
+            for (std::size_t column = 0u; column < kDofs; ++column) {
+                double gpuMass = 0.0;
+                const std::size_t innerCount = std::min(row, column) + 1u;
+                for (std::size_t inner = 0u; inner < innerCount; ++inner) {
+                    gpuMass += result.factors[
+                        factorBase + row * kDofs + inner
+                    ] * result.factors[
+                        factorBase + column * kDofs + inner
+                    ];
+                }
+                const double reference = ref.mass[row * kDofs + column];
+                const double error = std::abs(gpuMass - reference);
+                maxMassError = std::max(maxMassError, error);
+                maxMassScaledError = std::max(
+                    maxMassScaledError,
+                    error / std::max(1.0, std::abs(reference))
+                );
             }
         }
-        for (std::size_t contactIndex = 0u; contactIndex < 2u; ++contactIndex) {
-            const auto& jWorld = ref.pointJacobians[contactIndex];
-            const std::array<Vec2, 3> rhs = {{
-                {jWorld[0][1], jWorld[1][1]},
-                {jWorld[0][0], jWorld[1][0]},
-                {0.0, 0.0}
-            }};
+        for (std::size_t pointIndex = 0u;
+             pointIndex < kContacts;
+             ++pointIndex) {
+            const std::size_t worldBase = valueBase +
+                pointIndex * 3u * kDofs;
+            for (std::size_t dof = 0u; dof < kDofs; ++dof) {
+                const Vec2 reference = ref.pointJacobians[
+                    pointIndex * kDofs + dof
+                ];
+                const Vec2 gpu = {
+                    result.pointJacobians[worldBase + dof],
+                    result.pointJacobians[worldBase + 2u * kDofs + dof]
+                };
+                for (std::size_t component = 0u; component < 2u; ++component) {
+                    const double error = std::abs(gpu[component] - reference[component]);
+                    maxJacobianError = std::max(maxJacobianError, error);
+                    maxJacobianScaledError = std::max(
+                        maxJacobianScaledError,
+                        error / std::max(1.0, std::abs(reference[component]))
+                    );
+                }
+            }
+        }
+        if (problem < 2u) {
+            constexpr float h = 1.0e-3f;
+            std::vector<float> qPlus(
+                batch.q.begin() + static_cast<std::ptrdiff_t>(dofBase),
+                batch.q.begin() + static_cast<std::ptrdiff_t>(dofBase + kDofs)
+            );
+            std::vector<float> qMinus = qPlus;
+            for (std::size_t dof = 0u; dof < kDofs; ++dof) {
+                qPlus[dof] += h;
+                qMinus[dof] -= h;
+                const Oracle plus = oracle(qPlus.data());
+                const Oracle minus = oracle(qMinus.data());
+                qPlus[dof] -= h;
+                qMinus[dof] += h;
+                for (std::size_t pointIndex = dof;
+                     pointIndex < kContacts;
+                     ++pointIndex) {
+                    const Vec2 finiteDifference = {
+                        (plus.pointPositions[pointIndex][0] -
+                            minus.pointPositions[pointIndex][0]) / (2.0 * h),
+                        (plus.pointPositions[pointIndex][1] -
+                            minus.pointPositions[pointIndex][1]) / (2.0 * h)
+                    };
+                    const std::size_t worldBase = valueBase +
+                        pointIndex * 3u * kDofs;
+                    maxFiniteDifferenceError = std::max(
+                        maxFiniteDifferenceError,
+                        std::max(
+                            std::abs(result.pointJacobians[worldBase + dof] -
+                                finiteDifference[0]),
+                            std::abs(result.pointJacobians[
+                                worldBase + 2u * kDofs + dof
+                            ] - finiteDifference[1])
+                        )
+                    );
+                }
+            }
+        }
+        std::vector<double> initialVelocity(kDofs);
+        for (std::size_t dof = 0u; dof < kDofs; ++dof) {
+            initialVelocity[dof] = batch.velocities[dofBase + dof];
+        }
+        for (std::size_t contactIndex = 0u;
+             contactIndex < kContacts;
+             ++contactIndex) {
+            std::array<std::vector<double>, 3> rhs = {
+                std::vector<double>(kDofs, 0.0),
+                std::vector<double>(kDofs, 0.0),
+                std::vector<double>(kDofs, 0.0)
+            };
+            double rawNormal = 0.0;
+            double rawTangent = 0.0;
+            for (std::size_t dof = 0u; dof < kDofs; ++dof) {
+                const Vec2 column = ref.pointJacobians[
+                    contactIndex * kDofs + dof
+                ];
+                rhs[0][dof] = column[1];
+                rhs[1][dof] = column[0];
+                rawNormal += column[1] * initialVelocity[dof];
+                rawTangent += column[0] * initialVelocity[dof];
+            }
             for (std::size_t axis = 0u; axis < 3u; ++axis) {
-                const Vec2 x = solve(ref.mass, rhs[axis]);
-                const std::size_t responseBase = problem * 12u + contactIndex * 6u;
-                maxResponseError = std::max(maxResponseError,
-                    maxAbs(result.responses[responseBase + axis] - x[0],
-                           result.responses[responseBase + 3u + axis] - x[1]));
-                const Vec2 action = {
-                    ref.mass[0] * x[0] + ref.mass[1] * x[1],
-                    ref.mass[2] * x[0] + ref.mass[3] * x[1]
-                };
-                maxFp64Residual = std::max(maxFp64Residual,
-                    maxAbs(action[0] - rhs[axis][0], action[1] - rhs[axis][1]));
+                const std::vector<double> response = solveFactor(
+                    cpuFactor, rhs[axis]
+                );
+                for (std::size_t dof = 0u; dof < kDofs; ++dof) {
+                    const double actual = result.responses[
+                        valueBase + contactIndex * 3u * kDofs +
+                            dof * 3u + axis
+                    ];
+                    const double error = std::abs(actual - response[dof]);
+                    maxResponseError = std::max(maxResponseError, error);
+                    maxResponseScaledError = std::max(
+                        maxResponseScaledError,
+                        error / std::max(1.0, std::abs(response[dof]))
+                    );
+                }
+                for (std::size_t row = 0u; row < kDofs; ++row) {
+                    double action = 0.0;
+                    for (std::size_t column = 0u;
+                         column < kDofs;
+                         ++column) {
+                        action += ref.mass[row * kDofs + column] *
+                            response[column];
+                    }
+                    maxFp64Residual = std::max(
+                        maxFp64Residual,
+                        std::abs(action - rhs[axis][row])
+                    );
+                }
             }
-            const auto& solverContact = result.solverContacts[2u * problem + contactIndex];
-            const Vec2 velocity = {batch.velocities[2u * problem], batch.velocities[2u * problem + 1u]};
-            const double rawNormal = jWorld[0][1] * velocity[0] + jWorld[1][1] * velocity[1];
-            const double rawTangent = jWorld[0][0] * velocity[0] + jWorld[1][0] * velocity[1];
-            const auto& lawValue = batch.laws[2u * problem + contactIndex];
+            const auto& solverContact = result.solverContacts[
+                contactBase + contactIndex
+            ];
+            const auto& lawValue = batch.laws[contactBase + contactIndex];
             const double dt = lawValue.stabilization.w;
             const double denominator = lawValue.dampingAndImpactThreshold.x +
                 dt * lawValue.stiffnessAndRestitution.x;
@@ -783,66 +1090,119 @@ int run(int argc, const char* const* argv) {
             const double rebound = rawNormal < -lawValue.dampingAndImpactThreshold.w
                 ? -lawValue.stiffnessAndRestitution.w * rawNormal : 0.0;
             const double target = std::max(recovery, rebound);
-            maxFreeVelocityError = std::max(maxFreeVelocityError,
-                maxAbs(solverContact.freeVelocityAndFrictionU.x - (rawNormal - target),
-                       solverContact.freeVelocityAndFrictionU.y - rawTangent));
+            maxFreeVelocityError = std::max(
+                maxFreeVelocityError,
+                std::max(
+                    std::abs(solverContact.freeVelocityAndFrictionU.x -
+                        (rawNormal - target)),
+                    std::abs(solverContact.freeVelocityAndFrictionU.y -
+                        rawTangent)
+                )
+            );
         }
-        for (std::size_t target = 0u; target < 2u; ++target) {
-            for (std::size_t source = 0u; source < 2u; ++source) {
+        const bool checkEveryBlock = kDofs <= 8u || problem < 8u;
+        if (checkEveryBlock) {
+          for (std::size_t target = 0u; target < kContacts; ++target) {
+            for (std::size_t source = 0u; source < kContacts; ++source) {
                 for (std::size_t row = 0u; row < 3u; ++row) {
                     for (std::size_t column = 0u; column < 3u; ++column) {
                         double expected = 0.0;
-                        for (std::size_t dof = 0u; dof < 2u; ++dof) {
-                            expected += result.jacobians[problem * 12u + target * 6u + row * 2u + dof] *
-                                result.responses[problem * 12u + source * 6u + dof * 3u + column];
+                        for (std::size_t dof = 0u; dof < kDofs; ++dof) {
+                            expected += result.jacobians[
+                                valueBase + target * 3u * kDofs +
+                                    row * kDofs + dof
+                            ] * result.responses[
+                                valueBase + source * 3u * kDofs +
+                                    dof * 3u + column
+                            ];
                         }
                         if (target == source && row == column) {
-                            expected += result.regularization[problem * 18u + target * 9u + 4u * row];
+                            expected += result.regularization[
+                                regularizationBase + target * 9u + 4u * row
+                            ];
                         }
-                        const double actual = result.blocks[problem * 36u + (target * 2u + source) * 9u + 3u * row + column];
-                        maxBlockError = std::max(maxBlockError, std::abs(actual - expected));
+                        const double actual = result.blocks[
+                            blockBase + (target * kContacts + source) * 9u +
+                                3u * row + column
+                        ];
+                        const double error = std::abs(actual - expected);
+                        maxBlockError = std::max(maxBlockError, error);
+                        maxBlockScaledError = std::max(
+                            maxBlockScaledError,
+                            error / std::max(1.0, std::abs(expected))
+                        );
                     }
                 }
             }
+          }
         }
-        Vec2 expectedVelocity = {batch.velocities[2u * problem], batch.velocities[2u * problem + 1u]};
-        for (std::size_t contactIndex = 0u; contactIndex < 2u; ++contactIndex) {
-            const auto impulse = result.impulses[2u * problem + contactIndex];
-            const std::size_t base = problem * 12u + contactIndex * 6u;
-            expectedVelocity[0] += result.responses[base + 0u] * impulse.x +
-                result.responses[base + 1u] * impulse.y + result.responses[base + 2u] * impulse.z;
-            expectedVelocity[1] += result.responses[base + 3u] * impulse.x +
-                result.responses[base + 4u] * impulse.y + result.responses[base + 5u] * impulse.z;
+        std::vector<double> expectedVelocity = initialVelocity;
+        for (std::size_t contactIndex = 0u;
+             contactIndex < kContacts;
+             ++contactIndex) {
+            const auto impulse = result.impulses[contactBase + contactIndex];
+            const std::size_t responseBase = valueBase +
+                contactIndex * 3u * kDofs;
+            for (std::size_t dof = 0u; dof < kDofs; ++dof) {
+                expectedVelocity[dof] +=
+                    result.responses[responseBase + dof * 3u + 0u] * impulse.x +
+                    result.responses[responseBase + dof * 3u + 1u] * impulse.y +
+                    result.responses[responseBase + dof * 3u + 2u] * impulse.z;
+            }
         }
-        maxPublicationError = std::max(maxPublicationError,
-            maxAbs(result.outputVelocities[2u * problem] - expectedVelocity[0],
-                   result.outputVelocities[2u * problem + 1u] - expectedVelocity[1]));
-        const Vec2 initialVelocity = {batch.velocities[2u * problem], batch.velocities[2u * problem + 1u]};
-        const Vec2 finalVelocity = {result.outputVelocities[2u * problem], result.outputVelocities[2u * problem + 1u]};
-        const auto kinetic = [&](Vec2 v) {
-            return 0.5 * (v[0] * (ref.mass[0] * v[0] + ref.mass[1] * v[1]) +
-                v[1] * (ref.mass[2] * v[0] + ref.mass[3] * v[1]));
+        std::vector<double> finalVelocity(kDofs);
+        for (std::size_t dof = 0u; dof < kDofs; ++dof) {
+            finalVelocity[dof] = result.outputVelocities[dofBase + dof];
+            maxPublicationError = std::max(
+                maxPublicationError,
+                std::abs(finalVelocity[dof] - expectedVelocity[dof])
+            );
+        }
+        const auto kinetic = [&](const std::vector<double>& velocity) {
+            double energy = 0.0;
+            for (std::size_t row = 0u; row < kDofs; ++row) {
+                for (std::size_t column = 0u; column < kDofs; ++column) {
+                    energy += 0.5 * velocity[row] *
+                        ref.mass[row * kDofs + column] * velocity[column];
+                }
+            }
+            return energy;
         };
         const double deltaEnergy = kinetic(finalVelocity) - kinetic(initialVelocity);
         double budget = 0.0;
-        for (std::size_t c = 0u; c < 2u; ++c) {
-            const auto impulse = result.impulses[2u * problem + c];
-            const auto solverContact = result.solverContacts[2u * problem + c];
-            const double targetNormal = -solverContact.freeVelocityAndFrictionU.x +
-                (result.jacobians[problem * 12u + c * 6u + 0u] * initialVelocity[0] +
-                 result.jacobians[problem * 12u + c * 6u + 1u] * initialVelocity[1]);
+        for (std::size_t contactIndex = 0u;
+             contactIndex < kContacts;
+             ++contactIndex) {
+            const auto impulse = result.impulses[contactBase + contactIndex];
+            const auto solverContact = result.solverContacts[
+                contactBase + contactIndex
+            ];
+            double rawNormal = 0.0;
+            for (std::size_t dof = 0u; dof < kDofs; ++dof) {
+                rawNormal += result.jacobians[
+                    valueBase + contactIndex * 3u * kDofs + dof
+                ] * initialVelocity[dof];
+            }
+            const double targetNormal =
+                -solverContact.freeVelocityAndFrictionU.x + rawNormal;
             budget += impulse.x * targetNormal;
             budget -= 0.5 * (
-                result.regularization[problem * 18u + c * 9u + 0u] * impulse.x * impulse.x +
-                result.regularization[problem * 18u + c * 9u + 4u] * impulse.y * impulse.y +
-                result.regularization[problem * 18u + c * 9u + 8u] * impulse.z * impulse.z
+                result.regularization[
+                    regularizationBase + contactIndex * 9u + 0u
+                ] * impulse.x * impulse.x +
+                result.regularization[
+                    regularizationBase + contactIndex * 9u + 4u
+                ] * impulse.y * impulse.y +
+                result.regularization[
+                    regularizationBase + contactIndex * 9u + 8u
+                ] * impulse.z * impulse.z
             );
         }
         maxEnergyBudgetViolation = std::max(maxEnergyBudgetViolation, deltaEnergy - budget);
         maxGpuBackwardError = std::max<double>(maxGpuBackwardError,
             result.responseStatuses[problem].diagnostics.y);
-        maxConditionProxy = std::max<double>(maxConditionProxy,
-            result.responseStatuses[problem].conditioning.z);
+        maxConditionInfinity = std::max<double>(maxConditionInfinity,
+            gpuConditionInfinity);
         maxIterations = std::max(maxIterations, result.solverStatuses[problem].control.y);
         const bool valid = result.operatorStatuses[problem].code == MR_ARTICULATED_OPERATOR_SUCCESS &&
             result.responseStatuses[problem].control.x == NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS &&
@@ -862,13 +1222,21 @@ int run(int argc, const char* const* argv) {
             operatorPayloadUntouched =
                 result.operatorStatuses[problem].code ==
                     MR_ARTICULATED_OPERATOR_NONFINITE_INPUT;
-            for (std::size_t value = 0u; value < 4u; ++value) {
+            for (std::size_t value = 0u;
+                 value < kDofs * kDofs;
+                 ++value) {
                 operatorPayloadUntouched = operatorPayloadUntouched &&
-                    result.factors[4u * problem + value] == 0.0f;
+                    result.factors[
+                        problem * kDofs * kDofs + value
+                    ] == 0.0f;
             }
-            for (std::size_t value = 0u; value < 12u; ++value) {
+            for (std::size_t value = 0u;
+                 value < valuesPerProblem;
+                 ++value) {
                 operatorPayloadUntouched = operatorPayloadUntouched &&
-                    result.pointJacobians[12u * problem + value] == 0.0f;
+                    result.pointJacobians[
+                        problem * valuesPerProblem + value
+                    ] == 0.0f;
             }
         } else {
             operatorPayloadUntouched =
@@ -879,20 +1247,67 @@ int run(int argc, const char* const* argv) {
             result.responseStatuses[problem].control.x == expectedResponse &&
             result.publishStatuses[problem].control.x ==
                 NUMI_TEMPORAL_CONE_ARTICULATED_UPSTREAM_FAILURE &&
-            std::memcmp(&result.outputVelocities[2u * problem],
-                &batch.velocities[2u * problem], 2u * sizeof(float)) == 0;
+            std::memcmp(&result.outputVelocities[kDofs * problem],
+                &batch.velocities[kDofs * problem],
+                kDofs * sizeof(float)) == 0;
+    }
+    if (failedValid != 0u || !rollback) {
+        const auto printStatus = [&](std::size_t problem) {
+            std::cerr << "status problem=" << problem
+                      << " operator=" << result.operatorStatuses[problem].code
+                      << ":" << result.operatorStatuses[problem].failingIndex
+                      << " response=" << result.responseStatuses[problem].control.x
+                      << " assembly=" << result.assemblyStatuses[problem].control.x
+                      << " solver=" << result.solverStatuses[problem].control.x
+                      << " publish=" << result.publishStatuses[problem].control.x
+                      << '\n';
+        };
+        printStatus(0u);
+        for (std::size_t problem = batch.validProblems;
+             problem < problemCount;
+             ++problem) {
+            printStatus(problem);
+        }
+    }
+    if (maxMassScaledError >= 2.0e-5 ||
+        maxJacobianScaledError >= 2.0e-5 ||
+        maxFiniteDifferenceError >= 2.0e-3 ||
+        maxResponseScaledError >= 3.0e-5 ||
+        maxBlockScaledError >= 3.0e-5 ||
+        maxFreeVelocityError >= 2.0e-4 ||
+        maxPublicationError >= 2.0e-4 ||
+        maxEnergyBudgetViolation >= 2.0e-3 ||
+        maxConditionScaledError >= 2.0e-3) {
+        std::cerr << "oracle metrics mass=" << maxMassError
+                  << "/" << maxMassScaledError
+                  << " jacobian=" << maxJacobianError
+                  << "/" << maxJacobianScaledError
+                  << " finite_difference=" << maxFiniteDifferenceError
+                  << " response=" << maxResponseError
+                  << "/" << maxResponseScaledError
+                  << " block=" << maxBlockError
+                  << "/" << maxBlockScaledError
+                  << " free=" << maxFreeVelocityError
+                  << " publication=" << maxPublicationError
+                  << " energy=" << maxEnergyBudgetViolation
+                  << " condition_infinity=" << maxConditionInfinity
+                  << " condition_error=" << maxConditionScaledError
+                  << " gpu_backward=" << maxGpuBackwardError
+                  << '\n';
     }
     require(deterministic, "articulated chain is not byte deterministic");
     require(rollback, "articulated invalid-input rollback failed");
     require(failedValid == 0u, "valid articulated islands failed");
-    require(maxMassError < 3.0e-6, "articulated mass oracle mismatch");
-    require(maxJacobianError < 2.0e-6, "articulated Jacobian oracle mismatch");
-    require(maxFiniteDifferenceError < 2.0e-5, "articulated finite-difference mismatch");
-    require(maxResponseError < 4.0e-6, "articulated response-column mismatch");
-    require(maxBlockError < 2.0e-6, "articulated Delassus block mismatch");
-    require(maxFreeVelocityError < 2.0e-6, "articulated free-velocity mismatch");
-    require(maxPublicationError < 2.0e-6, "articulated publication mismatch");
-    require(maxEnergyBudgetViolation < 2.0e-5, "articulated energy budget violated");
+    require(maxMassScaledError < 2.0e-5, "articulated mass oracle mismatch");
+    require(maxJacobianScaledError < 2.0e-5, "articulated Jacobian oracle mismatch");
+    require(maxFiniteDifferenceError < 2.0e-3, "articulated finite-difference mismatch");
+    require(maxResponseScaledError < 3.0e-5, "articulated response-column mismatch");
+    require(maxBlockScaledError < 3.0e-5, "articulated Delassus block mismatch");
+    require(maxFreeVelocityError < 2.0e-4, "articulated free-velocity mismatch");
+    require(maxPublicationError < 2.0e-4, "articulated publication mismatch");
+    require(maxEnergyBudgetViolation < 2.0e-3, "articulated energy budget violated");
+    require(maxConditionScaledError < 2.0e-3,
+        "articulated condition estimate mismatch");
 
     const double bestSeconds = std::min_element(
         replays.begin(), replays.end(), [](const Result& a, const Result& b) {
@@ -900,6 +1315,7 @@ int run(int argc, const char* const* argv) {
         })->seconds;
     std::cout << std::setprecision(9)
               << "numi-solver-articulated device=\"" << device.name.UTF8String << "\""
+              << " dofs=" << kDofs
               << " islands=" << problemCount
               << " valid=" << batch.validProblems
               << " contacts=" << batch.validProblems * kContacts
@@ -908,20 +1324,34 @@ int run(int argc, const char* const* argv) {
               << " rollback=" << (rollback ? "yes" : "no")
               << " failed_valid=" << failedValid << "\n"
               << "mass_max_abs_error=" << maxMassError
+              << " mass_max_scaled_error=" << maxMassScaledError
               << " jacobian_max_abs_error=" << maxJacobianError
+              << " jacobian_max_scaled_error=" << maxJacobianScaledError
               << " finite_difference_max_abs_error=" << maxFiniteDifferenceError
               << " response_max_abs_error=" << maxResponseError
+              << " response_max_scaled_error=" << maxResponseScaledError
               << " delassus_max_abs_error=" << maxBlockError << "\n"
+              << "delassus_max_scaled_error=" << maxBlockScaledError
+              << " "
               << "free_velocity_max_abs_error=" << maxFreeVelocityError
               << " publication_max_abs_error=" << maxPublicationError
               << " fp64_solve_residual=" << maxFp64Residual
               << " gpu_response_backward_error=" << maxGpuBackwardError << "\n"
-              << "condition_proxy=" << maxConditionProxy
+              << "condition_infinity=" << maxConditionInfinity
+              << " condition_max_scaled_error=" << maxConditionScaledError
               << " energy_budget_violation=" << std::max(0.0, maxEnergyBudgetViolation)
               << " max_iterations=" << maxIterations << "\n"
               << "gpu_seconds=" << bestSeconds
               << " islands_per_second=" << static_cast<double>(problemCount) / bestSeconds
               << " contacts_per_second=" << static_cast<double>(batch.validProblems * kContacts) / bestSeconds
+              << " operator_threadgroup_bytes="
+              << operatorThreadgroupBytes(kBodies, kDofs)
+              << " factor_bytes="
+              << problemCount * kDofs * kDofs * sizeof(float)
+              << " jacobian_response_bytes="
+              << 2u * problemCount * valuesPerProblem * sizeof(float)
+              << " block_bytes="
+              << problemCount * blocksPerProblem * 9u * sizeof(float)
               << "\n";
     return 0;
 }

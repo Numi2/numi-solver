@@ -366,6 +366,21 @@ inline MotionColumn bodyMotionForDof(
     return result;
 }
 
+// Deterministic Neumaier accumulation keeps long articulated chains from
+// losing small distal inertia contributions when proximal terms are much
+// larger. The correction order is fixed by canonical body order.
+inline void compensatedAdd(
+    const float term,
+    thread float& sum,
+    thread float& correction
+) {
+    const float candidate = sum + term;
+    correction += abs(sum) >= abs(term)
+        ? (sum - candidate) + term
+        : (term - candidate) + sum;
+    sum = candidate;
+}
+
 inline float massElement(
     const uint row,
     const uint column,
@@ -384,6 +399,7 @@ inline float massElement(
     threadgroup const uint* parentLocal
 ) {
     float value = 0.0f;
+    float correction = 0.0f;
     for (uint localBody = 0u;
          localBody < articulation.bodyCount;
          ++localBody) {
@@ -433,15 +449,22 @@ inline float massElement(
             quaternionConjugate(bodyRotation[localBody]),
             right.angular
         );
-        value +=
+        compensatedAdd(
             massScale * body.massAndInverseMass.x *
-                dot(left.linear, right.linear) +
+                dot(left.linear, right.linear),
+            value,
+            correction
+        );
+        compensatedAdd(
             inertiaScale * dot(
                 leftBodyAngular,
                 inertiaMultiply(body, rightBodyAngular)
-            );
+            ),
+            value,
+            correction
+        );
     }
-    return value;
+    return value + correction;
 }
 
 inline bool validDispatch(
@@ -1550,8 +1573,10 @@ kernel void MR_ARTICULATED_OPERATOR_KERNEL_NAME(
             float value = factor[
                 row * factorStride + column
             ];
+            float product = 0.0f;
+            float productCorrection = 0.0f;
             for (uint inner = 0u; inner < column; ++inner) {
-                value -=
+                compensatedAdd(
                     factor[
                         row * factorStride +
                         inner
@@ -1559,8 +1584,12 @@ kernel void MR_ARTICULATED_OPERATOR_KERNEL_NAME(
                     factor[
                         column * factorStride +
                         inner
-                    ];
+                    ],
+                    product,
+                    productCorrection
+                );
             }
+            value -= product + productCorrection;
             if (row == column) {
                 if (!(value > pivotFloor) ||
                     !isfinite(value)) {

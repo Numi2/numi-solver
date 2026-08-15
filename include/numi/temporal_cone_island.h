@@ -28,8 +28,9 @@
 #define NUMI_TEMPORAL_CONE_RIGID_VALUES_PER_TERM \
     (3u * NUMI_TEMPORAL_CONE_RIGID_DOF)
 
-#define NUMI_TEMPORAL_CONE_ARTICULATED_ABI_VERSION 1u
+#define NUMI_TEMPORAL_CONE_ARTICULATED_ABI_VERSION 2u
 #define NUMI_TEMPORAL_CONE_ARTICULATED_MAX_DOF 32u
+#define NUMI_TEMPORAL_CONE_ARTICULATED_MAX_CONDITION_INFINITY 16384.0f
 #define NUMI_TEMPORAL_CONE_ARTICULATED_VALUES_PER_CONTACT(dof_count) \
     (3u * (dof_count))
 
@@ -78,6 +79,7 @@ enum NumiTemporalConeArticulatedStatusCode : mr_u32 {
     NUMI_TEMPORAL_CONE_ARTICULATED_NONFINITE_RESULT = 4u,
     NUMI_TEMPORAL_CONE_ARTICULATED_UPSTREAM_FAILURE = 5u,
     NUMI_TEMPORAL_CONE_ARTICULATED_ACCURACY_FAILED = 6u,
+    NUMI_TEMPORAL_CONE_ARTICULATED_CONDITIONING_FAILED = 7u,
 };
 
 typedef struct MR_ALIGN16 NumiTemporalConeIslandHeader {
@@ -227,7 +229,7 @@ typedef struct MR_ALIGN16 NumiTemporalConeArticulatedContact {
 typedef struct MR_ALIGN16 NumiTemporalConeArticulatedStatus {
     // x status, y DoFs, z contacts, w generated owner terms.
     mr_uint4 control;
-    // x minimum pivot, y maximum pivot, z squared pivot-ratio proxy,
+    // x minimum pivot, y maximum pivot, z infinity-norm condition estimate,
     // w upstream articulated-operator relative residual.
     mr_float4 conditioning;
     // x maximum frame error, y maximum response backward error,

@@ -13927,6 +13927,89 @@ kernel void numi_temporal_cone_articulated_response(
         return;
     }
 
+    // Compute the exact FP32 infinity-norm condition estimate of the factor
+    // operator: ||L L^T||_inf * ||(L L^T)^-1||_inf. Symmetry means solving
+    // one unit RHS per DoF lane yields both an inverse column and its matching
+    // row absolute sum. This is more informative than a pivot-ratio proxy and
+    // remains deterministic for the fixed factor order.
+    float laneMatrixRowNorm = 0.0f;
+    float laneInverseRowNorm = 0.0f;
+    if (activeDof) {
+        for (uint column = 0u; column < dofCount; ++column) {
+            float coefficient = 0.0f;
+            const uint innerCount = min(lane, column) + 1u;
+            for (uint inner = 0u; inner < innerCount; ++inner) {
+                coefficient = fma(
+                    factors[factorBase + lane * dofCount + inner],
+                    factors[factorBase + column * dofCount + inner],
+                    coefficient
+                );
+            }
+            laneMatrixRowNorm += abs(coefficient);
+        }
+        float intermediate[NUMI_TEMPORAL_CONE_ARTICULATED_MAX_DOF];
+        float solution[NUMI_TEMPORAL_CONE_ARTICULATED_MAX_DOF];
+        for (uint row = 0u; row < dofCount; ++row) {
+            float value = row == lane ? 1.0f : 0.0f;
+            for (uint column = 0u; column < row; ++column) {
+                value -= factors[
+                    factorBase + row * dofCount + column
+                ] * intermediate[column];
+            }
+            intermediate[row] = value / factors[
+                factorBase + row * dofCount + row
+            ];
+        }
+        for (uint reverse = 0u; reverse < dofCount; ++reverse) {
+            const uint row = dofCount - 1u - reverse;
+            float value = intermediate[row];
+            for (uint column = row + 1u; column < dofCount; ++column) {
+                value -= factors[
+                    factorBase + column * dofCount + row
+                ] * solution[column];
+            }
+            solution[row] = value / factors[
+                factorBase + row * dofCount + row
+            ];
+            laneInverseRowNorm += abs(solution[row]);
+        }
+        if (!isfinite(laneMatrixRowNorm) ||
+            !isfinite(laneInverseRowNorm)) {
+            localFailure =
+                NUMI_TEMPORAL_CONE_ARTICULATED_NONFINITE_RESULT;
+        }
+    }
+    const float matrixInfinityNorm = simd_max(laneMatrixRowNorm);
+    const float inverseInfinityNorm = simd_max(laneInverseRowNorm);
+    const float conditionInfinity =
+        matrixInfinityNorm * inverseInfinityNorm;
+    if (lane == 0u) {
+        if (!isfinite(conditionInfinity)) {
+            localFailure =
+                NUMI_TEMPORAL_CONE_ARTICULATED_NONFINITE_RESULT;
+        } else if (conditionInfinity >
+                NUMI_TEMPORAL_CONE_ARTICULATED_MAX_CONDITION_INFINITY) {
+            localFailure =
+                NUMI_TEMPORAL_CONE_ARTICULATED_CONDITIONING_FAILED;
+        }
+    }
+    failure = simd_max(localFailure);
+    if (failure != NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS) {
+        if (lane == 0u) {
+            NumiTemporalConeArticulatedStatus status = {};
+            status.control = uint4(failure, dofCount, contactCount, 0u);
+            status.conditioning = float4(
+                minimumPivot,
+                maximumPivot,
+                conditionInfinity,
+                operatorStatus.diagnostics.z
+            );
+            status.diagnostics.x = maximumFrameError;
+            outputStatuses[problem] = status;
+        }
+        return;
+    }
+
     float laneMaximumBackwardError = 0.0f;
     if (activeContact) {
         const uint worldPointBase = pointJacobianBase +
@@ -14045,11 +14128,10 @@ kernel void numi_temporal_cone_articulated_response(
         if (lane == 0u) {
             NumiTemporalConeArticulatedStatus status = {};
             status.control = uint4(failure, dofCount, contactCount, 0u);
-            const float pivotRatio = maximumPivot / minimumPivot;
             status.conditioning = float4(
                 minimumPivot,
                 maximumPivot,
-                pivotRatio * pivotRatio,
+                conditionInfinity,
                 operatorStatus.diagnostics.z
             );
             status.diagnostics = float4(
@@ -14143,7 +14225,6 @@ kernel void numi_temporal_cone_articulated_response(
     }
     if (lane == 0u) {
         NumiTemporalConeArticulatedStatus status = {};
-        const float pivotRatio = maximumPivot / minimumPivot;
         status.control = uint4(
             failure,
             dofCount,
@@ -14155,7 +14236,7 @@ kernel void numi_temporal_cone_articulated_response(
         status.conditioning = float4(
             minimumPivot,
             maximumPivot,
-            pivotRatio * pivotRatio,
+            conditionInfinity,
             operatorStatus.diagnostics.z
         );
         status.diagnostics = float4(
