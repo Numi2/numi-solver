@@ -513,13 +513,21 @@ inline float2 projectTangentEllipse(
     normalizedSquared +=
         radiiSquared.x > kMatrixFloor
         ? tangent.x * tangent.x / radiiSquared.x
-        : (abs(tangent.x) <= kConeEpsilon ? 0.0f : INFINITY);
+        : (tangent.x == 0.0f ? 0.0f : INFINITY);
     normalizedSquared +=
         radiiSquared.y > kMatrixFloor
         ? tangent.y * tangent.y / radiiSquared.y
-        : (abs(tangent.y) <= kConeEpsilon ? 0.0f : INFINITY);
+        : (tangent.y == 0.0f ? 0.0f : INFINITY);
     if (normalizedSquared <= 1.0f) {
         return tangent;
+    }
+    const bool activeX = radiiSquared.x > kMatrixFloor;
+    const bool activeY = radiiSquared.y > kMatrixFloor;
+    if (activeX != activeY) {
+        return float2(
+            activeX ? clamp(tangent.x, -radii.x, radii.x) : 0.0f,
+            activeY ? clamp(tangent.y, -radii.y, radii.y) : 0.0f
+        );
     }
 
     float lower = 0.0f;
@@ -625,7 +633,7 @@ inline float3 projectFrictionConeValues(
     );
     const float tangentNorm = length(impulse.yz);
     const bool frictionless =
-        friction.x <= kConeEpsilon ||
+        friction.x <= kConeEpsilon &&
         friction.y <= kConeEpsilon;
     if (frictionless) {
         return float3(
@@ -641,11 +649,11 @@ inline float3 projectFrictionConeValues(
     normalizedTangentSquared +=
         friction.x > kConeEpsilon
         ? impulse.y * impulse.y / (friction.x * friction.x)
-        : (abs(impulse.y) <= kConeEpsilon ? 0.0f : INFINITY);
+        : (impulse.y == 0.0f ? 0.0f : INFINITY);
     normalizedTangentSquared +=
         friction.y > kConeEpsilon
         ? impulse.z * impulse.z / (friction.y * friction.y)
-        : (abs(impulse.z) <= kConeEpsilon ? 0.0f : INFINITY);
+        : (impulse.z == 0.0f ? 0.0f : INFINITY);
     const bool insideUnbounded =
         impulse.x >= 0.0f &&
         normalizedTangentSquared <= impulse.x * impulse.x;
@@ -657,16 +665,30 @@ inline float3 projectFrictionConeValues(
         if (impulse.x + weightedDual <= 0.0f) {
             projected = float3(0.0f);
         } else {
+            const bool activeU = friction.x > kConeEpsilon;
+            const bool activeV = friction.y > kConeEpsilon;
             const float frictionScale = max(
                 max(friction.x, friction.y),
                 1.0f
             );
             const bool isotropic =
-                friction.x > kConeEpsilon &&
-                friction.y > kConeEpsilon &&
+                activeU && activeV &&
                 abs(friction.x - friction.y) <=
                     8.0f * kFloatEpsilon * frictionScale;
-            if (isotropic) {
+            if (activeU != activeV) {
+                const float mu = activeU ? friction.x : friction.y;
+                const float tangent = activeU ? impulse.y : impulse.z;
+                const float normal =
+                    (impulse.x + mu * abs(tangent)) /
+                    (1.0f + mu * mu);
+                const float projectedTangent =
+                    copysign(mu * normal, tangent);
+                projected = float3(
+                    normal,
+                    activeU ? projectedTangent : 0.0f,
+                    activeV ? projectedTangent : 0.0f
+                );
+            } else if (isotropic) {
                 const float mu =
                     0.5f * (friction.x + friction.y);
                 const float normal =
@@ -783,6 +805,56 @@ inline float3 projectFrictionCone(
         cone.effectiveFrictionV,
         cone.maximumNormalImpulse
     );
+}
+
+// Feasibility certificate for full, degenerate, frictionless, and capped
+// elliptic cones. A zero coefficient constrains only its authored tangent
+// axis; it does not erase friction from the orthogonal tangent axis.
+inline float frictionConeViolationValues(
+    const float3 impulse,
+    const float frictionU,
+    const float frictionV,
+    const float maximumNormalImpulse
+) {
+    const float normal = max(impulse.x, 0.0f);
+    float violation = max(-impulse.x, 0.0f);
+    if (maximumNormalImpulse > 0.0f) {
+        violation = max(
+            violation,
+            max(impulse.x - maximumNormalImpulse, 0.0f)
+        );
+    }
+    float normalizedSquared = 0.0f;
+    bool hasActiveTangent = false;
+    if (frictionU > kConeEpsilon) {
+        hasActiveTangent = true;
+        if (normal > kConeEpsilon) {
+            const float scaled = impulse.y / (frictionU * normal);
+            normalizedSquared = fma(scaled, scaled, normalizedSquared);
+        } else {
+            violation = max(violation, abs(impulse.y));
+        }
+    } else {
+        violation = max(violation, abs(impulse.y));
+    }
+    if (frictionV > kConeEpsilon) {
+        hasActiveTangent = true;
+        if (normal > kConeEpsilon) {
+            const float scaled = impulse.z / (frictionV * normal);
+            normalizedSquared = fma(scaled, scaled, normalizedSquared);
+        } else {
+            violation = max(violation, abs(impulse.z));
+        }
+    } else {
+        violation = max(violation, abs(impulse.z));
+    }
+    if (hasActiveTangent && normal > kConeEpsilon) {
+        violation = max(
+            violation,
+            max(sqrt(normalizedSquared) - 1.0f, 0.0f)
+        );
+    }
+    return violation;
 }
 
 inline bool invert3x3(
@@ -11599,20 +11671,12 @@ kernel void numi_temporal_cone_probe(
             dot(input.responseRow1.xyz, impulse),
             dot(input.responseRow2.xyz, impulse)
         );
-    const float limitU = cone.effectiveFrictionU * impulse.x;
-    const float limitV = cone.effectiveFrictionV * impulse.x;
-    float coneViolation = 0.0f;
-    if (limitU > 0.0f && limitV > 0.0f) {
-        coneViolation = max(
-            sqrt(
-                (impulse.y * impulse.y) / (limitU * limitU) +
-                (impulse.z * impulse.z) / (limitV * limitV)
-            ) - 1.0f,
-            0.0f
-        );
-    } else {
-        coneViolation = length(impulse.yz);
-    }
+    const float coneViolation = frictionConeViolationValues(
+        impulse,
+        cone.effectiveFrictionU,
+        cone.effectiveFrictionV,
+        cone.maximumNormalImpulse
+    );
 
     output.impulseAndDelta = float4(impulse, maximumDelta);
     output.inverseRow0 = float4(
@@ -11706,20 +11770,15 @@ inline float3 temporalConeIslandResidual(
 inline float temporalConeViolation(
     const float3 impulse,
     const float frictionU,
-    const float frictionV
+    const float frictionV,
+    const float maximumNormalImpulse
 ) {
-    const float limitU = frictionU * impulse.x;
-    const float limitV = frictionV * impulse.x;
-    if (limitU > 0.0f && limitV > 0.0f) {
-        return max(
-            sqrt(
-                (impulse.y * impulse.y) / (limitU * limitU) +
-                (impulse.z * impulse.z) / (limitV * limitV)
-            ) - 1.0f,
-            0.0f
-        );
-    }
-    return length(impulse.yz);
+    return frictionConeViolationValues(
+        impulse,
+        frictionU,
+        frictionV,
+        maximumNormalImpulse
+    );
 }
 
 // One SIMD32 group owns one complete dense contact-space island. Every lane
@@ -12116,7 +12175,8 @@ kernel void numi_temporal_cone_island_solve(
         laneConeViolation = temporalConeViolation(
             impulse,
             cone.effectiveFrictionU,
-            cone.effectiveFrictionV
+            cone.effectiveFrictionV,
+            cone.maximumNormalImpulse
         );
         laneImpulseScale = max(
             abs(impulse.x),
@@ -12756,7 +12816,8 @@ kernel void numi_temporal_cone_stream_solve(
         laneConeViolation = temporalConeViolation(
             impulse,
             cone.effectiveFrictionU,
-            cone.effectiveFrictionV
+            cone.effectiveFrictionV,
+            cone.maximumNormalImpulse
         );
         laneImpulseScale = max(
             abs(impulse.x),

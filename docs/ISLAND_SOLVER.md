@@ -16,8 +16,9 @@ The island solves the convex contact-space problem
 ```
 
 where `A` is the symmetric positive-definite Delassus/contact-response
-operator and `C` is the product of the exact per-contact elliptic cones and
-normal caps documented in [MATHEMATICS.md](MATHEMATICS.md). Because zero is
+operator and `C` is the product of the exact per-contact elliptic cones,
+lower-dimensional one-axis cones, and normal caps documented in
+[MATHEMATICS.md](MATHEMATICS.md). Because zero is
 feasible, a solved island must also satisfy the energy check
 
 ```math
@@ -148,6 +149,12 @@ impulses, objective, and residual all refer to the same vector.
 
 The status diagnostic records the number of accelerated restarts. Easy
 islands that finish before momentum begins report zero.
+
+The final feasibility diagnostic evaluates normal nonnegativity, the authored
+normal cap, every positive-friction normalized axis, and every zero-friction
+axis separately. A valid impulse on a one-axis cone is therefore not mistaken
+for frictionless contact, while any impulse on its inactive tangent is a
+certificate failure.
 
 ## Transaction and failure behavior
 

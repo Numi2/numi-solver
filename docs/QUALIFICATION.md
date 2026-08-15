@@ -18,7 +18,11 @@ The qualification gate requires:
 - byte-identical outputs across every replay;
 - separating contact maps to zero;
 - the isotropic sliding case lies on the cone;
-- the authored normal cap is respected.
+- the authored normal cap is respected;
+- either zero-friction tangent is exactly inactive while the orthogonal
+  positive-friction tangent remains physical;
+- a sub-epsilon nonzero inactive input is still projected to exact zero;
+- the capped one-axis cone reaches its exact interval boundary.
 
 The adversarial anisotropic batch produced:
 
@@ -31,10 +35,14 @@ max_fp64_relative_error=0.000003368
 max_cone_violation=0.000000119
 max_relative_fixed_point_residual=0.000000477
 deterministic_replay=true
+zero_v_axis_cone=true
+zero_u_axis_cone=true
+degenerate_cap=true
+exact_inactive_axis=true
 ```
 
-The measured isolated local-block throughput was approximately 33.4 million
-problems/s for the adversarial anisotropic batch and 103.4 million problems/s
+The measured isolated local-block throughput was approximately 33.8 million
+problems/s for the adversarial anisotropic batch and 105.0 million problems/s
 for the predominantly isotropic batch. The latter takes the closed-form fast
 path; these are local mathematical blocks, not full environment steps.
 
@@ -44,8 +52,9 @@ Measured on 2026-08-15, the coupled batch mixes 1/2/4/8/16/32-contact chain,
 ring, star, banded, clustered, tree, and occasional full-clique operators.
 Every operator is assembled as a positive diagonal plus deterministic sparse
 outer products, then independently checked by FP64 Cholesky. Coupling
-strength spans `0.25` through `8.0`. The contact set mixes isotropic and
-anisotropic cones, normal caps, separating contacts, and nonzero warm starts.
+strength spans `0.25` through `8.0`. The contact set mixes isotropic,
+anisotropic, and one-axis degenerate cones, normal caps, separating contacts,
+and nonzero warm starts.
 
 The same FP32 operator is sent through both the fixed dense kernel and packed
 3x3 block-CSR kernel. Qualification requires byte-identical impulses,
@@ -56,25 +65,28 @@ KKT gate, and up to 20,000 iterations rather than copying the GPU stop point.
 Measured command:
 
 ```sh
-./build/numi-solver-islands --islands 1024 --replays 10
+./build/numi-solver-islands --islands 4096 --replays 5
 ```
 
 Apple M4 result:
 
 ```text
-islands=1024 contacts=10725 replays=10 failed_islands=0
-max_fp64_impulse_error=0.000001834
-max_fp64_objective_error=0.000000134
+islands=4096 contacts=42981 replays=5 failed_islands=0
+max_fp64_impulse_error=0.000001825
+max_fp64_objective_error=0.000000191
 max_fp64_kkt_residual=0.000000000
 max_kkt_residual=0.000001500
 max_cone_violation=0.000000119
 max_positive_objective=0.000000000
+degenerate_cone_contacts=2184
+max_degenerate_inactive_impulse=0.000000000
+max_degenerate_active_impulse=0.508176446
 max_iterations=103
 iteration_p50=20
 iteration_p95=44
-iteration_p99=74
-accelerated_islands=561
-max_acceleration_restarts=5
+iteration_p99=72
+accelerated_islands=2269
+max_acceleration_restarts=6
 deterministic_replay=true
 dense_deterministic=true
 dense_stream_bitwise=true
@@ -85,38 +97,50 @@ spd_cholesky=true
 min_spd_pivot=0.894427198
 shared_rigid_oracle=true
 under_relaxed_path=true
-average_gpu_seconds=0.001754212
-islands_per_second=583737.72
-contacts_per_second=6113854.52
-contact_iterations_per_second=214952863.97
-streamed_buffer_bytes=2550140
-dense_gpu_seconds=0.003005421
-dense_to_stream_speedup=1.713259279
-dense_buffer_bytes=39927808
-stream_to_dense_memory=0.063868770
-streamed_blocks=42961
-block_fill=0.185069033
+average_gpu_seconds=0.004948617
+islands_per_second=827706.06
+contacts_per_second=8685457.53
+contact_iterations_per_second=304143177.26
+streamed_buffer_bytes=10126748
+dense_gpu_seconds=0.010658283
+dense_to_stream_speedup=2.153790445
+dense_buffer_bytes=159711232
+stream_to_dense_memory=0.063406611
+streamed_blocks=169861
+block_fill=0.182447114
 max_island_blocks=1024
-full_capacity_islands=5
+full_capacity_islands=17
 stream_threadgroup_memory=2560
 dense_threadgroup_memory=2560
 stream_max_threads=1024
 result=PASS
 ```
 
-The streamed representation used 6.39% of the dense qualification buffers and
-the isolated streamed kernel was 1.713x faster for the same byte-identical
+The streamed representation used 6.34% of the dense qualification buffers and
+the isolated streamed kernel was 2.154x faster for the same byte-identical
 FP32 solve. GPU time excludes CPU oracle work and buffer upload. These ratios
 describe this declared topology mix; they are not universal scene claims.
 
-On the same Apple M4 qualification batch, the preceding unaccelerated revision
-measured `0.004850083` seconds, 431 maximum iterations, and p99 262. The
-delayed/adaptively restarted metric acceleration measured `0.001754212`
-seconds, 103 maximum iterations, and p99 74: 2.76x streamed throughput, 4.18x
-lower maximum iteration count, and 3.54x lower p99. The operator, cone,
-tolerances, FP64 oracle, and failure gates were unchanged. Pipeline reflection
-reports 2,560 bytes of static threadgroup memory and a 1,024-thread hardware
-limit; the solver dispatch remains one SIMD32 group per island.
+The first correct one-axis implementation reused the 28-step anisotropic
+bisection and measured `0.006112458` seconds on this same batch. Replacing it
+with the exact two-dimensional wedge formula measured `0.004948617` seconds,
+a 1.235x solver-kernel speedup with unchanged FP64, KKT, determinism, and
+rollback gates. The richer batch remains within 0.4% of the prior
+positive-friction-only `0.004931358`-second measurement while qualifying 2,184
+lower-dimensional contacts.
+
+The combined metallib SHA-256 for this cone milestone was
+`f0db21da35ba97ffdf3d74ce75a95647bbc2dae5c4411b51fccaf8910176b146`.
+
+On the earlier 1,024-island positive-friction qualification batch, the
+unaccelerated revision measured `0.004850083` seconds, 431 maximum iterations,
+and p99 262. Delayed/adaptively restarted metric acceleration measured
+`0.001754212` seconds, 103 maximum iterations, and p99 74: 2.76x streamed
+throughput, 4.18x lower maximum iteration count, and 3.54x lower p99. The
+operator, cone, tolerances, FP64 oracle, and failure gates were unchanged
+within that acceleration comparison. Pipeline reflection reports 2,560 bytes
+of static threadgroup memory and a 1,024-thread hardware limit; the solver
+dispatch remains one SIMD32 group per island.
 
 The typed failure batch separately verifies malformed symmetry, failed local
 conditioning, bounded iteration exhaustion, invalid ABI, unsorted/duplicate

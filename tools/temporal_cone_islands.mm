@@ -111,12 +111,20 @@ std::array<double, 2> projectEllipse(
     for (std::size_t axis = 0; axis < 2; ++axis) {
         if (squared[axis] > kMatrixFloor) {
             normalized += tangent[axis] * tangent[axis] / squared[axis];
-        } else if (std::abs(tangent[axis]) > kConeEpsilon) {
+        } else if (tangent[axis] != 0.0) {
             normalized = std::numeric_limits<double>::infinity();
         }
     }
     if (normalized <= 1.0) {
         return tangent;
+    }
+    const bool activeX = squared[0] > kMatrixFloor;
+    const bool activeY = squared[1] > kMatrixFloor;
+    if (activeX != activeY) {
+        return {{
+            activeX ? std::clamp(tangent[0], -radii[0], radii[0]) : 0.0,
+            activeY ? std::clamp(tangent[1], -radii[1], radii[1]) : 0.0,
+        }};
     }
     double lower = 0.0;
     double upper = std::max({
@@ -178,7 +186,7 @@ Vec3 projectCone(
         std::max(authoredFrictionU, 0.0),
         std::max(authoredFrictionV, 0.0),
     }};
-    if (friction[0] <= kConeEpsilon ||
+    if (friction[0] <= kConeEpsilon &&
         friction[1] <= kConeEpsilon) {
         return {{
             maximumNormal > 0.0
@@ -189,9 +197,15 @@ Vec3 projectCone(
         }};
     }
 
-    const double normalized =
-        value[1] * value[1] / (friction[0] * friction[0]) +
-        value[2] * value[2] / (friction[1] * friction[1]);
+    double normalized = 0.0;
+    for (std::size_t axis = 0u; axis < 2u; ++axis) {
+        if (friction[axis] > kConeEpsilon) {
+            normalized += value[axis + 1u] * value[axis + 1u] /
+                (friction[axis] * friction[axis]);
+        } else if (value[axis + 1u] != 0.0) {
+            normalized = std::numeric_limits<double>::infinity();
+        }
+    }
     Vec3 projected = value;
     if (!(value[0] >= 0.0 && normalized <= value[0] * value[0])) {
         const double dual = std::hypot(
@@ -201,11 +215,27 @@ Vec3 projectCone(
         if (value[0] + dual <= 0.0) {
             projected = {};
         } else {
+            const bool activeU = friction[0] > kConeEpsilon;
+            const bool activeV = friction[1] > kConeEpsilon;
             const bool isotropic =
+                activeU && activeV &&
                 std::abs(friction[0] - friction[1]) <=
                 8.0 * std::numeric_limits<float>::epsilon() *
                     std::max({friction[0], friction[1], 1.0});
-            if (isotropic) {
+            if (activeU != activeV) {
+                const double mu = activeU ? friction[0] : friction[1];
+                const double tangent = activeU ? value[1] : value[2];
+                const double normal =
+                    (value[0] + mu * std::abs(tangent)) /
+                    (1.0 + mu * mu);
+                const double projectedTangent =
+                    std::copysign(mu * normal, tangent);
+                projected = {{
+                    normal,
+                    activeU ? projectedTangent : 0.0,
+                    activeV ? projectedTangent : 0.0,
+                }};
+            } else if (isotropic) {
                 const double tangent = std::hypot(value[1], value[2]);
                 const double mu = 0.5 * (friction[0] + friction[1]);
                 const double normal =
@@ -244,8 +274,10 @@ Vec3 projectCone(
                 projected[0] = normal;
                 for (std::size_t axis = 0; axis < 2; ++axis) {
                     projected[axis + 1] =
-                        value[axis + 1] * frictionSquared[axis] * normal /
-                        (frictionSquared[axis] * normal + multiplier);
+                        frictionSquared[axis] > kMatrixFloor
+                        ? value[axis + 1] * frictionSquared[axis] * normal /
+                            (frictionSquared[axis] * normal + multiplier)
+                        : 0.0;
                 }
             }
         }
@@ -394,20 +426,45 @@ double minimumCholeskyPivot(
 double coneViolation(
     const Vec3& impulse,
     const double frictionU,
-    const double frictionV
+    const double frictionV,
+    const double maximumNormal
 ) {
-    const double limitU = frictionU * impulse[0];
-    const double limitV = frictionV * impulse[0];
-    if (limitU > 0.0 && limitV > 0.0) {
-        return std::max(
-            std::sqrt(
-                impulse[1] * impulse[1] / (limitU * limitU) +
-                impulse[2] * impulse[2] / (limitV * limitV)
-            ) - 1.0,
-            0.0
+    const double normal = std::max(impulse[0], 0.0);
+    double violation = std::max(-impulse[0], 0.0);
+    if (maximumNormal > 0.0) {
+        violation = std::max(
+            violation,
+            std::max(impulse[0] - maximumNormal, 0.0)
         );
     }
-    return std::hypot(impulse[1], impulse[2]);
+    const std::array<double, 2> friction{{frictionU, frictionV}};
+    double normalizedSquared = 0.0;
+    bool hasActiveTangent = false;
+    for (std::size_t axis = 0u; axis < 2u; ++axis) {
+        if (friction[axis] > kConeEpsilon) {
+            hasActiveTangent = true;
+            if (normal > kConeEpsilon) {
+                const double scaled = impulse[axis + 1u] /
+                    (friction[axis] * normal);
+                normalizedSquared += scaled * scaled;
+            } else {
+                violation = std::max(
+                    violation, std::abs(impulse[axis + 1u])
+                );
+            }
+        } else {
+            violation = std::max(
+                violation, std::abs(impulse[axis + 1u])
+            );
+        }
+    }
+    if (hasActiveTangent && normal > kConeEpsilon) {
+        violation = std::max(
+            violation,
+            std::max(std::sqrt(normalizedSquared) - 1.0, 0.0)
+        );
+    }
+    return violation;
 }
 
 OracleResult solveOracle(const Batch& batch, const std::size_t problem) {
@@ -568,7 +625,8 @@ OracleResult solveOracle(const Batch& batch, const std::size_t problem) {
             coneViolation(
                 result.impulses[contact],
                 source.freeVelocityAndFrictionU.w,
-                source.warmImpulseAndFrictionV.w
+                source.warmImpulseAndFrictionV.w,
+                source.limits.x
             )
         );
         result.objective +=
@@ -771,13 +829,18 @@ Batch makeBatch(const std::size_t problemCount) {
                 : -0.15f - 0.015f * static_cast<float>(
                     (problem + 3u * contact) % 17u
                 );
-            const float frictionU =
+            float frictionU =
                 0.2f + 0.05f * static_cast<float>((problem + contact) % 9u);
-            const float frictionV = problem % 3u == 0u
+            float frictionV = problem % 3u == 0u
                 ? frictionU
                 : 0.18f + 0.04f * static_cast<float>(
                     (2u * problem + contact) % 11u
                 );
+            if ((problem + 3u * contact) % 37u == 11u) {
+                frictionU = 0.0f;
+            } else if ((2u * problem + contact) % 41u == 17u) {
+                frictionV = 0.0f;
+            }
             output.freeVelocityAndFrictionU = f4(
                 normalVelocity,
                 0.25f * std::sin(
@@ -836,6 +899,15 @@ Batch makeBatch(const std::size_t problemCount) {
             }
             batch.matrices[matrixBase + 3u] = 1.0f;
             batch.matrices[matrixBase + 3u * kMaxRows] = 1.0f;
+        }
+        if (problem == 2u && contactCount > 0u) {
+            // Exact degenerate anisotropic cone: tangent U is constrained to
+            // zero while tangent V retains one-dimensional Coulomb friction.
+            auto& degenerate = batch.contacts[contactBase];
+            degenerate.freeVelocityAndFrictionU =
+                f4(-1.0f, -0.4f, -0.3f, 0.0f);
+            degenerate.warmImpulseAndFrictionV =
+                f4(0.0f, 0.0f, 0.0f, 0.6f);
         }
     }
     return batch;
@@ -1472,6 +1544,9 @@ int run(const int argc, const char* const* argv) {
     iterationCounts.reserve(problemCount);
     std::uint64_t contactIterations = 0u;
     std::uint64_t contactsSolved = 0u;
+    std::uint64_t degenerateConeContacts = 0u;
+    double maximumDegenerateInactiveImpulse = 0.0;
+    double maximumDegenerateActiveImpulse = 0.0;
     for (std::size_t problem = 0; problem < problemCount; ++problem) {
         const auto& expected = oracle[problem];
         const auto& actual = streamReplays[0].statuses[problem];
@@ -1524,6 +1599,24 @@ int run(const int argc, const char* const* argv) {
             ];
             const auto& cpu = expected.impulses[contact];
             const std::array<double, 3> values{{gpu.x, gpu.y, gpu.z}};
+            const auto& source = batch.contacts[
+                problem * kMaxContacts + contact
+            ];
+            const bool activeU =
+                source.freeVelocityAndFrictionU.w > kConeEpsilon;
+            const bool activeV =
+                source.warmImpulseAndFrictionV.w > kConeEpsilon;
+            if (activeU != activeV) {
+                ++degenerateConeContacts;
+                maximumDegenerateInactiveImpulse = std::max(
+                    maximumDegenerateInactiveImpulse,
+                    std::abs(activeU ? values[2] : values[1])
+                );
+                maximumDegenerateActiveImpulse = std::max(
+                    maximumDegenerateActiveImpulse,
+                    std::abs(activeU ? values[1] : values[2])
+                );
+            }
             for (std::size_t axis = 0; axis < 3; ++axis) {
                 maximumImpulseError = std::max(
                     maximumImpulseError,
@@ -1653,6 +1746,9 @@ int run(const int argc, const char* const* argv) {
         maximumKKTResidual <= 2.0e-6 &&
         maximumConeViolation <= 2.0e-6 &&
         maximumPositiveObjective <= 2.0e-5 &&
+        degenerateConeContacts > 0u &&
+        maximumDegenerateInactiveImpulse <= 2.0e-6 &&
+        maximumDegenerateActiveImpulse > 1.0e-4 &&
         positiveDefinite &&
         sharedRigidOracle &&
         underRelaxedPath &&
@@ -1676,6 +1772,11 @@ int run(const int argc, const char* const* argv) {
               << " max_kkt_residual=" << maximumKKTResidual
               << " max_cone_violation=" << maximumConeViolation
               << " max_positive_objective=" << maximumPositiveObjective
+              << " degenerate_cone_contacts=" << degenerateConeContacts
+              << " max_degenerate_inactive_impulse="
+              << maximumDegenerateInactiveImpulse
+              << " max_degenerate_active_impulse="
+              << maximumDegenerateActiveImpulse
               << " max_iterations=" << maximumIterations
               << " iteration_p50=" << iterationP50
               << " iteration_p95=" << iterationP95

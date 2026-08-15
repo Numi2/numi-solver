@@ -88,8 +88,32 @@ Metal brackets this root and executes 28 ordered bisection iterations. The
 FP64 oracle converges the same mathematical root to double precision rather
 than copying the FP32 iteration count. If the unbounded projection exceeds an
 authored normal cap, a second monotone scalar projection finds the closest
-tangent point on the capped ellipse. A zero friction axis retains the prior
-ABI behavior and disables both tangential impulses.
+tangent point on the capped ellipse.
+
+A single zero friction coefficient defines a lower-dimensional cone rather
+than a frictionless contact. For example, when `mu_u=0` and `mu_v>0`,
+
+```math
+\lambda_u=0,\qquad |\lambda_v|\le\mu_v\lambda_n.
+```
+
+The inactive tangent is projected exactly to zero. The remaining normal and
+active tangent form a two-dimensional Coulomb wedge with the closed-form
+boundary projection
+
+```math
+\lambda_n=\frac{y_n+\mu|y_t|}{1+\mu^2},\qquad
+\lambda_t=\operatorname{sign}(y_t)\mu\lambda_n.
+```
+
+This avoids the anisotropic bisection loop. At an authored normal cap, the
+active tangent is clamped directly to
+
+```math
+[-\mu\lambda_{n,\max},\,+\mu\lambda_{n,\max}].
+```
+
+Only `mu_u=mu_v=0` disables both tangential impulses.
 
 The probe qualifies this map as an FP32 numerical building block. A general
 3x3 `P` followed by Euclidean projection is not, by itself, a KKT certificate
@@ -123,6 +147,7 @@ implementation of the equations above. It checks:
 - FP32-versus-FP64 impulse and residual error;
 - finite, nonnegative and capped normal impulses;
 - exact elliptic-cone projection against the FP64 closest point;
+- exact one-axis degenerate cones and their capped interval projection;
 - normalized fixed-point convergence residual;
 - byte-identical repeated GPU output;
 - separating, impact, sticking, sliding, anisotropic, ill-conditioned and

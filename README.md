@@ -39,7 +39,7 @@ cmake --build build
 ```
 
 The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
-`-fno-fast-math`, plus seven native harnesses:
+`-fno-fast-math`, plus eight native harnesses:
 
 - `build/numi-solver-math` for isolated local cone blocks;
 - `build/numi-solver-islands` for dense-versus-streamed coupled
@@ -77,7 +77,8 @@ The local harness accepts `--cases N --replays N --iterations N` and
 `--isotropic`. The island, assembly, rigid, and articulated harnesses accept
 `--islands N` and `--replays N`. Together they check separating, impact, sticking, sliding,
 anisotropic friction, near-rank-deficient response, capped impulse, polar
-boundary, zero axis, extreme scale, sparse topology, full block capacity,
+boundary, exact one-axis friction, extreme scale, sparse topology, full block
+capacity,
 shared response, missing coupling, response asymmetry, rigid momentum and
 kinetic-energy budgets, implicit contact-law regularization, thresholded
 restitution, penetration recovery, contact-frame validity, and transactional
@@ -99,8 +100,8 @@ An installed or relocated harness can load a specific library with
 - SIMD32-native execution, with homogeneous Wave8/Wave16 cohorts when safe.
 - Coupled 3x3 normal/tangent response blocks with deterministic conditioning.
 - Per-environment failure publication; no silent contact dropping.
-- Exact Euclidean projection onto isotropic, anisotropic and capped elliptic
-  friction cones.
+- Exact Euclidean projection onto isotropic, anisotropic, one-axis degenerate,
+  and capped elliptic friction cones.
 - Packed, sorted 3x3 block-CSR Delassus operators with exact dense parity.
 - Deterministic GPU composition of `J M^-1 J^T + R` from shared-owner
   Jacobians and response columns.
