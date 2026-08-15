@@ -11948,9 +11948,23 @@ kernel void numi_temporal_cone_island_solve(
             );
         }
     }
-    const float stepScale = active
-        ? 1.0f / max(laneAbsoluteRowBound, kMatrixFloor)
-        : 0.0f;
+    float stepScale = 0.0f;
+    if (active) {
+        if (!isfinite(laneAbsoluteRowBound) ||
+            !(laneAbsoluteRowBound > 0.0f)) {
+            localFailure =
+                NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
+        } else {
+            stepScale = 1.0f / max(
+                laneAbsoluteRowBound,
+                kMatrixFloor
+            );
+            if (!isfinite(stepScale) || !(stepScale > 0.0f)) {
+                localFailure =
+                    NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
+            }
+        }
+    }
     const float effectiveRelaxation = header.tolerances.z;
 
     threadgroup float4 current[
@@ -12089,6 +12103,16 @@ kernel void numi_temporal_cone_island_solve(
                         )
                     )
                 );
+                if (!isfinite(laneNaturalDelta) ||
+                    !isfinite(laneScale) ||
+                    !isfinite(laneRestartMeasure)) {
+                    localFailure =
+                        NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
+                    next[lane] = current[lane];
+                    laneNaturalDelta = 0.0f;
+                    laneScale = 1.0f;
+                    laneRestartMeasure = 0.0f;
+                }
             }
         } else {
             next[lane] = float4(0.0f);
@@ -12207,21 +12231,67 @@ kernel void numi_temporal_cone_island_solve(
         laneObjective =
             0.5f * dot(impulse, response) +
             dot(impulse, contact.freeVelocityAndFrictionU.xyz);
+        if (!finite3(residual) ||
+            !finite3(projected) ||
+            !finite3(naturalDelta) ||
+            !isfinite(laneNaturalResidual) ||
+            !isfinite(laneConeViolation) ||
+            !isfinite(laneImpulseScale) ||
+            !isfinite(laneRawResidual) ||
+            !isfinite(laneKKTScale) ||
+            !isfinite(laneObjective)) {
+            localFailure =
+                NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
+            laneNaturalResidual = 0.0f;
+            laneConeViolation = 0.0f;
+            laneImpulseScale = 0.0f;
+            laneRawResidual = 0.0f;
+            laneKKTScale = 1.0f;
+            laneObjective = 0.0f;
+        }
     }
 
+    const uint diagnosticFailure = simd_max(localFailure);
     const float maximumNaturalResidual = simd_max(laneNaturalResidual);
     const float maximumConeViolation = simd_max(laneConeViolation);
     const float maximumKKTScale = simd_max(laneKKTScale);
     const float maximumImpulseScale = simd_max(laneImpulseScale);
     const float maximumRawResidual = simd_max(laneRawResidual);
     const float objective = simd_sum(laneObjective);
-    const float normalizedNaturalResidual =
-        maximumNaturalResidual / maximumKKTScale;
+    const float kktTolerance =
+        header.tolerances.x +
+        header.tolerances.y * maximumKKTScale;
+    const float coneTolerance =
+        header.tolerances.x +
+        header.tolerances.y * max(1.0f, maximumImpulseScale);
+    const float objectiveTolerance =
+        3.0f * float(contactCount) *
+        kktTolerance * maximumImpulseScale;
+    const bool finiteCertificate =
+        isfinite(maximumNaturalResidual) &&
+        isfinite(maximumConeViolation) &&
+        isfinite(maximumKKTScale) &&
+        maximumKKTScale > 0.0f &&
+        isfinite(maximumImpulseScale) &&
+        isfinite(maximumRawResidual) &&
+        isfinite(objective) &&
+        isfinite(kktTolerance) &&
+        isfinite(coneTolerance) &&
+        isfinite(objectiveTolerance);
+    const uint finalFailure =
+        diagnosticFailure != NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
+        ? diagnosticFailure
+        : finiteCertificate
+        ? NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
+        : NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
+    const float normalizedNaturalResidual = finiteCertificate
+        ? maximumNaturalResidual / maximumKKTScale
+        : 0.0f;
     const bool finalConverged =
-        localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
-        maximumNaturalResidual <=
-            header.tolerances.x +
-            header.tolerances.y * maximumKKTScale;
+        finalFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
+        maximumNaturalResidual <= kktTolerance &&
+        maximumConeViolation <= coneTolerance &&
+        objective <= objectiveTolerance;
     if (active) {
         outputImpulses[contactBase + lane] = finalConverged
             ? current[lane]
@@ -12230,8 +12300,8 @@ kernel void numi_temporal_cone_island_solve(
     if (lane == 0u) {
         NumiTemporalConeIslandStatus status = {};
         const uint code =
-            localFailure != NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
-            ? localFailure
+            finalFailure != NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
+            ? finalFailure
             : finalConverged
             ? NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
             : NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE;
@@ -12241,18 +12311,22 @@ kernel void numi_temporal_cone_island_solve(
             finalConverged ? 1u : 0u,
             contactCount
         );
-        status.residuals = float4(
-            normalizedNaturalResidual,
-            maximumConeViolation,
-            maximumImpulseScale,
-            objective
-        );
-        status.diagnostics = float4(
-            maximumRawResidual,
-            effectiveRelaxation,
-            converged ? 1.0f : 0.0f,
-            float(accelerationRestarts)
-        );
+        status.residuals = finiteCertificate
+            ? float4(
+                normalizedNaturalResidual,
+                maximumConeViolation,
+                maximumImpulseScale,
+                objective
+            )
+            : float4(0.0f);
+        status.diagnostics = finiteCertificate
+            ? float4(
+                maximumRawResidual,
+                effectiveRelaxation,
+                converged ? 1.0f : 0.0f,
+                float(accelerationRestarts)
+            )
+            : float4(0.0f);
         outputStatuses[problem] = status;
     }
 }
@@ -12589,9 +12663,23 @@ kernel void numi_temporal_cone_stream_solve(
             );
         }
     }
-    const float stepScale = active
-        ? 1.0f / max(laneAbsoluteRowBound, kMatrixFloor)
-        : 0.0f;
+    float stepScale = 0.0f;
+    if (active) {
+        if (!isfinite(laneAbsoluteRowBound) ||
+            !(laneAbsoluteRowBound > 0.0f)) {
+            localFailure =
+                NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
+        } else {
+            stepScale = 1.0f / max(
+                laneAbsoluteRowBound,
+                kMatrixFloor
+            );
+            if (!isfinite(stepScale) || !(stepScale > 0.0f)) {
+                localFailure =
+                    NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
+            }
+        }
+    }
     const float effectiveRelaxation = header.tolerances.z;
 
     threadgroup float4 current[
@@ -12731,6 +12819,16 @@ kernel void numi_temporal_cone_stream_solve(
                         )
                     )
                 );
+                if (!isfinite(laneNaturalDelta) ||
+                    !isfinite(laneScale) ||
+                    !isfinite(laneRestartMeasure)) {
+                    localFailure =
+                        NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
+                    next[lane] = current[lane];
+                    laneNaturalDelta = 0.0f;
+                    laneScale = 1.0f;
+                    laneRestartMeasure = 0.0f;
+                }
             }
         } else {
             next[lane] = float4(0.0f);
@@ -12848,21 +12946,67 @@ kernel void numi_temporal_cone_stream_solve(
         laneObjective =
             0.5f * dot(impulse, response) +
             dot(impulse, contact.freeVelocityAndFrictionU.xyz);
+        if (!finite3(residual) ||
+            !finite3(projected) ||
+            !finite3(naturalDelta) ||
+            !isfinite(laneNaturalResidual) ||
+            !isfinite(laneConeViolation) ||
+            !isfinite(laneImpulseScale) ||
+            !isfinite(laneRawResidual) ||
+            !isfinite(laneKKTScale) ||
+            !isfinite(laneObjective)) {
+            localFailure =
+                NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
+            laneNaturalResidual = 0.0f;
+            laneConeViolation = 0.0f;
+            laneImpulseScale = 0.0f;
+            laneRawResidual = 0.0f;
+            laneKKTScale = 1.0f;
+            laneObjective = 0.0f;
+        }
     }
 
+    const uint diagnosticFailure = simd_max(localFailure);
     const float maximumNaturalResidual = simd_max(laneNaturalResidual);
     const float maximumConeViolation = simd_max(laneConeViolation);
     const float maximumKKTScale = simd_max(laneKKTScale);
     const float maximumImpulseScale = simd_max(laneImpulseScale);
     const float maximumRawResidual = simd_max(laneRawResidual);
     const float objective = simd_sum(laneObjective);
-    const float normalizedNaturalResidual =
-        maximumNaturalResidual / maximumKKTScale;
+    const float kktTolerance =
+        header.tolerances.x +
+        header.tolerances.y * maximumKKTScale;
+    const float coneTolerance =
+        header.tolerances.x +
+        header.tolerances.y * max(1.0f, maximumImpulseScale);
+    const float objectiveTolerance =
+        3.0f * float(contactCount) *
+        kktTolerance * maximumImpulseScale;
+    const bool finiteCertificate =
+        isfinite(maximumNaturalResidual) &&
+        isfinite(maximumConeViolation) &&
+        isfinite(maximumKKTScale) &&
+        maximumKKTScale > 0.0f &&
+        isfinite(maximumImpulseScale) &&
+        isfinite(maximumRawResidual) &&
+        isfinite(objective) &&
+        isfinite(kktTolerance) &&
+        isfinite(coneTolerance) &&
+        isfinite(objectiveTolerance);
+    const uint finalFailure =
+        diagnosticFailure != NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
+        ? diagnosticFailure
+        : finiteCertificate
+        ? NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
+        : NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
+    const float normalizedNaturalResidual = finiteCertificate
+        ? maximumNaturalResidual / maximumKKTScale
+        : 0.0f;
     const bool finalConverged =
-        localFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
-        maximumNaturalResidual <=
-            header.tolerances.x +
-            header.tolerances.y * maximumKKTScale;
+        finalFailure == NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
+        maximumNaturalResidual <= kktTolerance &&
+        maximumConeViolation <= coneTolerance &&
+        objective <= objectiveTolerance;
     if (active) {
         outputImpulses[contactBase + lane] = finalConverged
             ? current[lane]
@@ -12871,8 +13015,8 @@ kernel void numi_temporal_cone_stream_solve(
     if (lane == 0u) {
         NumiTemporalConeIslandStatus status = {};
         const uint code =
-            localFailure != NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
-            ? localFailure
+            finalFailure != NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
+            ? finalFailure
             : finalConverged
             ? NUMI_TEMPORAL_CONE_ISLAND_SUCCESS
             : NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE;
@@ -12882,18 +13026,22 @@ kernel void numi_temporal_cone_stream_solve(
             finalConverged ? 1u : 0u,
             contactCount
         );
-        status.residuals = float4(
-            normalizedNaturalResidual,
-            maximumConeViolation,
-            maximumImpulseScale,
-            objective
-        );
-        status.diagnostics = float4(
-            maximumRawResidual,
-            effectiveRelaxation,
-            converged ? 1.0f : 0.0f,
-            float(accelerationRestarts)
-        );
+        status.residuals = finiteCertificate
+            ? float4(
+                normalizedNaturalResidual,
+                maximumConeViolation,
+                maximumImpulseScale,
+                objective
+            )
+            : float4(0.0f);
+        status.diagnostics = finiteCertificate
+            ? float4(
+                maximumRawResidual,
+                effectiveRelaxation,
+                converged ? 1.0f : 0.0f,
+                float(accelerationRestarts)
+            )
+            : float4(0.0f);
         outputStatuses[problem] = status;
     }
 }

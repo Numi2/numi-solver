@@ -277,7 +277,8 @@ typedef struct MR_ALIGN16 NumiTemporalConeIslandContact {
 } NumiTemporalConeIslandContact;
 
 typedef struct MR_ALIGN16 NumiTemporalConeIslandStatus {
-    // x status, y completed iterations, z converged, w contact count.
+    // x status, y completed iterations, z all final certificates passed,
+    // w contact count.
     mr_uint4 control;
     // x normalized KKT gradient-mapping residual, y cone violation,
     // z maximum impulse magnitude, w objective.

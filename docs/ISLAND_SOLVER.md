@@ -147,6 +147,36 @@ small merely because an operator row has a small step size. The candidate is
 not applied after the current iterate satisfies the gate, so the published
 impulses, objective, and residual all refer to the same vector.
 
+Success requires three simultaneous finite certificates. With
+
+```math
+t_\mathrm{KKT}=t_\mathrm{abs}+t_\mathrm{rel}
+\max(1,\|v_\mathrm{free}\|_\infty,\|A\lambda\|_\infty),
+```
+
+```math
+t_\mathcal C=t_\mathrm{abs}+t_\mathrm{rel}
+\max(1,\|\lambda\|_\infty),
+\qquad
+t_E=3N\,t_\mathrm{KKT}\|\lambda\|_\infty,
+```
+
+the kernel admits the candidate only when
+
+```math
+\|G_D(\lambda)\|_\infty\le t_\mathrm{KKT},
+\qquad
+V_\mathcal C(\lambda)\le t_\mathcal C,
+\qquad
+E(\lambda)\le t_E.
+```
+
+The last tolerance bounds the FP32 first-order energy uncertainty across
+`3N` impulse components. It does not turn a positive-energy stationary point
+into a solved contact state. Any nonfinite row bound, reciprocal step,
+iteration diagnostic, reduced residual, feasibility value, impulse scale, or
+objective is a typed arithmetic failure rather than a false convergence.
+
 The status diagnostic records the number of accelerated restarts. Easy
 islands that finish before momentum begins report zero.
 
@@ -159,10 +189,12 @@ certificate failure.
 ## Transaction and failure behavior
 
 The kernel rejects invalid ABI/ranges, malformed or asymmetric CSR,
-nonfinite input, failed local conditioning, nonfinite arithmetic, and bounded
-iteration exhaustion with typed status. A valid but unconverged island
-republishes its projected warm-start checkpoint. Invalid or nonfinite initial
-state publishes zero. No partial iterate is exposed as a solved result.
+nonfinite input, failed local conditioning, nonfinite derived row scaling,
+nonfinite iteration/final arithmetic, failed KKT/feasibility/energy admission,
+and bounded iteration exhaustion with typed status. A valid but uncertified
+island republishes its projected warm-start checkpoint. Invalid or nonfinite
+initial state publishes zero. No partial iterate is exposed as a solved
+result.
 
 The dense kernel remains an executable qualification oracle. The harness
 constructs the same operator in dense and streamed form and requires

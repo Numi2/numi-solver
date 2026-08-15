@@ -81,7 +81,7 @@ max_positive_objective=0.000000000
 degenerate_cone_contacts=2184
 max_degenerate_inactive_impulse=0.000000000
 max_degenerate_active_impulse=0.508176446
-max_iterations=103
+max_iterations=105
 iteration_p50=20
 iteration_p95=44
 iteration_p99=72
@@ -91,19 +91,21 @@ deterministic_replay=true
 dense_deterministic=true
 dense_stream_bitwise=true
 typed_failures=true
+row_bound_overflow_rejected=true
+positive_objective_rejected=true
 deterministic_failures=true
 failure_rollback=true
 spd_cholesky=true
 min_spd_pivot=0.894427198
 shared_rigid_oracle=true
 under_relaxed_path=true
-average_gpu_seconds=0.004948617
-islands_per_second=827706.06
-contacts_per_second=8685457.53
-contact_iterations_per_second=304143177.26
+average_gpu_seconds=0.005009933
+islands_per_second=817575.75
+contacts_per_second=8579156.09
+contact_iterations_per_second=300420764.39
 streamed_buffer_bytes=10126748
-dense_gpu_seconds=0.010658283
-dense_to_stream_speedup=2.153790445
+dense_gpu_seconds=0.010830383
+dense_to_stream_speedup=2.161781928
 dense_buffer_bytes=159711232
 stream_to_dense_memory=0.063406611
 streamed_blocks=169861
@@ -117,7 +119,7 @@ result=PASS
 ```
 
 The streamed representation used 6.34% of the dense qualification buffers and
-the isolated streamed kernel was 2.154x faster for the same byte-identical
+the isolated streamed kernel was 2.162x faster for the same byte-identical
 FP32 solve. GPU time excludes CPU oracle work and buffer upload. These ratios
 describe this declared topology mix; they are not universal scene claims.
 
@@ -129,8 +131,8 @@ rollback gates. The richer batch remains within 0.4% of the prior
 positive-friction-only `0.004931358`-second measurement while qualifying 2,184
 lower-dimensional contacts.
 
-The combined metallib SHA-256 for this cone milestone was
-`f0db21da35ba97ffdf3d74ce75a95647bbc2dae5c4411b51fccaf8910176b146`.
+The combined metallib SHA-256 for this convergence-certificate milestone was
+`f518123506b08a458d358f4b2e4583d7b37c625fd5f1c64fda2b3a65a4ef8361`.
 
 On the earlier 1,024-island positive-friction qualification batch, the
 unaccelerated revision measured `0.004850083` seconds, 431 maximum iterations,
@@ -144,11 +146,14 @@ dispatch remains one SIMD32 group per island.
 
 The typed failure batch separately verifies malformed symmetry, failed local
 conditioning, bounded iteration exhaustion, invalid ABI, unsorted/duplicate
-CSR, capacity overflow, nonfinite FP32 warm-start arithmetic, deterministic
-failure replay, zero publication for invalid state, and projected warm-start
-rollback for nonconvergence. The analytic shared-rigid case verifies the
-coupled `(1/3, 1/3)` solution rather than the incorrect independent-contact
-`(1/2, 1/2)` result.
+CSR, capacity overflow, nonfinite FP32 warm-start arithmetic, finite-entry
+FP32 row-sum overflow, and rejection of a feasible zero-KKT but
+positive-objective stationary point from an indefinite operator. Dense and
+streamed outputs are poisoned before dispatch; deterministic failure replay,
+explicit zero publication for invalid state, and projected warm-start rollback
+for failed final admission must still hold. The analytic shared-rigid case
+verifies the coupled `(1/3, 1/3)` solution rather than the incorrect
+independent-contact `(1/2, 1/2)` result.
 
 ## Response-column assembly and chained solve gate
 

@@ -1018,7 +1018,7 @@ StreamBatch makeStreamBatch(const Batch& dense) {
 }
 
 Batch makeFailureBatch() {
-    Batch batch = makeBatch(7u);
+    Batch batch = makeBatch(9u);
 
     // Problem 0: violate the symmetric Delassus contract.
     batch.matrices[1u] += 0.25f;
@@ -1048,6 +1048,56 @@ Batch makeFailureBatch() {
         std::numeric_limits<float>::max();
     overflow.warmImpulseAndFrictionV.z =
         std::numeric_limits<float>::max();
+
+    // Problem 7: every authored coefficient is finite and every local 3x3
+    // diagonal remains factorizable, but deterministic FP32 absolute-row
+    // accumulation overflows. The derived step metric must fail closed.
+    const std::size_t overflowMatrixBase = 7u * kMatrixElements;
+    const float largeFinite =
+        0.5f * std::numeric_limits<float>::max();
+    for (std::size_t targetAxis = 0u; targetAxis < 3u; ++targetAxis) {
+        for (std::size_t sourceAxis = 0u; sourceAxis < 3u; ++sourceAxis) {
+            batch.matrices[
+                overflowMatrixBase +
+                targetAxis * kMaxRows + 3u + sourceAxis
+            ] = largeFinite;
+            batch.matrices[
+                overflowMatrixBase +
+                (3u + sourceAxis) * kMaxRows + targetAxis
+            ] = largeFinite;
+        }
+    }
+
+    // Problem 8: an indefinite symmetric operator admits a feasible fixed
+    // point with zero KKT mapping but positive objective. It violates the
+    // declared convex/SPD energy certificate and must not receive success.
+    const std::size_t energyMatrixBase = 8u * kMatrixElements;
+    const std::size_t energyContactBase = 8u * kMaxContacts;
+    for (std::size_t row = 0u; row < 12u; ++row) {
+        for (std::size_t column = 0u; column < 12u; ++column) {
+            batch.matrices[
+                energyMatrixBase + row * kMaxRows + column
+            ] = row == column ? 1.0f : 0.0f;
+        }
+    }
+    batch.matrices[energyMatrixBase + 3u] = -2.0f;
+    batch.matrices[energyMatrixBase + 3u * kMaxRows] = -2.0f;
+    for (std::size_t contact = 0u; contact < 4u; ++contact) {
+        auto& source = batch.contacts[energyContactBase + contact];
+        source.freeVelocityAndFrictionU = f4(
+            contact < 2u ? 1.0f : 0.0f,
+            0.0f,
+            0.0f,
+            0.0f
+        );
+        source.warmImpulseAndFrictionV = f4(
+            contact < 2u ? 1.0f : 0.0f,
+            0.0f,
+            0.0f,
+            0.0f
+        );
+        source.limits = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    }
     return batch;
 }
 
@@ -1091,12 +1141,12 @@ GPUResult runGPU(
     }
     std::memset(
         impulseBuffer.contents,
-        0,
+        0xa5,
         batch.contacts.size() * sizeof(mr_float4)
     );
     std::memset(
         statusBuffer.contents,
-        0,
+        0x5a,
         problemCount * sizeof(NumiTemporalConeIslandStatus)
     );
     id<MTLCommandBuffer> commandBuffer = [queue commandBuffer];
@@ -1194,12 +1244,12 @@ GPUResult runStreamGPU(
     }
     std::memset(
         impulseBuffer.contents,
-        0,
+        0xa5,
         batch.contacts.size() * sizeof(mr_float4)
     );
     std::memset(
         statusBuffer.contents,
-        0,
+        0x5a,
         problemCount * sizeof(NumiTemporalConeIslandStatus)
     );
     id<MTLCommandBuffer> commandBuffer = [queue commandBuffer];
@@ -1361,6 +1411,18 @@ int run(const int argc, const char* const* argv) {
     }
 
     const Batch failureBatch = makeFailureBatch();
+    const GPUResult denseFailureFirst = runGPU(
+        device,
+        queue,
+        pipeline,
+        failureBatch
+    );
+    const GPUResult denseFailureReplay = runGPU(
+        device,
+        queue,
+        pipeline,
+        failureBatch
+    );
     StreamBatch failureStreamBatch = makeStreamBatch(failureBatch);
     failureStreamBatch.headers[3].control.x = 0xffffffffu;
     const auto& malformedHeader = failureStreamBatch.headers[4];
@@ -1387,7 +1449,7 @@ int run(const int argc, const char* const* argv) {
         streamPipeline,
         failureStreamBatch
     );
-    const std::array<std::uint32_t, 7> expectedFailureCodes{{
+    const std::array<std::uint32_t, 9> expectedFailureCodes{{
         NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT,
         NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED,
         NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE,
@@ -1395,6 +1457,8 @@ int run(const int argc, const char* const* argv) {
         NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT,
         NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT,
         NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT,
+        NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT,
+        NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE,
     }};
     bool typedFailures = true;
     for (std::size_t problem = 0u;
@@ -1410,6 +1474,46 @@ int run(const int argc, const char* const* argv) {
             typedFailures = false;
         }
     }
+    constexpr std::array<std::pair<std::size_t, std::uint32_t>, 6>
+        expectedDenseFailures{{
+            {0u, NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT},
+            {1u, NUMI_TEMPORAL_CONE_ISLAND_FACTORIZATION_FAILED},
+            {2u, NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE},
+            {6u, NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT},
+            {7u, NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT},
+            {8u, NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE},
+        }};
+    for (const auto& [problem, expectedCode] : expectedDenseFailures) {
+        const std::uint32_t actualCode =
+            denseFailureFirst.statuses[problem].control.x;
+        if (actualCode != expectedCode) {
+            std::cerr
+                << "dense_failure_case=" << problem
+                << " expected_status=" << expectedCode
+                << " actual_status=" << actualCode << '\n';
+            typedFailures = false;
+        }
+    }
+    const bool rowBoundOverflowRejected =
+        failureFirst.statuses[7].control.x ==
+            NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT &&
+        denseFailureFirst.statuses[7].control.x ==
+            NUMI_TEMPORAL_CONE_ISLAND_NONFINITE_RESULT;
+    const auto& streamEnergyStatus = failureFirst.statuses[8];
+    const auto& denseEnergyStatus = denseFailureFirst.statuses[8];
+    const bool positiveObjectiveRejected =
+        streamEnergyStatus.control.x ==
+            NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE &&
+        streamEnergyStatus.control.z == 0u &&
+        streamEnergyStatus.residuals.x <= 2.0e-6f &&
+        streamEnergyStatus.residuals.y <= 2.0e-6f &&
+        streamEnergyStatus.residuals.w > 0.5f &&
+        denseEnergyStatus.control.x ==
+            NUMI_TEMPORAL_CONE_ISLAND_DID_NOT_CONVERGE &&
+        denseEnergyStatus.control.z == 0u &&
+        denseEnergyStatus.residuals.x <= 2.0e-6f &&
+        denseEnergyStatus.residuals.y <= 2.0e-6f &&
+        denseEnergyStatus.residuals.w > 0.5f;
     const bool deterministicFailures =
         std::memcmp(
             failureFirst.impulses.data(),
@@ -1421,10 +1525,21 @@ int run(const int argc, const char* const* argv) {
             failureReplay.statuses.data(),
             failureFirst.statuses.size() *
                 sizeof(NumiTemporalConeIslandStatus)
+        ) == 0 &&
+        std::memcmp(
+            denseFailureFirst.impulses.data(),
+            denseFailureReplay.impulses.data(),
+            denseFailureFirst.impulses.size() * sizeof(mr_float4)
+        ) == 0 &&
+        std::memcmp(
+            denseFailureFirst.statuses.data(),
+            denseFailureReplay.statuses.data(),
+            denseFailureFirst.statuses.size() *
+                sizeof(NumiTemporalConeIslandStatus)
         ) == 0;
     bool failureRollback = true;
-    constexpr std::array<std::size_t, 6> zeroRollbackProblems{{
-        0u, 1u, 3u, 4u, 5u, 6u,
+    constexpr std::array<std::size_t, 7> zeroRollbackProblems{{
+        0u, 1u, 3u, 4u, 5u, 6u, 7u,
     }};
     for (const std::size_t problem : zeroRollbackProblems) {
         const auto& header = failureStreamBatch.headers[problem];
@@ -1441,34 +1556,58 @@ int run(const int argc, const char* const* argv) {
                 impulse.w == 0.0f;
         }
     }
-    const std::size_t rollbackProblem = 2u;
-    const std::size_t rollbackDenseContactBase =
-        rollbackProblem * kMaxContacts;
-    const std::size_t rollbackStreamContactBase =
-        failureStreamBatch.headers[rollbackProblem].ranges.x;
-    for (std::size_t contact = 0u;
-         contact < failureBatch.headers[rollbackProblem].control.y;
-         ++contact) {
-        const auto& source = failureBatch.contacts[
-            rollbackDenseContactBase + contact
-        ];
-        const Vec3 checkpoint = projectCone(
-            {{
-                source.warmImpulseAndFrictionV.x,
-                source.warmImpulseAndFrictionV.y,
-                source.warmImpulseAndFrictionV.z,
-            }},
-            source.freeVelocityAndFrictionU.w,
-            source.warmImpulseAndFrictionV.w,
-            source.limits.x
-        );
-        const auto& actual = failureFirst.impulses[
-            rollbackStreamContactBase + contact
-        ];
-        failureRollback = failureRollback &&
-            std::abs(actual.x - checkpoint[0]) <= 1.0e-6 &&
-            std::abs(actual.y - checkpoint[1]) <= 1.0e-6 &&
-            std::abs(actual.z - checkpoint[2]) <= 1.0e-6;
+    constexpr std::array<std::size_t, 4> denseZeroRollbackProblems{{
+        0u, 1u, 6u, 7u,
+    }};
+    for (const std::size_t problem : denseZeroRollbackProblems) {
+        const std::size_t contactBase = problem * kMaxContacts;
+        for (std::size_t contact = 0u;
+             contact < failureBatch.headers[problem].control.y;
+             ++contact) {
+            const auto& impulse =
+                denseFailureFirst.impulses[contactBase + contact];
+            failureRollback = failureRollback &&
+                impulse.x == 0.0f &&
+                impulse.y == 0.0f &&
+                impulse.z == 0.0f &&
+                impulse.w == 0.0f;
+        }
+    }
+    constexpr std::array<std::size_t, 2> checkpointProblems{{2u, 8u}};
+    for (const std::size_t problem : checkpointProblems) {
+        const std::size_t denseContactBase = problem * kMaxContacts;
+        const std::size_t streamContactBase =
+            failureStreamBatch.headers[problem].ranges.x;
+        for (std::size_t contact = 0u;
+             contact < failureBatch.headers[problem].control.y;
+             ++contact) {
+            const auto& source = failureBatch.contacts[
+                denseContactBase + contact
+            ];
+            const Vec3 checkpoint = projectCone(
+                {{
+                    source.warmImpulseAndFrictionV.x,
+                    source.warmImpulseAndFrictionV.y,
+                    source.warmImpulseAndFrictionV.z,
+                }},
+                source.freeVelocityAndFrictionU.w,
+                source.warmImpulseAndFrictionV.w,
+                source.limits.x
+            );
+            const auto& denseActual = denseFailureFirst.impulses[
+                denseContactBase + contact
+            ];
+            const auto& streamActual = failureFirst.impulses[
+                streamContactBase + contact
+            ];
+            failureRollback = failureRollback &&
+                std::abs(denseActual.x - checkpoint[0]) <= 1.0e-6 &&
+                std::abs(denseActual.y - checkpoint[1]) <= 1.0e-6 &&
+                std::abs(denseActual.z - checkpoint[2]) <= 1.0e-6 &&
+                std::abs(streamActual.x - checkpoint[0]) <= 1.0e-6 &&
+                std::abs(streamActual.y - checkpoint[1]) <= 1.0e-6 &&
+                std::abs(streamActual.z - checkpoint[2]) <= 1.0e-6;
+        }
     }
 
     bool denseDeterministic = true;
@@ -1757,6 +1896,8 @@ int run(const int argc, const char* const* argv) {
         deterministic &&
         denseStreamBitwise &&
         typedFailures &&
+        rowBoundOverflowRejected &&
+        positiveObjectiveRejected &&
         deterministicFailures &&
         failureRollback;
 
@@ -1791,6 +1932,10 @@ int run(const int argc, const char* const* argv) {
               << " dense_stream_bitwise="
               << (denseStreamBitwise ? "true" : "false")
               << " typed_failures=" << (typedFailures ? "true" : "false")
+              << " row_bound_overflow_rejected="
+              << (rowBoundOverflowRejected ? "true" : "false")
+              << " positive_objective_rejected="
+              << (positiveObjectiveRejected ? "true" : "false")
               << " deterministic_failures="
               << (deterministicFailures ? "true" : "false")
               << " failure_rollback="

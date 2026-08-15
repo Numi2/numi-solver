@@ -123,7 +123,7 @@ An installed or relocated harness can load a specific library with
 - Canonical per-body impulse accumulation with no floating-point atomics.
 - Symplectic position advance and exponential-map quaternion integration with
   whole-island rollback.
-- Scale-aware KKT gradient-mapping convergence residuals.
+- Scale-aware KKT, cone-feasibility, and nonpositive-energy success gates.
 - SIMD32 block-Jacobi islands with KKT-preserving scalar contact metrics.
 - Delayed metric FISTA acceleration with deterministic adaptive and bounded
   restart, while only non-extrapolated iterates can satisfy the KKT gate.
