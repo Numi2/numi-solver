@@ -12356,18 +12356,22 @@ kernel void numi_temporal_cone_stream_solve(
                 rowOffsetBase + source + 1u
             ];
             uint reverseBlock = 0xffffffffu;
-            for (uint reverseRelative = reverseBegin;
-                 reverseRelative < reverseEnd;
-                 ++reverseRelative) {
-                const uint candidate = blockBase + reverseRelative;
-                const uint candidateSource = columnIndices[candidate];
-                if (candidateSource == lane) {
-                    reverseBlock = candidate;
-                    break;
+            uint lower = reverseBegin;
+            uint upper = reverseEnd;
+            while (lower < upper) {
+                const uint middle = lower + (upper - lower) / 2u;
+                const uint candidateSource = columnIndices[
+                    blockBase + middle
+                ];
+                if (candidateSource < lane) {
+                    lower = middle + 1u;
+                } else {
+                    upper = middle;
                 }
-                if (candidateSource > lane) {
-                    break;
-                }
+            }
+            if (lower < reverseEnd &&
+                columnIndices[blockBase + lower] == lane) {
+                reverseBlock = blockBase + lower;
             }
             if (reverseBlock == 0xffffffffu) {
                 localFailure = NUMI_TEMPORAL_CONE_ISLAND_INVALID_INPUT;
@@ -12686,5 +12690,497 @@ kernel void numi_temporal_cone_stream_solve(
             0.0f
         );
         outputStatuses[problem] = status;
+    }
+}
+
+// Deterministically assembles a complete block-CSR Delassus operator from
+// contact Jacobians J_i and already-computed response columns M^-1 J_i^T.
+// Topology is supplied separately and is accepted only when it contains every
+// and only diagonal/shared-owner block. A successful output header is the
+// transaction commit consumed by numi_temporal_cone_stream_solve.
+kernel void numi_temporal_cone_stream_assemble(
+    device const NumiTemporalConeAssemblyHeader* headers [[buffer(0)]],
+    device const NumiTemporalConeAssemblyContactSpan* spans [[buffer(1)]],
+    device const NumiTemporalConeAssemblyTerm* terms [[buffer(2)]],
+    device const float* jacobianValues [[buffer(3)]],
+    device const float* responseValues [[buffer(4)]],
+    device const float* regularizationValues [[buffer(5)]],
+    device const uint* rowOffsets [[buffer(6)]],
+    device const uint* columnIndices [[buffer(7)]],
+    device float* outputBlockValues [[buffer(8)]],
+    device NumiTemporalConeStreamHeader* outputHeaders [[buffer(9)]],
+    device NumiTemporalConeAssemblyStatus* outputStatuses [[buffer(10)]],
+    constant uint& problemCount [[buffer(11)]],
+    // x spans, y terms, z Jacobian floats, w response floats.
+    constant uint4& inputCapacities [[buffer(12)]],
+    // x row offsets, y column indices, z regularization floats,
+    // w output block-value floats.
+    constant uint4& outputCapacities [[buffer(13)]],
+    const uint problem [[threadgroup_position_in_grid]],
+    const uint lane [[thread_index_in_simdgroup]]
+) {
+    if (problem >= problemCount) {
+        return;
+    }
+    if (lane == 0u) {
+        outputHeaders[problem] = {};
+        outputStatuses[problem] = {};
+    }
+
+    const NumiTemporalConeAssemblyHeader header = headers[problem];
+    const uint contactCount = header.control.y;
+    const uint contactBase = header.outputRanges.x;
+    const uint rowOffsetBase = header.outputRanges.y;
+    const uint blockBase = header.outputRanges.z;
+    const uint blockCount = header.outputRanges.w;
+    const uint spanBase = header.inputRanges.x;
+    const uint regularizationBase = header.inputRanges.y;
+    const bool active = lane < contactCount;
+
+    uint localFailure = NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS;
+    if (header.control.x != NUMI_TEMPORAL_CONE_ASSEMBLY_ABI_VERSION) {
+        localFailure = NUMI_TEMPORAL_CONE_ASSEMBLY_INVALID_ABI;
+    } else if (
+        contactCount == 0u ||
+        contactCount > NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS ||
+        blockCount < contactCount ||
+        blockCount > NUMI_TEMPORAL_CONE_STREAM_MAX_BLOCKS ||
+        header.control.z == 0u ||
+        header.control.z > header.control.w ||
+        header.control.w > NUMI_TEMPORAL_CONE_ISLAND_MAX_ITERATIONS ||
+        !finite4(header.tolerances) ||
+        !(header.tolerances.x > 0.0f) ||
+        header.tolerances.y < 0.0f ||
+        !(header.tolerances.z > 0.0f) ||
+        header.tolerances.z > 1.0f
+    ) {
+        localFailure = NUMI_TEMPORAL_CONE_ASSEMBLY_INVALID_INPUT;
+    } else if (
+        spanBase > inputCapacities.x ||
+        contactCount > inputCapacities.x - spanBase ||
+        rowOffsetBase > outputCapacities.x ||
+        contactCount >= outputCapacities.x - rowOffsetBase ||
+        blockBase > outputCapacities.y ||
+        blockCount > outputCapacities.y - blockBase ||
+        regularizationBase > outputCapacities.z ||
+        contactCount * NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS >
+            outputCapacities.z - regularizationBase ||
+        blockBase >
+            outputCapacities.w /
+                NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS ||
+        blockCount >
+            outputCapacities.w /
+                NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS - blockBase
+    ) {
+        localFailure = NUMI_TEMPORAL_CONE_ASSEMBLY_CAPACITY_EXCEEDED;
+    }
+    const uint headerFailureKey = simd_min(
+        localFailure == NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS
+        ? 0xffffffffu
+        : localFailure
+    );
+    const uint headerFailure = headerFailureKey == 0xffffffffu
+        ? NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS
+        : headerFailureKey;
+    if (headerFailure != NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS) {
+        if (lane == 0u) {
+            NumiTemporalConeAssemblyStatus status = {};
+            status.control = uint4(
+                headerFailure,
+                contactCount,
+                blockCount,
+                0u
+            );
+            outputStatuses[problem] = status;
+        }
+        return;
+    }
+
+    uint rowBegin = 0u;
+    uint rowEnd = 0u;
+    NumiTemporalConeAssemblyContactSpan span = {};
+    uint maximumTerms = 0u;
+    if (active) {
+        rowBegin = rowOffsets[rowOffsetBase + lane];
+        rowEnd = rowOffsets[rowOffsetBase + lane + 1u];
+        span = spans[spanBase + lane];
+        maximumTerms = span.ranges.y;
+        if (rowBegin >= rowEnd ||
+            rowBegin > blockCount ||
+            rowEnd > blockCount ||
+            span.ranges.y == 0u ||
+            span.ranges.y >
+                NUMI_TEMPORAL_CONE_ASSEMBLY_MAX_TERMS_PER_CONTACT ||
+            span.ranges.x > inputCapacities.y ||
+            span.ranges.y > inputCapacities.y - span.ranges.x) {
+            localFailure = NUMI_TEMPORAL_CONE_ASSEMBLY_INVALID_INPUT;
+        }
+        uint previousSource = 0u;
+        bool firstSource = true;
+        bool diagonalSeen = false;
+        for (uint relativeBlock = rowBegin;
+             relativeBlock < rowEnd &&
+                 localFailure == NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS;
+             ++relativeBlock) {
+            const uint source = columnIndices[blockBase + relativeBlock];
+            if (source >= contactCount ||
+                (!firstSource && source <= previousSource)) {
+                localFailure = NUMI_TEMPORAL_CONE_ASSEMBLY_INVALID_INPUT;
+                break;
+            }
+            firstSource = false;
+            previousSource = source;
+            diagonalSeen = diagonalSeen || source == lane;
+        }
+        if (!diagonalSeen) {
+            localFailure = NUMI_TEMPORAL_CONE_ASSEMBLY_INVALID_INPUT;
+        }
+    }
+    const uint groupMaximumTerms = simd_max(maximumTerms);
+    uint structuralFailure = simd_max(localFailure);
+    if (structuralFailure != NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS) {
+        if (lane == 0u) {
+            NumiTemporalConeAssemblyStatus status = {};
+            status.control = uint4(
+                structuralFailure,
+                contactCount,
+                blockCount,
+                groupMaximumTerms
+            );
+            outputStatuses[problem] = status;
+        }
+        return;
+    }
+
+    if (active) {
+        uint previousOwner = 0u;
+        bool firstOwner = true;
+        for (uint localTerm = 0u;
+             localTerm < span.ranges.y;
+             ++localTerm) {
+            const NumiTemporalConeAssemblyTerm term = terms[
+                span.ranges.x + localTerm
+            ];
+            const uint owner = term.control.x;
+            const uint dofCount = term.control.y;
+            const uint valueCount = 3u * dofCount;
+            if (owner == 0xffffffffu ||
+                (!firstOwner && owner <= previousOwner) ||
+                dofCount == 0u ||
+                dofCount >
+                    NUMI_TEMPORAL_CONE_ASSEMBLY_MAX_DOF_PER_TERM ||
+                term.control.z > inputCapacities.z ||
+                valueCount > inputCapacities.z - term.control.z ||
+                term.control.w > inputCapacities.w ||
+                valueCount > inputCapacities.w - term.control.w) {
+                localFailure = NUMI_TEMPORAL_CONE_ASSEMBLY_INVALID_INPUT;
+                break;
+            }
+            firstOwner = false;
+            previousOwner = owner;
+            for (uint value = 0u; value < valueCount; ++value) {
+                if (!isfinite(jacobianValues[term.control.z + value]) ||
+                    !isfinite(responseValues[term.control.w + value])) {
+                    localFailure =
+                        NUMI_TEMPORAL_CONE_ASSEMBLY_INVALID_INPUT;
+                    break;
+                }
+            }
+        }
+        const uint regularizationContactBase =
+            regularizationBase +
+            lane * NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS;
+        for (uint value = 0u;
+             value < NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS;
+             ++value) {
+            if (!isfinite(
+                    regularizationValues[regularizationContactBase + value]
+                )) {
+                localFailure = NUMI_TEMPORAL_CONE_ASSEMBLY_INVALID_INPUT;
+            }
+        }
+    }
+    structuralFailure = simd_max(localFailure);
+    if (structuralFailure != NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS) {
+        if (lane == 0u) {
+            NumiTemporalConeAssemblyStatus status = {};
+            status.control = uint4(
+                structuralFailure,
+                contactCount,
+                blockCount,
+                groupMaximumTerms
+            );
+            outputStatuses[problem] = status;
+        }
+        return;
+    }
+
+    float laneMaximumCoefficient = 0.0f;
+    float laneMinimumDiagonal = INFINITY;
+    uint laneTopologyErrors = 0u;
+    if (active) {
+        uint topologyCursor = rowBegin;
+        for (uint source = 0u; source < contactCount; ++source) {
+            const NumiTemporalConeAssemblyContactSpan sourceSpan = spans[
+                spanBase + source
+            ];
+            uint foundRelativeBlock = 0xffffffffu;
+            if (topologyCursor < rowEnd &&
+                columnIndices[blockBase + topologyCursor] == source) {
+                foundRelativeBlock = topologyCursor;
+                ++topologyCursor;
+            }
+            const bool foundBlock = foundRelativeBlock != 0xffffffffu;
+            float coefficients[
+                NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS
+            ];
+            for (uint element = 0u;
+                 element < NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS;
+                 ++element) {
+                coefficients[element] = source == lane && foundBlock
+                    ? regularizationValues[
+                        regularizationBase +
+                        lane * NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS +
+                        element
+                    ]
+                    : 0.0f;
+            }
+            uint targetTermIndex = 0u;
+            uint sourceTermIndex = 0u;
+            bool sharesOwner = false;
+            while (targetTermIndex < span.ranges.y &&
+                   sourceTermIndex < sourceSpan.ranges.y) {
+                const NumiTemporalConeAssemblyTerm targetTerm = terms[
+                    span.ranges.x + targetTermIndex
+                ];
+                const NumiTemporalConeAssemblyTerm sourceTerm = terms[
+                    sourceSpan.ranges.x + sourceTermIndex
+                ];
+                if (targetTerm.control.x < sourceTerm.control.x) {
+                    ++targetTermIndex;
+                    continue;
+                }
+                if (sourceTerm.control.x < targetTerm.control.x) {
+                    ++sourceTermIndex;
+                    continue;
+                }
+                sharesOwner = true;
+                if (targetTerm.control.y != sourceTerm.control.y) {
+                    localFailure =
+                        NUMI_TEMPORAL_CONE_ASSEMBLY_INVALID_INPUT;
+                    ++targetTermIndex;
+                    ++sourceTermIndex;
+                    continue;
+                }
+                if (foundBlock) {
+                    const uint dofCount = targetTerm.control.y;
+                    for (uint dof = 0u; dof < dofCount; ++dof) {
+                        const float response0 = responseValues[
+                            sourceTerm.control.w + 3u * dof + 0u
+                        ];
+                        const float response1 = responseValues[
+                            sourceTerm.control.w + 3u * dof + 1u
+                        ];
+                        const float response2 = responseValues[
+                            sourceTerm.control.w + 3u * dof + 2u
+                        ];
+                        for (uint targetAxis = 0u;
+                             targetAxis < 3u;
+                             ++targetAxis) {
+                            const float jacobian = jacobianValues[
+                                targetTerm.control.z +
+                                targetAxis * dofCount + dof
+                            ];
+                            coefficients[3u * targetAxis + 0u] = fma(
+                                jacobian,
+                                response0,
+                                coefficients[3u * targetAxis + 0u]
+                            );
+                            coefficients[3u * targetAxis + 1u] = fma(
+                                jacobian,
+                                response1,
+                                coefficients[3u * targetAxis + 1u]
+                            );
+                            coefficients[3u * targetAxis + 2u] = fma(
+                                jacobian,
+                                response2,
+                                coefficients[3u * targetAxis + 2u]
+                            );
+                        }
+                    }
+                }
+                ++targetTermIndex;
+                ++sourceTermIndex;
+            }
+            const bool expectedBlock = source == lane || sharesOwner;
+            if (expectedBlock != foundBlock) {
+                ++laneTopologyErrors;
+                localFailure =
+                    NUMI_TEMPORAL_CONE_ASSEMBLY_MISSING_COUPLING;
+                continue;
+            }
+            if (!foundBlock) {
+                continue;
+            }
+
+            const uint outputValueBase =
+                (blockBase + foundRelativeBlock) *
+                NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS;
+            for (uint element = 0u;
+                 element < NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS;
+                 ++element) {
+                float coefficient = coefficients[element];
+                if (!isfinite(coefficient)) {
+                    localFailure =
+                        NUMI_TEMPORAL_CONE_ASSEMBLY_NONFINITE_RESULT;
+                    coefficient = 0.0f;
+                }
+                outputBlockValues[outputValueBase + element] = coefficient;
+                laneMaximumCoefficient = max(
+                    laneMaximumCoefficient,
+                    abs(coefficient)
+                );
+                if (source == lane && element % 4u == 0u) {
+                    laneMinimumDiagonal = min(
+                        laneMinimumDiagonal,
+                        coefficient
+                    );
+                }
+            }
+        }
+    }
+    const uint assemblyFailureKey = simd_min(
+        localFailure == NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS
+        ? 0xffffffffu
+        : localFailure
+    );
+    const uint assemblyFailure = assemblyFailureKey == 0xffffffffu
+        ? NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS
+        : assemblyFailureKey;
+    const uint topologyErrors = simd_sum(laneTopologyErrors);
+    threadgroup_barrier(mem_flags::mem_device);
+    if (assemblyFailure != NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS) {
+        if (lane == 0u) {
+            NumiTemporalConeAssemblyStatus status = {};
+            status.control = uint4(
+                assemblyFailure,
+                contactCount,
+                blockCount,
+                groupMaximumTerms
+            );
+            status.diagnostics.w = float(topologyErrors);
+            outputStatuses[problem] = status;
+        }
+        return;
+    }
+
+    float laneMaximumSymmetryError = 0.0f;
+    if (active) {
+        for (uint relativeBlock = rowBegin;
+             relativeBlock < rowEnd;
+             ++relativeBlock) {
+            const uint block = blockBase + relativeBlock;
+            const uint source = columnIndices[block];
+            const uint reverseBegin = rowOffsets[rowOffsetBase + source];
+            const uint reverseEnd = rowOffsets[
+                rowOffsetBase + source + 1u
+            ];
+            uint reverseBlock = 0xffffffffu;
+            uint lower = reverseBegin;
+            uint upper = reverseEnd;
+            while (lower < upper) {
+                const uint middle = lower + (upper - lower) / 2u;
+                const uint candidateSource = columnIndices[
+                    blockBase + middle
+                ];
+                if (candidateSource < lane) {
+                    lower = middle + 1u;
+                } else {
+                    upper = middle;
+                }
+            }
+            if (lower < reverseEnd &&
+                columnIndices[blockBase + lower] == lane) {
+                reverseBlock = blockBase + lower;
+            }
+            if (reverseBlock == 0xffffffffu) {
+                localFailure =
+                    NUMI_TEMPORAL_CONE_ASSEMBLY_MISSING_COUPLING;
+                continue;
+            }
+            const uint valueBase =
+                block * NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS;
+            const uint reverseValueBase =
+                reverseBlock * NUMI_TEMPORAL_CONE_STREAM_BLOCK_ELEMENTS;
+            for (uint row = 0u; row < 3u; ++row) {
+                for (uint column = 0u; column < 3u; ++column) {
+                    const float value = outputBlockValues[
+                        valueBase + 3u * row + column
+                    ];
+                    const float reverseValue = outputBlockValues[
+                        reverseValueBase + 3u * column + row
+                    ];
+                    const float error = abs(value - reverseValue);
+                    laneMaximumSymmetryError = max(
+                        laneMaximumSymmetryError,
+                        error
+                    );
+                    const float scale = max(
+                        1.0f,
+                        max(abs(value), abs(reverseValue))
+                    );
+                    if (error > 64.0f * kFloatEpsilon * scale) {
+                        localFailure =
+                            NUMI_TEMPORAL_CONE_ASSEMBLY_ASYMMETRIC_RESPONSE;
+                    }
+                }
+            }
+        }
+    }
+    const uint symmetryFailureKey = simd_min(
+        localFailure == NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS
+        ? 0xffffffffu
+        : localFailure
+    );
+    const uint symmetryFailure = symmetryFailureKey == 0xffffffffu
+        ? NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS
+        : symmetryFailureKey;
+    const float maximumSymmetryError = simd_max(
+        laneMaximumSymmetryError
+    );
+    const float maximumCoefficient = simd_max(laneMaximumCoefficient);
+    const float minimumDiagonal = simd_min(laneMinimumDiagonal);
+    if (lane == 0u) {
+        NumiTemporalConeAssemblyStatus status = {};
+        status.control = uint4(
+            symmetryFailure,
+            contactCount,
+            blockCount,
+            groupMaximumTerms
+        );
+        status.diagnostics = float4(
+            maximumSymmetryError,
+            maximumCoefficient,
+            minimumDiagonal,
+            float(topologyErrors)
+        );
+        outputStatuses[problem] = status;
+        if (symmetryFailure == NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS) {
+            NumiTemporalConeStreamHeader output = {};
+            output.control = uint4(
+                NUMI_TEMPORAL_CONE_STREAM_ABI_VERSION,
+                contactCount,
+                header.control.z,
+                header.control.w
+            );
+            output.ranges = uint4(
+                contactBase,
+                rowOffsetBase,
+                blockBase,
+                blockCount
+            );
+            output.tolerances = header.tolerances;
+            outputHeaders[problem] = output;
+        }
     }
 }

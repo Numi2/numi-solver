@@ -82,13 +82,13 @@ failure_rollback=true
 spd_cholesky=true
 min_spd_pivot=0.894427198
 shared_rigid_oracle=true
-average_gpu_seconds=0.004718708
-islands_per_second=217008.54
-contacts_per_second=2272867.75
-contact_iterations_per_second=163914983.56
+average_gpu_seconds=0.004850083
+islands_per_second=211130.39
+contacts_per_second=2211302.20
+contact_iterations_per_second=159474991.07
 streamed_buffer_bytes=2550140
-dense_gpu_seconds=0.008276950
-dense_to_stream_speedup=1.754071110
+dense_gpu_seconds=0.008173462
+dense_to_stream_speedup=1.685221035
 dense_buffer_bytes=39927808
 stream_to_dense_memory=0.063868770
 streamed_blocks=42961
@@ -99,7 +99,7 @@ result=PASS
 ```
 
 The streamed representation used 6.39% of the dense qualification buffers and
-the isolated streamed kernel was 1.754x faster for the same byte-identical
+the isolated streamed kernel was 1.685x faster for the same byte-identical
 FP32 solve. GPU time excludes CPU oracle work and buffer upload. These ratios
 describe this declared topology mix; they are not universal scene claims.
 
@@ -111,8 +111,80 @@ rollback for nonconvergence. The analytic shared-rigid case verifies the
 coupled `(1/3, 1/3)` solution rather than the incorrect independent-contact
 `(1/2, 1/2)` result.
 
+## Response-column assembly and chained solve gate
+
+The assembly gate constructs sparse contact operators from packed
+shared-owner Jacobians and response columns. It includes one-to-32-contact
+islands, one-to-32 owner terms per contact, one-to-32 DOFs per generated
+term, sparse graphs, and five full 1,024-block cliques. An independent CPU
+path reconstructs the dense operator and applies FP64 Cholesky.
+
+The assembly encoder commits a streamed header only after topology,
+finiteness, and symmetry validation. The solver encoder consumes that header
+on the same command buffer, with no CPU readback between stages.
+
+Measured command:
+
+```sh
+./build/numi-solver-assembly --islands 1024 --replays 10
+```
+
+Apple M4 result:
+
+```text
+islands=1024 contacts=10725 blocks=41729 terms=41727 replays=10
+failed_islands=0
+max_assembly_error=0.000000000
+max_symmetry_error=0.000000000
+min_spd_pivot=0.905538510
+max_kkt_residual=0.000001491
+max_cone_violation=0.000000119
+max_positive_objective=0.000000000
+max_iterations=35
+iteration_p50=13
+iteration_p95=20
+iteration_p99=30
+deterministic_replay=true
+shared_rigid_oracle=true
+asymmetric_rejected=true
+missing_coupling_rejected=true
+deterministic_failures=true
+failure_rollback=true
+average_gpu_seconds=0.001726683
+assembly_gpu_seconds=0.000767038
+assembly_fraction=0.444225927
+islands_per_second=593044.47
+blocks_per_second=24167141.23
+assembly_blocks_per_second=54402815.65
+factor_fmas_per_second=1842070290.26
+contact_iterations_per_second=99759461.74
+factor_bytes=3505020
+streamed_operator_bytes=1716156
+dense_operator_bytes=37748736
+factor_stream_to_dense=0.138313929
+max_terms_per_contact=32
+max_dofs_per_term=32
+max_island_blocks=1024
+full_capacity_islands=5
+same_command_buffer=true
+cpu_readback_between_stages=false
+result=PASS
+```
+
+Factor inputs plus the assembled sparse operator used 13.83% of the fixed
+dense operator storage for this declared topology mix. The assembly-only
+measurement produced 54.40 million blocks/s and the complete assembly/solve
+chain produced 593,044 islands/s. One unreported warmup command precedes each
+timed path. These are isolated kernel measurements, not environment-step or
+energy claims.
+
+The adversarial transaction cases independently corrupt one response column
+and omit a required shared-owner block. Both are deterministically rejected;
+the output stream header remains invalid and the chained solver publishes zero
+impulses.
+
 The combined metallib SHA-256 was
-`f218910754929afb6cc1e10cea7574db0777f7c81f837c790de5015d1ada27e7`.
+`350a5bbe0339ef682bbbdce9d238db5e2e46ab77265e3f496637b72d70f850a2`.
 
 ## Evidence boundary
 
@@ -123,7 +195,8 @@ independent and solves anisotropic/capped scalar roots to double precision.
 This is strong evidence for local cone mathematics, coupled contact-space KKT,
 FP32 stability, deterministic SIMD32 convergence, dense-versus-streamed
 operator equivalence, transaction rollback, SPD/objective checks, and isolated
-kernel cost. It qualifies the streamed operator consumer, not construction of
-`J M^-1 J^T` from collision Jacobians or articulated response columns. Contact
-generation, operator production, rigid/articulated velocity publication,
-integration, and a complete physical trajectory remain separate layers.
+kernel cost. It also qualifies numerical construction of `J M^-1 J^T + R`
+from supplied Jacobians and response columns on the solver command-buffer
+timeline. It does not qualify collision generation, Jacobian construction,
+upstream rigid/articulated `M^-1 J^T` computation, velocity publication,
+integration, or a complete physical trajectory. Those remain separate layers.

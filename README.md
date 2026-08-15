@@ -38,26 +38,29 @@ cmake --build build
 ```
 
 The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
-`-fno-fast-math`, plus two native harnesses:
+`-fno-fast-math`, plus three native harnesses:
 
 - `build/numi-solver-math` for isolated local cone blocks;
 - `build/numi-solver-islands` for dense-versus-streamed coupled
-  1/2/4/8/16/32-contact islands.
+  1/2/4/8/16/32-contact islands;
+- `build/numi-solver-assembly` for GPU response-column assembly followed by
+  a streamed solve on one command buffer.
 
 Run the default FP64 comparisons and deterministic replays:
 
 ```sh
 ./build/numi-solver-math
 ./build/numi-solver-islands
+./build/numi-solver-assembly
 ctest --test-dir build --output-on-failure
 ```
 
 The local harness accepts `--cases N --replays N --iterations N` and
-`--isotropic`. The island harness accepts `--islands N --replays N`. Together
-they check separating, impact, sticking, sliding, anisotropic friction,
-near-rank-deficient response, capped impulse, polar boundary, zero axis,
-extreme scale, sparse topology, full block capacity, and shared-response
-cases.
+`--isotropic`. The island and assembly harnesses accept `--islands N` and
+`--replays N`. Together they check separating, impact, sticking, sliding,
+anisotropic friction, near-rank-deficient response, capped impulse, polar
+boundary, zero axis, extreme scale, sparse topology, full block capacity,
+shared response, missing coupling, and response asymmetry.
 
 An installed or relocated harness can load a specific library with
 `--metallib path/to/NumiTemporalCone.metallib`.
@@ -72,6 +75,8 @@ An installed or relocated harness can load a specific library with
 - Exact Euclidean projection onto isotropic, anisotropic and capped elliptic
   friction cones.
 - Packed, sorted 3x3 block-CSR Delassus operators with exact dense parity.
+- Deterministic GPU composition of `J M^-1 J^T + R` from shared-owner
+  Jacobians and response columns.
 - Scale-aware KKT gradient-mapping convergence residuals.
 - SIMD32 block-Jacobi islands with KKT-preserving scalar contact metrics.
 - Typed nonconvergence and warm-start rollback instead of partial publication.
@@ -79,8 +84,10 @@ An installed or relocated harness can load a specific library with
 
 See [docs/MATHEMATICS.md](docs/MATHEMATICS.md) for the equations and evidence
 boundary, [docs/ISLAND_SOLVER.md](docs/ISLAND_SOLVER.md) for the coupled
-SIMD32 method, and [docs/QUALIFICATION.md](docs/QUALIFICATION.md) for measured
-Apple GPU evidence. The harnesses exercise contact-space mathematics and the
-streamed operator consumer on a real Metal device. They do not yet generate
-collision Jacobians, publish rigid/articulated velocity updates, or integrate
-a complete physical trajectory.
+SIMD32 method, [docs/OPERATOR_ASSEMBLY.md](docs/OPERATOR_ASSEMBLY.md) for the
+response-column producer, and [docs/QUALIFICATION.md](docs/QUALIFICATION.md)
+for measured Apple GPU evidence. The harnesses exercise contact-space
+mathematics, operator assembly, and the streamed solver on a real Metal
+device. They do not yet generate collision Jacobians, compute upstream
+rigid/articulated response columns, publish velocity updates, or integrate a
+complete physical trajectory.
