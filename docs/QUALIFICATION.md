@@ -366,6 +366,63 @@ workloads, not environment-step or energy-efficiency claims.
 The combined metallib SHA-256 for this milestone was
 `ce42170f68e599d5e12fcec4f4b235ffee34593b926e3f2d0c80c78748ff4060`.
 
+## Streamed inverse-ABA response candidate
+
+The canonical O(n) articulated inverse-mass owner is compiled with strict
+FP32 arithmetic and contact-count streamed right-hand sides. A kinematics-only
+operator first produces world-point Jacobians. A separate GPU kernel validates
+contact frames and rotates those rows into contact coordinates, then inverse
+ABA applies the same authored physical mass operator to all 96 right-hand
+sides of each 32-contact mechanism. The diagnostic path executes after the
+retained five-stage dense solver chain; it does not replace that chain or
+introduce a CPU-visible intermediate inside it.
+
+For the 256-island capacity sweep, all 253 valid mechanisms and all diagnostic
+payloads replayed byte-identically. The kinematics-only Jacobians and prepared
+contact Jacobians were bit-identical to the factor-backed path. Against the
+independent FP64 physical model:
+
+```text
+inverse_response_max_scaled_error=0.00000104244
+inverse_aba_backward_error=0.000000035886
+dense_response_max_scaled_error=0.0000183799
+dense_inverse_max_abs_difference=0.0000183880
+failed_inverse_valid=0
+```
+
+The low-armature conditioning adversary remains rejected by the dense ABI v2
+gate at `kappa_infinity=182525.984`. It is also evaluated independently rather
+than being discarded: inverse ABA reaches response scaled error
+`0.0000108308` and backward error `0.0000000190813`. That result demonstrates
+this mechanism family, not a universal right to remove conditioning admission;
+a production inverse path still needs its own state-local admission and
+transactional downstream status contract.
+
+Isolated Apple M4 GPU timestamps for the 256-island capacity batch were:
+
+```text
+dense_operator_seconds=0.0163836250
+dense_response_seconds=0.0009714167
+kinematics_only_seconds=0.0010699583
+contact_prepare_seconds=0.0001049166
+inverse_aba_seconds=0.0087198750
+inverse_aba_rhs_per_second=2785361.02
+```
+
+Each value is the least-contended Metal GPU timestamp across ten bit-identical
+replays. The same concurrent external-probe caveat stated above applies.
+
+Thus the measured dense frontend totals `0.017355042` seconds and the
+non-integrated kinematics/prepare/inverse candidate totals `0.009894750`
+seconds, a 1.754x isolated-stage ratio. Substitution into the measured chain
+would project a 26.87% chain-time reduction, but that is arithmetic projection,
+not an executed end-to-end result. No promotion occurs until the candidate
+feeds sparse assembly, cone solve, residual checks, and rollback on one
+command buffer and reproduces the physical output gates.
+
+The combined metallib SHA-256 for this candidate milestone was
+`04b831415027ecf9ecdea59bba4de18c458b551b50013220b396c998bcfa73bd`.
+
 ## Evidence boundary
 
 These measurements execute the real conditioned inverse and cone projection
@@ -385,7 +442,10 @@ constant-twist free flight. The articulated gates qualify serial-chain
 mass/Jacobian operators through the 32-DoF/32-contact adapter capacity,
 factor-backed response columns, exact infinity-condition admission,
 deterministic generalized-velocity publication, and their independent FP64,
-finite-difference, residual, and energy checks. They do not qualify collision
+finite-difference, residual, and energy checks. The inverse-ABA diagnostic
+additionally qualifies the O(n) mass action and contact-frame preparation,
+but not their integration into the published cone-solver chain. These gates
+do not qualify collision
 generation or refresh, articulated configuration integration, arbitrary
 imported mechanisms, mechanisms above the declared adapter capacity, or a
 complete interacting physical trajectory. Those remain separate layers.

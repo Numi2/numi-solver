@@ -27,6 +27,17 @@ the active Numi Lab checkout:
 14f88429562abf3c53481283f1c403f8c0293dc7533779a0a701d420a2704983  src/metal/ArticulatedOperator.metal
 ```
 
+The streamed inverse-ABA milestone copied the owning inverse-mass source and
+its pointer-free schedule ABI from the active `coupled` checkout at revision
+`d0be935070df92811a7d0a650df271a2181b04a9`. Those source paths were clean;
+their last owning revisions were `b26fe576550bbf55c4a9840c448240631956d7ee`
+and `50e047ac605bb7dbefab9ae8b6a904b7316cc2ca`, respectively.
+
+```text
+4833d1701012e516954191e86843d5c09a6e0a8be74605f06304361254169090  src/metal/ArticulatedInverseMass.metal
+017a29c5a992df98541274975f7604a24e260d33b141aff30a51c0695e52b00d  include/metalrobo/parallel_aba_shared.h
+```
+
 The first independent build used Apple Metal toolchain `32023.883` and
 produced a metallib with SHA-256
 `d36b038304d6494ed73a34c01abe21513a850c217721853a4105a6317983c070`.

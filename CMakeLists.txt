@@ -19,6 +19,7 @@ find_library(METAL_FRAMEWORK Metal REQUIRED)
 set(NUMI_SOLVER_SHADER_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
 set(NUMI_SOLVER_AIR "${NUMI_SOLVER_SHADER_DIR}/NumiTemporalCone.air")
 set(NUMI_SOLVER_ARTICULATED_AIR "${NUMI_SOLVER_SHADER_DIR}/NumiArticulatedOperator.air")
+set(NUMI_SOLVER_INVERSE_ABA_AIR "${NUMI_SOLVER_SHADER_DIR}/NumiArticulatedInverseABA.air")
 set(NUMI_SOLVER_METALLIB "${NUMI_SOLVER_SHADER_DIR}/NumiTemporalCone.metallib")
 set(NUMI_SOLVER_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/metal/MetalWorldContact.metal")
 set(
@@ -26,10 +27,15 @@ set(
     "${CMAKE_CURRENT_SOURCE_DIR}/src/metal/ArticulatedOperator.metal"
 )
 set(
+    NUMI_SOLVER_INVERSE_ABA_SOURCE
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/metal/ArticulatedInverseMass.metal"
+)
+set(
     NUMI_SOLVER_HEADERS
     include/metalrobo/constraint_ir_shared.h
     include/metalrobo/engine_types.h
     include/metalrobo/gpu_types.h
+    include/metalrobo/parallel_aba_shared.h
     include/metalrobo/rod_gpu_shared.h
     include/metalrobo/unified_quality_shared.h
     include/numi/temporal_cone_island.h
@@ -53,13 +59,25 @@ add_custom_command(
         -I "${CMAKE_CURRENT_SOURCE_DIR}/include"
         -c "${NUMI_SOLVER_ARTICULATED_SOURCE}"
         -o "${NUMI_SOLVER_ARTICULATED_AIR}"
+    COMMAND "${XCRUN_EXECUTABLE}" -sdk macosx metal
+        -std=metal4.0
+        -O3
+        -fno-fast-math
+        -I "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        -DMR_ARTICULATED_ABA_MAX_BODIES=33u
+        -DMR_INVERSE_MASS_KERNEL_NAME=numi_articulated_inverse_aba_stream
+        -DMR_INVERSE_MASS_STREAMING_RHS=1
+        -c "${NUMI_SOLVER_INVERSE_ABA_SOURCE}"
+        -o "${NUMI_SOLVER_INVERSE_ABA_AIR}"
     COMMAND "${XCRUN_EXECUTABLE}" -sdk macosx metallib
         "${NUMI_SOLVER_AIR}"
         "${NUMI_SOLVER_ARTICULATED_AIR}"
+        "${NUMI_SOLVER_INVERSE_ABA_AIR}"
         -o "${NUMI_SOLVER_METALLIB}"
     DEPENDS
         "${NUMI_SOLVER_SOURCE}"
         "${NUMI_SOLVER_ARTICULATED_SOURCE}"
+        "${NUMI_SOLVER_INVERSE_ABA_SOURCE}"
         ${NUMI_SOLVER_HEADERS}
     COMMENT "Compiling the Temporal Cone solver metallib"
     VERBATIM
@@ -274,7 +292,9 @@ if(BUILD_TESTING)
     )
     set_tests_properties(
         temporal_cone.articulated
-        PROPERTIES LABELS "metal;physics;articulated;assembly;streamed" TIMEOUT 60
+        PROPERTIES
+            LABELS "metal;physics;articulated;assembly;streamed;inverse_aba"
+            TIMEOUT 60
     )
     add_test(
         NAME temporal_cone.articulated_capacity
@@ -285,7 +305,7 @@ if(BUILD_TESTING)
     set_tests_properties(
         temporal_cone.articulated_capacity
         PROPERTIES
-            LABELS "metal;physics;articulated;capacity;assembly;streamed"
+            LABELS "metal;physics;articulated;capacity;assembly;streamed;inverse_aba"
             TIMEOUT 60
     )
     add_test(
@@ -297,7 +317,7 @@ if(BUILD_TESTING)
     set_tests_properties(
         temporal_cone.articulated_conditioning
         PROPERTIES
-            LABELS "metal;physics;articulated;conditioning;rollback"
+            LABELS "metal;physics;articulated;conditioning;rollback;inverse_aba"
             TIMEOUT 60
     )
 endif()

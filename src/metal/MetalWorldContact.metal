@@ -13713,6 +13713,174 @@ kernel void numi_temporal_cone_rigid_response(
     }
 }
 
+// Rotates analytic world-point Jacobians into contact coordinates without
+// requiring a dense mass factor. This is the preparation boundary for the
+// streamed inverse-ABA response path. It publishes only complete contact rows
+// after ABI, upstream-kinematics, capacity, and frame validation succeed.
+kernel void numi_temporal_cone_articulated_prepare_jacobians(
+    device const NumiTemporalConeArticulatedHeader* headers [[buffer(0)]],
+    device const MRArticulatedOperatorStatusGPU* operatorStatuses
+        [[buffer(1)]],
+    device const float* pointJacobians [[buffer(2)]],
+    device const NumiTemporalConeArticulatedContact* contacts [[buffer(3)]],
+    device float* outputJacobians [[buffer(4)]],
+    device NumiTemporalConeArticulatedStatus* outputStatuses [[buffer(5)]],
+    device MRMetalWorldContactStatusGPU* inverseGates [[buffer(6)]],
+    constant uint& problemCount [[buffer(7)]],
+    // x point-Jacobian floats, y contacts, z operator statuses, w reserved.
+    constant uint4& inputCapacities [[buffer(8)]],
+    constant uint& outputCapacity [[buffer(9)]],
+    const uint problem [[threadgroup_position_in_grid]],
+    const uint lane [[thread_index_in_simdgroup]]
+) {
+    if (problem >= problemCount) {
+        return;
+    }
+    const NumiTemporalConeArticulatedHeader header = headers[problem];
+    const uint dofCount = header.control.y;
+    const uint contactCount = header.control.z;
+    const uint pointJacobianBase = header.inputRanges.y;
+    const uint contactBase = header.inputRanges.w;
+    const uint jacobianBase = header.responseRanges.z;
+    const uint operatorStatusIndex = header.operatorRanges.x;
+    const bool activeContact = lane < contactCount;
+    const uint valuesPerContact = 3u * dofCount;
+    if (lane == 0u) {
+        outputStatuses[problem] = {};
+        MRMetalWorldContactStatusGPU gate = {};
+        gate.code = MR_STEP_UNSUPPORTED;
+        gate.environment = problem;
+        inverseGates[problem] = gate;
+    }
+
+    uint localFailure = NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS;
+    if (header.control.x != NUMI_TEMPORAL_CONE_ARTICULATED_ABI_VERSION) {
+        localFailure = NUMI_TEMPORAL_CONE_ARTICULATED_INVALID_ABI;
+    } else if (dofCount == 0u ||
+        dofCount > NUMI_TEMPORAL_CONE_ARTICULATED_MAX_DOF ||
+        contactCount == 0u ||
+        contactCount > NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS ||
+        contactBase > inputCapacities.y ||
+        contactCount > inputCapacities.y - contactBase ||
+        operatorStatusIndex >= inputCapacities.z ||
+        jacobianBase > outputCapacity ||
+        contactCount * valuesPerContact > outputCapacity - jacobianBase) {
+        localFailure = NUMI_TEMPORAL_CONE_ARTICULATED_INVALID_INPUT;
+    }
+
+    MRArticulatedOperatorStatusGPU operatorStatus = {};
+    if (localFailure == NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS) {
+        operatorStatus = operatorStatuses[operatorStatusIndex];
+        if (operatorStatus.code != MR_ARTICULATED_OPERATOR_SUCCESS ||
+            operatorStatus.nv != dofCount ||
+            !finite4(operatorStatus.diagnostics)) {
+            localFailure = NUMI_TEMPORAL_CONE_ARTICULATED_UPSTREAM_FAILURE;
+        }
+    }
+
+    NumiTemporalConeArticulatedContact contact = {};
+    float3 axes[3] = {
+        float3(0.0f), float3(0.0f), float3(0.0f)
+    };
+    uint pointIndex = 0u;
+    float laneFrameError = 0.0f;
+    if (activeContact &&
+        localFailure == NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS) {
+        contact = contacts[contactBase + lane];
+        pointIndex = contact.control.x;
+        axes[0] = contact.normalAndFrictionU.xyz;
+        axes[1] = contact.tangentUAndFrictionV.xyz;
+        axes[2] = contact.tangentVAndMaximumNormal.xyz;
+        laneFrameError = max(
+            max(
+                max(abs(dot(axes[0], axes[0]) - 1.0f),
+                    abs(dot(axes[1], axes[1]) - 1.0f)),
+                abs(dot(axes[2], axes[2]) - 1.0f)
+            ),
+            max(
+                max(abs(dot(axes[0], axes[1])),
+                    abs(dot(axes[0], axes[2]))),
+                max(abs(dot(axes[1], axes[2])),
+                    abs(dot(cross(axes[0], axes[1]), axes[2]) - 1.0f))
+            )
+        );
+        const ulong pointEnd =
+            static_cast<ulong>(pointJacobianBase) +
+            (static_cast<ulong>(pointIndex) + 1ul) * 3ul * dofCount;
+        if (any(contact.control.yzw != uint3(0u)) ||
+            pointEnd > inputCapacities.x ||
+            !finite4(contact.normalAndFrictionU) ||
+            !finite4(contact.tangentUAndFrictionV) ||
+            !finite4(contact.tangentVAndMaximumNormal) ||
+            laneFrameError > 2.0e-4f) {
+            localFailure = NUMI_TEMPORAL_CONE_ARTICULATED_INVALID_INPUT;
+        }
+    }
+
+    const uint failure = simd_max(localFailure);
+    const float maximumFrameError = simd_max(laneFrameError);
+    if (failure != NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS) {
+        if (lane == 0u) {
+            NumiTemporalConeArticulatedStatus status = {};
+            status.control = uint4(failure, dofCount, contactCount, 0u);
+            status.diagnostics.x = maximumFrameError;
+            outputStatuses[problem] = status;
+            MRMetalWorldContactStatusGPU gate = {};
+            gate.code = MR_STEP_UNSUPPORTED;
+            gate.environment = problem;
+            inverseGates[problem] = gate;
+        }
+        return;
+    }
+
+    if (activeContact) {
+        const uint worldPointBase = pointJacobianBase +
+            pointIndex * 3u * dofCount;
+        const uint contactValueBase =
+            jacobianBase + lane * valuesPerContact;
+        for (uint dof = 0u; dof < dofCount; ++dof) {
+            const float3 worldColumn = float3(
+                pointJacobians[worldPointBase + 0u * dofCount + dof],
+                pointJacobians[worldPointBase + 1u * dofCount + dof],
+                pointJacobians[worldPointBase + 2u * dofCount + dof]
+            );
+            if (!finite3(worldColumn)) {
+                localFailure = NUMI_TEMPORAL_CONE_ARTICULATED_INVALID_INPUT;
+            }
+            for (uint axis = 0u; axis < 3u; ++axis) {
+                outputJacobians[
+                    contactValueBase + axis * dofCount + dof
+                ] = dot(axes[axis], worldColumn);
+            }
+        }
+    }
+    const uint publicationFailure = simd_max(localFailure);
+    if (lane == 0u) {
+        NumiTemporalConeArticulatedStatus status = {};
+        status.control = uint4(
+            publicationFailure,
+            dofCount,
+            contactCount,
+            publicationFailure == NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS
+                ? contactCount
+                : 0u
+        );
+        status.diagnostics.x = maximumFrameError;
+        outputStatuses[problem] = status;
+        MRMetalWorldContactStatusGPU gate = {};
+        gate.code = publicationFailure ==
+                NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS
+            ? MR_STEP_SUCCESS
+            : MR_STEP_UNSUPPORTED;
+        gate.environment = problem;
+        gate.requiredConstraints = publicationFailure ==
+                NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS
+            ? contactCount
+            : 0u;
+        inverseGates[problem] = gate;
+    }
+}
+
 // Converts the canonical articulated operator's lower Cholesky factor and
 // analytic world-point Jacobians into the exact packed J / M^-1 J^T contract
 // consumed by the generic sparse assembler. Each active contact lane solves

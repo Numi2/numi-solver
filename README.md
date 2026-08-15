@@ -52,7 +52,8 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
   factorization, response-column solves, cone contact, and deterministic
   generalized-velocity publication on one command buffer.
 - `build/numi-solver-articulated-capacity` for the complete 32-DoF,
-  32-contact, 1,024-block articulated frontier.
+  32-contact, 1,024-block articulated frontier and streamed inverse-ABA
+  response comparison.
 - `build/numi-solver-articulated-conditioning` for deterministic rejection
   and rollback of forward-inaccurate ill-conditioned mass response.
 
@@ -81,7 +82,8 @@ velocity rollback. The articulated gates additionally check analytic and
 finite-difference serial-chain Jacobians, independent FP64 mass matrices,
 factor-solved response columns, exact infinity-norm condition estimates,
 generalized kinetic energy, 32-DoF/32-contact capacity, typed conditioning
-rejection, and invalid state/frame/material rollback.
+rejection, O(n) inverse-ABA actions, bit-identical kinematics/contact-frame
+preparation, and invalid state/frame/material rollback.
 
 An installed or relocated harness can load a specific library with
 `--metallib path/to/NumiTemporalCone.metallib`.
@@ -105,6 +107,9 @@ An installed or relocated harness can load a specific library with
   forming an inverse.
 - Deterministic compensated articulated mass accumulation and an exact
   factor-derived `kappa_infinity` admission gate before response publication.
+- A qualified streamed inverse-ABA mass action with GPU-produced contact-frame
+  right-hand sides. It is currently a measured candidate path; the
+  factor-certified dense response remains the publication default.
 - GPU-derived implicit spring-damper CFM, penetration-recovery targets, and
   thresholded restitution from versioned contact material laws.
 - Canonical per-body impulse accumulation with no floating-point atomics.
@@ -127,6 +132,8 @@ contact path, and
 [docs/ARTICULATED_MECHANICS.md](docs/ARTICULATED_MECHANICS.md) for the
 factor-backed articulated path. The harnesses exercise contact-space
 mathematics, rigid and articulated operator generation, velocity publication,
-and the streamed solver on a real Metal device. They do not yet perform
-collision detection, refresh contact geometry, integrate articulated
-configuration, or execute a complete interacting physical trajectory.
+inverse-ABA response actions, and the streamed solver on a real Metal device.
+They do not yet route inverse-ABA output into the published contact solve,
+nor do they perform collision detection, refresh contact geometry, integrate
+articulated configuration, or execute a complete interacting physical
+trajectory.

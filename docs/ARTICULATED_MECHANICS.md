@@ -69,6 +69,31 @@ velocity. The threshold does not silently modify mass. Better conditioning
 must come from explicit physical armature, implicit drive inertia, a better
 operator, or a caller decision.
 
+## Streamed inverse-ABA candidate
+
+The repository also carries the owning articulated-body inverse-mass action.
+For each environment it factorizes spatial articulated inertias once, then
+streams every contact-axis right-hand side through deterministic reverse and
+forward tree sweeps:
+
+```math
+J_{c,i}^{T}\longmapsto M(q)^{-1}J_{c,i}^{T}.
+```
+
+A separate GPU preparation kernel consumes the kinematics-only point
+Jacobians and rotates them into the same `J_c` rows as the factor-backed path.
+At 32 DoFs both the kinematics-only Jacobian and prepared contact Jacobian are
+bit-identical to their dense-path counterparts. The inverse action does not
+form `M`, `L`, or `M^{-1}` and uses no host solve.
+
+This path is presently a qualification and profiling candidate, not the
+publication default. Its response columns are checked against the same FP64
+physical mass model and strict backward-residual gate, but they are not yet
+fed into sparse assembly, cone solve, and generalized-velocity publication on
+one borrowed command buffer. The factor-backed path therefore retains
+production ownership until inverse-ABA admission and downstream transactional
+status propagation are complete.
+
 ## Contact law and publication
 
 The articulated path uses the same velocity-level spring/damper,

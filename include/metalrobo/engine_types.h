@@ -34,7 +34,9 @@
 // The O(n) articulated-body kernel uses fixed-size threadgroup scratch for
 // one tree per 32-lane threadgroup. These are explicit ABI capacities rather
 // than silent implementation assumptions.
+#ifndef MR_ARTICULATED_ABA_MAX_BODIES
 #define MR_ARTICULATED_ABA_MAX_BODIES 32u
+#endif
 #define MR_ARTICULATED_ABA_MAX_DOFS 40u
 #define MR_ARTICULATED_ABA_MAX_Q 41u
 #define MR_ARTICULATED_INVERSE_MASS_MAX_RHS 3u

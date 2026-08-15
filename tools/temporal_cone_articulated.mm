@@ -361,10 +361,17 @@ struct Result {
     std::vector<float> factors;
     std::vector<float> pointJacobians;
     std::vector<MRArticulatedOperatorStatusGPU> operatorStatuses;
+    std::vector<float> kinematicPointJacobians;
+    std::vector<MRArticulatedOperatorStatusGPU> kinematicStatuses;
+    std::vector<float> preparedContactJacobians;
+    std::vector<NumiTemporalConeArticulatedStatus> preparationStatuses;
     std::vector<NumiTemporalConeAssemblyContactSpan> spans;
     std::vector<NumiTemporalConeAssemblyTerm> terms;
     std::vector<float> jacobians;
     std::vector<float> responses;
+    // Inverse-ABA output is packed [problem][contact axis][DoF].
+    std::vector<float> inverseResponses;
+    std::vector<MRInverseMassStatusGPU> inverseStatuses;
     std::vector<NumiTemporalConeIslandContact> solverContacts;
     std::vector<float> regularization;
     std::vector<NumiTemporalConeArticulatedStatus> responseStatuses;
@@ -376,6 +383,10 @@ struct Result {
     std::vector<float> outputVelocities;
     std::vector<NumiTemporalConeArticulatedStatus> publishStatuses;
     double seconds = 0.0;
+    std::array<double, 5> stageSeconds = {};
+    double kinematicsSeconds = 0.0;
+    double preparationSeconds = 0.0;
+    double inverseSeconds = 0.0;
 };
 
 std::size_t operatorThreadgroupBytes(std::size_t bodies, std::size_t dofs) {
@@ -405,7 +416,7 @@ bool exactVector(const std::vector<T>& a, const std::vector<T>& b) {
 Result runGPU(
     id<MTLDevice> device,
     id<MTLCommandQueue> queue,
-    const std::array<id<MTLComputePipelineState>, 5>& pipelines,
+    const std::array<id<MTLComputePipelineState>, 7>& pipelines,
     const Batch& batch
 ) {
     const std::uint32_t problemCount =
@@ -442,6 +453,31 @@ Result runGPU(
     id<MTLBuffer> generalizedBuffer = output(problemCount * kDofs * sizeof(float));
     id<MTLBuffer> operatorDeltaBuffer = output(problemCount * kDofs * sizeof(float));
     id<MTLBuffer> operatorStatusBuffer = output(problemCount * sizeof(MRArticulatedOperatorStatusGPU));
+    MRArticulatedOperatorDispatchGPU kinematicDispatch = batch.operatorDispatch;
+    kinematicDispatch.flags =
+        MR_ARTICULATED_OPERATOR_KINEMATICS_JACOBIANS_ONLY;
+    id<MTLBuffer> kinematicDispatchBuffer = makeOne(kinematicDispatch);
+    id<MTLBuffer> kinematicPoseBuffer = output(
+        problemCount * kBodies * sizeof(MRArticulatedBodyPoseGPU)
+    );
+    id<MTLBuffer> kinematicPointWorldBuffer = output(
+        problemCount * kContacts * sizeof(MRArticulatedPointWorldGPU)
+    );
+    id<MTLBuffer> kinematicMassBuffer = output(
+        problemCount * kDofs * kDofs * sizeof(float)
+    );
+    id<MTLBuffer> kinematicPointJacobianBuffer = output(
+        problemCount * kContacts * 3u * kDofs * sizeof(float)
+    );
+    id<MTLBuffer> kinematicGeneralizedBuffer = output(
+        problemCount * kDofs * sizeof(float)
+    );
+    id<MTLBuffer> kinematicDeltaBuffer = output(
+        problemCount * kDofs * sizeof(float)
+    );
+    id<MTLBuffer> kinematicStatusBuffer = output(
+        problemCount * sizeof(MRArticulatedOperatorStatusGPU)
+    );
     id<MTLBuffer> articulatedHeaderBuffer = makeBytes(batch.articulatedHeaders);
     id<MTLBuffer> assemblyHeaderBuffer = makeBytes(batch.assemblyHeaders);
     id<MTLBuffer> velocityBuffer = makeBytes(batch.velocities);
@@ -450,7 +486,22 @@ Result runGPU(
     id<MTLBuffer> spanBuffer = output(problemCount * kContacts * sizeof(NumiTemporalConeAssemblyContactSpan));
     id<MTLBuffer> termBuffer = output(problemCount * kContacts * sizeof(NumiTemporalConeAssemblyTerm));
     id<MTLBuffer> jacobianBuffer = output(problemCount * kContacts * 3u * kDofs * sizeof(float));
+    id<MTLBuffer> preparedJacobianBuffer = output(
+        problemCount * kContacts * 3u * kDofs * sizeof(float)
+    );
+    id<MTLBuffer> preparationStatusBuffer = output(
+        problemCount * sizeof(NumiTemporalConeArticulatedStatus)
+    );
     id<MTLBuffer> responseBuffer = output(problemCount * kContacts * 3u * kDofs * sizeof(float));
+    id<MTLBuffer> inverseResponseBuffer = output(
+        problemCount * kContacts * 3u * kDofs * sizeof(float)
+    );
+    id<MTLBuffer> inverseStatusBuffer = output(
+        problemCount * sizeof(MRInverseMassStatusGPU)
+    );
+    id<MTLBuffer> inverseContactStatusBuffer = output(
+        problemCount * sizeof(MRMetalWorldContactStatusGPU)
+    );
     id<MTLBuffer> solverContactBuffer = output(problemCount * kContacts * sizeof(NumiTemporalConeIslandContact));
     id<MTLBuffer> regularizationBuffer = output(problemCount * kContacts * 9u * sizeof(float));
     id<MTLBuffer> responseStatusBuffer = output(problemCount * sizeof(NumiTemporalConeArticulatedStatus));
@@ -467,9 +518,15 @@ Result runGPU(
         bodyBuffer && operatorDispatchBuffer && qBuffer && pointBuffer &&
         poseBuffer && pointWorldBuffer && factorBuffer && pointJacobianBuffer &&
         generalizedBuffer && operatorDeltaBuffer && operatorStatusBuffer &&
+        kinematicDispatchBuffer && kinematicPoseBuffer &&
+        kinematicPointWorldBuffer && kinematicMassBuffer &&
+        kinematicPointJacobianBuffer && kinematicGeneralizedBuffer &&
+        kinematicDeltaBuffer && kinematicStatusBuffer &&
         articulatedHeaderBuffer && assemblyHeaderBuffer && velocityBuffer &&
         contactBuffer && lawBuffer && spanBuffer && termBuffer && jacobianBuffer &&
-        responseBuffer && solverContactBuffer && regularizationBuffer &&
+        preparedJacobianBuffer && preparationStatusBuffer &&
+        responseBuffer && inverseResponseBuffer && inverseStatusBuffer &&
+        inverseContactStatusBuffer && solverContactBuffer && regularizationBuffer &&
         responseStatusBuffer && rowBuffer && columnBuffer && blockBuffer &&
         streamHeaderBuffer && assemblyStatusBuffer && impulseBuffer &&
         solverStatusBuffer && outputVelocityBuffer && publishStatusBuffer,
@@ -484,6 +541,13 @@ Result runGPU(
         operatorDispatchBuffer, qBuffer, pointBuffer, poseBuffer,
         pointWorldBuffer, factorBuffer, pointJacobianBuffer,
         generalizedBuffer, operatorDeltaBuffer, operatorStatusBuffer
+    };
+    const std::array<id<MTLBuffer>, 15> kinematicBuffers = {
+        worldBuffer, articulationBuffer, jointBuffer, dofBuffer, bodyBuffer,
+        kinematicDispatchBuffer, qBuffer, pointBuffer, kinematicPoseBuffer,
+        kinematicPointWorldBuffer, kinematicMassBuffer,
+        kinematicPointJacobianBuffer, kinematicGeneralizedBuffer,
+        kinematicDeltaBuffer, kinematicStatusBuffer
     };
     for (std::size_t index = 0u; index < operatorBuffers.size(); ++index) {
         [op setBuffer:operatorBuffers[index] offset:0 atIndex:index];
@@ -605,6 +669,161 @@ Result runGPU(
         ? command.GPUEndTime - command.GPUStartTime
         : 0.0;
 
+    const auto measureStage = [&](const auto& encode) {
+        const auto wallStart = std::chrono::steady_clock::now();
+        id<MTLCommandBuffer> stageCommand = [queue commandBuffer];
+        id<MTLComputeCommandEncoder> stage =
+            [stageCommand computeCommandEncoder];
+        encode(stage);
+        [stage endEncoding];
+        [stageCommand commit];
+        [stageCommand waitUntilCompleted];
+        require(stageCommand.status == MTLCommandBufferStatusCompleted &&
+                stageCommand.error == nil,
+            "Metal articulated stage profile failed: " +
+                errorText(stageCommand.error));
+        const auto wallEnd = std::chrono::steady_clock::now();
+        return stageCommand.GPUEndTime > stageCommand.GPUStartTime
+            ? stageCommand.GPUEndTime - stageCommand.GPUStartTime
+            : std::chrono::duration<double>(wallEnd - wallStart).count();
+    };
+    std::array<double, 5> stageSeconds = {};
+    stageSeconds[0] = measureStage([&](id<MTLComputeCommandEncoder> stage) {
+        [stage setComputePipelineState:pipelines[0]];
+        for (std::size_t index = 0u; index < operatorBuffers.size(); ++index) {
+            [stage setBuffer:operatorBuffers[index] offset:0 atIndex:index];
+        }
+        [stage setThreadgroupMemoryLength:operatorThreadgroupBytes(kBodies, kDofs)
+                                  atIndex:0];
+        [stage dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
+                threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
+    });
+    stageSeconds[1] = measureStage([&](id<MTLComputeCommandEncoder> stage) {
+        [stage setComputePipelineState:pipelines[1]];
+        for (std::size_t index = 0u; index < responseBuffers.size(); ++index) {
+            [stage setBuffer:responseBuffers[index] offset:0 atIndex:index];
+        }
+        [stage setBytes:&problemCount length:sizeof(problemCount) atIndex:14];
+        [stage setBytes:&inputCaps length:sizeof(inputCaps) atIndex:15];
+        [stage setBytes:&responseCaps length:sizeof(responseCaps) atIndex:16];
+        [stage setBytes:&responseSolverCaps
+                  length:sizeof(responseSolverCaps)
+                 atIndex:17];
+        [stage dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
+                threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
+    });
+    stageSeconds[2] = measureStage([&](id<MTLComputeCommandEncoder> stage) {
+        [stage setComputePipelineState:pipelines[2]];
+        for (std::size_t index = 0u; index < assemblyBuffers.size(); ++index) {
+            [stage setBuffer:assemblyBuffers[index] offset:0 atIndex:index];
+        }
+        [stage setBytes:&problemCount length:sizeof(problemCount) atIndex:11];
+        [stage setBytes:&assemblyInputs length:sizeof(assemblyInputs) atIndex:12];
+        [stage setBytes:&assemblyOutputs length:sizeof(assemblyOutputs) atIndex:13];
+        [stage dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
+                threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
+    });
+    stageSeconds[3] = measureStage([&](id<MTLComputeCommandEncoder> stage) {
+        [stage setComputePipelineState:pipelines[3]];
+        for (std::size_t index = 0u; index < solverBuffers.size(); ++index) {
+            [stage setBuffer:solverBuffers[index] offset:0 atIndex:index];
+        }
+        [stage setBytes:&problemCount length:sizeof(problemCount) atIndex:7];
+        [stage setBytes:&solverCaps length:sizeof(solverCaps) atIndex:8];
+        [stage dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
+                threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
+    });
+    stageSeconds[4] = measureStage([&](id<MTLComputeCommandEncoder> stage) {
+        [stage setComputePipelineState:pipelines[4]];
+        for (std::size_t index = 0u; index < publishBuffers.size(); ++index) {
+            [stage setBuffer:publishBuffers[index] offset:0 atIndex:index];
+        }
+        [stage setBytes:&problemCount length:sizeof(problemCount) atIndex:8];
+        [stage setBytes:&publishCaps length:sizeof(publishCaps) atIndex:9];
+        [stage dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
+                threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
+    });
+    const double kinematicsSeconds = measureStage(
+        [&](id<MTLComputeCommandEncoder> stage) {
+            [stage setComputePipelineState:pipelines[0]];
+            for (std::size_t index = 0u; index < kinematicBuffers.size(); ++index) {
+                [stage setBuffer:kinematicBuffers[index] offset:0 atIndex:index];
+            }
+            [stage setThreadgroupMemoryLength:operatorThreadgroupBytes(kBodies, kDofs)
+                                      atIndex:0];
+            [stage dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
+                    threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
+        }
+    );
+    const mr_uint4 preparationInputCaps = u4(
+        problemCount * kContacts * 3u * kDofs,
+        problemCount * kContacts,
+        problemCount,
+        0u
+    );
+    const std::uint32_t preparationOutputCapacity =
+        problemCount * kContacts * 3u * kDofs;
+    const double preparationSeconds = measureStage(
+        [&](id<MTLComputeCommandEncoder> stage) {
+            [stage setComputePipelineState:pipelines[6]];
+            [stage setBuffer:articulatedHeaderBuffer offset:0 atIndex:0];
+            [stage setBuffer:kinematicStatusBuffer offset:0 atIndex:1];
+            [stage setBuffer:kinematicPointJacobianBuffer offset:0 atIndex:2];
+            [stage setBuffer:contactBuffer offset:0 atIndex:3];
+            [stage setBuffer:preparedJacobianBuffer offset:0 atIndex:4];
+            [stage setBuffer:preparationStatusBuffer offset:0 atIndex:5];
+            [stage setBuffer:inverseContactStatusBuffer offset:0 atIndex:6];
+            [stage setBytes:&problemCount length:sizeof(problemCount) atIndex:7];
+            [stage setBytes:&preparationInputCaps
+                      length:sizeof(preparationInputCaps)
+                     atIndex:8];
+            [stage setBytes:&preparationOutputCapacity
+                      length:sizeof(preparationOutputCapacity)
+                     atIndex:9];
+            [stage dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
+                    threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
+        }
+    );
+
+    MRInverseMassDispatchGPU inverseDispatch = {};
+    inverseDispatch.articulationIndex = 0u;
+    inverseDispatch.environmentCount = problemCount;
+    inverseDispatch.rhsCount = 3u * kContacts;
+    inverseDispatch.qStride = kDofs;
+    inverseDispatch.rhsEnvironmentStride = 3u * kContacts * kDofs;
+    inverseDispatch.rhsVectorStride = kDofs;
+    inverseDispatch.outputEnvironmentStride = 3u * kContacts * kDofs;
+    inverseDispatch.outputVectorStride = kDofs;
+    const auto inverseStart = std::chrono::steady_clock::now();
+    id<MTLCommandBuffer> inverseCommand = [queue commandBuffer];
+    id<MTLComputeCommandEncoder> inverse = [inverseCommand computeCommandEncoder];
+    [inverse setComputePipelineState:pipelines[5]];
+    const std::array<id<MTLBuffer>, 5> inverseModelBuffers = {
+        worldBuffer, articulationBuffer, jointBuffer, dofBuffer, bodyBuffer
+    };
+    for (std::size_t index = 0u; index < inverseModelBuffers.size(); ++index) {
+        [inverse setBuffer:inverseModelBuffers[index] offset:0 atIndex:index];
+    }
+    [inverse setBytes:&inverseDispatch length:sizeof(inverseDispatch) atIndex:5];
+    [inverse setBuffer:qBuffer offset:0 atIndex:6];
+    [inverse setBuffer:preparedJacobianBuffer offset:0 atIndex:7];
+    [inverse setBuffer:inverseResponseBuffer offset:0 atIndex:8];
+    [inverse setBuffer:inverseStatusBuffer offset:0 atIndex:9];
+    [inverse setBuffer:inverseContactStatusBuffer offset:0 atIndex:12];
+    [inverse dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
+           threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
+    [inverse endEncoding];
+    [inverseCommand commit];
+    [inverseCommand waitUntilCompleted];
+    require(inverseCommand.status == MTLCommandBufferStatusCompleted &&
+            inverseCommand.error == nil,
+        "Metal inverse-ABA action failed: " + errorText(inverseCommand.error));
+    const auto inverseEnd = std::chrono::steady_clock::now();
+    const double inverseGpuSeconds =
+        inverseCommand.GPUEndTime > inverseCommand.GPUStartTime
+        ? inverseCommand.GPUEndTime - inverseCommand.GPUStartTime
+        : 0.0;
+
     Result result;
     const auto copy = [](auto& destination, id<MTLBuffer> source) {
         using Value = typename std::decay_t<decltype(destination)>::value_type;
@@ -616,10 +835,16 @@ Result runGPU(
     copy(result.factors, factorBuffer);
     copy(result.pointJacobians, pointJacobianBuffer);
     copy(result.operatorStatuses, operatorStatusBuffer);
+    copy(result.kinematicPointJacobians, kinematicPointJacobianBuffer);
+    copy(result.kinematicStatuses, kinematicStatusBuffer);
+    copy(result.preparedContactJacobians, preparedJacobianBuffer);
+    copy(result.preparationStatuses, preparationStatusBuffer);
     copy(result.spans, spanBuffer);
     copy(result.terms, termBuffer);
     copy(result.jacobians, jacobianBuffer);
     copy(result.responses, responseBuffer);
+    copy(result.inverseResponses, inverseResponseBuffer);
+    copy(result.inverseStatuses, inverseStatusBuffer);
     copy(result.solverContacts, solverContactBuffer);
     copy(result.regularization, regularizationBuffer);
     copy(result.responseStatuses, responseStatusBuffer);
@@ -633,6 +858,12 @@ Result runGPU(
     result.seconds = gpuSeconds > 0.0
         ? gpuSeconds
         : std::chrono::duration<double>(end - start).count();
+    result.stageSeconds = stageSeconds;
+    result.kinematicsSeconds = kinematicsSeconds;
+    result.preparationSeconds = preparationSeconds;
+    result.inverseSeconds = inverseGpuSeconds > 0.0
+        ? inverseGpuSeconds
+        : std::chrono::duration<double>(inverseEnd - inverseStart).count();
     return result;
 }
 
@@ -790,14 +1021,16 @@ int run(int argc, const char* const* argv) {
     NSString* path = [NSString stringWithUTF8String:metallibPath.c_str()];
     id<MTLLibrary> library = [device newLibraryWithURL:[NSURL fileURLWithPath:path] error:&error];
     require(library != nil, "failed to load metallib: " + errorText(error));
-    const std::array<NSString*, 5> names = {
+    const std::array<NSString*, 7> names = {
         @"mr_articulated_operator",
         @"numi_temporal_cone_articulated_response",
         @"numi_temporal_cone_stream_assemble",
         @"numi_temporal_cone_stream_solve",
-        @"numi_temporal_cone_articulated_publish"
+        @"numi_temporal_cone_articulated_publish",
+        @"numi_articulated_inverse_aba_stream",
+        @"numi_temporal_cone_articulated_prepare_jacobians"
     };
-    std::array<id<MTLComputePipelineState>, 5> pipelines = {};
+    std::array<id<MTLComputePipelineState>, 7> pipelines = {};
     for (std::size_t index = 0u; index < pipelines.size(); ++index) {
         id<MTLFunction> function = [library newFunctionWithName:names[index]];
         pipelines[index] = [device newComputePipelineStateWithFunction:function error:&error];
@@ -819,10 +1052,20 @@ int run(int argc, const char* const* argv) {
             exactVector(result.factors, replays[replay].factors) &&
             exactVector(result.pointJacobians, replays[replay].pointJacobians) &&
             exactVector(result.operatorStatuses, replays[replay].operatorStatuses) &&
+            exactVector(result.kinematicPointJacobians,
+                replays[replay].kinematicPointJacobians) &&
+            exactVector(result.kinematicStatuses,
+                replays[replay].kinematicStatuses) &&
+            exactVector(result.preparedContactJacobians,
+                replays[replay].preparedContactJacobians) &&
+            exactVector(result.preparationStatuses,
+                replays[replay].preparationStatuses) &&
             exactVector(result.spans, replays[replay].spans) &&
             exactVector(result.terms, replays[replay].terms) &&
             exactVector(result.jacobians, replays[replay].jacobians) &&
             exactVector(result.responses, replays[replay].responses) &&
+            exactVector(result.inverseResponses, replays[replay].inverseResponses) &&
+            exactVector(result.inverseStatuses, replays[replay].inverseStatuses) &&
             exactVector(result.solverContacts, replays[replay].solverContacts) &&
             exactVector(result.regularization, replays[replay].regularization) &&
             exactVector(result.responseStatuses, replays[replay].responseStatuses) &&
@@ -838,6 +1081,10 @@ int run(int argc, const char* const* argv) {
     if constexpr (kExpectConditionFailure) {
         bool rejected = deterministic;
         double maximumCondition = 0.0;
+        double maximumDiagonalConditionUpper = 0.0;
+        double maximumInverseResponseScaledError = 0.0;
+        double maximumInverseBackwardError = 0.0;
+        double maximumInversePivotRatioSquared = 0.0;
         for (std::size_t problem = 0u;
              problem < batch.validProblems;
              ++problem) {
@@ -857,8 +1104,119 @@ int run(int argc, const char* const* argv) {
                     &batch.velocities[kDofs * problem],
                     kDofs * sizeof(float)
                 ) == 0;
+            rejected = rejected &&
+                result.preparationStatuses[problem].control.x ==
+                    NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS &&
+                result.inverseStatuses[problem].code ==
+                    MR_INVERSE_MASS_SUCCESS;
+            const Oracle ref = oracle(batch.q.data() + problem * kDofs);
+            const std::vector<double> cpuFactor = factorSPD(ref.mass);
+            double matrixInfinity = 0.0;
+            double inverseInfinity = 0.0;
+            double maximumDiagonal = 0.0;
+            for (std::size_t row = 0u; row < kDofs; ++row) {
+                double rowSum = 0.0;
+                for (std::size_t column = 0u; column < kDofs; ++column) {
+                    rowSum += std::abs(ref.mass[row * kDofs + column]);
+                }
+                matrixInfinity = std::max(matrixInfinity, rowSum);
+                maximumDiagonal = std::max(
+                    maximumDiagonal,
+                    ref.mass[row * kDofs + row]
+                );
+                std::vector<double> unit(kDofs, 0.0);
+                unit[row] = 1.0;
+                const std::vector<double> inverseColumn = solveFactor(
+                    cpuFactor, unit
+                );
+                double inverseRowSum = 0.0;
+                for (double value : inverseColumn) {
+                    inverseRowSum += std::abs(value);
+                }
+                inverseInfinity = std::max(inverseInfinity, inverseRowSum);
+            }
+            maximumDiagonalConditionUpper = std::max(
+                maximumDiagonalConditionUpper,
+                static_cast<double>(kDofs) * maximumDiagonal * inverseInfinity
+            );
+            const auto& inverseStatus = result.inverseStatuses[problem];
+            const double pivotRatio = inverseStatus.diagnostics.y /
+                inverseStatus.diagnostics.x;
+            maximumInversePivotRatioSquared = std::max(
+                maximumInversePivotRatioSquared,
+                pivotRatio * pivotRatio
+            );
+            const std::size_t valueBase =
+                problem * kContacts * 3u * kDofs;
+            for (std::size_t contactIndex = 0u;
+                 contactIndex < kContacts;
+                 ++contactIndex) {
+                std::array<std::vector<double>, 3> rhs = {
+                    std::vector<double>(kDofs, 0.0),
+                    std::vector<double>(kDofs, 0.0),
+                    std::vector<double>(kDofs, 0.0)
+                };
+                for (std::size_t dof = 0u; dof < kDofs; ++dof) {
+                    const Vec2 column = ref.pointJacobians[
+                        contactIndex * kDofs + dof
+                    ];
+                    rhs[0][dof] = column[1];
+                    rhs[1][dof] = column[0];
+                }
+                for (std::size_t axis = 0u; axis < 3u; ++axis) {
+                    const std::vector<double> reference = solveFactor(
+                        cpuFactor, rhs[axis]
+                    );
+                    double maximumRhs = 0.0;
+                    double maximumSolution = 0.0;
+                    double maximumResidual = 0.0;
+                    for (std::size_t dof = 0u; dof < kDofs; ++dof) {
+                        const double actual = result.inverseResponses[
+                            valueBase + (contactIndex * 3u + axis) *
+                                kDofs + dof
+                        ];
+                        maximumInverseResponseScaledError = std::max(
+                            maximumInverseResponseScaledError,
+                            std::abs(actual - reference[dof]) /
+                                std::max(1.0, std::abs(reference[dof]))
+                        );
+                        maximumRhs = std::max(
+                            maximumRhs, std::abs(rhs[axis][dof])
+                        );
+                        maximumSolution = std::max(
+                            maximumSolution, std::abs(actual)
+                        );
+                    }
+                    for (std::size_t row = 0u; row < kDofs; ++row) {
+                        double action = 0.0;
+                        for (std::size_t column = 0u;
+                             column < kDofs;
+                             ++column) {
+                            action += ref.mass[row * kDofs + column] *
+                                result.inverseResponses[
+                                    valueBase + (contactIndex * 3u + axis) *
+                                        kDofs + column
+                                ];
+                        }
+                        maximumResidual = std::max(
+                            maximumResidual,
+                            std::abs(action - rhs[axis][row])
+                        );
+                    }
+                    maximumInverseBackwardError = std::max(
+                        maximumInverseBackwardError,
+                        maximumResidual /
+                            (maximumRhs + matrixInfinity * maximumSolution +
+                             1.0e-30)
+                    );
+                }
+            }
         }
         require(rejected, "ill-conditioned articulated response was published");
+        require(maximumInverseResponseScaledError < 3.0e-5,
+            "inverse ABA lost accuracy on the conditioning adversary");
+        require(maximumInverseBackwardError < 3.0e-6,
+            "inverse ABA residual failed on the conditioning adversary");
         const double bestSeconds = std::min_element(
             replays.begin(),
             replays.end(),
@@ -875,6 +1233,14 @@ int run(int argc, const char* const* argv) {
                   << " maximum_condition_infinity=" << maximumCondition
                   << " threshold="
                   << NUMI_TEMPORAL_CONE_ARTICULATED_MAX_CONDITION_INFINITY
+                  << " diagonal_condition_upper_bound="
+                  << maximumDiagonalConditionUpper
+                  << " inverse_pivot_ratio_squared="
+                  << maximumInversePivotRatioSquared
+                  << " inverse_response_max_scaled_error="
+                  << maximumInverseResponseScaledError
+                  << " inverse_backward_error="
+                  << maximumInverseBackwardError
                   << " deterministic=" << (deterministic ? "yes" : "no")
                   << " rollback=" << (rejected ? "yes" : "no")
                   << " gpu_seconds=" << bestSeconds
@@ -886,9 +1252,15 @@ int run(int argc, const char* const* argv) {
     double maxMassScaledError = 0.0;
     double maxJacobianError = 0.0;
     double maxJacobianScaledError = 0.0;
+    double maxKinematicJacobianDifference = 0.0;
+    double maxPreparedJacobianDifference = 0.0;
     double maxFiniteDifferenceError = 0.0;
     double maxResponseError = 0.0;
     double maxResponseScaledError = 0.0;
+    double maxInverseResponseError = 0.0;
+    double maxInverseResponseScaledError = 0.0;
+    double maxDenseInverseDifference = 0.0;
+    double maxInverseBackwardError = 0.0;
     double maxBlockError = 0.0;
     double maxBlockScaledError = 0.0;
     double maxFreeVelocityError = 0.0;
@@ -897,9 +1269,13 @@ int run(int argc, const char* const* argv) {
     double maxFp64Residual = 0.0;
     double maxGpuBackwardError = 0.0;
     double maxConditionInfinity = 0.0;
+    double maxDiagonalConditionUpperBound = 0.0;
     double maxConditionScaledError = 0.0;
     std::uint32_t maxIterations = 0u;
     std::size_t failedValid = 0u;
+    std::size_t failedInverseValid = 0u;
+    std::size_t failedKinematicValid = 0u;
+    std::size_t failedPreparationValid = 0u;
     const std::size_t valuesPerProblem = kContacts * 3u * kDofs;
     const std::size_t blocksPerProblem = kContacts * kContacts;
     for (std::size_t problem = 0u; problem < batch.validProblems; ++problem) {
@@ -913,12 +1289,17 @@ int run(int argc, const char* const* argv) {
         const std::vector<double> cpuFactor = factorSPD(ref.mass);
         double cpuMatrixInfinity = 0.0;
         double cpuInverseInfinity = 0.0;
+        double cpuMaximumDiagonal = 0.0;
         for (std::size_t row = 0u; row < kDofs; ++row) {
             double rowSum = 0.0;
             for (std::size_t column = 0u; column < kDofs; ++column) {
                 rowSum += std::abs(ref.mass[row * kDofs + column]);
             }
             cpuMatrixInfinity = std::max(cpuMatrixInfinity, rowSum);
+            cpuMaximumDiagonal = std::max(
+                cpuMaximumDiagonal,
+                ref.mass[row * kDofs + row]
+            );
             std::vector<double> unit(kDofs, 0.0);
             unit[row] = 1.0;
             const std::vector<double> inverseColumn = solveFactor(
@@ -935,8 +1316,23 @@ int run(int argc, const char* const* argv) {
         }
         const double cpuConditionInfinity =
             cpuMatrixInfinity * cpuInverseInfinity;
+        maxDiagonalConditionUpperBound = std::max(
+            maxDiagonalConditionUpperBound,
+            static_cast<double>(kDofs) * cpuMaximumDiagonal *
+                cpuInverseInfinity
+        );
         const double gpuConditionInfinity =
             result.responseStatuses[problem].conditioning.z;
+        if (result.kinematicStatuses[problem].code !=
+                MR_ARTICULATED_OPERATOR_SUCCESS ||
+            result.kinematicStatuses[problem].nv != kDofs) {
+            ++failedKinematicValid;
+        }
+        if (result.preparationStatuses[problem].control.x !=
+                NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS ||
+            result.preparationStatuses[problem].control.w != kContacts) {
+            ++failedPreparationValid;
+        }
         maxConditionScaledError = std::max(
             maxConditionScaledError,
             std::abs(gpuConditionInfinity - cpuConditionInfinity) /
@@ -968,6 +1364,19 @@ int run(int argc, const char* const* argv) {
             const std::size_t worldBase = valueBase +
                 pointIndex * 3u * kDofs;
             for (std::size_t dof = 0u; dof < kDofs; ++dof) {
+                for (std::size_t component = 0u; component < 3u; ++component) {
+                    maxKinematicJacobianDifference = std::max(
+                        maxKinematicJacobianDifference,
+                        static_cast<double>(std::abs(
+                            result.pointJacobians[
+                                worldBase + component * kDofs + dof
+                            ] -
+                            result.kinematicPointJacobians[
+                                worldBase + component * kDofs + dof
+                            ]
+                        ))
+                    );
+                }
                 const Vec2 reference = ref.pointJacobians[
                     pointIndex * kDofs + dof
                 ];
@@ -984,6 +1393,15 @@ int run(int argc, const char* const* argv) {
                     );
                 }
             }
+        }
+        for (std::size_t value = 0u; value < valuesPerProblem; ++value) {
+            maxPreparedJacobianDifference = std::max(
+                maxPreparedJacobianDifference,
+                static_cast<double>(std::abs(
+                    result.jacobians[valueBase + value] -
+                    result.preparedContactJacobians[valueBase + value]
+                ))
+            );
         }
         if (problem < 2u) {
             constexpr float h = 1.0e-3f;
@@ -1027,6 +1445,11 @@ int run(int argc, const char* const* argv) {
         for (std::size_t dof = 0u; dof < kDofs; ++dof) {
             initialVelocity[dof] = batch.velocities[dofBase + dof];
         }
+        if (result.inverseStatuses[problem].code != MR_INVERSE_MASS_SUCCESS ||
+            result.inverseStatuses[problem].rhsCount != 3u * kContacts ||
+            result.inverseStatuses[problem].nv != kDofs) {
+            ++failedInverseValid;
+        }
         for (std::size_t contactIndex = 0u;
              contactIndex < kContacts;
              ++contactIndex) {
@@ -1050,31 +1473,77 @@ int run(int argc, const char* const* argv) {
                 const std::vector<double> response = solveFactor(
                     cpuFactor, rhs[axis]
                 );
+                double inverseMaximumRightHandSide = 0.0;
+                double inverseMaximumSolution = 0.0;
+                double inverseMaximumResidual = 0.0;
                 for (std::size_t dof = 0u; dof < kDofs; ++dof) {
                     const double actual = result.responses[
                         valueBase + contactIndex * 3u * kDofs +
                             dof * 3u + axis
                     ];
+                    const double inverseActual = result.inverseResponses[
+                        valueBase + (contactIndex * 3u + axis) * kDofs + dof
+                    ];
                     const double error = std::abs(actual - response[dof]);
+                    const double inverseError = std::abs(
+                        inverseActual - response[dof]
+                    );
                     maxResponseError = std::max(maxResponseError, error);
                     maxResponseScaledError = std::max(
                         maxResponseScaledError,
                         error / std::max(1.0, std::abs(response[dof]))
                     );
+                    maxInverseResponseError = std::max(
+                        maxInverseResponseError,
+                        inverseError
+                    );
+                    maxInverseResponseScaledError = std::max(
+                        maxInverseResponseScaledError,
+                        inverseError /
+                            std::max(1.0, std::abs(response[dof]))
+                    );
+                    maxDenseInverseDifference = std::max(
+                        maxDenseInverseDifference,
+                        std::abs(inverseActual - actual)
+                    );
+                    inverseMaximumRightHandSide = std::max(
+                        inverseMaximumRightHandSide,
+                        std::abs(rhs[axis][dof])
+                    );
+                    inverseMaximumSolution = std::max(
+                        inverseMaximumSolution,
+                        std::abs(inverseActual)
+                    );
                 }
                 for (std::size_t row = 0u; row < kDofs; ++row) {
                     double action = 0.0;
+                    double inverseAction = 0.0;
                     for (std::size_t column = 0u;
                          column < kDofs;
                          ++column) {
                         action += ref.mass[row * kDofs + column] *
                             response[column];
+                        inverseAction += ref.mass[row * kDofs + column] *
+                            result.inverseResponses[
+                                valueBase + (contactIndex * 3u + axis) *
+                                    kDofs + column
+                            ];
                     }
                     maxFp64Residual = std::max(
                         maxFp64Residual,
                         std::abs(action - rhs[axis][row])
                     );
+                    inverseMaximumResidual = std::max(
+                        inverseMaximumResidual,
+                        std::abs(inverseAction - rhs[axis][row])
+                    );
                 }
+                maxInverseBackwardError = std::max(
+                    maxInverseBackwardError,
+                    inverseMaximumResidual /
+                        (inverseMaximumRightHandSide +
+                         cpuMatrixInfinity * inverseMaximumSolution + 1.0e-30)
+                );
             }
             const auto& solverContact = result.solverContacts[
                 contactBase + contactIndex
@@ -1269,10 +1738,17 @@ int run(int argc, const char* const* argv) {
             printStatus(problem);
         }
     }
-    if (maxMassScaledError >= 2.0e-5 ||
+    if (failedInverseValid != 0u ||
+        failedKinematicValid != 0u ||
+        failedPreparationValid != 0u ||
+        maxKinematicJacobianDifference != 0.0 ||
+        maxPreparedJacobianDifference != 0.0 ||
+        maxMassScaledError >= 2.0e-5 ||
         maxJacobianScaledError >= 2.0e-5 ||
         maxFiniteDifferenceError >= 2.0e-3 ||
         maxResponseScaledError >= 3.0e-5 ||
+        maxInverseResponseScaledError >= 3.0e-5 ||
+        maxInverseBackwardError >= 3.0e-6 ||
         maxBlockScaledError >= 3.0e-5 ||
         maxFreeVelocityError >= 2.0e-4 ||
         maxPublicationError >= 2.0e-4 ||
@@ -1282,9 +1758,15 @@ int run(int argc, const char* const* argv) {
                   << "/" << maxMassScaledError
                   << " jacobian=" << maxJacobianError
                   << "/" << maxJacobianScaledError
+                  << " kinematic_jacobian=" << maxKinematicJacobianDifference
+                  << " prepared_jacobian=" << maxPreparedJacobianDifference
                   << " finite_difference=" << maxFiniteDifferenceError
                   << " response=" << maxResponseError
                   << "/" << maxResponseScaledError
+                  << " inverse_response=" << maxInverseResponseError
+                  << "/" << maxInverseResponseScaledError
+                  << " dense_inverse=" << maxDenseInverseDifference
+                  << " inverse_backward=" << maxInverseBackwardError
                   << " block=" << maxBlockError
                   << "/" << maxBlockScaledError
                   << " free=" << maxFreeVelocityError
@@ -1293,15 +1775,31 @@ int run(int argc, const char* const* argv) {
                   << " condition_infinity=" << maxConditionInfinity
                   << " condition_error=" << maxConditionScaledError
                   << " gpu_backward=" << maxGpuBackwardError
+                  << " failed_inverse_valid=" << failedInverseValid
+                  << " failed_kinematic_valid=" << failedKinematicValid
+                  << " failed_preparation_valid=" << failedPreparationValid
                   << '\n';
     }
     require(deterministic, "articulated chain is not byte deterministic");
     require(rollback, "articulated invalid-input rollback failed");
     require(failedValid == 0u, "valid articulated islands failed");
+    require(failedInverseValid == 0u, "valid inverse-ABA actions failed");
+    require(failedKinematicValid == 0u,
+        "valid kinematics-only articulated operators failed");
+    require(failedPreparationValid == 0u,
+        "valid articulated Jacobian preparation failed");
     require(maxMassScaledError < 2.0e-5, "articulated mass oracle mismatch");
     require(maxJacobianScaledError < 2.0e-5, "articulated Jacobian oracle mismatch");
+    require(maxKinematicJacobianDifference == 0.0,
+        "kinematics-only Jacobian changed arithmetic");
+    require(maxPreparedJacobianDifference == 0.0,
+        "prepared contact Jacobian changed arithmetic");
     require(maxFiniteDifferenceError < 2.0e-3, "articulated finite-difference mismatch");
     require(maxResponseScaledError < 3.0e-5, "articulated response-column mismatch");
+    require(maxInverseResponseScaledError < 3.0e-5,
+        "inverse-ABA response-column mismatch");
+    require(maxInverseBackwardError < 3.0e-6,
+        "inverse-ABA backward residual mismatch");
     require(maxBlockScaledError < 3.0e-5, "articulated Delassus block mismatch");
     require(maxFreeVelocityError < 2.0e-4, "articulated free-velocity mismatch");
     require(maxPublicationError < 2.0e-4, "articulated publication mismatch");
@@ -1313,13 +1811,35 @@ int run(int argc, const char* const* argv) {
         replays.begin(), replays.end(), [](const Result& a, const Result& b) {
             return a.seconds < b.seconds;
         })->seconds;
+    const double bestInverseSeconds = std::min_element(
+        replays.begin(), replays.end(), [](const Result& a, const Result& b) {
+            return a.inverseSeconds < b.inverseSeconds;
+        })->inverseSeconds;
+    const double bestKinematicsSeconds = std::min_element(
+        replays.begin(), replays.end(), [](const Result& a, const Result& b) {
+            return a.kinematicsSeconds < b.kinematicsSeconds;
+        })->kinematicsSeconds;
+    const double bestPreparationSeconds = std::min_element(
+        replays.begin(), replays.end(), [](const Result& a, const Result& b) {
+            return a.preparationSeconds < b.preparationSeconds;
+        })->preparationSeconds;
+    std::array<double, 5> bestStageSeconds = replays.front().stageSeconds;
+    for (const Result& replay : replays) {
+        for (std::size_t stage = 0u; stage < bestStageSeconds.size(); ++stage) {
+            bestStageSeconds[stage] = std::min(
+                bestStageSeconds[stage], replay.stageSeconds[stage]
+            );
+        }
+    }
     std::cout << std::setprecision(9)
               << "numi-solver-articulated device=\"" << device.name.UTF8String << "\""
               << " dofs=" << kDofs
               << " islands=" << problemCount
               << " valid=" << batch.validProblems
               << " contacts=" << batch.validProblems * kContacts
-              << " stages=5 command_buffers=1 readbacks=0"
+              << " solver_stages=5 solver_command_buffers=1"
+              << " diagnostic_command_buffers=8"
+              << " readbacks_between_solver_stages=0"
               << " deterministic=" << (deterministic ? "yes" : "no")
               << " rollback=" << (rollback ? "yes" : "no")
               << " failed_valid=" << failedValid << "\n"
@@ -1327,17 +1847,27 @@ int run(int argc, const char* const* argv) {
               << " mass_max_scaled_error=" << maxMassScaledError
               << " jacobian_max_abs_error=" << maxJacobianError
               << " jacobian_max_scaled_error=" << maxJacobianScaledError
+              << " kinematic_jacobian_max_abs_difference="
+              << maxKinematicJacobianDifference
+              << " prepared_jacobian_max_abs_difference="
+              << maxPreparedJacobianDifference
               << " finite_difference_max_abs_error=" << maxFiniteDifferenceError
               << " response_max_abs_error=" << maxResponseError
               << " response_max_scaled_error=" << maxResponseScaledError
+              << " inverse_response_max_abs_error=" << maxInverseResponseError
+              << " inverse_response_max_scaled_error=" << maxInverseResponseScaledError
+              << " dense_inverse_max_abs_difference=" << maxDenseInverseDifference
               << " delassus_max_abs_error=" << maxBlockError << "\n"
               << "delassus_max_scaled_error=" << maxBlockScaledError
               << " "
               << "free_velocity_max_abs_error=" << maxFreeVelocityError
               << " publication_max_abs_error=" << maxPublicationError
               << " fp64_solve_residual=" << maxFp64Residual
-              << " gpu_response_backward_error=" << maxGpuBackwardError << "\n"
+              << " gpu_response_backward_error=" << maxGpuBackwardError
+              << " inverse_aba_backward_error=" << maxInverseBackwardError << "\n"
               << "condition_infinity=" << maxConditionInfinity
+              << " diagonal_condition_upper_bound="
+              << maxDiagonalConditionUpperBound
               << " condition_max_scaled_error=" << maxConditionScaledError
               << " energy_budget_violation=" << std::max(0.0, maxEnergyBudgetViolation)
               << " max_iterations=" << maxIterations << "\n"
@@ -1352,6 +1882,18 @@ int run(int argc, const char* const* argv) {
               << 2u * problemCount * valuesPerProblem * sizeof(float)
               << " block_bytes="
               << problemCount * blocksPerProblem * 9u * sizeof(float)
+              << " inverse_aba_seconds=" << bestInverseSeconds
+              << " kinematics_only_seconds=" << bestKinematicsSeconds
+              << " contact_prepare_seconds=" << bestPreparationSeconds
+              << " inverse_aba_rhs_per_second="
+              << static_cast<double>(batch.validProblems * kContacts * 3u) /
+                 bestInverseSeconds
+              << " stage_gpu_seconds="
+              << bestStageSeconds[0] << ","
+              << bestStageSeconds[1] << ","
+              << bestStageSeconds[2] << ","
+              << bestStageSeconds[3] << ","
+              << bestStageSeconds[4]
               << "\n";
     return 0;
 }
