@@ -31,6 +31,7 @@
 #define NUMI_TEMPORAL_CONE_ARTICULATED_ABI_VERSION 3u
 #define NUMI_TEMPORAL_CONE_ARTICULATED_MAX_DOF 32u
 #define NUMI_TEMPORAL_CONE_ARTICULATED_MAX_CONDITION_INFINITY 16384.0f
+#define NUMI_TEMPORAL_CONE_ARTICULATED_MAX_INVERSE_CONDITION_UPPER 16384.0f
 #define NUMI_TEMPORAL_CONE_ARTICULATED_RESPONSE_DENSE_FACTOR 0u
 #define NUMI_TEMPORAL_CONE_ARTICULATED_RESPONSE_INVERSE_ABA 1u
 #define NUMI_TEMPORAL_CONE_ARTICULATED_VALUES_PER_CONTACT(dof_count) \
@@ -234,8 +235,8 @@ typedef struct MR_ALIGN16 NumiTemporalConeArticulatedStatus {
     mr_uint4 control;
     // x minimum pivot, y maximum pivot, z mode-specific condition diagnostic,
     // w upstream articulated-operator relative residual.
-    // Dense z is the infinity-norm condition estimate; inverse-ABA z is the
-    // squared articulated-body pivot ratio and is not an admission estimate.
+    // Dense z is the exact infinity-norm condition estimate. Inverse-ABA z is
+    // the rigorous trace(M)/minimum-armature upper bound on kappa_2(M).
     mr_float4 conditioning;
     // x maximum frame error, y maximum response backward error,
     // z maximum generalized-velocity delta, w inverse-mass status code.

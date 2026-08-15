@@ -13914,6 +13914,8 @@ kernel void numi_temporal_cone_articulated_finalize_inverse(
     // x spans, y terms, z transposed responses, w solver contacts.
     constant uint4& outputCapacities [[buffer(17)]],
     constant uint& regularizationCapacity [[buffer(18)]],
+    // x conservative trace upper, y minimum authored armature.
+    device const float2* inverseConditionBounds [[buffer(19)]],
     const uint problem [[threadgroup_position_in_grid]],
     const uint lane [[thread_index_in_simdgroup]]
 ) {
@@ -13984,6 +13986,7 @@ kernel void numi_temporal_cone_articulated_finalize_inverse(
 
     NumiTemporalConeArticulatedStatus preparationStatus = {};
     MRInverseMassStatusGPU inverseStatus = {};
+    float inverseConditionUpper = INFINITY;
     if (localFailure == NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS) {
         preparationStatus = preparationStatuses[problem];
         inverseStatus = inverseStatuses[problem];
@@ -14002,6 +14005,18 @@ kernel void numi_temporal_cone_articulated_finalize_inverse(
             inverseStatus.diagnostics.y < inverseStatus.diagnostics.x) {
             localFailure =
                 NUMI_TEMPORAL_CONE_ARTICULATED_INVERSE_MASS_FAILED;
+        } else {
+            const float2 conditionBounds = inverseConditionBounds[problem];
+            inverseConditionUpper = conditionBounds.x / conditionBounds.y;
+            if (!all(isfinite(conditionBounds)) ||
+                !(conditionBounds.x > 0.0f) ||
+                !(conditionBounds.y > 0.0f) ||
+                !isfinite(inverseConditionUpper) ||
+                inverseConditionUpper >
+                    NUMI_TEMPORAL_CONE_ARTICULATED_MAX_INVERSE_CONDITION_UPPER) {
+                localFailure =
+                    NUMI_TEMPORAL_CONE_ARTICULATED_CONDITIONING_FAILED;
+            }
         }
     }
 
@@ -14040,6 +14055,12 @@ kernel void numi_temporal_cone_articulated_finalize_inverse(
         if (lane == 0u) {
             NumiTemporalConeArticulatedStatus status = preparationStatus;
             status.control = uint4(failure, dofCount, contactCount, 0u);
+            status.conditioning = float4(
+                inverseStatus.diagnostics.x,
+                inverseStatus.diagnostics.y,
+                inverseConditionUpper,
+                0.0f
+            );
             status.diagnostics.w = float(inverseStatus.code);
             outputStatuses[problem] = status;
         }
@@ -14143,8 +14164,6 @@ kernel void numi_temporal_cone_articulated_finalize_inverse(
     }
     if (lane == 0u) {
         NumiTemporalConeArticulatedStatus status = preparationStatus;
-        const float pivotRatio =
-            inverseStatus.diagnostics.y / inverseStatus.diagnostics.x;
         status.control = uint4(
             failure,
             dofCount,
@@ -14156,7 +14175,7 @@ kernel void numi_temporal_cone_articulated_finalize_inverse(
         status.conditioning = float4(
             inverseStatus.diagnostics.x,
             inverseStatus.diagnostics.y,
-            pivotRatio * pivotRatio,
+            inverseConditionUpper,
             0.0f
         );
         status.diagnostics = float4(

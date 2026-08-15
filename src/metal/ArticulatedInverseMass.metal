@@ -381,6 +381,10 @@ kernel void MR_INVERSE_MASS_KERNEL_NAME(
 #if MR_INVERSE_MASS_STREAMING_RHS
     device const MRMetalWorldContactStatusGPU* contactStatuses
         [[buffer(12)]],
+    // x conservative trace(M) upper bound, y minimum authored generalized
+    // armature. For a fixed-root articulation with positive armature, x/y
+    // bounds kappa_2(M).
+    device float2* conditionBounds [[buffer(13)]],
 #endif
     uint2 packet [[threadgroup_position_in_grid]],
     uint lane [[thread_index_in_threadgroup]]
@@ -415,6 +419,9 @@ kernel void MR_INVERSE_MASS_KERNEL_NAME(
     if (lane != 0u || environment >= dispatch.environmentCount) {
         return;
     }
+#if MR_INVERSE_MASS_STREAMING_RHS
+    conditionBounds[environment] = float2(INFINITY, 0.0f);
+#endif
 
     threadgroup float3 bodyPosition[kMaxBodies];
     threadgroup float4 bodyRotation[kMaxBodies];
@@ -1080,6 +1087,88 @@ kernel void MR_INVERSE_MASS_KERNEL_NAME(
 #endif
         }
     }
+
+#if MR_INVERSE_MASS_STREAMING_RHS
+    // M = J_body^T I_body J_body + D_armature. For fixed-root scalar trees,
+    // every body term is PSD, hence lambda_min(M) >= min(D_armature), while
+    // lambda_max(M) <= trace(M). We conservatively upper-bound each diagonal
+    // kinetic contribution with absolute inertia coefficients, then inflate
+    // the positive FP32 sum for its bounded accumulation error. This avoids a
+    // dense M/L packet while giving finalization a state-local condition gate.
+    if (articulation.rootType == MR_ROOT_FIXED) {
+        float minimumArmature = INFINITY;
+        float traceUpper = 0.0f;
+        for (uint localBody = 0u;
+             localBody < articulation.bodyCount;
+             ++localBody) {
+            if (localBody == rootLocal) {
+                continue;
+            }
+            const uint globalJoint = inboundJoint[localBody];
+            device const MRJointDescriptorGPU& joint = joints[globalJoint];
+            if (joint.nv == 1u) {
+                const uint localV =
+                    joint.vOffset - articulation.vOffset;
+#if MR_INVERSE_MASS_BODY_PARAMETERS
+                const float armature = effectiveArmature(
+                    dofs[articulation.vOffset + localV],
+                    world,
+                    dispatch.flags,
+                    controllerParameters[environment]
+                );
+#else
+                const float armature =
+                    dofs[articulation.vOffset + localV].drive.z;
+#endif
+                minimumArmature = min(minimumArmature, armature);
+                traceUpper += armature;
+            }
+        }
+        for (uint targetBody = 0u;
+             targetBody < articulation.bodyCount;
+             ++targetBody) {
+            const uint targetMatrixBase = targetBody * 36u;
+            const float mass = articulatedInertia[
+                targetMatrixBase + 3u * 6u + 3u
+            ];
+            uint ancestor = targetBody;
+            while (ancestor != rootLocal) {
+                const uint globalJoint = inboundJoint[ancestor];
+                device const MRJointDescriptorGPU& joint = joints[globalJoint];
+                if (joint.nv == 1u) {
+                    const float3 angular = motionAngular[ancestor];
+                    const float3 linear = motionLinear[ancestor] + cross(
+                        angular,
+                        bodyPosition[targetBody] - bodyPosition[ancestor]
+                    );
+                    float rotationalUpper = 0.0f;
+                    for (uint row = 0u; row < 3u; ++row) {
+                        for (uint column = 0u; column < 3u; ++column) {
+                            rotationalUpper +=
+                                abs(angular[row]) *
+                                abs(articulatedInertia[
+                                    targetMatrixBase + row * 6u + column
+                                ]) *
+                                abs(angular[column]);
+                        }
+                    }
+                    traceUpper += rotationalUpper +
+                        mass * dot(linear, linear);
+                }
+                ancestor = parentLocal[ancestor];
+            }
+        }
+        const float accumulationInflation =
+            1.0f + 64.0f * float(
+                articulation.bodyCount * articulation.bodyCount
+            ) * kFloatEpsilon;
+        traceUpper *= accumulationInflation;
+        conditionBounds[environment] = float2(
+            traceUpper,
+            minimumArmature
+        );
+    }
+#endif
 
     float minimumPivot = INFINITY;
     float maximumPivot = 0.0f;

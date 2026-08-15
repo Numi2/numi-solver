@@ -52,10 +52,12 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
   factorization, response-column solves, cone contact, and deterministic
   generalized-velocity publication on one command buffer.
 - `build/numi-solver-articulated-capacity` for the complete 32-DoF,
-  32-contact, 1,024-block articulated frontier and the complete streamed
-  inverse-ABA candidate transaction.
+  32-contact, 1,024-block articulated frontier and the complete admitted
+  streamed inverse-ABA transaction.
 - `build/numi-solver-articulated-conditioning` for deterministic rejection
   and rollback of forward-inaccurate ill-conditioned mass response.
+- `build/numi-solver-articulated-zero-armature` for explicit rejection of an
+  inverse response with no positive armature lower bound.
 
 Run the default FP64 comparisons and deterministic replays:
 
@@ -67,6 +69,7 @@ Run the default FP64 comparisons and deterministic replays:
 ./build/numi-solver-articulated
 ./build/numi-solver-articulated-capacity
 ./build/numi-solver-articulated-conditioning
+./build/numi-solver-articulated-zero-armature
 ctest --test-dir build --output-on-failure
 ```
 
@@ -108,11 +111,12 @@ An installed or relocated harness can load a specific library with
   forming an inverse.
 - Deterministic compensated articulated mass accumulation and an exact
   factor-derived `kappa_infinity` admission gate before response publication.
-- A qualified seven-stage streamed inverse-ABA candidate transaction with
+- A qualified seven-stage streamed inverse-ABA transaction with
   GPU-produced contact-frame right-hand sides, sparse assembly, cone solve,
-  and generalized-velocity publication on one command buffer. The
-  factor-certified dense response remains the default until the inverse path
-  owns a state-local forward-accuracy admission gate.
+  generalized-velocity publication, and a rigorous factor-free condition
+  upper bound on one command buffer. ABI v3 admits this mode for fixed-root
+  scalar trees with positive authored armature; the dense mode remains the
+  explicit fallback for unsupported or rejected states.
 - GPU-derived implicit spring-damper CFM, penetration-recovery targets, and
   thresholded restitution from versioned contact material laws.
 - Canonical per-body impulse accumulation with no floating-point atomics.

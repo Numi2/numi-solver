@@ -94,13 +94,34 @@ streamed columns into the generic assembly layout only after checking the
 preparation and inverse statuses, finite values, capacities, and contact laws;
 later failures preserve the complete input velocity.
 
-This is still a candidate, not the default. Its response columns, assembled
-Delassus blocks, solve, publication, rollback, and energy budget are checked
-against independent definitions, but its squared articulated-body pivot ratio
-is only a diagnostic. It is not a forward-error condition estimate comparable
-to `kappa_infinity(M)`. The factor-backed path therefore retains production
-ownership until the inverse path has a state-local admission gate with a
-declared physical meaning.
+For fixed-root scalar trees, inverse ABA also computes a factor-free,
+state-local condition certificate. The physical mass operator decomposes as
+
+```math
+M=J_b^T I_b J_b+D_a,
+```
+
+where the body term is positive semidefinite and `D_a` is authored generalized
+armature. Therefore
+
+```math
+\lambda_{\min}(M)\ge\min_i(D_{a,i}),\qquad
+\lambda_{\max}(M)\le\operatorname{tr}(M),\qquad
+\kappa_2(M)\le
+\frac{\operatorname{tr}(M)}{\min_i(D_{a,i})}.
+```
+
+The kernel walks each body/ancestor pair, conservatively upper-bounds its
+diagonal kinetic contribution with absolute world-inertia coefficients, and
+inflates the positive FP32 accumulation for the declared operation count.
+Finalization admits at most `16384`. Nonpositive armature, unsupported roots,
+nonfinite certificates, or larger bounds fail with typed conditioning status
+before a span is published. The ABA pivot ratio remains diagnostic only.
+
+ABI v3 therefore qualifies inverse ABA as an admitted response mode on that
+declared topology. Dense factor response remains the explicit fallback for
+states outside the certificate domain; the ABI does not silently substitute
+or regularize either physical operator.
 
 ## Contact law and publication
 

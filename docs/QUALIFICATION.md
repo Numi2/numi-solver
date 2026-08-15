@@ -309,6 +309,7 @@ Measured command:
 ./build/numi-solver-articulated --islands 1024 --replays 20
 ./build/numi-solver-articulated-capacity --islands 256 --replays 10
 ./build/numi-solver-articulated-conditioning --islands 64 --replays 10
+./build/numi-solver-articulated-zero-armature --islands 8 --replays 2
 ```
 
 Apple M4 result:
@@ -366,7 +367,7 @@ workloads, not environment-step or energy-efficiency claims.
 The combined metallib SHA-256 for this milestone was
 `ce42170f68e599d5e12fcec4f4b235ffee34593b926e3f2d0c80c78748ff4060`.
 
-## Streamed inverse-ABA response candidate
+## Streamed inverse-ABA admitted response mode
 
 The canonical O(n) articulated inverse-mass owner is compiled with strict
 FP32 arithmetic and contact-count streamed right-hand sides. The candidate
@@ -393,23 +394,32 @@ candidate_dense_velocity_max_abs_difference=0.0000538230
 candidate_rollback=yes failed_candidate_valid=0
 ```
 
-The low-armature conditioning adversary remains rejected by the dense ABI v3
-gate at `kappa_infinity=182540.469`. The complete candidate also executes it:
-inverse ABA reaches response scaled error `0.0000120349` and backward error
-`0.0000000225499`. That result demonstrates this mechanism family, not a
-universal right to remove conditioning admission. The reported squared ABA
-pivot ratio (`5.43672`) is explicitly diagnostic and is not accepted as a
-condition estimate. A default inverse path still needs a state-local
-forward-accuracy admission contract.
+The inverse path independently certifies the fixed-root physical decomposition
+`M = J_b^T I_b J_b + D_a`. Absolute world-inertia contributions plus bounded
+FP32 accumulation give an upper bound for `trace(M)`, while positive authored
+armature gives `lambda_min(M) >= min(D_a)`. The admitted capacity batch has
+`kappa_2(M) <= 5763.177`, below the declared `16384` threshold, and the GPU
+certificate never underestimates the independently reconstructed FP64
+`trace(M)/min(D_a)` bound.
+
+The low-armature adversary remains rejected by the dense gate at
+`kappa_infinity=182540.469`. Inverse ABA still computes the response for
+diagnosis (`0.0000120349` scaled error and `0.0000000225499` backward error),
+but finalization obtains `kappa_2(M) <= 91609.625`, rejects it before assembly,
+and republishes the exact input velocity. The small ABA pivot ratio (`5.43672`)
+is thus correctly excluded from admission semantics.
+The separate zero-armature target produces an infinite certificate and proves
+the same typed rollback when no positive physical lower bound exists; its
+uncertified inverse response is never assembled or published.
 
 Apple M4 command-buffer timestamps for the 256-island capacity batch were:
 
 ```text
-dense_five_stage_seconds=0.029445542
-inverse_candidate_seven_stage_seconds=0.015765750
-candidate_dense_speedup=1.86769052
-inverse_aba_seconds=0.008937500
-inverse_aba_rhs_per_second=2717538.44
+dense_five_stage_seconds=0.027523208
+inverse_seven_stage_seconds=0.016023000
+inverse_dense_speedup=1.71773128
+inverse_aba_seconds=0.008794167
+inverse_aba_rhs_per_second=2761830.78
 factor_bytes_avoided=1048576
 ```
 
@@ -417,11 +427,12 @@ Each chain value is the least-contended Metal GPU timestamp across five
 bit-identical replays and includes its complete operator-to-publication
 transaction. The candidate binds only a one-float unused mass-output sentinel
 to the kinematics-only ABI, so it does not allocate the 1 MiB dense factor
-packet at this capacity. No promotion occurs because throughput and successful
-execution do not replace the missing state-local forward-accuracy admission.
+packet at this capacity. ABI v3 promotes the inverse mode for fixed-root scalar
+trees that pass this certificate. Dense response remains the explicit path for
+unsupported roots, nonpositive armature, or rejected bounds.
 
 The combined metallib SHA-256 for this candidate milestone was
-`159511dc9aaac7cc7fe91dbde960b29df384b5a8a7e93e94f1faa0329053ecee`.
+`7cd79f57810d178ebd37f99ed72f09f180de1b0329bd87cfef45937811263bf0`.
 
 ## Evidence boundary
 
@@ -444,9 +455,8 @@ factor-backed response columns, exact infinity-condition admission,
 deterministic generalized-velocity publication, and their independent FP64,
 finite-difference, residual, and energy checks. The inverse-ABA candidate
 additionally qualifies the O(n) mass action, contact-frame preparation,
-sparse assembly, cone solve, transactional publication, and rollback on one
-command buffer, but not a production-quality forward-conditioning admission.
-These gates
+sparse assembly, cone solve, transactional publication, rollback, and a
+state-local fixed-root condition upper bound on one command buffer. These gates
 do not qualify collision
 generation or refresh, articulated configuration integration, arbitrary
 imported mechanisms, mechanisms above the declared adapter capacity, or a

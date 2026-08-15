@@ -372,6 +372,7 @@ struct Result {
     // Inverse-ABA output is packed [problem][contact axis][DoF].
     std::vector<float> inverseResponses;
     std::vector<MRInverseMassStatusGPU> inverseStatuses;
+    std::vector<float> inverseConditionBounds;
     std::vector<NumiTemporalConeIslandContact> solverContacts;
     std::vector<float> regularization;
     std::vector<NumiTemporalConeArticulatedStatus> responseStatuses;
@@ -384,6 +385,7 @@ struct Result {
     std::vector<NumiTemporalConeArticulatedStatus> publishStatuses;
     std::vector<float> candidatePreparedContactJacobians;
     std::vector<float> candidateInverseResponses;
+    std::vector<float> candidateInverseConditionBounds;
     std::vector<float> candidateResponses;
     std::vector<NumiTemporalConeArticulatedStatus> candidateResponseStatuses;
     std::vector<NumiTemporalConeIslandContact> candidateSolverContacts;
@@ -522,6 +524,9 @@ Result runGPU(
     id<MTLBuffer> inverseContactStatusBuffer = output(
         problemCount * sizeof(MRMetalWorldContactStatusGPU)
     );
+    id<MTLBuffer> inverseConditionBuffer = output(
+        problemCount * 2u * sizeof(float)
+    );
     id<MTLBuffer> solverContactBuffer = output(problemCount * kContacts * sizeof(NumiTemporalConeIslandContact));
     id<MTLBuffer> regularizationBuffer = output(problemCount * kContacts * 9u * sizeof(float));
     id<MTLBuffer> responseStatusBuffer = output(problemCount * sizeof(NumiTemporalConeArticulatedStatus));
@@ -559,6 +564,8 @@ Result runGPU(
         problemCount * kContacts * 3u * kDofs * sizeof(float));
     id<MTLBuffer> candidateInverseStatusBuffer = output(
         problemCount * sizeof(MRInverseMassStatusGPU));
+    id<MTLBuffer> candidateInverseConditionBuffer = output(
+        problemCount * 2u * sizeof(float));
     id<MTLBuffer> candidateSpanBuffer = output(
         problemCount * kContacts * sizeof(NumiTemporalConeAssemblyContactSpan));
     id<MTLBuffer> candidateTermBuffer = output(
@@ -597,7 +604,8 @@ Result runGPU(
         contactBuffer && lawBuffer && spanBuffer && termBuffer && jacobianBuffer &&
         preparedJacobianBuffer && preparationStatusBuffer &&
         responseBuffer && inverseResponseBuffer && inverseStatusBuffer &&
-        inverseContactStatusBuffer && solverContactBuffer && regularizationBuffer &&
+        inverseContactStatusBuffer && inverseConditionBuffer &&
+        solverContactBuffer && regularizationBuffer &&
         responseStatusBuffer && rowBuffer && columnBuffer && blockBuffer &&
         streamHeaderBuffer && assemblyStatusBuffer && impulseBuffer &&
         solverStatusBuffer && outputVelocityBuffer && publishStatusBuffer &&
@@ -607,6 +615,7 @@ Result runGPU(
         candidateOperatorStatusBuffer && candidatePreparedJacobianBuffer &&
         candidatePreparationStatusBuffer && candidateInverseGateBuffer &&
         candidateInverseResponseBuffer && candidateInverseStatusBuffer &&
+        candidateInverseConditionBuffer &&
         candidateSpanBuffer && candidateTermBuffer &&
         candidateResponseBuffer && candidateSolverContactBuffer &&
         candidateRegularizationBuffer && candidateResponseStatusBuffer &&
@@ -860,6 +869,7 @@ Result runGPU(
     [candidateInverse setBuffer:candidateInverseResponseBuffer offset:0 atIndex:8];
     [candidateInverse setBuffer:candidateInverseStatusBuffer offset:0 atIndex:9];
     [candidateInverse setBuffer:candidateInverseGateBuffer offset:0 atIndex:12];
+    [candidateInverse setBuffer:candidateInverseConditionBuffer offset:0 atIndex:13];
     [candidateInverse dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
                         threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
     [candidateInverse endEncoding];
@@ -895,6 +905,9 @@ Result runGPU(
     [candidateFinalize setBytes:&candidateRegularizationCapacity
                          length:sizeof(candidateRegularizationCapacity)
                         atIndex:18];
+    [candidateFinalize setBuffer:candidateInverseConditionBuffer
+                          offset:0
+                         atIndex:19];
     [candidateFinalize dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
                          threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
     [candidateFinalize endEncoding];
@@ -1118,6 +1131,7 @@ Result runGPU(
     [inverse setBuffer:inverseResponseBuffer offset:0 atIndex:8];
     [inverse setBuffer:inverseStatusBuffer offset:0 atIndex:9];
     [inverse setBuffer:inverseContactStatusBuffer offset:0 atIndex:12];
+    [inverse setBuffer:inverseConditionBuffer offset:0 atIndex:13];
     [inverse dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
            threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
     [inverse endEncoding];
@@ -1153,6 +1167,7 @@ Result runGPU(
     copy(result.responses, responseBuffer);
     copy(result.inverseResponses, inverseResponseBuffer);
     copy(result.inverseStatuses, inverseStatusBuffer);
+    copy(result.inverseConditionBounds, inverseConditionBuffer);
     copy(result.solverContacts, solverContactBuffer);
     copy(result.regularization, regularizationBuffer);
     copy(result.responseStatuses, responseStatusBuffer);
@@ -1166,6 +1181,8 @@ Result runGPU(
     copy(result.candidatePreparedContactJacobians,
         candidatePreparedJacobianBuffer);
     copy(result.candidateInverseResponses, candidateInverseResponseBuffer);
+    copy(result.candidateInverseConditionBounds,
+        candidateInverseConditionBuffer);
     copy(result.candidateResponses, candidateResponseBuffer);
     copy(result.candidateResponseStatuses, candidateResponseStatusBuffer);
     copy(result.candidateSolverContacts, candidateSolverContactBuffer);
@@ -1391,6 +1408,8 @@ int run(int argc, const char* const* argv) {
             exactVector(result.responses, replays[replay].responses) &&
             exactVector(result.inverseResponses, replays[replay].inverseResponses) &&
             exactVector(result.inverseStatuses, replays[replay].inverseStatuses) &&
+            exactVector(result.inverseConditionBounds,
+                replays[replay].inverseConditionBounds) &&
             exactVector(result.solverContacts, replays[replay].solverContacts) &&
             exactVector(result.regularization, replays[replay].regularization) &&
             exactVector(result.responseStatuses, replays[replay].responseStatuses) &&
@@ -1405,6 +1424,8 @@ int run(int argc, const char* const* argv) {
                 replays[replay].candidatePreparedContactJacobians) &&
             exactVector(result.candidateInverseResponses,
                 replays[replay].candidateInverseResponses) &&
+            exactVector(result.candidateInverseConditionBounds,
+                replays[replay].candidateInverseConditionBounds) &&
             exactVector(result.candidateResponses,
                 replays[replay].candidateResponses) &&
             exactVector(result.candidateResponseStatuses,
@@ -1429,12 +1450,13 @@ int run(int argc, const char* const* argv) {
 
     if constexpr (kExpectConditionFailure) {
         bool rejected = deterministic;
-        bool candidateAccepted = deterministic;
+        bool candidateRejected = deterministic;
         double maximumCondition = 0.0;
         double maximumDiagonalConditionUpper = 0.0;
         double maximumInverseResponseScaledError = 0.0;
         double maximumInverseBackwardError = 0.0;
         double maximumInversePivotRatioSquared = 0.0;
+        double maximumInverseConditionUpper = 0.0;
         for (std::size_t problem = 0u;
              problem < batch.validProblems;
              ++problem) {
@@ -1459,15 +1481,20 @@ int run(int argc, const char* const* argv) {
                     NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS &&
                 result.inverseStatuses[problem].code ==
                     MR_INVERSE_MASS_SUCCESS;
-            candidateAccepted = candidateAccepted &&
+            candidateRejected = candidateRejected &&
                 result.candidateResponseStatuses[problem].control.x ==
-                    NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS &&
-                result.candidateAssemblyStatuses[problem].control.x ==
-                    NUMI_TEMPORAL_CONE_ASSEMBLY_SUCCESS &&
-                result.candidateSolverStatuses[problem].control.x ==
-                    NUMI_TEMPORAL_CONE_ISLAND_SUCCESS &&
+                    NUMI_TEMPORAL_CONE_ARTICULATED_CONDITIONING_FAILED &&
                 result.candidatePublishStatuses[problem].control.x ==
-                    NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS;
+                    NUMI_TEMPORAL_CONE_ARTICULATED_UPSTREAM_FAILURE &&
+                std::memcmp(
+                    &result.candidateOutputVelocities[kDofs * problem],
+                    &batch.velocities[kDofs * problem],
+                    kDofs * sizeof(float)
+                ) == 0;
+            maximumInverseConditionUpper = std::max<double>(
+                maximumInverseConditionUpper,
+                result.candidateResponseStatuses[problem].conditioning.z
+            );
             const Oracle ref = oracle(batch.q.data() + problem * kDofs);
             const std::vector<double> cpuFactor = factorSPD(ref.mass);
             double matrixInfinity = 0.0;
@@ -1572,12 +1599,14 @@ int run(int argc, const char* const* argv) {
             }
         }
         require(rejected, "ill-conditioned articulated response was published");
-        require(candidateAccepted,
-            "inverse-ABA candidate rejected the finite conditioning adversary");
-        require(maximumInverseResponseScaledError < 3.0e-5,
-            "inverse ABA lost accuracy on the conditioning adversary");
-        require(maximumInverseBackwardError < 3.0e-6,
-            "inverse ABA residual failed on the conditioning adversary");
+        require(candidateRejected,
+            "inverse-ABA candidate published the conditioning adversary");
+        if constexpr (kArmatureScale > 0.0) {
+            require(maximumInverseResponseScaledError < 3.0e-5,
+                "inverse ABA lost accuracy on the conditioning adversary");
+            require(maximumInverseBackwardError < 3.0e-6,
+                "inverse ABA residual failed on the conditioning adversary");
+        }
         const double bestSeconds = std::min_element(
             replays.begin(),
             replays.end(),
@@ -1604,8 +1633,12 @@ int run(int argc, const char* const* argv) {
                   << maximumInverseBackwardError
                   << " deterministic=" << (deterministic ? "yes" : "no")
                   << " rollback=" << (rejected ? "yes" : "no")
-                  << " candidate_executed="
-                  << (candidateAccepted ? "yes" : "no")
+                  << " inverse_condition_upper="
+                  << maximumInverseConditionUpper
+                  << " inverse_condition_threshold="
+                  << NUMI_TEMPORAL_CONE_ARTICULATED_MAX_INVERSE_CONDITION_UPPER
+                  << " candidate_rollback="
+                  << (candidateRejected ? "yes" : "no")
                   << " gpu_seconds=" << bestSeconds
                   << '\n';
         return 0;
@@ -1620,6 +1653,10 @@ int run(int argc, const char* const* argv) {
     double maxCandidatePreparedJacobianDifference = 0.0;
     double maxCandidateInverseDifference = 0.0;
     double maxCandidateTransposeDifference = 0.0;
+    double maxCandidateConditionUpper = 0.0;
+    double maxCandidateConditionUnderestimate = 0.0;
+    double maxCandidateConditionStatusDifference = 0.0;
+    double maxCandidateConditionPacketDifference = 0.0;
     double maxFiniteDifferenceError = 0.0;
     double maxResponseError = 0.0;
     double maxResponseScaledError = 0.0;
@@ -1659,6 +1696,50 @@ int run(int argc, const char* const* argv) {
         const std::size_t blockBase = problem * blocksPerProblem * 9u;
         const Oracle ref = oracle(batch.q.data() + dofBase);
         const std::vector<double> cpuFactor = factorSPD(ref.mass);
+        double fp64Trace = 0.0;
+        double minimumArmature = std::numeric_limits<double>::infinity();
+        for (std::size_t dof = 0u; dof < kDofs; ++dof) {
+            fp64Trace += ref.mass[dof * kDofs + dof];
+            minimumArmature = std::min(
+                minimumArmature,
+                linkArmature(dof)
+            );
+        }
+        const double fp64ArmatureConditionUpper =
+            fp64Trace / minimumArmature;
+        const double candidateTraceUpper =
+            result.candidateInverseConditionBounds[2u * problem + 0u];
+        const double candidateMinimumArmature =
+            result.candidateInverseConditionBounds[2u * problem + 1u];
+        const double candidateConditionUpper =
+            candidateTraceUpper / candidateMinimumArmature;
+        maxCandidateConditionUpper = std::max(
+            maxCandidateConditionUpper, candidateConditionUpper
+        );
+        maxCandidateConditionUnderestimate = std::max(
+            maxCandidateConditionUnderestimate,
+            fp64ArmatureConditionUpper - candidateConditionUpper
+        );
+        maxCandidateConditionStatusDifference = std::max(
+            maxCandidateConditionStatusDifference,
+            std::abs(
+                result.candidateResponseStatuses[problem].conditioning.z -
+                candidateConditionUpper
+            ) / std::max(1.0, std::abs(candidateConditionUpper))
+        );
+        maxCandidateConditionPacketDifference = std::max(
+            maxCandidateConditionPacketDifference,
+            std::max(
+                std::abs(
+                    result.inverseConditionBounds[2u * problem + 0u] -
+                    candidateTraceUpper
+                ),
+                std::abs(
+                    result.inverseConditionBounds[2u * problem + 1u] -
+                    candidateMinimumArmature
+                )
+            )
+        );
         double cpuMatrixInfinity = 0.0;
         double cpuInverseInfinity = 0.0;
         double cpuMaximumDiagonal = 0.0;
@@ -2272,6 +2353,11 @@ int run(int argc, const char* const* argv) {
         maxCandidatePreparedJacobianDifference != 0.0 ||
         maxCandidateInverseDifference != 0.0 ||
         maxCandidateTransposeDifference != 0.0 ||
+        maxCandidateConditionUnderestimate > 0.0 ||
+        maxCandidateConditionUpper >
+            NUMI_TEMPORAL_CONE_ARTICULATED_MAX_INVERSE_CONDITION_UPPER ||
+        maxCandidateConditionStatusDifference >= 2.0e-6 ||
+        maxCandidateConditionPacketDifference != 0.0 ||
         maxMassScaledError >= 2.0e-5 ||
         maxJacobianScaledError >= 2.0e-5 ||
         maxFiniteDifferenceError >= 2.0e-3 ||
@@ -2296,6 +2382,14 @@ int run(int argc, const char* const* argv) {
                   << maxCandidatePreparedJacobianDifference
                   << " candidate_inverse=" << maxCandidateInverseDifference
                   << " candidate_transpose=" << maxCandidateTransposeDifference
+                  << " candidate_condition_upper="
+                  << maxCandidateConditionUpper
+                  << " candidate_condition_underestimate="
+                  << maxCandidateConditionUnderestimate
+                  << " candidate_condition_status="
+                  << maxCandidateConditionStatusDifference
+                  << " candidate_condition_packet="
+                  << maxCandidateConditionPacketDifference
                   << " finite_difference=" << maxFiniteDifferenceError
                   << " response=" << maxResponseError
                   << "/" << maxResponseScaledError
@@ -2349,6 +2443,15 @@ int run(int argc, const char* const* argv) {
         "candidate inverse ABA changed arithmetic");
     require(maxCandidateTransposeDifference == 0.0,
         "candidate response transpose changed arithmetic");
+    require(maxCandidateConditionUnderestimate <= 0.0,
+        "candidate condition certificate underestimated trace/armature bound");
+    require(maxCandidateConditionUpper <=
+            NUMI_TEMPORAL_CONE_ARTICULATED_MAX_INVERSE_CONDITION_UPPER,
+        "candidate condition certificate exceeded admission threshold");
+    require(maxCandidateConditionStatusDifference < 2.0e-6,
+        "candidate condition status changed its certificate");
+    require(maxCandidateConditionPacketDifference == 0.0,
+        "candidate condition certificate changed arithmetic");
     require(maxFiniteDifferenceError < 2.0e-3, "articulated finite-difference mismatch");
     require(maxResponseScaledError < 3.0e-5, "articulated response-column mismatch");
     require(maxInverseResponseScaledError < 3.0e-5,
@@ -2425,6 +2528,10 @@ int run(int argc, const char* const* argv) {
               << maxCandidateInverseDifference
               << " candidate_transpose_max_abs_difference="
               << maxCandidateTransposeDifference
+              << " candidate_condition_upper="
+              << maxCandidateConditionUpper
+              << " candidate_condition_underestimate="
+              << maxCandidateConditionUnderestimate
               << " finite_difference_max_abs_error=" << maxFiniteDifferenceError
               << " response_max_abs_error=" << maxResponseError
               << " response_max_scaled_error=" << maxResponseScaledError
