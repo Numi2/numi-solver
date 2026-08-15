@@ -13184,3 +13184,450 @@ kernel void numi_temporal_cone_stream_assemble(
         }
     }
 }
+
+inline bool temporalConeRigidInertiaValid(
+    thread const NumiTemporalConeRigidBody& body,
+    thread float& minorProxy
+) {
+    const float3 row0 = body.inverseInertiaRow0.xyz;
+    const float3 row1 = body.inverseInertiaRow1.xyz;
+    const float3 row2 = body.inverseInertiaRow2.xyz;
+    const float scale = max(
+        1.0f,
+        max(
+            max(max(abs(row0.x), abs(row0.y)), abs(row0.z)),
+            max(
+                max(max(abs(row1.x), abs(row1.y)), abs(row1.z)),
+                max(max(abs(row2.x), abs(row2.y)), abs(row2.z))
+            )
+        )
+    );
+    const float symmetryTolerance = 64.0f * kFloatEpsilon * scale;
+    const float minor1 = row0.x;
+    const float minor2 = row0.x * row1.y - row0.y * row1.x;
+    const float determinant =
+        row0.x * (row1.y * row2.z - row1.z * row2.y) -
+        row0.y * (row1.x * row2.z - row1.z * row2.x) +
+        row0.z * (row1.x * row2.y - row1.y * row2.x);
+    minorProxy = min(minor1, min(minor2, determinant));
+    return finite4(body.linearVelocityAndInverseMass) &&
+        finite4(body.angularVelocity) &&
+        finite4(body.inverseInertiaRow0) &&
+        finite4(body.inverseInertiaRow1) &&
+        finite4(body.inverseInertiaRow2) &&
+        body.linearVelocityAndInverseMass.w > 0.0f &&
+        abs(row0.y - row1.x) <= symmetryTolerance &&
+        abs(row0.z - row2.x) <= symmetryTolerance &&
+        abs(row1.z - row2.y) <= symmetryTolerance &&
+        minor1 > kMatrixFloor && minor2 > kMatrixFloor &&
+        determinant > kMatrixFloor;
+}
+
+inline float3 temporalConeRigidInertiaMultiply(
+    thread const NumiTemporalConeRigidBody& body,
+    const float3 value
+) {
+    return float3(
+        dot(body.inverseInertiaRow0.xyz, value),
+        dot(body.inverseInertiaRow1.xyz, value),
+        dot(body.inverseInertiaRow2.xyz, value)
+    );
+}
+
+// Converts rigid contact geometry and body mass properties into the exact
+// packed J and M^-1 J^T contract consumed by the generic sparse assembler.
+// One SIMD32 group owns one island and each contact lane commits its span only
+// after all bodies, frames, ranges, and material values pass validation.
+kernel void numi_temporal_cone_rigid_response(
+    device const NumiTemporalConeRigidHeader* headers [[buffer(0)]],
+    device const NumiTemporalConeRigidBody* bodies [[buffer(1)]],
+    device const NumiTemporalConeRigidContact* rigidContacts [[buffer(2)]],
+    device NumiTemporalConeAssemblyContactSpan* outputSpans [[buffer(3)]],
+    device NumiTemporalConeAssemblyTerm* outputTerms [[buffer(4)]],
+    device float* outputJacobians [[buffer(5)]],
+    device float* outputResponses [[buffer(6)]],
+    device NumiTemporalConeIslandContact* outputContacts [[buffer(7)]],
+    device NumiTemporalConeRigidStatus* outputStatuses [[buffer(8)]],
+    constant uint& problemCount [[buffer(9)]],
+    // x bodies, y rigid contacts, z spans, w terms.
+    constant uint4& structuralCapacities [[buffer(10)]],
+    // x Jacobian floats, y response floats, z solver contacts, w reserved.
+    constant uint4& valueCapacities [[buffer(11)]],
+    const uint problem [[threadgroup_position_in_grid]],
+    const uint lane [[thread_index_in_simdgroup]]
+) {
+    if (problem >= problemCount) {
+        return;
+    }
+    const NumiTemporalConeRigidHeader header = headers[problem];
+    const uint bodyCount = header.control.y;
+    const uint contactCount = header.control.z;
+    const uint bodyBase = header.inputRanges.x;
+    const uint rigidContactBase = header.inputRanges.y;
+    const uint spanBase = header.responseRanges.x;
+    const uint termBase = header.responseRanges.y;
+    const uint jacobianBase = header.responseRanges.z;
+    const uint responseBase = header.responseRanges.w;
+    const uint solverContactBase = header.solverRanges.x;
+    const bool activeBody = lane < bodyCount;
+    const bool activeContact = lane < contactCount;
+
+    if (activeContact && spanBase <= structuralCapacities.z &&
+        lane < structuralCapacities.z - spanBase) {
+        outputSpans[spanBase + lane] = {};
+    }
+    if (lane == 0u) {
+        outputStatuses[problem] = {};
+    }
+
+    uint localFailure = NUMI_TEMPORAL_CONE_RIGID_SUCCESS;
+    if (header.control.x != NUMI_TEMPORAL_CONE_RIGID_ABI_VERSION) {
+        localFailure = NUMI_TEMPORAL_CONE_RIGID_INVALID_ABI;
+    } else if (bodyCount == 0u ||
+        bodyCount > NUMI_TEMPORAL_CONE_RIGID_MAX_BODIES ||
+        contactCount == 0u ||
+        contactCount > NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS ||
+        bodyBase > structuralCapacities.x ||
+        bodyCount > structuralCapacities.x - bodyBase ||
+        rigidContactBase > structuralCapacities.y ||
+        contactCount > structuralCapacities.y - rigidContactBase ||
+        spanBase > structuralCapacities.z ||
+        contactCount > structuralCapacities.z - spanBase ||
+        termBase > structuralCapacities.w ||
+        2u * contactCount > structuralCapacities.w - termBase ||
+        jacobianBase > valueCapacities.x ||
+        2u * contactCount * NUMI_TEMPORAL_CONE_RIGID_VALUES_PER_TERM >
+            valueCapacities.x - jacobianBase ||
+        responseBase > valueCapacities.y ||
+        2u * contactCount * NUMI_TEMPORAL_CONE_RIGID_VALUES_PER_TERM >
+            valueCapacities.y - responseBase ||
+        solverContactBase > valueCapacities.z ||
+        contactCount > valueCapacities.z - solverContactBase) {
+        localFailure = NUMI_TEMPORAL_CONE_RIGID_INVALID_INPUT;
+    }
+
+    float laneMinimumInverseMass = INFINITY;
+    float laneMinimumInertiaProxy = INFINITY;
+    if (activeBody && localFailure == NUMI_TEMPORAL_CONE_RIGID_SUCCESS) {
+        float minorProxy = 0.0f;
+        const NumiTemporalConeRigidBody body = bodies[bodyBase + lane];
+        if (!temporalConeRigidInertiaValid(body, minorProxy)) {
+            localFailure = NUMI_TEMPORAL_CONE_RIGID_INVALID_INPUT;
+        }
+        laneMinimumInverseMass = body.linearVelocityAndInverseMass.w;
+        laneMinimumInertiaProxy = minorProxy;
+    }
+
+    NumiTemporalConeRigidContact contact = {};
+    float laneFrameError = 0.0f;
+    uint laneTermCount = 0u;
+    if (activeContact &&
+        localFailure == NUMI_TEMPORAL_CONE_RIGID_SUCCESS) {
+        contact = rigidContacts[rigidContactBase + lane];
+        const uint bodyA = contact.bodies.x;
+        const uint bodyB = contact.bodies.y;
+        const float3 normal = contact.normalAndFrictionU.xyz;
+        const float3 tangentU = contact.tangentUAndFrictionV.xyz;
+        const float3 tangentV = contact.tangentVAndMaximumNormal.xyz;
+        laneFrameError = max(
+            max(
+                max(abs(dot(normal, normal) - 1.0f),
+                    abs(dot(tangentU, tangentU) - 1.0f)),
+                abs(dot(tangentV, tangentV) - 1.0f)
+            ),
+            max(
+                max(abs(dot(normal, tangentU)), abs(dot(normal, tangentV))),
+                max(abs(dot(tangentU, tangentV)),
+                    abs(dot(cross(normal, tangentU), tangentV) - 1.0f))
+            )
+        );
+        const bool bodyAValid = bodyA == NUMI_TEMPORAL_CONE_RIGID_STATIC_BODY ||
+            bodyA < bodyCount;
+        const bool bodyBValid = bodyB == NUMI_TEMPORAL_CONE_RIGID_STATIC_BODY ||
+            bodyB < bodyCount;
+        if (!bodyAValid || !bodyBValid ||
+            bodyA == bodyB ||
+            (bodyA == NUMI_TEMPORAL_CONE_RIGID_STATIC_BODY &&
+             bodyB == NUMI_TEMPORAL_CONE_RIGID_STATIC_BODY) ||
+            !finite4(contact.offsetA) || !finite4(contact.offsetB) ||
+            !finite4(contact.normalAndFrictionU) ||
+            !finite4(contact.tangentUAndFrictionV) ||
+            !finite4(contact.tangentVAndMaximumNormal) ||
+            !finite4(contact.bias) || !finite4(contact.warmImpulse) ||
+            contact.normalAndFrictionU.w < 0.0f ||
+            contact.tangentUAndFrictionV.w < 0.0f ||
+            contact.tangentVAndMaximumNormal.w < 0.0f ||
+            laneFrameError > 2.0e-4f) {
+            localFailure = NUMI_TEMPORAL_CONE_RIGID_INVALID_INPUT;
+        }
+        laneTermCount =
+            (bodyA == NUMI_TEMPORAL_CONE_RIGID_STATIC_BODY ? 0u : 1u) +
+            (bodyB == NUMI_TEMPORAL_CONE_RIGID_STATIC_BODY ? 0u : 1u);
+    }
+    const uint failure = simd_max(localFailure);
+    const float maximumFrameError = simd_max(laneFrameError);
+    const float minimumInverseMass = simd_min(laneMinimumInverseMass);
+    const float minimumInertiaProxy = simd_min(laneMinimumInertiaProxy);
+    const uint generatedTerms = simd_sum(laneTermCount);
+    if (failure != NUMI_TEMPORAL_CONE_RIGID_SUCCESS) {
+        if (lane == 0u) {
+            NumiTemporalConeRigidStatus status = {};
+            status.control = uint4(failure, bodyCount, contactCount, 0u);
+            status.diagnostics = float4(
+                maximumFrameError,
+                minimumInverseMass,
+                minimumInertiaProxy,
+                0.0f
+            );
+            outputStatuses[problem] = status;
+        }
+        return;
+    }
+
+    if (activeContact) {
+        const uint bodyA = contact.bodies.x;
+        const uint bodyB = contact.bodies.y;
+        const float3 axes[3] = {
+            contact.normalAndFrictionU.xyz,
+            contact.tangentUAndFrictionV.xyz,
+            contact.tangentVAndMaximumNormal.xyz
+        };
+        const uint firstBody = min(bodyA, bodyB);
+        const uint secondBody = max(bodyA, bodyB);
+        const uint orderedBodies[2] = {firstBody, secondBody};
+        const uint contactTermBase = termBase + 2u * lane;
+        for (uint slot = 0u; slot < laneTermCount; ++slot) {
+            const uint bodyIndex = orderedBodies[slot];
+            const bool isBodyA = bodyIndex == bodyA;
+            const float sign = isBodyA ? -1.0f : 1.0f;
+            const float3 offset = isBodyA
+                ? contact.offsetA.xyz
+                : contact.offsetB.xyz;
+            const NumiTemporalConeRigidBody body = bodies[
+                bodyBase + bodyIndex
+            ];
+            const uint valueOffset =
+                (2u * lane + slot) *
+                NUMI_TEMPORAL_CONE_RIGID_VALUES_PER_TERM;
+            NumiTemporalConeAssemblyTerm term = {};
+            term.control = uint4(
+                bodyBase + bodyIndex,
+                NUMI_TEMPORAL_CONE_RIGID_DOF,
+                jacobianBase + valueOffset,
+                responseBase + valueOffset
+            );
+            outputTerms[contactTermBase + slot] = term;
+            for (uint axis = 0u; axis < 3u; ++axis) {
+                const float3 linear = sign * axes[axis];
+                const float3 angular = sign * cross(offset, axes[axis]);
+                const uint jacobianAxisBase =
+                    jacobianBase + valueOffset +
+                    axis * NUMI_TEMPORAL_CONE_RIGID_DOF;
+                outputJacobians[jacobianAxisBase + 0u] = linear.x;
+                outputJacobians[jacobianAxisBase + 1u] = linear.y;
+                outputJacobians[jacobianAxisBase + 2u] = linear.z;
+                outputJacobians[jacobianAxisBase + 3u] = angular.x;
+                outputJacobians[jacobianAxisBase + 4u] = angular.y;
+                outputJacobians[jacobianAxisBase + 5u] = angular.z;
+                const float3 angularResponse =
+                    temporalConeRigidInertiaMultiply(body, angular);
+                const uint responseTermBase = responseBase + valueOffset;
+                outputResponses[responseTermBase + 0u * 3u + axis] =
+                    body.linearVelocityAndInverseMass.w * linear.x;
+                outputResponses[responseTermBase + 1u * 3u + axis] =
+                    body.linearVelocityAndInverseMass.w * linear.y;
+                outputResponses[responseTermBase + 2u * 3u + axis] =
+                    body.linearVelocityAndInverseMass.w * linear.z;
+                outputResponses[responseTermBase + 3u * 3u + axis] =
+                    angularResponse.x;
+                outputResponses[responseTermBase + 4u * 3u + axis] =
+                    angularResponse.y;
+                outputResponses[responseTermBase + 5u * 3u + axis] =
+                    angularResponse.z;
+            }
+        }
+
+        float3 velocityA = float3(0.0f);
+        float3 velocityB = float3(0.0f);
+        if (bodyA != NUMI_TEMPORAL_CONE_RIGID_STATIC_BODY) {
+            const NumiTemporalConeRigidBody body = bodies[bodyBase + bodyA];
+            velocityA = body.linearVelocityAndInverseMass.xyz +
+                cross(body.angularVelocity.xyz, contact.offsetA.xyz);
+        }
+        if (bodyB != NUMI_TEMPORAL_CONE_RIGID_STATIC_BODY) {
+            const NumiTemporalConeRigidBody body = bodies[bodyBase + bodyB];
+            velocityB = body.linearVelocityAndInverseMass.xyz +
+                cross(body.angularVelocity.xyz, contact.offsetB.xyz);
+        }
+        const float3 relativeVelocity = velocityB - velocityA;
+        const float3 freeVelocity = float3(
+            dot(axes[0], relativeVelocity),
+            dot(axes[1], relativeVelocity),
+            dot(axes[2], relativeVelocity)
+        ) + contact.bias.xyz;
+        if (!finite3(freeVelocity)) {
+            // Body and frame inputs are already finite; this guards overflow.
+            outputSpans[spanBase + lane] = {};
+        } else {
+            NumiTemporalConeIslandContact solverContact = {};
+            solverContact.freeVelocityAndFrictionU = float4(
+                freeVelocity,
+                contact.normalAndFrictionU.w
+            );
+            solverContact.warmImpulseAndFrictionV = float4(
+                contact.warmImpulse.xyz,
+                contact.tangentUAndFrictionV.w
+            );
+            solverContact.limits.x =
+                contact.tangentVAndMaximumNormal.w;
+            outputContacts[solverContactBase + lane] = solverContact;
+            NumiTemporalConeAssemblyContactSpan span = {};
+            span.ranges = uint4(contactTermBase, laneTermCount, 0u, 0u);
+            outputSpans[spanBase + lane] = span;
+        }
+    }
+    threadgroup_barrier(mem_flags::mem_device);
+    uint nonfiniteOutput = 0u;
+    if (activeContact && outputSpans[spanBase + lane].ranges.y == 0u) {
+        nonfiniteOutput = NUMI_TEMPORAL_CONE_RIGID_NONFINITE_RESULT;
+    }
+    const uint outputFailure = simd_max(nonfiniteOutput);
+    if (outputFailure != NUMI_TEMPORAL_CONE_RIGID_SUCCESS && activeContact) {
+        outputSpans[spanBase + lane] = {};
+    }
+    if (lane == 0u) {
+        NumiTemporalConeRigidStatus status = {};
+        status.control = uint4(
+            outputFailure,
+            bodyCount,
+            contactCount,
+            outputFailure == NUMI_TEMPORAL_CONE_RIGID_SUCCESS
+                ? generatedTerms
+                : 0u
+        );
+        status.diagnostics = float4(
+            maximumFrameError,
+            minimumInverseMass,
+            minimumInertiaProxy,
+            0.0f
+        );
+        outputStatuses[problem] = status;
+    }
+}
+
+// Applies solved contact impulses to rigid velocities without atomics. Each
+// body lane scans contacts in canonical order, making accumulation order and
+// rollback deterministic. Any upstream failure republishes the exact input.
+kernel void numi_temporal_cone_rigid_publish(
+    device const NumiTemporalConeRigidHeader* headers [[buffer(0)]],
+    device const NumiTemporalConeRigidBody* inputBodies [[buffer(1)]],
+    device const NumiTemporalConeRigidContact* contacts [[buffer(2)]],
+    device const float4* impulses [[buffer(3)]],
+    device const NumiTemporalConeRigidStatus* responseStatuses [[buffer(4)]],
+    device const NumiTemporalConeIslandStatus* solverStatuses [[buffer(5)]],
+    device NumiTemporalConeRigidBody* outputBodies [[buffer(6)]],
+    device NumiTemporalConeRigidStatus* outputStatuses [[buffer(7)]],
+    constant uint& problemCount [[buffer(8)]],
+    // x input bodies, y contacts, z impulses, w output bodies.
+    constant uint4& capacities [[buffer(9)]],
+    const uint problem [[threadgroup_position_in_grid]],
+    const uint lane [[thread_index_in_simdgroup]]
+) {
+    if (problem >= problemCount) {
+        return;
+    }
+    const NumiTemporalConeRigidHeader header = headers[problem];
+    const uint bodyCount = header.control.y;
+    const uint contactCount = header.control.z;
+    const uint bodyBase = header.inputRanges.x;
+    const uint contactBase = header.inputRanges.y;
+    const uint impulseBase = header.solverRanges.x;
+    const uint outputBodyBase = header.solverRanges.y;
+    const bool active = lane < bodyCount;
+    uint localFailure = NUMI_TEMPORAL_CONE_RIGID_SUCCESS;
+    if (header.control.x != NUMI_TEMPORAL_CONE_RIGID_ABI_VERSION) {
+        localFailure = NUMI_TEMPORAL_CONE_RIGID_INVALID_ABI;
+    } else if (bodyCount == 0u ||
+        bodyCount > NUMI_TEMPORAL_CONE_RIGID_MAX_BODIES ||
+        contactCount == 0u ||
+        contactCount > NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS ||
+        bodyBase > capacities.x || bodyCount > capacities.x - bodyBase ||
+        contactBase > capacities.y || contactCount > capacities.y - contactBase ||
+        impulseBase > capacities.z || contactCount > capacities.z - impulseBase ||
+        outputBodyBase > capacities.w || bodyCount > capacities.w - outputBodyBase) {
+        localFailure = NUMI_TEMPORAL_CONE_RIGID_INVALID_INPUT;
+    } else if (responseStatuses[problem].control.x !=
+            NUMI_TEMPORAL_CONE_RIGID_SUCCESS ||
+        solverStatuses[problem].control.x !=
+            NUMI_TEMPORAL_CONE_ISLAND_SUCCESS ||
+        solverStatuses[problem].control.z != 1u ||
+        solverStatuses[problem].control.w != contactCount) {
+        localFailure = NUMI_TEMPORAL_CONE_RIGID_UPSTREAM_FAILURE;
+    }
+    const uint failure = simd_max(localFailure);
+    float laneMaximumDelta = 0.0f;
+    if (active && bodyBase + lane < capacities.x &&
+        outputBodyBase + lane < capacities.w) {
+        const NumiTemporalConeRigidBody input = inputBodies[bodyBase + lane];
+        NumiTemporalConeRigidBody output = input;
+        if (failure == NUMI_TEMPORAL_CONE_RIGID_SUCCESS) {
+            float3 linearDelta = float3(0.0f);
+            float3 angularDelta = float3(0.0f);
+            for (uint contactIndex = 0u;
+                 contactIndex < contactCount;
+                 ++contactIndex) {
+                const NumiTemporalConeRigidContact contact = contacts[
+                    contactBase + contactIndex
+                ];
+                float sign = 0.0f;
+                float3 offset = float3(0.0f);
+                if (contact.bodies.x == lane) {
+                    sign = -1.0f;
+                    offset = contact.offsetA.xyz;
+                } else if (contact.bodies.y == lane) {
+                    sign = 1.0f;
+                    offset = contact.offsetB.xyz;
+                }
+                if (sign != 0.0f) {
+                    const float3 lambda = impulses[
+                        impulseBase + contactIndex
+                    ].xyz;
+                    const float3 worldImpulse = sign * (
+                        contact.normalAndFrictionU.xyz * lambda.x +
+                        contact.tangentUAndFrictionV.xyz * lambda.y +
+                        contact.tangentVAndMaximumNormal.xyz * lambda.z
+                    );
+                    linearDelta +=
+                        input.linearVelocityAndInverseMass.w * worldImpulse;
+                    angularDelta += temporalConeRigidInertiaMultiply(
+                        input,
+                        cross(offset, worldImpulse)
+                    );
+                }
+            }
+            output.linearVelocityAndInverseMass.xyz += linearDelta;
+            output.angularVelocity.xyz += angularDelta;
+            if (!finite4(output.linearVelocityAndInverseMass) ||
+                !finite4(output.angularVelocity)) {
+                output = input;
+                localFailure = NUMI_TEMPORAL_CONE_RIGID_NONFINITE_RESULT;
+            } else {
+                laneMaximumDelta = max(length(linearDelta), length(angularDelta));
+            }
+        }
+        outputBodies[outputBodyBase + lane] = output;
+    }
+    const uint outputFailure = simd_max(localFailure);
+    if (outputFailure == NUMI_TEMPORAL_CONE_RIGID_NONFINITE_RESULT && active) {
+        outputBodies[outputBodyBase + lane] = inputBodies[bodyBase + lane];
+    }
+    const float maximumDelta = simd_max(laneMaximumDelta);
+    if (lane == 0u) {
+        NumiTemporalConeRigidStatus status = responseStatuses[problem];
+        status.control.x = outputFailure;
+        status.diagnostics.w = outputFailure == NUMI_TEMPORAL_CONE_RIGID_SUCCESS
+            ? maximumDelta
+            : 0.0f;
+        outputStatuses[problem] = status;
+    }
+}

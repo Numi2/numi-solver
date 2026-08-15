@@ -21,6 +21,13 @@
 #define NUMI_TEMPORAL_CONE_ASSEMBLY_MAX_TERMS_PER_CONTACT 32u
 #define NUMI_TEMPORAL_CONE_ASSEMBLY_MAX_DOF_PER_TERM 32u
 
+#define NUMI_TEMPORAL_CONE_RIGID_ABI_VERSION 1u
+#define NUMI_TEMPORAL_CONE_RIGID_MAX_BODIES 32u
+#define NUMI_TEMPORAL_CONE_RIGID_STATIC_BODY 0xffffffffu
+#define NUMI_TEMPORAL_CONE_RIGID_DOF 6u
+#define NUMI_TEMPORAL_CONE_RIGID_VALUES_PER_TERM \
+    (3u * NUMI_TEMPORAL_CONE_RIGID_DOF)
+
 enum NumiTemporalConeIslandStatusCode : mr_u32 {
     NUMI_TEMPORAL_CONE_ISLAND_SUCCESS = 0u,
     NUMI_TEMPORAL_CONE_ISLAND_INVALID_ABI = 1u,
@@ -38,6 +45,14 @@ enum NumiTemporalConeAssemblyStatusCode : mr_u32 {
     NUMI_TEMPORAL_CONE_ASSEMBLY_NONFINITE_RESULT = 4u,
     NUMI_TEMPORAL_CONE_ASSEMBLY_MISSING_COUPLING = 5u,
     NUMI_TEMPORAL_CONE_ASSEMBLY_ASYMMETRIC_RESPONSE = 6u,
+};
+
+enum NumiTemporalConeRigidStatusCode : mr_u32 {
+    NUMI_TEMPORAL_CONE_RIGID_SUCCESS = 0u,
+    NUMI_TEMPORAL_CONE_RIGID_INVALID_ABI = 1u,
+    NUMI_TEMPORAL_CONE_RIGID_INVALID_INPUT = 2u,
+    NUMI_TEMPORAL_CONE_RIGID_NONFINITE_RESULT = 3u,
+    NUMI_TEMPORAL_CONE_RIGID_UPSTREAM_FAILURE = 4u,
 };
 
 typedef struct MR_ALIGN16 NumiTemporalConeIslandHeader {
@@ -92,6 +107,55 @@ typedef struct MR_ALIGN16 NumiTemporalConeAssemblyStatus {
     mr_float4 diagnostics;
 } NumiTemporalConeAssemblyStatus;
 
+// Generates rigid-body contact Jacobians and M^-1 J^T response columns.
+// Body indices in contacts are local to inputRanges.x. The response owner is
+// the corresponding global body index, so shared-body coupling is explicit.
+typedef struct MR_ALIGN16 NumiTemporalConeRigidHeader {
+    // x ABI, y dynamic bodies, z contacts, w reserved.
+    mr_uint4 control;
+    // x input body base, y rigid-contact base, zw reserved.
+    mr_uint4 inputRanges;
+    // x span base, y term base, z Jacobian base, w response base.
+    mr_uint4 responseRanges;
+    // x solver-contact base, y output-body base, zw reserved.
+    mr_uint4 solverRanges;
+} NumiTemporalConeRigidHeader;
+
+typedef struct MR_ALIGN16 NumiTemporalConeRigidBody {
+    // xyz linear velocity; w inverse mass.
+    mr_float4 linearVelocityAndInverseMass;
+    // xyz angular velocity; w reserved.
+    mr_float4 angularVelocity;
+    // Symmetric positive-definite world-space inverse inertia tensor.
+    mr_float4 inverseInertiaRow0;
+    mr_float4 inverseInertiaRow1;
+    mr_float4 inverseInertiaRow2;
+} NumiTemporalConeRigidBody;
+
+typedef struct MR_ALIGN16 NumiTemporalConeRigidContact {
+    // x body A, y body B; UINT_MAX denotes the static world.
+    mr_uint4 bodies;
+    // Contact-point offsets from each body's center of mass.
+    mr_float4 offsetA;
+    mr_float4 offsetB;
+    // xyz right-handed orthonormal contact frame; w cone parameter.
+    mr_float4 normalAndFrictionU;
+    mr_float4 tangentUAndFrictionV;
+    mr_float4 tangentVAndMaximumNormal;
+    // xyz additive free contact velocity in (normal, tangent U, tangent V).
+    mr_float4 bias;
+    // xyz warm-start impulse in the same frame; w reserved.
+    mr_float4 warmImpulse;
+} NumiTemporalConeRigidContact;
+
+typedef struct MR_ALIGN16 NumiTemporalConeRigidStatus {
+    // x status, y bodies, z contacts, w generated owner terms.
+    mr_uint4 control;
+    // x max frame error, y minimum inverse mass,
+    // z minimum inertia principal-minor proxy, w maximum speed delta.
+    mr_float4 diagnostics;
+} NumiTemporalConeRigidStatus;
+
 typedef struct MR_ALIGN16 NumiTemporalConeIslandContact {
     // xyz free contact velocity; w friction coefficient in tangent U.
     mr_float4 freeVelocityAndFrictionU;
@@ -118,6 +182,10 @@ static_assert(sizeof(NumiTemporalConeAssemblyHeader) == 64);
 static_assert(sizeof(NumiTemporalConeAssemblyContactSpan) == 16);
 static_assert(sizeof(NumiTemporalConeAssemblyTerm) == 16);
 static_assert(sizeof(NumiTemporalConeAssemblyStatus) == 32);
+static_assert(sizeof(NumiTemporalConeRigidHeader) == 64);
+static_assert(sizeof(NumiTemporalConeRigidBody) == 80);
+static_assert(sizeof(NumiTemporalConeRigidContact) == 128);
+static_assert(sizeof(NumiTemporalConeRigidStatus) == 32);
 static_assert(sizeof(NumiTemporalConeIslandContact) == 48);
 static_assert(sizeof(NumiTemporalConeIslandStatus) == 48);
 #endif

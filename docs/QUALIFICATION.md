@@ -183,8 +183,62 @@ and omit a required shared-owner block. Both are deterministically rejected;
 the output stream header remains invalid and the chained solver publishes zero
 impulses.
 
+## Rigid response-to-velocity gate
+
+The rigid gate supplies body linear/angular velocities, positive inverse
+masses, world-space SPD inverse inertias, contact-point offsets, and
+right-handed contact frames. It chains rigid `J`/`M^-1 J^T` generation, sparse
+assembly, cone solve, and deterministic velocity publication in four encoders
+on one command buffer.
+
+The batch mixes dynamic-static offset contacts, frictional contacts,
+dynamic-dynamic pairs, eight-body chains, redundant shared-body contacts, and
+32-contact full-capacity shared-body cliques. Independent CPU equations
+reconstruct free contact velocity, every present Delassus coefficient, and
+every published linear/angular velocity. Dynamic-only islands check total
+linear momentum, and all zero-bias inelastic cases reject kinetic-energy
+increase. The final island has a deliberately nonorthogonal contact frame and
+must fail every downstream transaction while restoring input velocities
+byte-for-byte.
+
+Measured command:
+
+```sh
+./build/numi-solver-rigid --islands 1024 --replays 10
+```
+
+Apple M4 result:
+
+```text
+islands=1024 valid_bodies=2607 valid_contacts=3402 blocks=38944
+operator_max_abs_error=0.000000098
+free_velocity_max_abs_error=0.000000053
+publication_max_abs_error=0.000000092
+analytic_impulse_error=0.000000010
+analytic_velocity_error=0.000000020
+momentum_max_abs_error=0.000000037
+energy_max_increase=0.000000000
+kkt_max=0.000003955
+cone_max=0.000000000
+iterations_max=959 p50=8 p95=246 p99=959
+deterministic=yes
+invalid_frame_rollback=yes
+failed_valid=0
+one_command_buffer=yes
+cpu_readback_between_stages=no
+average_chain_seconds=0.013130292
+islands_per_second=77987.61
+contacts_per_second=259095.54
+result=PASS
+```
+
+The reported chain time includes all four GPU stages and excludes CPU oracle
+work. The high iteration tail is retained: the redundant 32-contact cliques
+exercise a deliberately less-conditioned shared response rather than being
+removed from the timing population.
+
 The combined metallib SHA-256 was
-`350a5bbe0339ef682bbbdce9d238db5e2e46ab77265e3f496637b72d70f850a2`.
+`3bee69cc7bf48efcad6fbf3b32bdcc74965e799be9000b98f4091b2a8b7d2169`.
 
 ## Evidence boundary
 
@@ -197,6 +251,8 @@ FP32 stability, deterministic SIMD32 convergence, dense-versus-streamed
 operator equivalence, transaction rollback, SPD/objective checks, and isolated
 kernel cost. It also qualifies numerical construction of `J M^-1 J^T + R`
 from supplied Jacobians and response columns on the solver command-buffer
-timeline. It does not qualify collision generation, Jacobian construction,
-upstream rigid/articulated `M^-1 J^T` computation, velocity publication,
-integration, or a complete physical trajectory. Those remain separate layers.
+timeline. The rigid gate additionally qualifies contact-frame Jacobian
+construction, rigid `M^-1 J^T`, and deterministic linear/angular velocity
+publication. It does not qualify collision generation, articulated response
+generation, body pose integration, or a complete physical trajectory. Those
+remain separate layers.

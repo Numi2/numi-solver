@@ -19,10 +19,11 @@ selection, coupled normal/tangent cone updates, distributed-island reduction,
 stiff-island ordered replay, warm-start publication, and transactional status
 reduction.
 
-The solver still speaks the original versioned MetalWorld ABI. A narrow probe
-ABI exposes only its local 3x3 response conditioning and exact elliptic-cone
-projection for direct mathematical work. The probe calls the production Metal
-helpers; it does not carry a second shader implementation.
+The solver still speaks the original versioned MetalWorld ABI. Narrow,
+pointer-free ABIs expose its local cone mathematics, packed contact islands,
+response-column assembly, and rigid-body response/publication path. They call
+the production Metal helpers; they do not carry a second shader
+implementation.
 
 ## Build
 
@@ -38,13 +39,15 @@ cmake --build build
 ```
 
 The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
-`-fno-fast-math`, plus three native harnesses:
+`-fno-fast-math`, plus four native harnesses:
 
 - `build/numi-solver-math` for isolated local cone blocks;
 - `build/numi-solver-islands` for dense-versus-streamed coupled
   1/2/4/8/16/32-contact islands;
 - `build/numi-solver-assembly` for GPU response-column assembly followed by
   a streamed solve on one command buffer.
+- `build/numi-solver-rigid` for rigid contact frames and mass/inertia through
+  deterministic velocity publication on one command buffer.
 
 Run the default FP64 comparisons and deterministic replays:
 
@@ -52,15 +55,17 @@ Run the default FP64 comparisons and deterministic replays:
 ./build/numi-solver-math
 ./build/numi-solver-islands
 ./build/numi-solver-assembly
+./build/numi-solver-rigid
 ctest --test-dir build --output-on-failure
 ```
 
 The local harness accepts `--cases N --replays N --iterations N` and
-`--isotropic`. The island and assembly harnesses accept `--islands N` and
-`--replays N`. Together they check separating, impact, sticking, sliding,
+`--isotropic`. The island, assembly, and rigid harnesses accept `--islands N`
+and `--replays N`. Together they check separating, impact, sticking, sliding,
 anisotropic friction, near-rank-deficient response, capped impulse, polar
 boundary, zero axis, extreme scale, sparse topology, full block capacity,
-shared response, missing coupling, and response asymmetry.
+shared response, missing coupling, response asymmetry, rigid momentum and
+kinetic energy, contact-frame validity, and transactional velocity rollback.
 
 An installed or relocated harness can load a specific library with
 `--metallib path/to/NumiTemporalCone.metallib`.
@@ -77,6 +82,9 @@ An installed or relocated harness can load a specific library with
 - Packed, sorted 3x3 block-CSR Delassus operators with exact dense parity.
 - Deterministic GPU composition of `J M^-1 J^T + R` from shared-owner
   Jacobians and response columns.
+- GPU generation of rigid 6-DOF `J` and `M^-1 J^T` directly from contact
+  frames, inverse mass, and world-space inverse inertia.
+- Canonical per-body impulse accumulation with no floating-point atomics.
 - Scale-aware KKT gradient-mapping convergence residuals.
 - SIMD32 block-Jacobi islands with KKT-preserving scalar contact metrics.
 - Typed nonconvergence and warm-start rollback instead of partial publication.
@@ -86,8 +94,10 @@ See [docs/MATHEMATICS.md](docs/MATHEMATICS.md) for the equations and evidence
 boundary, [docs/ISLAND_SOLVER.md](docs/ISLAND_SOLVER.md) for the coupled
 SIMD32 method, [docs/OPERATOR_ASSEMBLY.md](docs/OPERATOR_ASSEMBLY.md) for the
 response-column producer, and [docs/QUALIFICATION.md](docs/QUALIFICATION.md)
-for measured Apple GPU evidence. The harnesses exercise contact-space
-mathematics, operator assembly, and the streamed solver on a real Metal
-device. They do not yet generate collision Jacobians, compute upstream
-rigid/articulated response columns, publish velocity updates, or integrate a
-complete physical trajectory.
+for measured Apple GPU evidence. See
+[docs/RIGID_MECHANICS.md](docs/RIGID_MECHANICS.md) for the velocity-level rigid
+contact path. The harnesses exercise contact-space mathematics, rigid operator
+generation, velocity publication, and the streamed solver on a real Metal
+device. They do not yet perform collision detection, generate articulated
+response columns, or integrate body positions and orientations into a complete
+physical trajectory.

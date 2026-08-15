@@ -116,6 +116,26 @@ target_compile_definitions(
         NUMI_TEMPORAL_CONE_METALLIB="${NUMI_SOLVER_METALLIB}"
 )
 
+add_executable(numi-solver-rigid tools/temporal_cone_rigid.mm)
+add_dependencies(numi-solver-rigid numi_temporal_cone)
+target_link_libraries(
+    numi-solver-rigid
+    PRIVATE
+        numi_temporal_cone_abi
+        "${FOUNDATION_FRAMEWORK}"
+        "${METAL_FRAMEWORK}"
+)
+target_compile_features(numi-solver-rigid PRIVATE cxx_std_23)
+target_compile_options(
+    numi-solver-rigid
+    PRIVATE -fobjc-arc -Wall -Wextra -Wpedantic
+)
+target_compile_definitions(
+    numi-solver-rigid
+    PRIVATE
+        NUMI_TEMPORAL_CONE_METALLIB="${NUMI_SOLVER_METALLIB}"
+)
+
 include(CTest)
 if(BUILD_TESTING)
     add_test(
@@ -149,6 +169,16 @@ if(BUILD_TESTING)
         temporal_cone.assembly
         PROPERTIES LABELS "metal;physics;assembly;streamed" TIMEOUT 60
     )
+    add_test(
+        NAME temporal_cone.rigid
+        COMMAND $<TARGET_FILE:numi-solver-rigid>
+            --islands 96
+            --replays 2
+    )
+    set_tests_properties(
+        temporal_cone.rigid
+        PROPERTIES LABELS "metal;physics;rigid;assembly;streamed" TIMEOUT 60
+    )
 endif()
 
 install(FILES "${NUMI_SOLVER_METALLIB}" DESTINATION lib/numi-solver)
@@ -158,5 +188,6 @@ install(
         numi-solver-math
         numi-solver-islands
         numi-solver-assembly
+        numi-solver-rigid
     RUNTIME DESTINATION bin
 )

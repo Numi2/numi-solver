@@ -64,6 +64,7 @@ regularization; arbitrary symmetric response data is not silently declared
 physical. The qualification harness independently reconstructs every dense
 operator and applies FP64 Cholesky before accepting the generated batch.
 
-The current ABI consumes already-authored contact topology, Jacobians, and
-response columns. Collision detection, Jacobian generation, and computation
-of rigid/articulated `M^-1J^T` remain upstream responsibilities.
+The generic assembly ABI still consumes authored topology, Jacobians, and
+response columns. The rigid response kernel now generates the rigid 6-DOF
+terms directly from body/contact data. Collision detection, topology creation,
+and articulated `M^-1J^T` remain upstream responsibilities.
