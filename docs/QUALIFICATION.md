@@ -85,13 +85,13 @@ spd_cholesky=true
 min_spd_pivot=0.894427198
 shared_rigid_oracle=true
 under_relaxed_path=true
-average_gpu_seconds=0.001778100
-islands_per_second=575895.62
-contacts_per_second=6031719.25
-contact_iterations_per_second=212065125.67
+average_gpu_seconds=0.001754212
+islands_per_second=583737.72
+contacts_per_second=6113854.52
+contact_iterations_per_second=214952863.97
 streamed_buffer_bytes=2550140
-dense_gpu_seconds=0.003081000
-dense_to_stream_speedup=1.732748447
+dense_gpu_seconds=0.003005421
+dense_to_stream_speedup=1.713259279
 dense_buffer_bytes=39927808
 stream_to_dense_memory=0.063868770
 streamed_blocks=42961
@@ -105,14 +105,14 @@ result=PASS
 ```
 
 The streamed representation used 6.39% of the dense qualification buffers and
-the isolated streamed kernel was 1.733x faster for the same byte-identical
+the isolated streamed kernel was 1.713x faster for the same byte-identical
 FP32 solve. GPU time excludes CPU oracle work and buffer upload. These ratios
 describe this declared topology mix; they are not universal scene claims.
 
 On the same Apple M4 qualification batch, the preceding unaccelerated revision
 measured `0.004850083` seconds, 431 maximum iterations, and p99 262. The
-delayed/adaptively restarted metric acceleration measured `0.001778100`
-seconds, 103 maximum iterations, and p99 74: 2.73x streamed throughput, 4.18x
+delayed/adaptively restarted metric acceleration measured `0.001754212`
+seconds, 103 maximum iterations, and p99 74: 2.76x streamed throughput, 4.18x
 lower maximum iteration count, and 3.54x lower p99. The operator, cone,
 tolerances, FP64 oracle, and failure gates were unchanged. Pipeline reflection
 reports 2,560 bytes of static threadgroup memory and a 1,024-thread hardware
@@ -167,14 +167,14 @@ asymmetric_rejected=true
 missing_coupling_rejected=true
 deterministic_failures=true
 failure_rollback=true
-average_gpu_seconds=0.001670204
-assembly_gpu_seconds=0.000764442
-assembly_fraction=0.457693573
-islands_per_second=613098.71
-blocks_per_second=24984371.10
-assembly_blocks_per_second=54587550.65
-factor_fmas_per_second=1848325386.38
-contact_iterations_per_second=100915209.21
+average_gpu_seconds=0.001729742
+assembly_gpu_seconds=0.000784892
+assembly_fraction=0.453762364
+islands_per_second=591995.91
+blocks_per_second=24124411.61
+assembly_blocks_per_second=53165298.65
+factor_fmas_per_second=1800168170.33
+contact_iterations_per_second=97441718.03
 factor_bytes=3505020
 streamed_operator_bytes=1716156
 dense_operator_bytes=37748736
@@ -190,8 +190,8 @@ result=PASS
 
 Factor inputs plus the assembled sparse operator used 13.83% of the fixed
 dense operator storage for this declared topology mix. The assembly-only
-measurement produced 54.59 million blocks/s and the complete assembly/solve
-chain produced 613,099 islands/s. One unreported warmup command precedes each
+measurement produced 53.17 million blocks/s and the complete assembly/solve
+chain produced 591,996 islands/s. One unreported warmup command precedes each
 timed path. These are isolated kernel measurements, not environment-step or
 energy claims.
 
@@ -213,10 +213,11 @@ dynamic-dynamic pairs, eight-body chains, redundant shared-body contacts, and
 32-contact full-capacity shared-body cliques. Independent CPU equations
 reconstruct free contact velocity, every present Delassus coefficient, and
 every published linear/angular velocity. Dynamic-only islands check total
-linear momentum, and all zero-bias inelastic cases reject kinetic-energy
-increase. The final island has a deliberately nonorthogonal contact frame and
-must fail every downstream transaction while restoring input velocities
-byte-for-byte.
+linear momentum. Independent material equations reconstruct spring-damper CFM,
+thresholded restitution, capped penetration recovery, and the allowable
+impulse-energy budget. The final two islands contain a nonorthogonal contact
+frame and invalid restitution respectively; both must fail every downstream
+transaction while restoring input velocities and poses byte-for-byte.
 
 Measured command:
 
@@ -227,32 +228,38 @@ Measured command:
 Apple M4 result:
 
 ```text
-islands=1024 valid_bodies=2607 valid_contacts=3402 blocks=38944
-operator_max_abs_error=0.000000098
-free_velocity_max_abs_error=0.000000053
+islands=1024 valid_bodies=2606 valid_contacts=3401 blocks=38944
+operator_max_abs_error=0.000000097
+free_velocity_max_abs_error=0.000000098
+regularization_max_abs_error=0.000000011
 publication_max_abs_error=0.000000095
-pose_max_abs_error=0.000000019
-quaternion_norm_max_error=0.000000037
+pose_max_abs_error=0.000000027
+quaternion_norm_max_error=0.000000054
 free_flight_steps=240
 free_flight_max_abs_error=0.000001955
 free_flight_norm_error=0.000000051
 free_flight_deterministic=yes
 analytic_impulse_error=0.000000010
 analytic_velocity_error=0.000000020
+impact_impulse_error=0.000000048
+impact_velocity_error=0.000000036
 momentum_max_abs_error=0.000000036
 energy_max_increase=0.000000000
-kkt_max=0.000003595
+energy_budget_max_violation=0.000000000
+restitution_contacts=205 recovery_contacts=588
+restitution_target_max=0.400000006 recovery_target_max=0.200000003
+kkt_max=0.000003547
 cone_max=0.000000000
 iterations_max=105 p50=8 p95=53 p99=105
 accelerated_islands=428 max_acceleration_restarts=3
 deterministic=yes
-invalid_frame_rollback=yes
+invalid_frame_law_rollback=yes
 failed_valid=0
 one_command_buffer=yes
 cpu_readback_between_stages=no stages=5
-average_chain_seconds=0.001798013
-islands_per_second=569517.73
-contacts_per_second=1892089.17
+average_chain_seconds=0.001779808
+islands_per_second=575342.85
+contacts_per_second=1910879.90
 result=PASS
 ```
 
@@ -261,11 +268,12 @@ work. The redundant 32-contact cliques remain in the timing population.
 Delayed metric acceleration and deterministic adaptive restart reduce their
 observed maximum from 959 iterations before this change to 105 without
 loosening the KKT gate or removing the ill-conditioned cases. Complete
-five-stage chain time fell from `0.013030367` to `0.001798013` seconds on the
-same declared batch, a 7.25x throughput increase.
+five-stage chain time fell from `0.013030367` to `0.001779808` seconds on the
+same declared batch, a 7.32x throughput increase. The added GPU contact-law
+generation is included in the latter measurement.
 
 The combined metallib SHA-256 was
-`356cfd7ea843f2ad0323f6162a14fb5cc85ca66409aad30fdd14e3709cbe05c8`.
+`556b4672edfb5db1cb98b4f070562880c77bc07a7abb410a97415320c7611cd6`.
 
 ## Evidence boundary
 
@@ -280,6 +288,8 @@ kernel cost. It also qualifies numerical construction of `J M^-1 J^T + R`
 from supplied Jacobians and response columns on the solver command-buffer
 timeline. The rigid gate additionally qualifies contact-frame Jacobian
 construction, rigid `M^-1 J^T`, deterministic linear/angular velocity
-publication, one-step pose advancement, and constant-twist free flight. It
-does not qualify collision generation or refresh, articulated response, or a
-complete interacting physical trajectory. Those remain separate layers.
+publication, implicit spring-damper regularization, restitution/recovery
+targets, their physical energy budget, one-step pose advancement, and
+constant-twist free flight. It does not qualify collision generation or
+refresh, articulated response, or a complete interacting physical trajectory.
+Those remain separate layers.

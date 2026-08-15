@@ -66,5 +66,6 @@ operator and applies FP64 Cholesky before accepting the generated batch.
 
 The generic assembly ABI still consumes authored topology, Jacobians, and
 response columns. The rigid response kernel now generates the rigid 6-DOF
-terms directly from body/contact data. Collision detection, topology creation,
-and articulated `M^-1J^T` remain upstream responsibilities.
+terms and positive diagonal implicit contact-law regularization directly from
+body/contact/material data. Collision detection, topology creation, and
+articulated `M^-1J^T` remain upstream responsibilities.

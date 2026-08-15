@@ -21,7 +21,7 @@
 #define NUMI_TEMPORAL_CONE_ASSEMBLY_MAX_TERMS_PER_CONTACT 32u
 #define NUMI_TEMPORAL_CONE_ASSEMBLY_MAX_DOF_PER_TERM 32u
 
-#define NUMI_TEMPORAL_CONE_RIGID_ABI_VERSION 1u
+#define NUMI_TEMPORAL_CONE_RIGID_ABI_VERSION 2u
 #define NUMI_TEMPORAL_CONE_RIGID_MAX_BODIES 32u
 #define NUMI_TEMPORAL_CONE_RIGID_STATIC_BODY 0xffffffffu
 #define NUMI_TEMPORAL_CONE_RIGID_DOF 6u
@@ -127,7 +127,8 @@ typedef struct MR_ALIGN16 NumiTemporalConeRigidHeader {
     mr_uint4 inputRanges;
     // x span base, y term base, z Jacobian base, w response base.
     mr_uint4 responseRanges;
-    // x solver-contact base, y output-body base, zw reserved.
+    // x solver-contact base, y output-body base,
+    // z contact-law base, w regularization-value base.
     mr_uint4 solverRanges;
 } NumiTemporalConeRigidHeader;
 
@@ -157,6 +158,17 @@ typedef struct MR_ALIGN16 NumiTemporalConeRigidContact {
     // xyz warm-start impulse in the same frame; w reserved.
     mr_float4 warmImpulse;
 } NumiTemporalConeRigidContact;
+
+// Implicit velocity-level spring/damper law. For each axis a,
+// gamma_a = 1 / (dt * (damping_a + dt * stiffness_a)).
+typedef struct MR_ALIGN16 NumiTemporalConeRigidLaw {
+    // xyz normal/tangent stiffness; w restitution in [0, 1].
+    mr_float4 stiffnessAndRestitution;
+    // xyz normal/tangent damping; w restitution speed threshold.
+    mr_float4 dampingAndImpactThreshold;
+    // x signed gap, y penetration slop, z maximum recovery speed, w timestep.
+    mr_float4 stabilization;
+} NumiTemporalConeRigidLaw;
 
 typedef struct MR_ALIGN16 NumiTemporalConeRigidStatus {
     // x status, y bodies, z contacts, w generated owner terms.
@@ -220,6 +232,7 @@ static_assert(sizeof(NumiTemporalConeAssemblyStatus) == 32);
 static_assert(sizeof(NumiTemporalConeRigidHeader) == 64);
 static_assert(sizeof(NumiTemporalConeRigidBody) == 80);
 static_assert(sizeof(NumiTemporalConeRigidContact) == 128);
+static_assert(sizeof(NumiTemporalConeRigidLaw) == 48);
 static_assert(sizeof(NumiTemporalConeRigidStatus) == 32);
 static_assert(sizeof(NumiTemporalConeIntegrationHeader) == 48);
 static_assert(sizeof(NumiTemporalConeRigidPose) == 32);

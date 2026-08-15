@@ -65,7 +65,9 @@ and `--replays N`. Together they check separating, impact, sticking, sliding,
 anisotropic friction, near-rank-deficient response, capped impulse, polar
 boundary, zero axis, extreme scale, sparse topology, full block capacity,
 shared response, missing coupling, response asymmetry, rigid momentum and
-kinetic energy, contact-frame validity, and transactional velocity rollback.
+kinetic-energy budgets, implicit contact-law regularization, thresholded
+restitution, penetration recovery, contact-frame validity, and transactional
+velocity rollback.
 
 An installed or relocated harness can load a specific library with
 `--metallib path/to/NumiTemporalCone.metallib`.
@@ -84,6 +86,8 @@ An installed or relocated harness can load a specific library with
   Jacobians and response columns.
 - GPU generation of rigid 6-DOF `J` and `M^-1 J^T` directly from contact
   frames, inverse mass, and world-space inverse inertia.
+- GPU-derived implicit spring-damper CFM, penetration-recovery targets, and
+  thresholded restitution from versioned contact material laws.
 - Canonical per-body impulse accumulation with no floating-point atomics.
 - Symplectic position advance and exponential-map quaternion integration with
   whole-island rollback.

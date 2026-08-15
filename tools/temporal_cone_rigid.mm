@@ -51,6 +51,7 @@ struct Batch {
     std::vector<NumiTemporalConeRigidBody> bodies;
     std::vector<NumiTemporalConeRigidPose> poses;
     std::vector<NumiTemporalConeRigidContact> rigidContacts;
+    std::vector<NumiTemporalConeRigidLaw> laws;
     std::vector<NumiTemporalConeAssemblyContactSpan> spans;
     std::vector<NumiTemporalConeAssemblyTerm> terms;
     std::vector<float> jacobians;
@@ -70,6 +71,7 @@ struct Result {
     std::vector<float> jacobians;
     std::vector<float> responses;
     std::vector<NumiTemporalConeIslandContact> solverContacts;
+    std::vector<float> regularization;
     std::vector<NumiTemporalConeRigidStatus> responseStatuses;
     std::vector<NumiTemporalConeStreamHeader> streamHeaders;
     std::vector<float> blocks;
@@ -117,6 +119,18 @@ NumiTemporalConeRigidContact contact(
     return value;
 }
 
+NumiTemporalConeRigidLaw contactLaw(const float regularization) {
+    constexpr float timestep = 1.0f / 240.0f;
+    const float damping = 1.0f / (timestep * regularization);
+    NumiTemporalConeRigidLaw value = {};
+    value.stiffnessAndRestitution = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    value.dampingAndImpactThreshold = f4(
+        damping, damping, damping, 0.05f
+    );
+    value.stabilization = f4(0.0f, 0.0f, 0.0f, timestep);
+    return value;
+}
+
 bool shareBody(
     const NumiTemporalConeRigidContact& first,
     const NumiTemporalConeRigidContact& second
@@ -132,7 +146,11 @@ bool shareBody(
     return false;
 }
 
-void appendProblem(Batch& batch, const std::size_t problem, const bool invalid) {
+void appendProblem(
+    Batch& batch,
+    const std::size_t problem,
+    const std::uint32_t invalidMode
+) {
     const std::size_t bodyBase = batch.bodies.size();
     const std::size_t contactBase = batch.rigidContacts.size();
     const std::size_t rowBase = batch.rowOffsets.size();
@@ -221,9 +239,33 @@ void appendProblem(Batch& batch, const std::size_t problem, const bool invalid) 
         localContacts.push_back(contact(0u, kStatic));
     }
 
-    if (invalid) {
+    if (invalidMode == 1u) {
         localContacts.front().tangentVAndMaximumNormal =
             f4(0.0f, 1.0f, 0.0f, 0.0f);
+    }
+
+    std::vector<NumiTemporalConeRigidLaw> localLaws(
+        localContacts.size(),
+        contactLaw(regularization)
+    );
+    if (invalidMode == 2u) {
+        localLaws.front().stiffnessAndRestitution.w = 1.5f;
+    } else if (problem == 5u) {
+        localLaws.front().stiffnessAndRestitution.w = 0.5f;
+    } else if (problem % 5u == 2u) {
+        localLaws.front().stiffnessAndRestitution.w = 0.4f;
+    }
+    if (invalidMode == 0u && problem % 5u == 4u) {
+        const float timestep = localLaws.front().stabilization.w;
+        const float denominator = 1.0f / (timestep * regularization);
+        const float stiffness = 0.5f * denominator / timestep;
+        for (auto& law : localLaws) {
+            law.stiffnessAndRestitution.x = stiffness;
+            law.dampingAndImpactThreshold.x =
+                denominator - timestep * stiffness;
+            law.stabilization.x = -0.002f;
+            law.stabilization.z = 0.2f;
+        }
     }
 
     const std::uint32_t bodyCount =
@@ -244,6 +286,7 @@ void appendProblem(Batch& batch, const std::size_t problem, const bool invalid) 
     batch.rigidContacts.insert(
         batch.rigidContacts.end(), localContacts.begin(), localContacts.end()
     );
+    batch.laws.insert(batch.laws.end(), localLaws.begin(), localLaws.end());
     batch.spans.resize(batch.spans.size() + contactCount);
     batch.terms.resize(batch.terms.size() + 2u * contactCount);
     batch.jacobians.resize(
@@ -255,13 +298,7 @@ void appendProblem(Batch& batch, const std::size_t problem, const bool invalid) 
             NUMI_TEMPORAL_CONE_RIGID_VALUES_PER_TERM
     );
     batch.solverContacts.resize(batch.solverContacts.size() + contactCount);
-    for (std::uint32_t index = 0u; index < contactCount; ++index) {
-        for (std::uint32_t element = 0u; element < 9u; ++element) {
-            batch.regularization.push_back(
-                element % 4u == 0u ? regularization : 0.0f
-            );
-        }
-    }
+    batch.regularization.resize(batch.regularization.size() + 9u * contactCount);
     batch.rowOffsets.push_back(0u);
     std::uint32_t relativeBlocks = 0u;
     for (std::uint32_t row = 0u; row < contactCount; ++row) {
@@ -294,7 +331,9 @@ void appendProblem(Batch& batch, const std::size_t problem, const bool invalid) 
     );
     rigidHeader.solverRanges = u4(
         static_cast<std::uint32_t>(contactBase),
-        static_cast<std::uint32_t>(bodyBase), 0u, 0u
+        static_cast<std::uint32_t>(bodyBase),
+        static_cast<std::uint32_t>(contactBase),
+        static_cast<std::uint32_t>(regularizationBase)
     );
     batch.rigidHeaders.push_back(rigidHeader);
 
@@ -330,8 +369,8 @@ void appendProblem(Batch& batch, const std::size_t problem, const bool invalid) 
     );
     assemblyHeader.tolerances = f4(2.0e-6f, 2.0e-6f, 1.0f, 0.0f);
     batch.assemblyHeaders.push_back(assemblyHeader);
-    batch.expectedFailure.push_back(invalid);
-    if (!invalid) {
+    batch.expectedFailure.push_back(invalidMode != 0u);
+    if (invalidMode == 0u) {
         batch.validContactCount += contactCount;
         batch.validBodyCount += bodyCount;
     }
@@ -340,7 +379,12 @@ void appendProblem(Batch& batch, const std::size_t problem, const bool invalid) 
 Batch makeBatch(const std::size_t problemCount) {
     Batch batch;
     for (std::size_t problem = 0u; problem < problemCount; ++problem) {
-        appendProblem(batch, problem, problem + 1u == problemCount);
+        const std::uint32_t invalidMode = problem + 1u == problemCount
+            ? 2u
+            : problem + 2u == problemCount
+            ? 1u
+            : 0u;
+        appendProblem(batch, problem, invalidMode);
     }
     return batch;
 }
@@ -378,6 +422,7 @@ Result runGPU(
     id<MTLBuffer> bodyBuffer = makeBytes(batch.bodies);
     id<MTLBuffer> poseBuffer = makeBytes(batch.poses);
     id<MTLBuffer> rigidContactBuffer = makeBytes(batch.rigidContacts);
+    id<MTLBuffer> lawBuffer = makeBytes(batch.laws);
     id<MTLBuffer> spanBuffer = makeOutput(batch.spans.size() * sizeof(batch.spans.front()));
     id<MTLBuffer> termBuffer = makeOutput(batch.terms.size() * sizeof(batch.terms.front()));
     id<MTLBuffer> jacobianBuffer = makeOutput(batch.jacobians.size() * sizeof(float));
@@ -388,7 +433,9 @@ Result runGPU(
     id<MTLBuffer> responseStatusBuffer = makeOutput(
         problemCount * sizeof(NumiTemporalConeRigidStatus)
     );
-    id<MTLBuffer> regularizationBuffer = makeBytes(batch.regularization);
+    id<MTLBuffer> regularizationBuffer = makeOutput(
+        batch.regularization.size() * sizeof(float)
+    );
     id<MTLBuffer> rowBuffer = makeBytes(batch.rowOffsets);
     id<MTLBuffer> columnBuffer = makeBytes(batch.columns);
     id<MTLBuffer> blockBuffer = makeOutput(batch.columns.size() * 9u * sizeof(float));
@@ -418,7 +465,7 @@ Result runGPU(
     );
     if (rigidHeaderBuffer == nil || integrationHeaderBuffer == nil ||
         assemblyHeaderBuffer == nil || bodyBuffer == nil || poseBuffer == nil ||
-        rigidContactBuffer == nil || spanBuffer == nil ||
+        rigidContactBuffer == nil || lawBuffer == nil || spanBuffer == nil ||
         termBuffer == nil || jacobianBuffer == nil || responseBuffer == nil ||
         solverContactBuffer == nil || responseStatusBuffer == nil ||
         regularizationBuffer == nil || rowBuffer == nil || columnBuffer == nil ||
@@ -436,26 +483,34 @@ Result runGPU(
     [response setBuffer:rigidHeaderBuffer offset:0 atIndex:0];
     [response setBuffer:bodyBuffer offset:0 atIndex:1];
     [response setBuffer:rigidContactBuffer offset:0 atIndex:2];
-    [response setBuffer:spanBuffer offset:0 atIndex:3];
-    [response setBuffer:termBuffer offset:0 atIndex:4];
-    [response setBuffer:jacobianBuffer offset:0 atIndex:5];
-    [response setBuffer:responseBuffer offset:0 atIndex:6];
-    [response setBuffer:solverContactBuffer offset:0 atIndex:7];
-    [response setBuffer:responseStatusBuffer offset:0 atIndex:8];
-    [response setBytes:&problemCount length:sizeof(problemCount) atIndex:9];
+    [response setBuffer:lawBuffer offset:0 atIndex:3];
+    [response setBuffer:spanBuffer offset:0 atIndex:4];
+    [response setBuffer:termBuffer offset:0 atIndex:5];
+    [response setBuffer:jacobianBuffer offset:0 atIndex:6];
+    [response setBuffer:responseBuffer offset:0 atIndex:7];
+    [response setBuffer:solverContactBuffer offset:0 atIndex:8];
+    [response setBuffer:regularizationBuffer offset:0 atIndex:9];
+    [response setBuffer:responseStatusBuffer offset:0 atIndex:10];
+    [response setBytes:&problemCount length:sizeof(problemCount) atIndex:11];
     const mr_uint4 structural = u4(
         static_cast<std::uint32_t>(batch.bodies.size()),
         static_cast<std::uint32_t>(batch.rigidContacts.size()),
-        static_cast<std::uint32_t>(batch.spans.size()),
-        static_cast<std::uint32_t>(batch.terms.size())
+        static_cast<std::uint32_t>(batch.laws.size()),
+        static_cast<std::uint32_t>(batch.spans.size())
     );
     const mr_uint4 values = u4(
+        static_cast<std::uint32_t>(batch.terms.size()),
         static_cast<std::uint32_t>(batch.jacobians.size()),
         static_cast<std::uint32_t>(batch.responses.size()),
-        static_cast<std::uint32_t>(batch.solverContacts.size()), 0u
+        static_cast<std::uint32_t>(batch.solverContacts.size())
     );
-    [response setBytes:&structural length:sizeof(structural) atIndex:10];
-    [response setBytes:&values length:sizeof(values) atIndex:11];
+    [response setBytes:&structural length:sizeof(structural) atIndex:12];
+    [response setBytes:&values length:sizeof(values) atIndex:13];
+    const std::uint32_t regularizationCapacity =
+        static_cast<std::uint32_t>(batch.regularization.size());
+    [response setBytes:&regularizationCapacity
+                length:sizeof(regularizationCapacity)
+               atIndex:14];
     [response dispatchThreadgroups:MTLSizeMake(problemCount, 1u, 1u)
                   threadsPerThreadgroup:MTLSizeMake(32u, 1u, 1u)];
     [response endEncoding];
@@ -573,6 +628,7 @@ Result runGPU(
     copy(result.jacobians, jacobianBuffer);
     copy(result.responses, responseBuffer);
     copy(result.solverContacts, solverContactBuffer);
+    copy(result.regularization, regularizationBuffer);
     copy(result.responseStatuses, responseStatusBuffer);
     copy(result.streamHeaders, streamHeaderBuffer);
     copy(result.blocks, blockBuffer);
@@ -728,6 +784,26 @@ std::array<double, 3> axis(
         : xyz(value.tangentVAndMaximumNormal);
 }
 
+double lawGamma(
+    const NumiTemporalConeRigidLaw& law,
+    const std::size_t axisIndex
+) {
+    const std::array<double, 3> stiffness = {
+        law.stiffnessAndRestitution.x,
+        law.stiffnessAndRestitution.y,
+        law.stiffnessAndRestitution.z
+    };
+    const std::array<double, 3> damping = {
+        law.dampingAndImpactThreshold.x,
+        law.dampingAndImpactThreshold.y,
+        law.dampingAndImpactThreshold.z
+    };
+    const double timestep = law.stabilization.w;
+    return 1.0 / (
+        timestep * (damping[axisIndex] + timestep * stiffness[axisIndex])
+    );
+}
+
 double expectedCoefficient(
     const Batch& batch,
     const std::size_t problem,
@@ -740,9 +816,10 @@ double expectedCoefficient(
     const auto& targetContact = batch.rigidContacts[header.inputRanges.y + target];
     const auto& sourceContact = batch.rigidContacts[header.inputRanges.y + source];
     double result = target == source && targetAxis == sourceAxis
-        ? batch.regularization[
-            batch.assemblyHeaders[problem].inputRanges.y + 4u * targetAxis + target * 9u
-        ]
+        ? lawGamma(
+            batch.laws[header.solverRanges.z + target],
+            targetAxis
+        )
         : 0.0;
     for (std::uint32_t localBody = 0u; localBody < header.control.y; ++localBody) {
         const auto role = [&](const NumiTemporalConeRigidContact& c) {
@@ -850,6 +927,7 @@ int run(const int argc, const char* const* argv) {
             exactVector(result.jacobians, replays[replay].jacobians) &&
             exactVector(result.responses, replays[replay].responses) &&
             exactVector(result.solverContacts, replays[replay].solverContacts) &&
+            exactVector(result.regularization, replays[replay].regularization) &&
             exactVector(result.responseStatuses, replays[replay].responseStatuses) &&
             exactVector(result.streamHeaders, replays[replay].streamHeaders) &&
             exactVector(result.blocks, replays[replay].blocks) &&
@@ -864,11 +942,17 @@ int run(const int argc, const char* const* argv) {
 
     double maximumOperatorError = 0.0;
     double maximumFreeVelocityError = 0.0;
+    double maximumRegularizationError = 0.0;
     double maximumPublicationError = 0.0;
     double maximumPoseError = 0.0;
     double maximumQuaternionNormError = 0.0;
     double maximumMomentumError = 0.0;
     double maximumEnergyIncrease = 0.0;
+    double maximumEnergyBudgetViolation = 0.0;
+    double maximumRestitutionTarget = 0.0;
+    double maximumRecoveryTarget = 0.0;
+    std::size_t restitutionContacts = 0u;
+    std::size_t recoveryContacts = 0u;
     double maximumKKT = 0.0;
     double maximumCone = 0.0;
     std::uint32_t maximumIterations = 0u;
@@ -916,6 +1000,24 @@ int run(const int argc, const char* const* argv) {
             result.integrationStatuses[problem].control.x ==
                 NUMI_TEMPORAL_CONE_INTEGRATION_SUCCESS;
         if (!success) {
+            if (failedValid < 5u) {
+                std::cerr
+                    << "failed_problem=" << problem
+                    << " contacts=" << rigidHeader.control.z
+                    << " response="
+                    << result.responseStatuses[problem].control.x
+                    << " assembly="
+                    << result.assemblyStatuses[problem].control.x
+                    << " solver="
+                    << result.solverStatuses[problem].control.x
+                    << " iterations="
+                    << result.solverStatuses[problem].control.y
+                    << " publish="
+                    << result.publishStatuses[problem].control.x
+                    << " integrate="
+                    << result.integrationStatuses[problem].control.x
+                    << '\n';
+            }
             ++failedValid;
             continue;
         }
@@ -931,6 +1033,7 @@ int run(const int argc, const char* const* argv) {
         );
         acceleratedIslands += restartCount > 0u ? 1u : 0u;
         iterations.push_back(result.solverStatuses[problem].control.y);
+        double allowedLawWork = 0.0;
         for (std::uint32_t index = 0u; index < rigidHeader.control.z; ++index) {
             const auto& c = batch.rigidContacts[rigidHeader.inputRanges.y + index];
             std::array<double, 3> pointA{};
@@ -955,8 +1058,41 @@ int run(const int argc, const char* const* argv) {
             for (std::size_t component = 0u; component < 3u; ++component) {
                 relative[component] = pointB[component] - pointA[component];
             }
+            const auto& law = batch.laws[rigidHeader.solverRanges.z + index];
+            const double rawNormal = dot(axis(c, 0u), relative);
+            const double normalDenominator =
+                law.dampingAndImpactThreshold.x +
+                law.stabilization.w * law.stiffnessAndRestitution.x;
+            const double penetration = std::min<double>(
+                law.stabilization.x + law.stabilization.y,
+                0.0
+            );
+            const double uncappedRecovery =
+                -law.stiffnessAndRestitution.x * penetration /
+                normalDenominator;
+            const double recoveryTarget = law.stabilization.z > 0.0f
+                ? std::min<double>(law.stabilization.z, uncappedRecovery)
+                : uncappedRecovery;
+            const double restitutionTarget =
+                rawNormal < -law.dampingAndImpactThreshold.w
+                ? -law.stiffnessAndRestitution.w * rawNormal
+                : 0.0;
+            const double normalTarget = std::max(
+                recoveryTarget,
+                restitutionTarget
+            );
+            maximumRestitutionTarget = std::max(
+                maximumRestitutionTarget,
+                restitutionTarget
+            );
+            maximumRecoveryTarget = std::max(
+                maximumRecoveryTarget,
+                recoveryTarget
+            );
+            restitutionContacts += restitutionTarget > 0.0 ? 1u : 0u;
+            recoveryContacts += recoveryTarget > 0.0 ? 1u : 0u;
             const std::array<double, 3> expectedFree = {
-                dot(axis(c, 0u), relative) + c.bias.x,
+                rawNormal + c.bias.x - normalTarget,
                 dot(axis(c, 1u), relative) + c.bias.y,
                 dot(axis(c, 2u), relative) + c.bias.z
             };
@@ -967,6 +1103,23 @@ int run(const int argc, const char* const* argv) {
                 std::abs(expectedFree[1] - actual.freeVelocityAndFrictionU.y),
                 std::abs(expectedFree[2] - actual.freeVelocityAndFrictionU.z)
             });
+            for (std::size_t axisIndex = 0u; axisIndex < 3u; ++axisIndex) {
+                const double actualGamma = result.regularization[
+                    rigidHeader.solverRanges.w + 9u * index + 4u * axisIndex
+                ];
+                maximumRegularizationError = std::max(
+                    maximumRegularizationError,
+                    std::abs(lawGamma(law, axisIndex) - actualGamma)
+                );
+            }
+            const auto& lambda = result.impulses[
+                rigidHeader.solverRanges.x + index
+            ];
+            allowedLawWork += lambda.x * normalTarget - 0.5 * (
+                lawGamma(law, 0u) * lambda.x * lambda.x +
+                lawGamma(law, 1u) * lambda.y * lambda.y +
+                lawGamma(law, 2u) * lambda.z * lambda.z
+            );
         }
         for (std::uint32_t row = 0u; row < rigidHeader.control.z; ++row) {
             const std::uint32_t begin = batch.rowOffsets[assemblyHeader.outputRanges.y + row];
@@ -1115,6 +1268,10 @@ int run(const int argc, const char* const* argv) {
         maximumEnergyIncrease = std::max(
             maximumEnergyIncrease, energyAfter - energyBefore
         );
+        maximumEnergyBudgetViolation = std::max(
+            maximumEnergyBudgetViolation,
+            energyAfter - energyBefore - allowedLawWork
+        );
     }
     std::sort(iterations.begin(), iterations.end());
     const auto percentile = [&](const double value) {
@@ -1129,6 +1286,19 @@ int run(const int argc, const char* const* argv) {
     const double analyticVelocityError = std::abs(
         static_cast<double>(result.outputBodies[0].linearVelocityAndInverseMass.x) -
         1.0 / 3.0
+    );
+    const auto& impactHeader = batch.rigidHeaders[5u];
+    const auto& impactLaw = batch.laws[impactHeader.solverRanges.z];
+    const double impactGamma = lawGamma(impactLaw, 0u);
+    const double expectedImpactImpulse = 1.2 / (1.0 + impactGamma);
+    const double impactImpulseError = std::abs(
+        result.impulses[impactHeader.solverRanges.x].x -
+        expectedImpactImpulse
+    );
+    const double impactVelocityError = std::abs(
+        result.outputBodies[impactHeader.solverRanges.y]
+            .linearVelocityAndInverseMass.x -
+        (0.8 - expectedImpactImpulse)
     );
     const double flightTime = static_cast<double>(kFreeFlightSteps) / 240.0;
     const std::array<double, 3> flightAngular = {0.15, -0.2, 0.4};
@@ -1170,14 +1340,19 @@ int run(const int argc, const char* const* argv) {
     ) / static_cast<double>(replays.size());
     const bool pass = deterministic && failureRollback && failedValid == 0u &&
         maximumOperatorError <= 2.0e-6 && maximumFreeVelocityError <= 2.0e-6 &&
+        maximumRegularizationError <= 2.0e-6 &&
         maximumPublicationError <= 2.0e-6 && maximumMomentumError <= 2.0e-6 &&
         maximumPoseError <= 2.0e-6 && maximumQuaternionNormError <= 2.0e-6 &&
+        maximumEnergyBudgetViolation <= 2.0e-5 &&
+        restitutionContacts > 0u && recoveryContacts > 0u &&
         freeFlight.status.control.x == NUMI_TEMPORAL_CONE_INTEGRATION_SUCCESS &&
         freeFlightError <= 2.0e-5 && freeFlightNormError <= 2.0e-6 &&
         freeFlightDeterministic &&
         maximumEnergyIncrease <= 2.0e-5 && maximumKKT <= 6.0e-6 &&
         maximumCone <= 2.0e-6 && analyticImpulseError <= 3.0e-6 &&
         analyticVelocityError <= 4.0e-6;
+    const bool impactOracle =
+        impactImpulseError <= 3.0e-6 && impactVelocityError <= 4.0e-6;
 
     std::cout << std::fixed << std::setprecision(9)
               << "device=" << device.name.UTF8String << '\n'
@@ -1187,6 +1362,7 @@ int run(const int argc, const char* const* argv) {
               << " blocks=" << batch.columns.size() << '\n'
               << "operator_max_abs_error=" << maximumOperatorError
               << " free_velocity_max_abs_error=" << maximumFreeVelocityError
+              << " regularization_max_abs_error=" << maximumRegularizationError
               << " publication_max_abs_error=" << maximumPublicationError << '\n'
               << "pose_max_abs_error=" << maximumPoseError
               << " quaternion_norm_max_error=" << maximumQuaternionNormError << '\n'
@@ -1196,9 +1372,17 @@ int run(const int argc, const char* const* argv) {
               << " free_flight_deterministic="
               << (freeFlightDeterministic ? "yes" : "no") << '\n'
               << "analytic_impulse_error=" << analyticImpulseError
-              << " analytic_velocity_error=" << analyticVelocityError << '\n'
+              << " analytic_velocity_error=" << analyticVelocityError
+              << " impact_impulse_error=" << impactImpulseError
+              << " impact_velocity_error=" << impactVelocityError << '\n'
               << "momentum_max_abs_error=" << maximumMomentumError
-              << " energy_max_increase=" << maximumEnergyIncrease << '\n'
+              << " energy_max_increase=" << maximumEnergyIncrease
+              << " energy_budget_max_violation="
+              << maximumEnergyBudgetViolation << '\n'
+              << "restitution_contacts=" << restitutionContacts
+              << " recovery_contacts=" << recoveryContacts
+              << " restitution_target_max=" << maximumRestitutionTarget
+              << " recovery_target_max=" << maximumRecoveryTarget << '\n'
               << "kkt_max=" << maximumKKT
               << " cone_max=" << maximumCone
               << " iterations_max=" << maximumIterations
@@ -1209,15 +1393,16 @@ int run(const int argc, const char* const* argv) {
               << " max_acceleration_restarts="
               << maximumAccelerationRestarts << '\n'
               << "deterministic=" << (deterministic ? "yes" : "no")
-              << " invalid_frame_rollback=" << (failureRollback ? "yes" : "no")
+              << " invalid_frame_law_rollback="
+              << (failureRollback ? "yes" : "no")
               << " failed_valid=" << failedValid << '\n'
               << "one_command_buffer=yes cpu_readback_between_stages=no stages=5\n"
               << "average_chain_seconds=" << averageSeconds
               << " islands_per_second=" << problemCount / averageSeconds
               << " contacts_per_second=" << batch.validContactCount / averageSeconds
               << '\n'
-              << (pass ? "PASS" : "FAIL") << '\n';
-    return pass ? 0 : 1;
+              << (pass && impactOracle ? "PASS" : "FAIL") << '\n';
+    return pass && impactOracle ? 0 : 1;
 }
 
 }  // namespace

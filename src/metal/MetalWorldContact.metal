@@ -13386,17 +13386,20 @@ kernel void numi_temporal_cone_rigid_response(
     device const NumiTemporalConeRigidHeader* headers [[buffer(0)]],
     device const NumiTemporalConeRigidBody* bodies [[buffer(1)]],
     device const NumiTemporalConeRigidContact* rigidContacts [[buffer(2)]],
-    device NumiTemporalConeAssemblyContactSpan* outputSpans [[buffer(3)]],
-    device NumiTemporalConeAssemblyTerm* outputTerms [[buffer(4)]],
-    device float* outputJacobians [[buffer(5)]],
-    device float* outputResponses [[buffer(6)]],
-    device NumiTemporalConeIslandContact* outputContacts [[buffer(7)]],
-    device NumiTemporalConeRigidStatus* outputStatuses [[buffer(8)]],
-    constant uint& problemCount [[buffer(9)]],
-    // x bodies, y rigid contacts, z spans, w terms.
-    constant uint4& structuralCapacities [[buffer(10)]],
-    // x Jacobian floats, y response floats, z solver contacts, w reserved.
-    constant uint4& valueCapacities [[buffer(11)]],
+    device const NumiTemporalConeRigidLaw* laws [[buffer(3)]],
+    device NumiTemporalConeAssemblyContactSpan* outputSpans [[buffer(4)]],
+    device NumiTemporalConeAssemblyTerm* outputTerms [[buffer(5)]],
+    device float* outputJacobians [[buffer(6)]],
+    device float* outputResponses [[buffer(7)]],
+    device NumiTemporalConeIslandContact* outputContacts [[buffer(8)]],
+    device float* outputRegularization [[buffer(9)]],
+    device NumiTemporalConeRigidStatus* outputStatuses [[buffer(10)]],
+    constant uint& problemCount [[buffer(11)]],
+    // x bodies, y rigid contacts, z laws, w spans.
+    constant uint4& structuralCapacities [[buffer(12)]],
+    // x terms, y Jacobian floats, z response floats, w solver contacts.
+    constant uint4& valueCapacities [[buffer(13)]],
+    constant uint& regularizationCapacity [[buffer(14)]],
     const uint problem [[threadgroup_position_in_grid]],
     const uint lane [[thread_index_in_simdgroup]]
 ) {
@@ -13413,11 +13416,13 @@ kernel void numi_temporal_cone_rigid_response(
     const uint jacobianBase = header.responseRanges.z;
     const uint responseBase = header.responseRanges.w;
     const uint solverContactBase = header.solverRanges.x;
+    const uint lawBase = header.solverRanges.z;
+    const uint regularizationBase = header.solverRanges.w;
     const bool activeBody = lane < bodyCount;
     const bool activeContact = lane < contactCount;
 
-    if (activeContact && spanBase <= structuralCapacities.z &&
-        lane < structuralCapacities.z - spanBase) {
+    if (activeContact && spanBase <= structuralCapacities.w &&
+        lane < structuralCapacities.w - spanBase) {
         outputSpans[spanBase + lane] = {};
     }
     if (lane == 0u) {
@@ -13435,18 +13440,22 @@ kernel void numi_temporal_cone_rigid_response(
         bodyCount > structuralCapacities.x - bodyBase ||
         rigidContactBase > structuralCapacities.y ||
         contactCount > structuralCapacities.y - rigidContactBase ||
-        spanBase > structuralCapacities.z ||
-        contactCount > structuralCapacities.z - spanBase ||
-        termBase > structuralCapacities.w ||
-        2u * contactCount > structuralCapacities.w - termBase ||
-        jacobianBase > valueCapacities.x ||
+        lawBase > structuralCapacities.z ||
+        contactCount > structuralCapacities.z - lawBase ||
+        spanBase > structuralCapacities.w ||
+        contactCount > structuralCapacities.w - spanBase ||
+        termBase > valueCapacities.x ||
+        2u * contactCount > valueCapacities.x - termBase ||
+        jacobianBase > valueCapacities.y ||
         2u * contactCount * NUMI_TEMPORAL_CONE_RIGID_VALUES_PER_TERM >
-            valueCapacities.x - jacobianBase ||
-        responseBase > valueCapacities.y ||
+            valueCapacities.y - jacobianBase ||
+        responseBase > valueCapacities.z ||
         2u * contactCount * NUMI_TEMPORAL_CONE_RIGID_VALUES_PER_TERM >
-            valueCapacities.y - responseBase ||
-        solverContactBase > valueCapacities.z ||
-        contactCount > valueCapacities.z - solverContactBase) {
+            valueCapacities.z - responseBase ||
+        solverContactBase > valueCapacities.w ||
+        contactCount > valueCapacities.w - solverContactBase ||
+        regularizationBase > regularizationCapacity ||
+        9u * contactCount > regularizationCapacity - regularizationBase) {
         localFailure = NUMI_TEMPORAL_CONE_RIGID_INVALID_INPUT;
     }
 
@@ -13463,11 +13472,13 @@ kernel void numi_temporal_cone_rigid_response(
     }
 
     NumiTemporalConeRigidContact contact = {};
+    NumiTemporalConeRigidLaw law = {};
     float laneFrameError = 0.0f;
     uint laneTermCount = 0u;
     if (activeContact &&
         localFailure == NUMI_TEMPORAL_CONE_RIGID_SUCCESS) {
         contact = rigidContacts[rigidContactBase + lane];
+        law = laws[lawBase + lane];
         const uint bodyA = contact.bodies.x;
         const uint bodyB = contact.bodies.y;
         const float3 normal = contact.normalAndFrictionU.xyz;
@@ -13498,9 +13509,23 @@ kernel void numi_temporal_cone_rigid_response(
             !finite4(contact.tangentUAndFrictionV) ||
             !finite4(contact.tangentVAndMaximumNormal) ||
             !finite4(contact.bias) || !finite4(contact.warmImpulse) ||
+            !finite4(law.stiffnessAndRestitution) ||
+            !finite4(law.dampingAndImpactThreshold) ||
+            !finite4(law.stabilization) ||
             contact.normalAndFrictionU.w < 0.0f ||
             contact.tangentUAndFrictionV.w < 0.0f ||
             contact.tangentVAndMaximumNormal.w < 0.0f ||
+            any(law.stiffnessAndRestitution.xyz < 0.0f) ||
+            law.stiffnessAndRestitution.w < 0.0f ||
+            law.stiffnessAndRestitution.w > 1.0f ||
+            any(law.dampingAndImpactThreshold.xyz < 0.0f) ||
+            law.dampingAndImpactThreshold.w < 0.0f ||
+            law.stabilization.y < 0.0f ||
+            law.stabilization.z < 0.0f ||
+            !(law.stabilization.w > 0.0f) ||
+            any(law.dampingAndImpactThreshold.xyz +
+                law.stabilization.w * law.stiffnessAndRestitution.xyz <=
+                0.0f) ||
             laneFrameError > 2.0e-4f) {
             localFailure = NUMI_TEMPORAL_CONE_RIGID_INVALID_INPUT;
         }
@@ -13604,12 +13629,35 @@ kernel void numi_temporal_cone_rigid_response(
                 cross(body.angularVelocity.xyz, contact.offsetB.xyz);
         }
         const float3 relativeVelocity = velocityB - velocityA;
-        const float3 freeVelocity = float3(
+        const float3 rawVelocity = float3(
             dot(axes[0], relativeVelocity),
             dot(axes[1], relativeVelocity),
             dot(axes[2], relativeVelocity)
-        ) + contact.bias.xyz;
-        if (!finite3(freeVelocity)) {
+        );
+        const float timestep = law.stabilization.w;
+        const float3 denominator =
+            law.dampingAndImpactThreshold.xyz +
+            timestep * law.stiffnessAndRestitution.xyz;
+        const float3 gamma = 1.0f / (timestep * denominator);
+        const float penetration = min(
+            law.stabilization.x + law.stabilization.y,
+            0.0f
+        );
+        const float uncappedRecovery =
+            -law.stiffnessAndRestitution.x * penetration /
+            denominator.x;
+        const float recoveryTarget = law.stabilization.z > 0.0f
+            ? min(law.stabilization.z, uncappedRecovery)
+            : uncappedRecovery;
+        const float restitutionTarget =
+            rawVelocity.x < -law.dampingAndImpactThreshold.w
+            ? -law.stiffnessAndRestitution.w * rawVelocity.x
+            : 0.0f;
+        const float normalTarget = max(recoveryTarget, restitutionTarget);
+        const float3 freeVelocity = rawVelocity + contact.bias.xyz -
+            float3(normalTarget, 0.0f, 0.0f);
+        if (!finite3(freeVelocity) || !finite3(gamma) ||
+            any(gamma <= 0.0f)) {
             // Body and frame inputs are already finite; this guards overflow.
             outputSpans[spanBase + lane] = {};
         } else {
@@ -13625,6 +13673,12 @@ kernel void numi_temporal_cone_rigid_response(
             solverContact.limits.x =
                 contact.tangentVAndMaximumNormal.w;
             outputContacts[solverContactBase + lane] = solverContact;
+            const uint regularizationContactBase =
+                regularizationBase + 9u * lane;
+            for (uint element = 0u; element < 9u; ++element) {
+                outputRegularization[regularizationContactBase + element] =
+                    element % 4u == 0u ? gamma[element / 4u] : 0.0f;
+            }
             NumiTemporalConeAssemblyContactSpan span = {};
             span.ranges = uint4(contactTermBase, laneTermCount, 0u, 0u);
             outputSpans[spanBase + lane] = span;

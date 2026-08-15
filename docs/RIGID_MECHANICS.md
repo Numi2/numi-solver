@@ -37,6 +37,76 @@ Delassus operator `W=J M^-1 J^T+R`. This is not a diagonal or independent
 contact approximation: any two contacts touching the same dynamic body get a
 3x3 off-diagonal block.
 
+## Implicit contact law
+
+The rigid ABI derives its velocity target and diagonal conditioning from a
+versioned material law rather than accepting a host-chosen matrix. For contact
+axis `a`, timestep `h`, stiffness `k_a`, and damping `d_a`, it uses the
+implicit spring-damper denominator and constraint-force mixing term
+
+```math
+s_a=d_a+h k_a,
+\qquad
+\gamma_a=\frac{1}{h s_a}.
+```
+
+All three denominators must be finite and strictly positive. The generated
+regularization is
+
+```math
+R_i=\operatorname{diag}(\gamma_n,\gamma_u,\gamma_v),
+```
+
+which is written on GPU and consumed by sparse assembly in the following
+encoder.
+
+For signed gap `g`, penetration slop `epsilon`, and optional maximum recovery
+speed `v_max`, the normal recovery target is
+
+```math
+c=\min(g+\epsilon,0),
+\qquad
+v_\mathrm{recovery}=
+\min\left(v_\max,-\frac{k_n c}{s_n}\right).
+```
+
+A zero `v_max` means uncapped recovery. For pre-solve normal velocity `v_n`,
+restitution `e` and impact threshold `v_threshold`, the impact target is
+
+```math
+v_\mathrm{impact}=
+\begin{cases}
+-e v_n,&v_n<-v_\mathrm{threshold},\\
+0,&\text{otherwise}.
+\end{cases}
+```
+
+The solver receives
+
+```math
+v_{\mathrm{free},n}=v_n-
+\max(v_\mathrm{recovery},v_\mathrm{impact})+b_n,
+```
+
+while the tangential axes retain their authored additive bias. Thus impact and
+penetration recovery share one unilateral normal target instead of stacking
+two impulses.
+
+The physical energy gate accounts for deliberate stabilization work. If
+`W_p=J M^-1 J^T`, `Gamma=R`, and `v_target` contains only the normal targets,
+the accepted impulse must satisfy
+
+```math
+\Delta K
+=\lambda^T v_\mathrm{raw}+\frac12\lambda^T W_p\lambda
+\le
+\lambda^T v_\mathrm{target}-\frac12\lambda^T\Gamma\lambda.
+```
+
+The qualification harness checks this bound from measured before/after body
+energy and independently reconstructed targets; it does not mislabel bounded
+penetration-recovery work as numerical energy creation.
+
 ## Deterministic publication
 
 After the cone solve, each body lane scans contacts in stable ascending order.
@@ -63,7 +133,8 @@ separate range.
 
 The response stage rejects nonfinite or out-of-range data, duplicate/static
 endpoint pairs, nonpositive inverse mass, nonsymmetric or non-SPD inverse
-inertia, negative cone parameters, and frames that are not right-handed and
+inertia, negative cone parameters, invalid stiffness/damping/timestep,
+restitution outside `[0,1]`, and frames that are not right-handed and
 orthonormal within the declared FP32 tolerance.
 
 Contact spans begin invalid and commit only after the whole island validates.
