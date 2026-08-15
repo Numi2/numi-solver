@@ -28,9 +28,11 @@
 #define NUMI_TEMPORAL_CONE_RIGID_VALUES_PER_TERM \
     (3u * NUMI_TEMPORAL_CONE_RIGID_DOF)
 
-#define NUMI_TEMPORAL_CONE_ARTICULATED_ABI_VERSION 2u
+#define NUMI_TEMPORAL_CONE_ARTICULATED_ABI_VERSION 3u
 #define NUMI_TEMPORAL_CONE_ARTICULATED_MAX_DOF 32u
 #define NUMI_TEMPORAL_CONE_ARTICULATED_MAX_CONDITION_INFINITY 16384.0f
+#define NUMI_TEMPORAL_CONE_ARTICULATED_RESPONSE_DENSE_FACTOR 0u
+#define NUMI_TEMPORAL_CONE_ARTICULATED_RESPONSE_INVERSE_ABA 1u
 #define NUMI_TEMPORAL_CONE_ARTICULATED_VALUES_PER_CONTACT(dof_count) \
     (3u * (dof_count))
 
@@ -80,6 +82,7 @@ enum NumiTemporalConeArticulatedStatusCode : mr_u32 {
     NUMI_TEMPORAL_CONE_ARTICULATED_UPSTREAM_FAILURE = 5u,
     NUMI_TEMPORAL_CONE_ARTICULATED_ACCURACY_FAILED = 6u,
     NUMI_TEMPORAL_CONE_ARTICULATED_CONDITIONING_FAILED = 7u,
+    NUMI_TEMPORAL_CONE_ARTICULATED_INVERSE_MASS_FAILED = 8u,
 };
 
 typedef struct MR_ALIGN16 NumiTemporalConeIslandHeader {
@@ -201,7 +204,7 @@ typedef struct MR_ALIGN16 NumiTemporalConeRigidStatus {
 typedef struct MR_ALIGN16 NumiTemporalConeArticulatedHeader {
     // x ABI, y generalized DoFs, z contacts, w stable articulation owner.
     mr_uint4 control;
-    // x Cholesky-factor base, y point-Jacobian base,
+    // x dense-mode Cholesky-factor base, y point-Jacobian base,
     // z input-velocity base, w articulated-contact base.
     mr_uint4 inputRanges;
     // x span base, y term base, z contact-Jacobian base, w response base.
@@ -209,7 +212,7 @@ typedef struct MR_ALIGN16 NumiTemporalConeArticulatedHeader {
     // x solver-contact base, y output-velocity base,
     // z contact-law base, w regularization-value base.
     mr_uint4 solverRanges;
-    // x articulated-operator status index; yzw reserved.
+    // x articulated-operator status index, y response mode; zw reserved.
     mr_uint4 operatorRanges;
 } NumiTemporalConeArticulatedHeader;
 
@@ -229,11 +232,13 @@ typedef struct MR_ALIGN16 NumiTemporalConeArticulatedContact {
 typedef struct MR_ALIGN16 NumiTemporalConeArticulatedStatus {
     // x status, y DoFs, z contacts, w generated owner terms.
     mr_uint4 control;
-    // x minimum pivot, y maximum pivot, z infinity-norm condition estimate,
+    // x minimum pivot, y maximum pivot, z mode-specific condition diagnostic,
     // w upstream articulated-operator relative residual.
+    // Dense z is the infinity-norm condition estimate; inverse-ABA z is the
+    // squared articulated-body pivot ratio and is not an admission estimate.
     mr_float4 conditioning;
     // x maximum frame error, y maximum response backward error,
-    // z maximum generalized-velocity delta, w reserved.
+    // z maximum generalized-velocity delta, w inverse-mass status code.
     mr_float4 diagnostics;
 } NumiTemporalConeArticulatedStatus;
 

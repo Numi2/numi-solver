@@ -13760,6 +13760,9 @@ kernel void numi_temporal_cone_articulated_prepare_jacobians(
         dofCount > NUMI_TEMPORAL_CONE_ARTICULATED_MAX_DOF ||
         contactCount == 0u ||
         contactCount > NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS ||
+        header.operatorRanges.y !=
+            NUMI_TEMPORAL_CONE_ARTICULATED_RESPONSE_INVERSE_ABA ||
+        any(header.operatorRanges.zw != uint2(0u)) ||
         contactBase > inputCapacities.y ||
         contactCount > inputCapacities.y - contactBase ||
         operatorStatusIndex >= inputCapacities.z ||
@@ -13881,6 +13884,291 @@ kernel void numi_temporal_cone_articulated_prepare_jacobians(
     }
 }
 
+// Finalizes streamed inverse-ABA columns into the generic assembly layout.
+// Prepared Jacobians and inverse responses are both [contact][axis][DoF]; the
+// assembler consumes Jacobians in that layout and responses transposed to
+// [contact][DoF][axis]. Spans are published only after every response value,
+// contact law, and upstream status passes validation.
+kernel void numi_temporal_cone_articulated_finalize_inverse(
+    device const NumiTemporalConeArticulatedHeader* headers [[buffer(0)]],
+    device const float* inputVelocities [[buffer(1)]],
+    device const NumiTemporalConeArticulatedContact* contacts [[buffer(2)]],
+    device const NumiTemporalConeRigidLaw* laws [[buffer(3)]],
+    device const float* preparedJacobians [[buffer(4)]],
+    device const float* inverseResponses [[buffer(5)]],
+    device const NumiTemporalConeArticulatedStatus* preparationStatuses
+        [[buffer(6)]],
+    device const MRInverseMassStatusGPU* inverseStatuses [[buffer(7)]],
+    device NumiTemporalConeAssemblyContactSpan* outputSpans [[buffer(8)]],
+    device NumiTemporalConeAssemblyTerm* outputTerms [[buffer(9)]],
+    device float* outputResponses [[buffer(10)]],
+    device NumiTemporalConeIslandContact* outputContacts [[buffer(11)]],
+    device float* outputRegularization [[buffer(12)]],
+    device NumiTemporalConeArticulatedStatus* outputStatuses [[buffer(13)]],
+    constant uint& problemCount [[buffer(14)]],
+    // x velocities, y articulated contacts, z laws, w prepared Jacobians.
+    constant uint4& inputCapacities [[buffer(15)]],
+    // x inverse responses, y preparation statuses, z inverse statuses,
+    // w reserved.
+    constant uint4& inverseCapacities [[buffer(16)]],
+    // x spans, y terms, z transposed responses, w solver contacts.
+    constant uint4& outputCapacities [[buffer(17)]],
+    constant uint& regularizationCapacity [[buffer(18)]],
+    const uint problem [[threadgroup_position_in_grid]],
+    const uint lane [[thread_index_in_simdgroup]]
+) {
+    if (problem >= problemCount) {
+        return;
+    }
+    const NumiTemporalConeArticulatedHeader header = headers[problem];
+    const uint dofCount = header.control.y;
+    const uint contactCount = header.control.z;
+    const uint velocityBase = header.inputRanges.z;
+    const uint contactBase = header.inputRanges.w;
+    const uint spanBase = header.responseRanges.x;
+    const uint termBase = header.responseRanges.y;
+    const uint jacobianBase = header.responseRanges.z;
+    const uint responseBase = header.responseRanges.w;
+    const uint solverContactBase = header.solverRanges.x;
+    const uint lawBase = header.solverRanges.z;
+    const uint regularizationBase = header.solverRanges.w;
+    const uint valuesPerContact = 3u * dofCount;
+    const bool activeContact = lane < contactCount;
+    if (activeContact && spanBase <= outputCapacities.x &&
+        lane < outputCapacities.x - spanBase) {
+        outputSpans[spanBase + lane] = {};
+    }
+    if (lane == 0u) {
+        outputStatuses[problem] = {};
+    }
+
+    uint localFailure = NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS;
+    if (header.control.x != NUMI_TEMPORAL_CONE_ARTICULATED_ABI_VERSION) {
+        localFailure = NUMI_TEMPORAL_CONE_ARTICULATED_INVALID_ABI;
+    } else if (dofCount == 0u ||
+        dofCount > NUMI_TEMPORAL_CONE_ARTICULATED_MAX_DOF ||
+        contactCount == 0u ||
+        contactCount > NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS ||
+        header.operatorRanges.y !=
+            NUMI_TEMPORAL_CONE_ARTICULATED_RESPONSE_INVERSE_ABA ||
+        any(header.operatorRanges.zw != uint2(0u)) ||
+        velocityBase > inputCapacities.x ||
+        dofCount > inputCapacities.x - velocityBase ||
+        contactBase > inputCapacities.y ||
+        contactCount > inputCapacities.y - contactBase ||
+        lawBase > inputCapacities.z ||
+        contactCount > inputCapacities.z - lawBase ||
+        jacobianBase > inputCapacities.w ||
+        contactCount * valuesPerContact >
+            inputCapacities.w - jacobianBase ||
+        jacobianBase > inverseCapacities.x ||
+        contactCount * valuesPerContact >
+            inverseCapacities.x - jacobianBase ||
+        problem >= inverseCapacities.y ||
+        problem >= inverseCapacities.z ||
+        inverseCapacities.w != 0u ||
+        spanBase > outputCapacities.x ||
+        contactCount > outputCapacities.x - spanBase ||
+        termBase > outputCapacities.y ||
+        contactCount > outputCapacities.y - termBase ||
+        responseBase > outputCapacities.z ||
+        contactCount * valuesPerContact >
+            outputCapacities.z - responseBase ||
+        solverContactBase > outputCapacities.w ||
+        contactCount > outputCapacities.w - solverContactBase ||
+        regularizationBase > regularizationCapacity ||
+        contactCount * 9u >
+            regularizationCapacity - regularizationBase) {
+        localFailure = NUMI_TEMPORAL_CONE_ARTICULATED_INVALID_INPUT;
+    }
+
+    NumiTemporalConeArticulatedStatus preparationStatus = {};
+    MRInverseMassStatusGPU inverseStatus = {};
+    if (localFailure == NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS) {
+        preparationStatus = preparationStatuses[problem];
+        inverseStatus = inverseStatuses[problem];
+        if (preparationStatus.control.x !=
+                NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS ||
+            preparationStatus.control.y != dofCount ||
+            preparationStatus.control.z != contactCount ||
+            preparationStatus.control.w != contactCount) {
+            localFailure = NUMI_TEMPORAL_CONE_ARTICULATED_UPSTREAM_FAILURE;
+        } else if (inverseStatus.code != MR_INVERSE_MASS_SUCCESS ||
+            inverseStatus.environment != problem ||
+            inverseStatus.nv != dofCount ||
+            inverseStatus.rhsCount != 3u * contactCount ||
+            !finite4(inverseStatus.diagnostics) ||
+            !(inverseStatus.diagnostics.x > 0.0f) ||
+            inverseStatus.diagnostics.y < inverseStatus.diagnostics.x) {
+            localFailure =
+                NUMI_TEMPORAL_CONE_ARTICULATED_INVERSE_MASS_FAILED;
+        }
+    }
+
+    NumiTemporalConeArticulatedContact contact = {};
+    NumiTemporalConeRigidLaw law = {};
+    if (activeContact &&
+        localFailure == NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS) {
+        contact = contacts[contactBase + lane];
+        law = laws[lawBase + lane];
+        if (!finite4(contact.normalAndFrictionU) ||
+            !finite4(contact.tangentUAndFrictionV) ||
+            !finite4(contact.tangentVAndMaximumNormal) ||
+            !finite4(contact.bias) || !finite4(contact.warmImpulse) ||
+            contact.normalAndFrictionU.w < 0.0f ||
+            contact.tangentUAndFrictionV.w < 0.0f ||
+            contact.tangentVAndMaximumNormal.w < 0.0f ||
+            contact.bias.w != 0.0f || contact.warmImpulse.w != 0.0f ||
+            !finite4(law.stiffnessAndRestitution) ||
+            !finite4(law.dampingAndImpactThreshold) ||
+            !finite4(law.stabilization) ||
+            any(law.stiffnessAndRestitution.xyz < 0.0f) ||
+            law.stiffnessAndRestitution.w < 0.0f ||
+            law.stiffnessAndRestitution.w > 1.0f ||
+            any(law.dampingAndImpactThreshold < 0.0f) ||
+            law.stabilization.y < 0.0f ||
+            law.stabilization.z < 0.0f ||
+            !(law.stabilization.w > 0.0f) ||
+            any(law.dampingAndImpactThreshold.xyz +
+                law.stabilization.w * law.stiffnessAndRestitution.xyz <=
+                0.0f)) {
+            localFailure = NUMI_TEMPORAL_CONE_ARTICULATED_INVALID_INPUT;
+        }
+    }
+    uint failure = simd_max(localFailure);
+    if (failure != NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS) {
+        if (lane == 0u) {
+            NumiTemporalConeArticulatedStatus status = preparationStatus;
+            status.control = uint4(failure, dofCount, contactCount, 0u);
+            status.diagnostics.w = float(inverseStatus.code);
+            outputStatuses[problem] = status;
+        }
+        return;
+    }
+
+    if (activeContact) {
+        const uint contactValueBase = lane * valuesPerContact;
+        float3 rawVelocity = float3(0.0f);
+        for (uint axis = 0u; axis < 3u; ++axis) {
+            for (uint dof = 0u; dof < dofCount; ++dof) {
+                const float jacobian = preparedJacobians[
+                    jacobianBase + contactValueBase + axis * dofCount + dof
+                ];
+                const float response = inverseResponses[
+                    jacobianBase + contactValueBase + axis * dofCount + dof
+                ];
+                if (!isfinite(jacobian) || !isfinite(response)) {
+                    localFailure =
+                        NUMI_TEMPORAL_CONE_ARTICULATED_NONFINITE_RESULT;
+                }
+                outputResponses[
+                    responseBase + contactValueBase + dof * 3u + axis
+                ] = response;
+                rawVelocity[axis] = fma(
+                    jacobian,
+                    inputVelocities[velocityBase + dof],
+                    rawVelocity[axis]
+                );
+            }
+        }
+        const float timestep = law.stabilization.w;
+        const float3 contactDenominator =
+            law.dampingAndImpactThreshold.xyz +
+            timestep * law.stiffnessAndRestitution.xyz;
+        const float3 gamma = 1.0f / (timestep * contactDenominator);
+        const float penetration = min(
+            law.stabilization.x + law.stabilization.y,
+            0.0f
+        );
+        const float uncappedRecovery =
+            -law.stiffnessAndRestitution.x * penetration /
+            contactDenominator.x;
+        const float recoveryTarget = law.stabilization.z > 0.0f
+            ? min(law.stabilization.z, uncappedRecovery)
+            : uncappedRecovery;
+        const float restitutionTarget =
+            rawVelocity.x < -law.dampingAndImpactThreshold.w
+            ? -law.stiffnessAndRestitution.w * rawVelocity.x
+            : 0.0f;
+        const float normalTarget = max(recoveryTarget, restitutionTarget);
+        const float3 freeVelocity = rawVelocity + contact.bias.xyz -
+            float3(normalTarget, 0.0f, 0.0f);
+        if (!finite3(freeVelocity) || !finite3(gamma) ||
+            any(gamma <= 0.0f)) {
+            localFailure =
+                NUMI_TEMPORAL_CONE_ARTICULATED_NONFINITE_RESULT;
+        } else {
+            NumiTemporalConeAssemblyTerm term = {};
+            term.control = uint4(
+                header.control.w,
+                dofCount,
+                jacobianBase + contactValueBase,
+                responseBase + contactValueBase
+            );
+            outputTerms[termBase + lane] = term;
+            NumiTemporalConeIslandContact solverContact = {};
+            solverContact.freeVelocityAndFrictionU = float4(
+                freeVelocity,
+                contact.normalAndFrictionU.w
+            );
+            solverContact.warmImpulseAndFrictionV = float4(
+                contact.warmImpulse.xyz,
+                contact.tangentUAndFrictionV.w
+            );
+            solverContact.limits.x =
+                contact.tangentVAndMaximumNormal.w;
+            outputContacts[solverContactBase + lane] = solverContact;
+            const uint contactRegularizationBase =
+                regularizationBase + 9u * lane;
+            for (uint element = 0u; element < 9u; ++element) {
+                outputRegularization[
+                    contactRegularizationBase + element
+                ] = element % 4u == 0u
+                    ? gamma[element / 4u]
+                    : 0.0f;
+            }
+        }
+    }
+    failure = simd_max(localFailure);
+    if (failure == NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS &&
+        activeContact) {
+        NumiTemporalConeAssemblyContactSpan span = {};
+        span.ranges = uint4(termBase + lane, 1u, 0u, 0u);
+        outputSpans[spanBase + lane] = span;
+    }
+    threadgroup_barrier(mem_flags::mem_device);
+    if (failure != NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS &&
+        activeContact) {
+        outputSpans[spanBase + lane] = {};
+    }
+    if (lane == 0u) {
+        NumiTemporalConeArticulatedStatus status = preparationStatus;
+        const float pivotRatio =
+            inverseStatus.diagnostics.y / inverseStatus.diagnostics.x;
+        status.control = uint4(
+            failure,
+            dofCount,
+            contactCount,
+            failure == NUMI_TEMPORAL_CONE_ARTICULATED_SUCCESS
+                ? contactCount
+                : 0u
+        );
+        status.conditioning = float4(
+            inverseStatus.diagnostics.x,
+            inverseStatus.diagnostics.y,
+            pivotRatio * pivotRatio,
+            0.0f
+        );
+        status.diagnostics = float4(
+            preparationStatus.diagnostics.x,
+            0.0f,
+            0.0f,
+            float(inverseStatus.code)
+        );
+        outputStatuses[problem] = status;
+    }
+}
+
 // Converts the canonical articulated operator's lower Cholesky factor and
 // analytic world-point Jacobians into the exact packed J / M^-1 J^T contract
 // consumed by the generic sparse assembler. Each active contact lane solves
@@ -13949,6 +14237,9 @@ kernel void numi_temporal_cone_articulated_response(
         dofCount > NUMI_TEMPORAL_CONE_ARTICULATED_MAX_DOF ||
         contactCount == 0u ||
         contactCount > NUMI_TEMPORAL_CONE_ISLAND_MAX_CONTACTS ||
+        header.operatorRanges.y !=
+            NUMI_TEMPORAL_CONE_ARTICULATED_RESPONSE_DENSE_FACTOR ||
+        any(header.operatorRanges.zw != uint2(0u)) ||
         factorBase > inputCapacities.x ||
         dofCount * dofCount > inputCapacities.x - factorBase ||
         velocityBase > inputCapacities.z ||

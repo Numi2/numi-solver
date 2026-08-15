@@ -63,7 +63,7 @@ SIMD group computes
                   \lVert M^{-1}\rVert_\infty.
 ```
 
-ABI v2 admits at most `16384`. A larger or nonfinite estimate publishes typed
+The dense mode of ABI v3 admits at most `16384`. A larger or nonfinite estimate publishes typed
 `CONDITIONING_FAILED` status and preserves the complete input generalized
 velocity. The threshold does not silently modify mass. Better conditioning
 must come from explicit physical armature, implicit drive inertia, a better
@@ -86,13 +86,21 @@ At 32 DoFs both the kinematics-only Jacobian and prepared contact Jacobian are
 bit-identical to their dense-path counterparts. The inverse action does not
 form `M`, `L`, or `M^{-1}` and uses no host solve.
 
-This path is presently a qualification and profiling candidate, not the
-publication default. Its response columns are checked against the same FP64
-physical mass model and strict backward-residual gate, but they are not yet
-fed into sparse assembly, cone solve, and generalized-velocity publication on
-one borrowed command buffer. The factor-backed path therefore retains
-production ownership until inverse-ABA admission and downstream transactional
-status propagation are complete.
+ABI v3 routes this path through a complete seven-stage candidate transaction:
+kinematics, contact-Jacobian preparation, inverse ABA, response finalization,
+sparse assembly, cone solve, and generalized-velocity publication. All stages
+execute on one command buffer without CPU readback. Finalization transposes the
+streamed columns into the generic assembly layout only after checking the
+preparation and inverse statuses, finite values, capacities, and contact laws;
+later failures preserve the complete input velocity.
+
+This is still a candidate, not the default. Its response columns, assembled
+Delassus blocks, solve, publication, rollback, and energy budget are checked
+against independent definitions, but its squared articulated-body pivot ratio
+is only a diagnostic. It is not a forward-error condition estimate comparable
+to `kappa_infinity(M)`. The factor-backed path therefore retains production
+ownership until the inverse path has a state-local admission gate with a
+declared physical meaning.
 
 ## Contact law and publication
 
@@ -106,9 +114,9 @@ contacts in canonical order:
 v^+=v+\sum_i M^{-1}J_{c,i}^T\lambda_i.
 ```
 
-If operator validation, factor response, assembly, convergence, or finite
-publication fails, the complete input generalized-velocity vector is
-republished unchanged.
+If operator validation, dense-factor or inverse response, assembly,
+convergence, or finite publication fails, the complete input
+generalized-velocity vector is republished unchanged.
 
 ## Independent evidence
 
