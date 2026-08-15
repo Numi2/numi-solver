@@ -12,6 +12,8 @@ namespace {
 constant float kQuaternionMinimum = 1.0e-12f;
 constant float kMatrixFloor = 1.0e-10f;
 constant float kConeEpsilon = 1.0e-7f;
+constant float kFloatEpsilon = 1.1920928955078125e-7f;
+constant uint kConeProjectionIterations = 28u;
 // The coupled point response is scale-normalized below. Keep its smallest
 // resolved mode at one percent of the dominant response so redundant or
 // nearly rank-deficient articulated contacts cannot turn a bounded target
@@ -480,62 +482,306 @@ inline void applySceneImpulse(
     );
 }
 
-inline float3 projectFrictionCone(
-    const float3 impulse,
-    device const MREvaluatedConstraintIRConeGPU& cone
+inline float ellipseProjectionFunction(
+    const float2 tangent,
+    const float2 radiiSquared,
+    const float multiplier
 ) {
-    float3 projected = impulse;
-    projected.x = max(projected.x, 0.0f);
-    if (cone.maximumNormalImpulse > 0.0f) {
-        projected.x = min(
-            projected.x,
-            cone.maximumNormalImpulse
+    float value = -1.0f;
+    if (radiiSquared.x > kMatrixFloor) {
+        const float denominator = radiiSquared.x + multiplier;
+        value +=
+            tangent.x * tangent.x * radiiSquared.x /
+            (denominator * denominator);
+    }
+    if (radiiSquared.y > kMatrixFloor) {
+        const float denominator = radiiSquared.y + multiplier;
+        value +=
+            tangent.y * tangent.y * radiiSquared.y /
+            (denominator * denominator);
+    }
+    return value;
+}
+
+inline float2 projectTangentEllipse(
+    const float2 tangent,
+    const float2 radii
+) {
+    const float2 radiiSquared = radii * radii;
+    float normalizedSquared = 0.0f;
+    normalizedSquared +=
+        radiiSquared.x > kMatrixFloor
+        ? tangent.x * tangent.x / radiiSquared.x
+        : (abs(tangent.x) <= kConeEpsilon ? 0.0f : INFINITY);
+    normalizedSquared +=
+        radiiSquared.y > kMatrixFloor
+        ? tangent.y * tangent.y / radiiSquared.y
+        : (abs(tangent.y) <= kConeEpsilon ? 0.0f : INFINITY);
+    if (normalizedSquared <= 1.0f) {
+        return tangent;
+    }
+
+    float lower = 0.0f;
+    float upper = max(
+        1.0f,
+        max(
+            abs(tangent.x) * max(radii.x, 1.0f),
+            abs(tangent.y) * max(radii.y, 1.0f)
+        )
+    );
+    for (uint expansion = 0u;
+         expansion < 16u &&
+             ellipseProjectionFunction(
+                 tangent,
+                 radiiSquared,
+                 upper
+             ) > 0.0f;
+         ++expansion) {
+        upper *= 2.0f;
+    }
+    for (uint iteration = 0u;
+         iteration < kConeProjectionIterations;
+         ++iteration) {
+        const float middle = 0.5f * (lower + upper);
+        if (ellipseProjectionFunction(
+                tangent,
+                radiiSquared,
+                middle
+            ) > 0.0f) {
+            lower = middle;
+        } else {
+            upper = middle;
+        }
+    }
+    const float multiplier = 0.5f * (lower + upper);
+    float2 projected = float2(
+        radiiSquared.x > kMatrixFloor
+        ? tangent.x * radiiSquared.x /
+            (radiiSquared.x + multiplier)
+        : 0.0f,
+        radiiSquared.y > kMatrixFloor
+        ? tangent.y * radiiSquared.y /
+            (radiiSquared.y + multiplier)
+        : 0.0f
+    );
+    const float projectedNormalizedSquared =
+        (radiiSquared.x > kMatrixFloor
+             ? projected.x * projected.x / radiiSquared.x
+             : 0.0f) +
+        (radiiSquared.y > kMatrixFloor
+             ? projected.y * projected.y / radiiSquared.y
+             : 0.0f);
+    if (projectedNormalizedSquared > 1.0f) {
+        projected *= rsqrt(projectedNormalizedSquared);
+    }
+    return projected;
+}
+
+inline float anisotropicConeBoundaryFunction(
+    const float3 impulse,
+    const float2 frictionSquared,
+    const float multiplier
+) {
+    const float normal = impulse.x + multiplier;
+    float value = -1.0f;
+    if (frictionSquared.x > kMatrixFloor) {
+        const float denominator =
+            frictionSquared.x * normal + multiplier;
+        if (!(denominator > kMatrixFloor)) {
+            return INFINITY;
+        }
+        value +=
+            impulse.y * impulse.y * frictionSquared.x /
+            (denominator * denominator);
+    }
+    if (frictionSquared.y > kMatrixFloor) {
+        const float denominator =
+            frictionSquared.y * normal + multiplier;
+        if (!(denominator > kMatrixFloor)) {
+            return INFINITY;
+        }
+        value +=
+            impulse.z * impulse.z * frictionSquared.y /
+            (denominator * denominator);
+    }
+    return value;
+}
+
+// Euclidean closest-point projection onto the authored elliptic Coulomb cone.
+// Isotropic friction has a closed form. Anisotropic friction reduces to one
+// monotone scalar KKT equation with a fixed bracket/iteration order, retaining
+// deterministic FP32 execution. A positive normal cap projects onto the exact
+// capped ellipse when the unbounded solution exceeds it.
+inline float3 projectFrictionConeValues(
+    const float3 impulse,
+    const float frictionU,
+    const float frictionV,
+    const float maximumNormalImpulse
+) {
+    const float2 friction = max(
+        float2(frictionU, frictionV),
+        float2(0.0f)
+    );
+    const float tangentNorm = length(impulse.yz);
+    const bool frictionless =
+        friction.x <= kConeEpsilon ||
+        friction.y <= kConeEpsilon;
+    if (frictionless) {
+        return float3(
+            maximumNormalImpulse > 0.0f
+            ? clamp(impulse.x, 0.0f, maximumNormalImpulse)
+            : max(impulse.x, 0.0f),
+            0.0f,
+            0.0f
         );
     }
-    const float limitU =
-        cone.effectiveFrictionU * projected.x;
-    const float limitV =
-        cone.effectiveFrictionV * projected.x;
-    if (!(limitU > 0.0f) || !(limitV > 0.0f)) {
-        projected.yz = float2(0.0f);
-        return projected;
+
+    float normalizedTangentSquared = 0.0f;
+    normalizedTangentSquared +=
+        friction.x > kConeEpsilon
+        ? impulse.y * impulse.y / (friction.x * friction.x)
+        : (abs(impulse.y) <= kConeEpsilon ? 0.0f : INFINITY);
+    normalizedTangentSquared +=
+        friction.y > kConeEpsilon
+        ? impulse.z * impulse.z / (friction.y * friction.y)
+        : (abs(impulse.z) <= kConeEpsilon ? 0.0f : INFINITY);
+    const bool insideUnbounded =
+        impulse.x >= 0.0f &&
+        normalizedTangentSquared <= impulse.x * impulse.x;
+    float3 projected = impulse;
+    if (!insideUnbounded) {
+        const float weightedDual = length(
+            friction * impulse.yz
+        );
+        if (impulse.x + weightedDual <= 0.0f) {
+            projected = float3(0.0f);
+        } else {
+            const float frictionScale = max(
+                max(friction.x, friction.y),
+                1.0f
+            );
+            const bool isotropic =
+                friction.x > kConeEpsilon &&
+                friction.y > kConeEpsilon &&
+                abs(friction.x - friction.y) <=
+                    8.0f * kFloatEpsilon * frictionScale;
+            if (isotropic) {
+                const float mu =
+                    0.5f * (friction.x + friction.y);
+                const float normal =
+                    (impulse.x + mu * tangentNorm) /
+                    (1.0f + mu * mu);
+                const float tangentScale =
+                    tangentNorm > kConeEpsilon
+                    ? mu * normal / tangentNorm
+                    : 0.0f;
+                projected = float3(
+                    normal,
+                    tangentScale * impulse.y,
+                    tangentScale * impulse.z
+                );
+            } else {
+                const float2 frictionSquared =
+                    friction * friction;
+                float lower = max(0.0f, -impulse.x);
+                float upper = max(
+                    lower + max(weightedDual, 1.0f),
+                    1.0f
+                );
+                for (uint expansion = 0u;
+                     expansion < 16u &&
+                         anisotropicConeBoundaryFunction(
+                             impulse,
+                             frictionSquared,
+                             upper
+                         ) > 0.0f;
+                     ++expansion) {
+                    upper =
+                        2.0f * upper + max(weightedDual, 1.0f);
+                }
+                for (uint iteration = 0u;
+                     iteration < kConeProjectionIterations;
+                     ++iteration) {
+                    const float middle = 0.5f * (lower + upper);
+                    if (anisotropicConeBoundaryFunction(
+                            impulse,
+                            frictionSquared,
+                            middle
+                        ) > 0.0f) {
+                        lower = middle;
+                    } else {
+                        upper = middle;
+                    }
+                }
+                const float multiplier = 0.5f * (lower + upper);
+                const float normal = max(
+                    impulse.x + multiplier,
+                    0.0f
+                );
+                projected.x = normal;
+                projected.y =
+                    frictionSquared.x > kMatrixFloor
+                    ? impulse.y * frictionSquared.x * normal /
+                        (frictionSquared.x * normal + multiplier)
+                    : 0.0f;
+                projected.z =
+                    frictionSquared.y > kMatrixFloor
+                    ? impulse.z * frictionSquared.y * normal /
+                        (frictionSquared.y * normal + multiplier)
+                    : 0.0f;
+                float normalizedSquared = 0.0f;
+                normalizedSquared +=
+                    friction.x > kConeEpsilon
+                    ? projected.y * projected.y /
+                        (friction.x * friction.x)
+                    : 0.0f;
+                normalizedSquared +=
+                    friction.y > kConeEpsilon
+                    ? projected.z * projected.z /
+                        (friction.y * friction.y)
+                    : 0.0f;
+                if (normalizedSquared > normal * normal &&
+                    normalizedSquared > kMatrixFloor) {
+                    projected.yz *=
+                        normal * rsqrt(normalizedSquared);
+                }
+            }
+        }
     }
-    const float normalizedSquared =
-        (projected.y * projected.y) / (limitU * limitU) +
-        (projected.z * projected.z) / (limitV * limitV);
-    if (normalizedSquared > 1.0f) {
-        projected.yz *= rsqrt(normalizedSquared);
+
+    if (maximumNormalImpulse > 0.0f &&
+        projected.x > maximumNormalImpulse) {
+        projected.x = maximumNormalImpulse;
+        projected.yz = projectTangentEllipse(
+            impulse.yz,
+            friction * maximumNormalImpulse
+        );
     }
     return projected;
 }
 
 inline float3 projectFrictionCone(
     const float3 impulse,
+    device const MREvaluatedConstraintIRConeGPU& cone
+) {
+    return projectFrictionConeValues(
+        impulse,
+        cone.effectiveFrictionU,
+        cone.effectiveFrictionV,
+        cone.maximumNormalImpulse
+    );
+}
+
+inline float3 projectFrictionCone(
+    const float3 impulse,
     thread const MREvaluatedConstraintIRConeGPU& cone
 ) {
-    float3 projected = impulse;
-    projected.x = max(projected.x, 0.0f);
-    if (cone.maximumNormalImpulse > 0.0f) {
-        projected.x = min(
-            projected.x,
-            cone.maximumNormalImpulse
-        );
-    }
-    const float limitU =
-        cone.effectiveFrictionU * projected.x;
-    const float limitV =
-        cone.effectiveFrictionV * projected.x;
-    if (!(limitU > 0.0f) || !(limitV > 0.0f)) {
-        projected.yz = float2(0.0f);
-        return projected;
-    }
-    const float normalizedSquared =
-        (projected.y * projected.y) / (limitU * limitU) +
-        (projected.z * projected.z) / (limitV * limitV);
-    if (normalizedSquared > 1.0f) {
-        projected.yz *= rsqrt(normalizedSquared);
-    }
-    return projected;
+    return projectFrictionConeValues(
+        impulse,
+        cone.effectiveFrictionU,
+        cone.effectiveFrictionV,
+        cone.maximumNormalImpulse
+    );
 }
 
 inline bool invert3x3(

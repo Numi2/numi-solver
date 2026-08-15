@@ -25,6 +25,7 @@ namespace {
 
 constexpr double kMatrixFloor = 1.0e-10;
 constexpr double kContactMatrixRegularization = 1.0e-2;
+constexpr double kConeEpsilon = 1.0e-7;
 
 struct OracleOutput {
     std::array<double, 3> impulse{};
@@ -91,32 +92,227 @@ NumiTemporalConeProbeInput makeInput(
     return input;
 }
 
+double ellipseProjectionFunction(
+    const std::array<double, 2>& tangent,
+    const std::array<double, 2>& radiiSquared,
+    const double multiplier
+) {
+    double value = -1.0;
+    for (std::size_t axis = 0; axis < 2; ++axis) {
+        if (radiiSquared[axis] <= kMatrixFloor) {
+            continue;
+        }
+        const double denominator = radiiSquared[axis] + multiplier;
+        value +=
+            tangent[axis] * tangent[axis] * radiiSquared[axis] /
+            (denominator * denominator);
+    }
+    return value;
+}
+
+std::array<double, 2> projectTangentEllipse(
+    const std::array<double, 2>& tangent,
+    const std::array<double, 2>& radii
+) {
+    const std::array<double, 2> radiiSquared{{
+        radii[0] * radii[0],
+        radii[1] * radii[1],
+    }};
+    double normalizedSquared = 0.0;
+    for (std::size_t axis = 0; axis < 2; ++axis) {
+        if (radiiSquared[axis] > kMatrixFloor) {
+            normalizedSquared +=
+                tangent[axis] * tangent[axis] / radiiSquared[axis];
+        } else if (std::abs(tangent[axis]) > kConeEpsilon) {
+            normalizedSquared = std::numeric_limits<double>::infinity();
+        }
+    }
+    if (normalizedSquared <= 1.0) {
+        return tangent;
+    }
+
+    double lower = 0.0;
+    double upper = std::max({
+        1.0,
+        std::abs(tangent[0]) * std::max(radii[0], 1.0),
+        std::abs(tangent[1]) * std::max(radii[1], 1.0),
+    });
+    while (ellipseProjectionFunction(tangent, radiiSquared, upper) > 0.0) {
+        upper *= 2.0;
+    }
+    for (std::uint32_t iteration = 0; iteration < 100u; ++iteration) {
+        const double middle = 0.5 * (lower + upper);
+        if (ellipseProjectionFunction(tangent, radiiSquared, middle) > 0.0) {
+            lower = middle;
+        } else {
+            upper = middle;
+        }
+    }
+    const double multiplier = 0.5 * (lower + upper);
+    std::array<double, 2> projected{};
+    for (std::size_t axis = 0; axis < 2; ++axis) {
+        projected[axis] = radiiSquared[axis] > kMatrixFloor
+            ? tangent[axis] * radiiSquared[axis] /
+                (radiiSquared[axis] + multiplier)
+            : 0.0;
+    }
+    return projected;
+}
+
+double anisotropicConeBoundaryFunction(
+    const std::array<double, 3>& impulse,
+    const std::array<double, 2>& frictionSquared,
+    const double multiplier
+) {
+    const double normal = impulse[0] + multiplier;
+    double value = -1.0;
+    for (std::size_t axis = 0; axis < 2; ++axis) {
+        if (frictionSquared[axis] <= kMatrixFloor) {
+            continue;
+        }
+        const double denominator =
+            frictionSquared[axis] * normal + multiplier;
+        if (!(denominator > kMatrixFloor)) {
+            return std::numeric_limits<double>::infinity();
+        }
+        value +=
+            impulse[axis + 1] * impulse[axis + 1] *
+            frictionSquared[axis] /
+            (denominator * denominator);
+    }
+    return value;
+}
+
 std::array<double, 3> projectCone(
-    std::array<double, 3> impulse,
-    const double frictionU,
-    const double frictionV,
+    const std::array<double, 3> impulse,
+    const double authoredFrictionU,
+    const double authoredFrictionV,
     const double maximumNormalImpulse
 ) {
-    impulse[0] = std::max(impulse[0], 0.0);
-    if (maximumNormalImpulse > 0.0) {
-        impulse[0] = std::min(impulse[0], maximumNormalImpulse);
+    const std::array<double, 2> friction{{
+        std::max(authoredFrictionU, 0.0),
+        std::max(authoredFrictionV, 0.0),
+    }};
+    const bool frictionless =
+        friction[0] <= kConeEpsilon ||
+        friction[1] <= kConeEpsilon;
+    if (frictionless) {
+        return {{
+            maximumNormalImpulse > 0.0
+                ? std::clamp(impulse[0], 0.0, maximumNormalImpulse)
+                : std::max(impulse[0], 0.0),
+            0.0,
+            0.0,
+        }};
     }
-    const double limitU = frictionU * impulse[0];
-    const double limitV = frictionV * impulse[0];
-    if (!(limitU > 0.0) || !(limitV > 0.0)) {
-        impulse[1] = 0.0;
-        impulse[2] = 0.0;
-        return impulse;
+
+    double normalizedTangentSquared = 0.0;
+    for (std::size_t axis = 0; axis < 2; ++axis) {
+        if (friction[axis] > kConeEpsilon) {
+            normalizedTangentSquared +=
+                impulse[axis + 1] * impulse[axis + 1] /
+                (friction[axis] * friction[axis]);
+        } else if (std::abs(impulse[axis + 1]) > kConeEpsilon) {
+            normalizedTangentSquared =
+                std::numeric_limits<double>::infinity();
+        }
     }
-    const double normalizedSquared =
-        impulse[1] * impulse[1] / (limitU * limitU) +
-        impulse[2] * impulse[2] / (limitV * limitV);
-    if (normalizedSquared > 1.0) {
-        const double scale = 1.0 / std::sqrt(normalizedSquared);
-        impulse[1] *= scale;
-        impulse[2] *= scale;
+    const bool insideUnbounded =
+        impulse[0] >= 0.0 &&
+        normalizedTangentSquared <= impulse[0] * impulse[0];
+    std::array<double, 3> projected = impulse;
+    if (!insideUnbounded) {
+        const double weightedDual = std::hypot(
+            friction[0] * impulse[1],
+            friction[1] * impulse[2]
+        );
+        if (impulse[0] + weightedDual <= 0.0) {
+            projected = {};
+        } else {
+            const bool isotropic =
+                friction[0] > kConeEpsilon &&
+                friction[1] > kConeEpsilon &&
+                std::abs(friction[0] - friction[1]) <=
+                    8.0 * std::numeric_limits<float>::epsilon() *
+                    std::max({friction[0], friction[1], 1.0});
+            if (isotropic) {
+                const double tangentNorm = std::hypot(
+                    impulse[1], impulse[2]
+                );
+                const double mu = 0.5 * (friction[0] + friction[1]);
+                const double normal =
+                    (impulse[0] + mu * tangentNorm) /
+                    (1.0 + mu * mu);
+                const double tangentScale = tangentNorm > kConeEpsilon
+                    ? mu * normal / tangentNorm
+                    : 0.0;
+                projected = {{
+                    normal,
+                    tangentScale * impulse[1],
+                    tangentScale * impulse[2],
+                }};
+            } else {
+                const std::array<double, 2> frictionSquared{{
+                    friction[0] * friction[0],
+                    friction[1] * friction[1],
+                }};
+                double lower = std::max(0.0, -impulse[0]);
+                double upper = std::max(
+                    lower + std::max(weightedDual, 1.0),
+                    1.0
+                );
+                while (anisotropicConeBoundaryFunction(
+                           impulse,
+                           frictionSquared,
+                           upper
+                       ) > 0.0) {
+                    upper = 2.0 * upper + std::max(weightedDual, 1.0);
+                }
+                for (std::uint32_t iteration = 0;
+                     iteration < 100u;
+                     ++iteration) {
+                    const double middle = 0.5 * (lower + upper);
+                    if (anisotropicConeBoundaryFunction(
+                            impulse,
+                            frictionSquared,
+                            middle
+                        ) > 0.0) {
+                        lower = middle;
+                    } else {
+                        upper = middle;
+                    }
+                }
+                const double multiplier = 0.5 * (lower + upper);
+                const double normal = std::max(
+                    impulse[0] + multiplier,
+                    0.0
+                );
+                projected[0] = normal;
+                for (std::size_t axis = 0; axis < 2; ++axis) {
+                    projected[axis + 1] =
+                        frictionSquared[axis] > kMatrixFloor
+                        ? impulse[axis + 1] * frictionSquared[axis] * normal /
+                            (frictionSquared[axis] * normal + multiplier)
+                        : 0.0;
+                }
+            }
+        }
     }
-    return impulse;
+
+    if (maximumNormalImpulse > 0.0 &&
+        projected[0] > maximumNormalImpulse) {
+        projected[0] = maximumNormalImpulse;
+        const auto tangent = projectTangentEllipse(
+            {{impulse[1], impulse[2]}},
+            {{
+                friction[0] * maximumNormalImpulse,
+                friction[1] * maximumNormalImpulse,
+            }}
+        );
+        projected[1] = tangent[0];
+        projected[2] = tangent[1];
+    }
+    return projected;
 }
 
 bool conditionedInverse(
@@ -300,7 +496,9 @@ OracleOutput solveOracle(const NumiTemporalConeProbeInput& input) {
 }
 
 std::vector<NumiTemporalConeProbeInput> makeProblems(
-    const std::size_t count
+    const std::size_t count,
+    const bool isotropicBatch,
+    const std::uint32_t iterations
 ) {
     const std::array<std::array<float, 3>, 3> identity{{
         {{1.0f, 0.0f, 0.0f}},
@@ -354,6 +552,25 @@ std::vector<NumiTemporalConeProbeInput> makeProblems(
         {{-1.0f, 0.0f, 0.0f}}, {{0.0f, 0.0f, 0.0f}},
         0.5f, 0.5f
     ));
+    inputs.push_back(makeInput(
+        identity, {{-1.0f, -0.5f, 0.25f}}, {{0.2f, 0.1f, -0.1f}},
+        0.5f, 0.0f
+    ));
+    inputs.push_back(makeInput(
+        identity, {{-1.0f, -100.0f, 50.0f}}, {{0.0f, 0.0f, 0.0f}},
+        0.01f, 10.0f
+    ));
+    inputs.push_back(makeInput(
+        {{{{2.0e5f, 0.0f, 0.0f}},
+          {{0.0f, 1.0e5f, 0.0f}},
+          {{0.0f, 0.0f, 3.0e5f}}}},
+        {{-1.0e6f, -2.0e6f, 1.0e6f}}, {{0.0f, 0.0f, 0.0f}},
+        0.03f, 4.0f, 20.0f
+    ));
+    inputs.push_back(makeInput(
+        identity, {{1.0f, -100.0001f, 0.0f}}, {{0.0f, 0.0f, 0.0f}},
+        0.01f, 1.0f
+    ));
 
     for (std::size_t index = inputs.size(); index < count; ++index) {
         const float a = 0.25f + 0.01f * static_cast<float>(index % 71u);
@@ -391,15 +608,23 @@ std::vector<NumiTemporalConeProbeInput> makeProblems(
                 static_cast<int>(index % 9u) - 4
             ),
         }};
+        const float frictionU =
+            0.15f + 0.05f * static_cast<float>(index % 12u);
+        const float frictionV = isotropicBatch
+            ? frictionU
+            : 0.20f + 0.04f * static_cast<float>(index % 10u);
         inputs.push_back(makeInput(
             response,
             freeVelocity,
             warm,
-            0.15f + 0.05f * static_cast<float>(index % 12u),
-            0.20f + 0.04f * static_cast<float>(index % 10u),
+            frictionU,
+            frictionV,
             index % 29u == 0u ? 2.0f : 0.0f,
             8u
         ));
+    }
+    for (auto& input : inputs) {
+        input.control.y = iterations;
     }
     return inputs;
 }
@@ -481,6 +706,8 @@ int run(const int argc, const char* const* argv) {
     std::size_t problemCount = 65536u;
     std::uint32_t replayCount = 2u;
     std::string metallibPath = NUMI_TEMPORAL_CONE_METALLIB;
+    bool isotropicBatch = false;
+    std::uint32_t solverIterations = 16u;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string_view value(argv[argument]);
         if (value == "--cases" && argument + 1 < argc) {
@@ -491,19 +718,29 @@ int run(const int argc, const char* const* argv) {
             );
         } else if (value == "--metallib" && argument + 1 < argc) {
             metallibPath = argv[++argument];
+        } else if (value == "--isotropic") {
+            isotropicBatch = true;
+        } else if (value == "--iterations" && argument + 1 < argc) {
+            solverIterations = static_cast<std::uint32_t>(
+                std::stoul(argv[++argument])
+            );
         } else if (value == "--help") {
             std::cout
                 << "usage: numi-solver-math [--cases N] [--replays N] "
-                   "[--metallib PATH]\n";
+                   "[--iterations N] [--metallib PATH] [--isotropic]\n";
             return 0;
         } else {
             throw std::runtime_error("unknown argument: " + std::string(value));
         }
     }
-    problemCount = std::max<std::size_t>(problemCount, 9u);
+    problemCount = std::max<std::size_t>(problemCount, 13u);
     replayCount = std::max<std::uint32_t>(replayCount, 2u);
     if (problemCount > std::numeric_limits<std::uint32_t>::max()) {
         throw std::runtime_error("case count exceeds the probe ABI");
+    }
+    if (solverIterations == 0u ||
+        solverIterations > NUMI_TEMPORAL_CONE_PROBE_MAX_ITERATIONS) {
+        throw std::runtime_error("iterations must be in [1, 64]");
     }
 
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
@@ -539,7 +776,11 @@ int run(const int argc, const char* const* argv) {
         );
     }
 
-    const auto inputs = makeProblems(problemCount);
+    const auto inputs = makeProblems(
+        problemCount,
+        isotropicBatch,
+        solverIterations
+    );
     std::vector<GPUResult> replays;
     replays.reserve(replayCount);
     for (std::uint32_t replay = 0u; replay < replayCount; ++replay) {
@@ -559,7 +800,9 @@ int run(const int argc, const char* const* argv) {
 
     std::size_t failedCases = 0u;
     double maximumRelativeError = 0.0;
+    std::size_t maximumRelativeErrorCase = 0u;
     double maximumConeViolation = 0.0;
+    double maximumFixedPointResidual = 0.0;
     for (std::size_t index = 0; index < inputs.size(); ++index) {
         const auto oracle = solveOracle(inputs[index]);
         const auto& gpu = replays[0].outputs[index];
@@ -576,19 +819,35 @@ int run(const int argc, const char* const* argv) {
                 gpu.residualAndConeViolation.z,
             }};
             for (std::size_t axis = 0; axis < 3; ++axis) {
-                maximumRelativeError = std::max(
-                    maximumRelativeError,
-                    normalizedError(gpuImpulse[axis], oracle.impulse[axis])
+                const double impulseError = normalizedError(
+                    gpuImpulse[axis], oracle.impulse[axis]
                 );
-                maximumRelativeError = std::max(
-                    maximumRelativeError,
-                    normalizedError(gpuResidual[axis], oracle.residual[axis])
+                const double residualError = normalizedError(
+                    gpuResidual[axis], oracle.residual[axis]
                 );
+                if (impulseError > maximumRelativeError) {
+                    maximumRelativeError = impulseError;
+                    maximumRelativeErrorCase = index;
+                }
+                if (residualError > maximumRelativeError) {
+                    maximumRelativeError = residualError;
+                    maximumRelativeErrorCase = index;
+                }
                 valid = valid && std::isfinite(gpuImpulse[axis]);
             }
             maximumConeViolation = std::max(
                 maximumConeViolation,
                 static_cast<double>(gpu.residualAndConeViolation.w)
+            );
+            const double impulseScale = std::max({
+                1.0,
+                std::abs(gpuImpulse[0]),
+                std::abs(gpuImpulse[1]),
+                std::abs(gpuImpulse[2]),
+            });
+            maximumFixedPointResidual = std::max(
+                maximumFixedPointResidual,
+                static_cast<double>(gpu.impulseAndDelta.w) / impulseScale
             );
             valid = valid && gpuImpulse[0] >= -1.0e-6;
             if (inputs[index].limits.x > 0.0f) {
@@ -629,20 +888,40 @@ int run(const int argc, const char* const* argv) {
 
     const bool passed =
         failedCases == 0u &&
-        maximumRelativeError <= 5.0e-4 &&
-        maximumConeViolation <= 2.0e-5 &&
+        maximumRelativeError <= 1.0e-5 &&
+        maximumConeViolation <= 2.0e-6 &&
+        maximumFixedPointResidual <= 2.0e-6 &&
         deterministic &&
         separatingAcceptedZero &&
         slidingOnCone &&
         normalCapRespected;
 
+    if (maximumRelativeError > 1.0e-5) {
+        const auto worstOracle = solveOracle(inputs[maximumRelativeErrorCase]);
+        const auto& worstGPU = replays[0].outputs[maximumRelativeErrorCase];
+        std::cerr
+            << "worst_case=" << maximumRelativeErrorCase
+            << " gpu_impulse=(" << worstGPU.impulseAndDelta.x
+            << ',' << worstGPU.impulseAndDelta.y
+            << ',' << worstGPU.impulseAndDelta.z << ')'
+            << " fp64_impulse=(" << worstOracle.impulse[0]
+            << ',' << worstOracle.impulse[1]
+            << ',' << worstOracle.impulse[2] << ")\n";
+    }
+
     std::cout << std::fixed << std::setprecision(9)
               << "device=" << device.name.UTF8String << '\n'
               << "cases=" << problemCount
               << " replays=" << replayCount
+              << " friction_batch="
+              << (isotropicBatch ? "isotropic" : "anisotropic")
+              << " solver_iterations=" << solverIterations
               << " failed_cases=" << failedCases << '\n'
               << "max_fp64_relative_error=" << maximumRelativeError
-              << " max_cone_violation=" << maximumConeViolation << '\n'
+              << " max_error_case=" << maximumRelativeErrorCase
+              << " max_cone_violation=" << maximumConeViolation
+              << " max_relative_fixed_point_residual="
+              << maximumFixedPointResidual << '\n'
               << "deterministic_replay=" << (deterministic ? "true" : "false")
               << " separating_zero="
               << (separatingAcceptedZero ? "true" : "false")

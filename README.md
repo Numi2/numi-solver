@@ -20,7 +20,7 @@ stiff-island ordered replay, warm-start publication, and transactional status
 reduction.
 
 The solver still speaks the original versioned MetalWorld ABI. A narrow probe
-ABI exposes only its local 3x3 response conditioning and elliptic friction
+ABI exposes only its local 3x3 response conditioning and exact elliptic-cone
 projection for direct mathematical work. The probe calls the production Metal
 helpers; it does not carry a second shader implementation.
 
@@ -47,10 +47,13 @@ Run the default 65,536-problem FP64 comparison and deterministic replay:
 ctest --test-dir build --output-on-failure
 ```
 
-Use `--cases N --replays N` to change the deterministic batch. The harness
+Use `--cases N --replays N --iterations N` to change the deterministic batch
+and convergence budget. Add `--isotropic` to measure the closed-form friction
+fast path. The harness
 checks separating, normal-impact, sticking, sliding, anisotropic-friction,
-near-rank-deficient, and capped-impulse cases before filling the remainder
-with coupled positive-definite contact responses.
+near-rank-deficient, capped-impulse, polar-boundary, zero-axis and extreme-scale
+cases before filling the remainder with coupled positive-definite contact
+responses.
 
 An installed or relocated harness can load a specific library with
 `--metallib path/to/NumiTemporalCone.metallib`.
@@ -62,9 +65,12 @@ An installed or relocated harness can load a specific library with
 - SIMD32-native execution, with homogeneous Wave8/Wave16 cohorts when safe.
 - Coupled 3x3 normal/tangent response blocks with deterministic conditioning.
 - Per-environment failure publication; no silent contact dropping.
-- Elliptic friction-bound projection and residual reporting.
+- Exact Euclidean projection onto isotropic, anisotropic and capped elliptic
+  friction cones.
+- Explicit normalized fixed-point convergence residuals.
 
 See [docs/MATHEMATICS.md](docs/MATHEMATICS.md) for the equations and evidence
-boundary. The harness exercises local contact mathematics on a real Metal
+boundary and [docs/QUALIFICATION.md](docs/QUALIFICATION.md) for measured Apple
+GPU evidence. The harness exercises local contact mathematics on a real Metal
 device. It is not a complete collision, island-coupling, or time-integration
 benchmark.

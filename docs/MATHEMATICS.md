@@ -61,11 +61,53 @@ solver:
 \Pi_{\mathcal C}\left(\lambda^k - P r(\lambda^k)\right).
 ```
 
-`Pi_C` first clamps the normal impulse, then radially scales the two tangent
-components onto the authored ellipse when they exceed it. This is exact
-enforcement of the implemented friction bound for the accepted normal
-impulse; it is not claimed to be the Euclidean closest-point projection onto
-the complete three-dimensional cone.
+`Pi_C` is the Euclidean closest-point projection onto the complete cone. For
+isotropic friction `mu`, the boundary projection is closed form. With
+`r = hypot(y_u, y_v)`:
+
+```math
+\lambda_n = \frac{y_n + \mu r}{1 + \mu^2},
+\qquad
+(\lambda_u,\lambda_v) =
+\frac{\mu\lambda_n}{r}(y_u,y_v).
+```
+
+Inputs already inside the cone remain unchanged. Inputs in its polar cone map
+to zero. This fast path contains no iteration.
+
+For anisotropic friction, the closest point is found through the single
+monotone KKT multiplier `tau`. With `lambda_n = y_n + tau`, the boundary root
+is
+
+```math
+\sum_{i\in\{u,v\}}
+\frac{y_i^2\mu_i^2}
+     {(\mu_i^2(y_n+\tau)+\tau)^2}=1.
+```
+
+Metal brackets this root and executes 28 ordered bisection iterations. The
+FP64 oracle converges the same mathematical root to double precision rather
+than copying the FP32 iteration count. If the unbounded projection exceeds an
+authored normal cap, a second monotone scalar projection finds the closest
+tangent point on the capped ellipse. A zero friction axis retains the prior
+ABI behavior and disables both tangential impulses.
+
+## Convergence residual
+
+The local fixed-point residual is the final projected update:
+
+```math
+R_\mathrm{fp} =
+\frac{\|\lambda^{k+1}-\lambda^k\|_\infty}
+     {\max(1,\|\lambda^{k+1}\|_\infty)}.
+```
+
+The qualification default is 16 iterations and requires
+`R_fp <= 2e-6`. In the adversarial Apple M4 sweep, eight iterations left a
+`2.34e-3` absolute edge-case update; 16 reduced the normalized maximum below
+`4.8e-7`. At 32 and 64 iterations the observed floor did not improve, so 16
+is the current accuracy/throughput point rather than an arbitrary larger
+budget.
 
 ## What the harness measures
 
@@ -75,10 +117,11 @@ implementation of the equations above. It checks:
 
 - FP32-versus-FP64 impulse and residual error;
 - finite, nonnegative and capped normal impulses;
-- elliptic friction-bound feasibility;
+- exact elliptic-cone projection against the FP64 closest point;
+- normalized fixed-point convergence residual;
 - byte-identical repeated GPU output;
 - separating, impact, sticking, sliding, anisotropic, ill-conditioned and
-  capped-contact cases;
+  capped-contact, polar-boundary and extreme-anisotropy cases;
 - isolated kernel time and problem throughput.
 
 This qualifies the local Temporal Cone block. It does not yet qualify contact

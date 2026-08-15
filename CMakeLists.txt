@@ -79,7 +79,10 @@ include(CTest)
 if(BUILD_TESTING)
     add_test(
         NAME temporal_cone.math
-        COMMAND $<TARGET_FILE:numi-solver-math> --cases 4096 --replays 2
+        COMMAND $<TARGET_FILE:numi-solver-math>
+            --cases 4096
+            --replays 2
+            --iterations 16
     )
     set_tests_properties(
         temporal_cone.math
