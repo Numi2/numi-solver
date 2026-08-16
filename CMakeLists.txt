@@ -205,6 +205,13 @@ target_compile_definitions(
         NUMI_TEMPORAL_CONE_METALLIB="${NUMI_SOLVER_METALLIB}"
 )
 
+add_executable(numi-solver-cloth-bag tools/cloth_bag.cpp)
+target_compile_features(numi-solver-cloth-bag PRIVATE cxx_std_23)
+target_compile_options(
+    numi-solver-cloth-bag
+    PRIVATE -Wall -Wextra -Wpedantic
+)
+
 add_executable(numi-solver-articulated tools/temporal_cone_articulated.mm)
 add_dependencies(numi-solver-articulated numi_temporal_cone)
 target_link_libraries(
@@ -413,6 +420,19 @@ if(BUILD_TESTING)
             LABELS "metal;physics;braid;contact;long_horizon;streamed"
             TIMEOUT 60
     )
+    add_test(
+        NAME cloth_bag.reference
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
+            --steps 120
+            --substeps 2
+            --iterations 12
+    )
+    set_tests_properties(
+        cloth_bag.reference
+        PROPERTIES
+            LABELS "physics;cloth;reference;contact;determinism"
+            TIMEOUT 60
+    )
     set_tests_properties(
         temporal_cone.rigid
         PROPERTIES LABELS "metal;physics;rigid;assembly;streamed" TIMEOUT 60
@@ -476,6 +496,7 @@ install(
         numi-solver-assembly
         numi-solver-rigid
         numi-solver-braided-bag
+        numi-solver-cloth-bag
         numi-solver-articulated
         numi-solver-articulated-capacity
         numi-solver-articulated-conditioning

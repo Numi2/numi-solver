@@ -39,7 +39,7 @@ cmake --build build
 ```
 
 The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
-`-fno-fast-math`, plus nine native harnesses:
+`-fno-fast-math`, plus ten native harnesses:
 
 - `build/numi-solver-math` for isolated local cone blocks;
 - `build/numi-solver-islands` for dense-versus-streamed coupled
@@ -50,6 +50,10 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
   deterministic velocity publication on one command buffer.
 - `build/numi-solver-braided-bag` for an end-to-end deformable braided bag
   containing six falling balls, with matched dense and streamed trajectories.
+- `build/numi-solver-cloth-bag` for a deterministic FP64 dense-cloth reference
+  with a closed triangular surface, stretch/shear, dihedral bending,
+  ball-triangle contact, and vertex self-collision. This is a CPU reference,
+  not Metal-performance evidence.
 - `build/numi-solver-articulated` for canonical articulated mass/Jacobian
   factorization, response-column solves, cone contact, and deterministic
   generalized-velocity publication on one command buffer.
@@ -69,6 +73,7 @@ Run the default FP64 comparisons and deterministic replays:
 ./build/numi-solver-assembly
 ./build/numi-solver-rigid
 ./build/numi-solver-braided-bag
+./build/numi-solver-cloth-bag
 ./build/numi-solver-articulated
 ./build/numi-solver-articulated-capacity
 ./build/numi-solver-articulated-conditioning
@@ -96,6 +101,10 @@ generalized kinetic energy, 32-DoF/32-contact capacity, typed conditioning
 rejection, O(n) inverse-ABA actions, bit-identical kinematics/contact-frame
 preparation, inverse-response assembly and publication, and invalid
 state/frame/material rollback.
+
+The dense cloth reference accepts `--steps N`, `--substeps N`,
+`--iterations N`, `--timestep DT`, and `--dump-obj PATH`. Its FP64 mechanics
+and evidence boundary are separate from the Metal harnesses.
 
 An installed or relocated harness can load a specific library with
 `--metallib path/to/NumiTemporalCone.metallib`.
@@ -165,7 +174,9 @@ See [docs/MATHEMATICS.md](docs/MATHEMATICS.md) for the equations and evidence
 boundary, [docs/ISLAND_SOLVER.md](docs/ISLAND_SOLVER.md) for the coupled
 SIMD32 method, [docs/OPERATOR_ASSEMBLY.md](docs/OPERATOR_ASSEMBLY.md) for the
 response-column producer, [docs/BRAIDED_BAG.md](docs/BRAIDED_BAG.md) for the
-executable deformable containment benchmark, and
+executable deformable containment benchmark,
+[docs/CLOTH_BAG.md](docs/CLOTH_BAG.md) for the dense cloth mechanics reference,
+and
 [docs/QUALIFICATION.md](docs/QUALIFICATION.md) for measured Apple GPU evidence.
 See
 [docs/RIGID_MECHANICS.md](docs/RIGID_MECHANICS.md) for the velocity-level rigid
