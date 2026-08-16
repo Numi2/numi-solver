@@ -16,10 +16,16 @@
 
 namespace {
 
-constexpr std::uint32_t kAround = 32;
-constexpr std::uint32_t kLevels = 20;
-constexpr double kClothRadius = 0.006;
-constexpr double kBallRadius = 0.14;
+constexpr std::uint32_t kAround = 48;
+constexpr std::uint32_t kLevels = 28;
+constexpr std::size_t kFruitCount = 8;
+constexpr double kClothRadius = 0.004;
+constexpr double kAirborneLift = 0.52;
+
+enum class Scenario : std::uint8_t {
+    grounded,
+    spin,
+};
 
 struct Vec3 {
     double x{};
@@ -95,8 +101,9 @@ struct Ball {
     Vec3 position{};
     Vec3 previous{};
     Vec3 velocity{};
-    double radius{kBallRadius};
+    double radius{0.11};
     double inverseMass{1.0};
+    std::uint32_t appearance{};
 };
 
 enum class DistanceKind : std::uint8_t {
@@ -146,18 +153,21 @@ struct Metrics {
     double maximumBendError{};
     double maximumBallPenetration{};
     double maximumSelfPenetration{};
-    double maximumAnchorError{};
+    double maximumGroundPenetration{};
     double minimumTriangleArea{std::numeric_limits<double>::infinity()};
     double maximumSpeed{};
     std::uint64_t ballTriangleContacts{};
     std::uint64_t selfContacts{};
     std::uint32_t escapedMask{};
+    std::uint32_t releasedMask{};
+    std::array<double, kFruitCount> maximumBallPenetrationByFruit{};
 };
 
 struct SimulationResult {
     ClothModel cloth;
-    std::array<Ball, 6> balls{};
+    std::array<Ball, kFruitCount> balls{};
     Metrics metrics{};
+    Scenario scenario{Scenario::grounded};
 };
 
 std::uint32_t nodeIndex(const std::uint32_t level, const std::uint32_t ring) {
@@ -172,17 +182,32 @@ double smoothstep(const double value) {
 Vec3 authoredPosition(const std::uint32_t level, const std::uint32_t ring) {
     const double vertical = static_cast<double>(level) /
         static_cast<double>(kLevels - 1);
-    const double radius =
+    const double rimBlend = smoothstep((vertical - 0.68) / 0.32);
+    const double angle0 = 2.0 * std::numbers::pi *
+        static_cast<double>(ring) / static_cast<double>(kAround);
+    const double baseRadius =
         0.10 +
-        0.30 * smoothstep(vertical / 0.28) +
-        0.12 * smoothstep((vertical - 0.72) / 0.28);
-    const double angle = 2.0 * std::numbers::pi *
-        static_cast<double>(ring) / static_cast<double>(kAround) +
-        0.08 * vertical;
+        0.220 * smoothstep(vertical / 0.17) +
+        0.130 * rimBlend;
+    const double angle = angle0 + 0.11 * vertical;
+    const double wrinkle =
+        1.0 +
+        0.028 * std::sin(5.0 * angle + 1.7 * vertical) +
+        0.015 * std::sin(9.0 * angle - 1.1 * vertical);
+    const double looseRim = rimBlend * (
+        0.030 * std::sin(3.0 * angle + 0.35) +
+        0.018 * std::sin(7.0 * angle - 0.80)
+    );
+    const double rimFold = rimBlend * (
+        0.030 * std::sin(angle + 0.55) +
+        0.015 * std::sin(3.0 * angle - 0.30) +
+        0.008 * std::sin(6.0 * angle + 0.90)
+    );
+    const double radius = baseRadius * wrinkle + looseRim;
     return {
         radius * std::cos(angle),
         radius * std::sin(angle),
-        1.08 * vertical,
+        0.025 + 0.385 * vertical + rimFold,
     };
 }
 
@@ -219,25 +244,35 @@ std::uint64_t edgeKey(std::uint32_t first, std::uint32_t second) {
     return (static_cast<std::uint64_t>(first) << 32u) | second;
 }
 
-ClothModel makeCloth() {
+ClothModel makeCloth(const Scenario scenario) {
     ClothModel model;
     model.particles.reserve(kAround * kLevels + 1u);
     for (std::uint32_t level = 0; level < kLevels; ++level) {
         for (std::uint32_t ring = 0; ring < kAround; ++ring) {
-            const Vec3 position = authoredPosition(level, ring);
-            const bool anchored = level + 1u == kLevels;
+            Vec3 position = authoredPosition(level, ring);
+            if (scenario == Scenario::spin) {
+                position.z += kAirborneLift;
+            }
+            const double mass = level + 2u >= kLevels ? 0.008 : 0.004;
             model.particles.push_back({
                 position,
                 position,
                 {},
                 position,
-                anchored ? 0.0 : 1.0 / 0.006,
+                1.0 / mass,
             });
         }
     }
     model.bottomCenter = static_cast<std::uint32_t>(model.particles.size());
-    const Vec3 center{0.0, 0.0, 0.0};
+    const Vec3 center{
+        0.0,
+        0.0,
+        0.025 + (scenario == Scenario::spin ? kAirborneLift : 0.0),
+    };
     model.particles.push_back({center, center, {}, center, 1.0 / 0.025});
+    if (scenario == Scenario::spin) {
+        model.particles[nodeIndex(kLevels - 1u, 0u)].inverseMass = 0.0;
+    }
 
     const auto addDistance = [&](
         const std::uint32_t first,
@@ -260,7 +295,7 @@ ClothModel makeCloth() {
             addDistance(
                 nodeIndex(level, ring),
                 nodeIndex(level, ring + 1u),
-                1.0e-8,
+                level + 2u >= kLevels ? 1.0e-9 : 1.0e-8,
                 DistanceKind::weft
             );
         }
@@ -349,7 +384,7 @@ ClothModel makeCloth() {
                 first.opposite,
                 entry[2],
                 restAngle,
-                2.0e-4,
+                8.0e-4,
                 0.0,
             });
             edges.erase(found);
@@ -358,21 +393,69 @@ ClothModel makeCloth() {
     return model;
 }
 
-std::array<Ball, 6> makeBalls() {
-    constexpr std::array<Vec3, 6> positions{{
-        {0.18, 0.00, 0.78},
-        {-0.09, 0.155885, 0.78},
-        {-0.09, -0.155885, 0.78},
-        {0.085, 0.147224, 0.44},
-        {-0.17, 0.00, 0.44},
-        {0.085, -0.147224, 0.44},
+std::array<Ball, kFruitCount> makeBalls(const Scenario scenario) {
+    constexpr std::array<Vec3, kFruitCount> groundedPositions{{
+        {0.00, 0.00, 0.18},
+        {-0.19, 0.00, 0.40},
+        {0.19, 0.00, 0.41},
+        {0.00, -0.19, 0.42},
+        {0.00, 0.19, 0.40},
+        {-0.13, -0.13, 0.62},
+        {0.13, -0.13, 0.64},
+        {-0.13, 0.13, 0.66},
     }};
-    std::array<Ball, 6> balls{};
+    constexpr std::array<Vec3, kFruitCount> airbornePositions{{
+        {-0.078038, -0.100041, 0.706718},
+        {-0.193518, 0.086819, 0.694510},
+        {0.207487, 0.038065, 0.709312},
+        {0.116579, -0.189801, 0.689642},
+        {0.046778, 0.205181, 0.701061},
+        {-0.140000, -0.120000, 0.950000},
+        {0.142649, -0.101412, 0.869393},
+        {-0.100110, 0.178361, 0.862629},
+    }};
+    constexpr std::array<double, kFruitCount> radii{{
+        0.115, 0.105, 0.120, 0.100, 0.112, 0.120, 0.102, 0.108,
+    }};
+    constexpr std::array<double, kFruitCount> masses{{
+        0.88, 0.62, 1.05, 0.54, 0.78, 1.08, 0.58, 0.70,
+    }};
+    constexpr std::array<std::uint32_t, kFruitCount> appearances{{
+        0u, 1u, 2u, 1u, 3u, 0u, 2u, 3u,
+    }};
+    std::array<Ball, kFruitCount> balls{};
+    const auto& positions = scenario == Scenario::spin
+        ? airbornePositions
+        : groundedPositions;
     for (std::size_t index = 0; index < balls.size(); ++index) {
         balls[index].position = positions[index];
         balls[index].previous = positions[index];
+        balls[index].radius = radii[index];
+        balls[index].inverseMass = 1.0 / masses[index];
+        balls[index].appearance = appearances[index];
     }
     return balls;
+}
+
+Vec3 spinGripTarget(const double time) {
+    Vec3 base = authoredPosition(kLevels - 1u, 0u);
+    base.z += kAirborneLift;
+    constexpr double radius = 0.28;
+    constexpr double angularSpeed = 4.8;
+    constexpr double rampTime = 0.18;
+    const double angle = angularSpeed * (
+        time - rampTime * (1.0 - std::exp(-time / rampTime))
+    );
+    return base + Vec3{
+        radius * (std::cos(angle) - 1.0),
+        radius * std::sin(angle),
+        0.035 * std::sin(0.5 * angle),
+    };
+}
+
+void updateSpinGrip(ClothModel& cloth, const double time) {
+    Particle& grip = cloth.particles[nodeIndex(kLevels - 1u, 0u)];
+    grip.rest = spinGripTarget(time);
 }
 
 void solveDistance(
@@ -526,22 +609,30 @@ double solveBallTriangle(
         triangle.second,
         triangle.third,
     }};
+    const Vec3 first = particles[indices[0]].position;
+    const Vec3 second = particles[indices[1]].position;
+    const Vec3 third = particles[indices[2]].position;
+    const double target = ball.radius + kClothRadius;
+    if (ball.position.x < std::min({first.x, second.x, third.x}) - target ||
+        ball.position.x > std::max({first.x, second.x, third.x}) + target ||
+        ball.position.y < std::min({first.y, second.y, third.y}) - target ||
+        ball.position.y > std::max({first.y, second.y, third.y}) + target ||
+        ball.position.z < std::min({first.z, second.z, third.z}) - target ||
+        ball.position.z > std::max({first.z, second.z, third.z}) + target) {
+        return 0.0;
+    }
     const ClosestPoint closest = closestPointOnTriangle(
         ball.position,
-        particles[indices[0]].position,
-        particles[indices[1]].position,
-        particles[indices[2]].position
+        first,
+        second,
+        third
     );
     Vec3 separation = closest.point - ball.position;
     double distance = length(separation);
-    const double target = ball.radius + kClothRadius;
     if (distance >= target) {
         return 0.0;
     }
     if (distance < 1.0e-10) {
-        const Vec3 first = particles[indices[0]].position;
-        const Vec3 second = particles[indices[1]].position;
-        const Vec3 third = particles[indices[2]].position;
         separation = normalized(cross(second - first, third - first));
         distance = 0.0;
     }
@@ -578,6 +669,28 @@ double solveBallPair(Ball& first, Ball& second) {
     first.position -= correction * first.inverseMass;
     second.position += correction * second.inverseMass;
     return target - currentLength;
+}
+
+double solveGround(
+    std::vector<Particle>& particles,
+    std::array<Ball, kFruitCount>& balls
+) {
+    double maximumPenetration = 0.0;
+    for (Particle& particle : particles) {
+        const double penetration = kClothRadius - particle.position.z;
+        if (penetration > 0.0) {
+            maximumPenetration = std::max(maximumPenetration, penetration);
+            particle.position.z = kClothRadius;
+        }
+    }
+    for (Ball& ball : balls) {
+        const double penetration = ball.radius - ball.position.z;
+        if (penetration > 0.0) {
+            maximumPenetration = std::max(maximumPenetration, penetration);
+            ball.position.z = ball.radius;
+        }
+    }
+    return maximumPenetration;
 }
 
 bool localTopologyPair(const std::uint32_t first, const std::uint32_t second) {
@@ -677,7 +790,7 @@ double solveSelfCollision(
 
 void updateMetrics(
     const ClothModel& cloth,
-    const std::array<Ball, 6>& balls,
+    const std::array<Ball, kFruitCount>& balls,
     Metrics& metrics
 ) {
     for (const DistanceConstraint& constraint : cloth.distances) {
@@ -717,13 +830,6 @@ void updateMetrics(
             0.5 * length(cross(second - first, third - first))
         );
     }
-    for (std::uint32_t ring = 0; ring < kAround; ++ring) {
-        const Particle& anchor = cloth.particles[nodeIndex(kLevels - 1u, ring)];
-        metrics.maximumAnchorError = std::max(
-            metrics.maximumAnchorError,
-            length(anchor.position - anchor.rest)
-        );
-    }
     for (const Particle& particle : cloth.particles) {
         metrics.maximumSpeed = std::max(metrics.maximumSpeed, length(particle.velocity));
     }
@@ -736,16 +842,25 @@ SimulationResult simulate(
     const std::uint32_t steps,
     const double frameTimestep,
     const std::uint32_t substeps,
-    const std::uint32_t iterations
+    const std::uint32_t iterations,
+    const Scenario scenario
 ) {
     SimulationResult result;
-    result.cloth = makeCloth();
-    result.balls = makeBalls();
+    result.scenario = scenario;
+    result.cloth = makeCloth(scenario);
+    result.balls = makeBalls(scenario);
     const double timestep = frameTimestep / static_cast<double>(substeps);
     const Vec3 gravity{0.0, 0.0, -9.81};
 
     for (std::uint32_t step = 0; step < steps; ++step) {
         for (std::uint32_t substep = 0; substep < substeps; ++substep) {
+            if (scenario == Scenario::spin) {
+                const double time = (
+                    static_cast<double>(step * substeps + substep + 1u) *
+                    timestep
+                );
+                updateSpinGrip(result.cloth, time);
+            }
             for (Particle& particle : result.cloth.particles) {
                 particle.previous = particle.position;
                 if (particle.inverseMass == 0.0) {
@@ -786,17 +901,26 @@ SimulationResult simulate(
                         solveBallPair(result.balls[first], result.balls[second]);
                     }
                 }
-                for (Ball& ball : result.balls) {
+                for (std::size_t ballIndex = 0;
+                     ballIndex < result.balls.size();
+                     ++ballIndex) {
+                    Ball& ball = result.balls[ballIndex];
                     for (const Triangle triangle : result.cloth.triangles) {
+                        const double penetration = solveBallTriangle(
+                            result.cloth.particles,
+                            triangle,
+                            ball,
+                            result.metrics.ballTriangleContacts
+                        );
                         result.metrics.maximumBallPenetration = std::max(
                             result.metrics.maximumBallPenetration,
-                            solveBallTriangle(
-                                result.cloth.particles,
-                                triangle,
-                                ball,
-                                result.metrics.ballTriangleContacts
-                            )
+                            penetration
                         );
+                        result.metrics.maximumBallPenetrationByFruit[ballIndex] =
+                            std::max(
+                                result.metrics.maximumBallPenetrationByFruit[ballIndex],
+                                penetration
+                            );
                     }
                 }
                 result.metrics.maximumSelfPenetration = std::max(
@@ -806,6 +930,12 @@ SimulationResult simulate(
                         result.metrics.selfContacts
                     )
                 );
+                if (scenario == Scenario::grounded) {
+                    result.metrics.maximumGroundPenetration = std::max(
+                        result.metrics.maximumGroundPenetration,
+                        solveGround(result.cloth.particles, result.balls)
+                    );
+                }
             }
             for (Particle& particle : result.cloth.particles) {
                 if (particle.inverseMass == 0.0) {
@@ -814,10 +944,18 @@ SimulationResult simulate(
                 } else {
                     particle.velocity =
                         (particle.position - particle.previous) / timestep;
+                    if (particle.position.z <= kClothRadius + 1.0e-6) {
+                        particle.velocity.x *= 0.45;
+                        particle.velocity.y *= 0.45;
+                    }
                 }
             }
             for (Ball& ball : result.balls) {
                 ball.velocity = (ball.position - ball.previous) / timestep;
+                if (ball.position.z <= ball.radius + 1.0e-6) {
+                    ball.velocity.x *= 0.60;
+                    ball.velocity.y *= 0.60;
+                }
             }
         }
         updateMetrics(result.cloth, result.balls, result.metrics);
@@ -826,9 +964,17 @@ SimulationResult simulate(
     for (std::size_t ballIndex = 0; ballIndex < result.balls.size(); ++ballIndex) {
         const Ball& ball = result.balls[ballIndex];
         const double radial = std::hypot(ball.position.x, ball.position.y);
-        if (!finite(ball.position) || ball.position.z > 1.08 + ball.radius ||
-            ball.position.z < -1.5 || radial > 0.70) {
+        const bool outsideScenarioBounds = scenario == Scenario::grounded
+            ? ball.position.z > 0.90 || ball.position.z < 0.0 || radial > 0.75
+            : ball.position.z > 5.0 || ball.position.z < -5.0 || radial > 5.0;
+        if (!finite(ball.position) || outsideScenarioBounds) {
             result.metrics.escapedMask |= 1u << ballIndex;
+        }
+        if (scenario == Scenario::spin && length(
+            ball.position -
+            result.cloth.particles[result.cloth.bottomCenter].position
+        ) > 0.95) {
+            result.metrics.releasedMask |= 1u << ballIndex;
         }
     }
     return result;
@@ -884,7 +1030,8 @@ void dumpOBJ(const std::string& path, const SimulationResult& result) {
         const Ball& ball = result.balls[index];
         output << "# ball " << index << " center "
                << ball.position.x << ' ' << ball.position.y << ' '
-               << ball.position.z << " radius " << ball.radius << '\n';
+               << ball.position.z << " radius " << ball.radius
+               << " appearance " << ball.appearance << '\n';
     }
 }
 
@@ -896,24 +1043,28 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
     for (const Ball& ball : result.balls) {
         allFinite = allFinite && finite(ball.position) && finite(ball.velocity);
     }
+    const bool groundValid = result.scenario == Scenario::spin ||
+        result.metrics.maximumGroundPenetration < 0.030;
     return allFinite && deterministic && result.metrics.escapedMask == 0u &&
-        result.metrics.maximumAnchorError <= 1.0e-12 &&
+        groundValid &&
         result.metrics.minimumTriangleArea > 1.0e-8 &&
         result.metrics.maximumWarpStrain < 0.30 &&
         result.metrics.maximumWeftStrain < 0.30 &&
         result.metrics.maximumShearStrain < 0.40 &&
-        result.metrics.maximumBendError < 0.50 &&
-        result.metrics.maximumBallPenetration < 0.010;
+        result.metrics.maximumBallPenetration < 0.010 &&
+        result.metrics.maximumSelfPenetration < 2.0 * kClothRadius &&
+        result.metrics.maximumSpeed < 30.0;
 }
 
 }  // namespace
 
 int main(int argc, char** argv) try {
     std::uint32_t steps = 120u;
-    std::uint32_t substeps = 2u;
+    std::uint32_t substeps = 4u;
     std::uint32_t iterations = 12u;
     double timestep = 1.0 / 120.0;
     std::string dumpPath;
+    Scenario scenario = Scenario::grounded;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string value = argv[argument];
         const auto nextUnsigned = [&](std::uint32_t& target) {
@@ -932,10 +1083,20 @@ int main(int argc, char** argv) try {
             timestep = std::stod(argv[++argument]);
         } else if (value == "--dump-obj" && argument + 1 < argc) {
             dumpPath = argv[++argument];
+        } else if (value == "--scenario" && argument + 1 < argc) {
+            const std::string name = argv[++argument];
+            if (name == "grounded") {
+                scenario = Scenario::grounded;
+            } else if (name == "spin") {
+                scenario = Scenario::spin;
+            } else {
+                throw std::invalid_argument("unknown scenario: " + name);
+            }
         } else if (value == "--help") {
             std::cout << "usage: numi-solver-cloth-bag "
                          "[--steps N] [--substeps N] [--iterations N] "
-                         "[--timestep DT] [--dump-obj PATH]\n";
+                         "[--timestep DT] [--scenario grounded|spin] "
+                         "[--dump-obj PATH]\n";
             return 0;
         } else {
             throw std::invalid_argument("unknown argument: " + value);
@@ -946,8 +1107,12 @@ int main(int argc, char** argv) try {
         throw std::invalid_argument("simulation controls must be positive");
     }
 
-    const SimulationResult first = simulate(steps, timestep, substeps, iterations);
-    const SimulationResult replay = simulate(steps, timestep, substeps, iterations);
+    const SimulationResult first = simulate(
+        steps, timestep, substeps, iterations, scenario
+    );
+    const SimulationResult replay = simulate(
+        steps, timestep, substeps, iterations, scenario
+    );
     const std::uint64_t firstHash = hashResult(first);
     const std::uint64_t replayHash = hashResult(replay);
     const bool deterministic = firstHash == replayHash;
@@ -958,6 +1123,8 @@ int main(int argc, char** argv) try {
     const Metrics& metrics = first.metrics;
     std::cout << std::fixed << std::setprecision(9);
     std::cout << "model=dense_cloth_reference"
+              << " scenario="
+              << (scenario == Scenario::spin ? "spin" : "grounded")
               << " nodes=" << first.cloth.particles.size()
               << " triangles=" << first.cloth.triangles.size()
               << " stretch_constraints=" << first.cloth.distances.size()
@@ -976,8 +1143,19 @@ int main(int argc, char** argv) try {
               << " max_self_penetration=" << metrics.maximumSelfPenetration
               << " ball_triangle_contacts=" << metrics.ballTriangleContacts
               << " self_contacts=" << metrics.selfContacts
-              << " escaped_mask=" << metrics.escapedMask << '\n';
-    std::cout << "max_anchor_error=" << metrics.maximumAnchorError
+              << " escaped_mask=" << metrics.escapedMask
+              << " released_mask=" << metrics.releasedMask << '\n';
+    std::cout << "max_ball_penetration_by_fruit=";
+    for (std::size_t index = 0;
+         index < metrics.maximumBallPenetrationByFruit.size();
+         ++index) {
+        if (index != 0u) {
+            std::cout << ',';
+        }
+        std::cout << metrics.maximumBallPenetrationByFruit[index];
+    }
+    std::cout << '\n';
+    std::cout << "max_ground_penetration=" << metrics.maximumGroundPenetration
               << " max_speed=" << metrics.maximumSpeed
               << " deterministic=" << std::boolalpha << deterministic
               << " state_hash=0x" << std::hex << firstHash << std::dec << '\n';

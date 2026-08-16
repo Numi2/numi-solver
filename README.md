@@ -51,9 +51,10 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
 - `build/numi-solver-braided-bag` for an end-to-end deformable braided bag
   containing six falling balls, with matched dense and streamed trajectories.
 - `build/numi-solver-cloth-bag` for a deterministic FP64 dense-cloth reference
-  with a closed triangular surface, stretch/shear, dihedral bending,
-  ball-triangle contact, and vertex self-collision. This is a CPU reference,
-  not Metal-performance evidence.
+  with a free reinforced rim, stretch/shear, soft dihedral bending,
+  ball-triangle contact, ground contact, vertex self-collision, and a
+  one-point airborne spin scenario. This is a CPU reference, not
+  Metal-performance evidence.
 - `build/numi-solver-articulated` for canonical articulated mass/Jacobian
   factorization, response-column solves, cone contact, and deterministic
   generalized-velocity publication on one command buffer.
@@ -103,8 +104,10 @@ preparation, inverse-response assembly and publication, and invalid
 state/frame/material rollback.
 
 The dense cloth reference accepts `--steps N`, `--substeps N`,
-`--iterations N`, `--timestep DT`, and `--dump-obj PATH`. Its FP64 mechanics
-and evidence boundary are separate from the Metal harnesses.
+`--iterations N`, `--timestep DT`, `--scenario grounded|spin`, and
+`--dump-obj PATH`. `grounded` settles an open produce bag on a plane; `spin`
+pinches one rim vertex and drives it around a smooth airborne orbit. Its FP64
+mechanics and evidence boundary are separate from the Metal harnesses.
 
 An installed or relocated harness can load a specific library with
 `--metallib path/to/NumiTemporalCone.metallib`.

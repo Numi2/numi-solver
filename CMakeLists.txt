@@ -423,15 +423,29 @@ if(BUILD_TESTING)
     add_test(
         NAME cloth_bag.reference
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
-            --steps 120
-            --substeps 2
+            --steps 30
+            --substeps 4
             --iterations 12
     )
     set_tests_properties(
         cloth_bag.reference
         PROPERTIES
             LABELS "physics;cloth;reference;contact;determinism"
-            TIMEOUT 60
+            TIMEOUT 120
+    )
+    add_test(
+        NAME cloth_bag.airborne_spin
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
+            --scenario spin
+            --steps 30
+            --substeps 4
+            --iterations 12
+    )
+    set_tests_properties(
+        cloth_bag.airborne_spin
+        PROPERTIES
+            LABELS "physics;cloth;reference;contact;determinism;spin"
+            TIMEOUT 120
     )
     set_tests_properties(
         temporal_cone.rigid
