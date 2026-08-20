@@ -431,19 +431,15 @@ if(BUILD_TESTING)
         NAME cloth_bag.reference
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
             --steps 30
-            --substeps 12
-            --iterations 24
+            --substeps 24
+            --iterations 32
     )
     add_test(
         NAME cloth_bag.rolling_friction
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --rolling-probe
     )
     add_test(
-        NAME cloth_bag.swept_sphere_triangle
-        COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --ccd-probe
-    )
-    add_test(
-        NAME cloth_bag.continuous_self_contact
+        NAME cloth_bag.continuous_yarn_self_contact
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --self-ccd-probe
     )
     add_test(
@@ -458,6 +454,17 @@ if(BUILD_TESTING)
         NAME cloth_bag.deformable_response
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
             --deformable-response-probe
+    )
+    add_test(
+        NAME cloth_bag.yarn_mechanics
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
+            --yarn-mechanics-probe
+    )
+    set_tests_properties(
+        cloth_bag.yarn_mechanics
+        PROPERTIES
+            LABELS "physics;cloth;reference;contact;ccd;yarn;knot"
+            TIMEOUT 30
     )
     set_tests_properties(
         cloth_bag.deformable_response
@@ -478,15 +485,9 @@ if(BUILD_TESTING)
             TIMEOUT 30
     )
     set_tests_properties(
-        cloth_bag.continuous_self_contact
+        cloth_bag.continuous_yarn_self_contact
         PROPERTIES
             LABELS "physics;cloth;reference;contact;ccd;self_contact"
-            TIMEOUT 30
-    )
-    set_tests_properties(
-        cloth_bag.swept_sphere_triangle
-        PROPERTIES
-            LABELS "physics;cloth;reference;contact;ccd"
             TIMEOUT 30
     )
     set_tests_properties(
@@ -507,8 +508,8 @@ if(BUILD_TESTING)
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
             --scenario spin
             --steps 60
-            --substeps 12
-            --iterations 24
+            --substeps 24
+            --iterations 32
             --dump-frames ${CMAKE_CURRENT_BINARY_DIR}/cloth-spin-test
     )
     set_tests_properties(
@@ -522,9 +523,9 @@ if(BUILD_TESTING)
         NAME cloth_bag.pickup
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
             --scenario pickup
-            --steps 144
-            --substeps 12
-            --iterations 24
+            --steps 240
+            --substeps 24
+            --iterations 32
             --dump-frames ${CMAKE_CURRENT_BINARY_DIR}/cloth-pickup-test
             --dump-every 10
     )
@@ -533,7 +534,7 @@ if(BUILD_TESTING)
         PROPERTIES
             LABELS "physics;cloth;reference;contact;determinism;pickup"
             RUN_SERIAL TRUE
-            TIMEOUT 360
+            TIMEOUT 600
     )
     set_tests_properties(
         temporal_cone.rigid

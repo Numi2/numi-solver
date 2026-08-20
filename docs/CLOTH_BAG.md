@@ -1,336 +1,209 @@
-# Dense cloth produce-bag reference
+# Explicit-yarn produce-bag reference
 
 ## Purpose and evidence boundary
 
 `numi-solver-cloth-bag` is a deterministic FP64 mechanics reference for an
-open cotton produce bag containing twelve dynamic spheres. The live state is a
-48 by 28 periodic wall joined to a structured 13 by 13 bottom: 1,465 particles,
-2,880 triangles, 5,784 stretch/shear constraints, and 4,296 interior-edge bend
-constraints.
+open cotton produce bag containing twelve dynamic spheres. The bottom is
+physically closed; only the folded top mouth is open. The live model contains:
 
-This reference runs on the CPU. It does **not** prove a Metal cloth path,
-Temporal Cone cloth contact, yarn-scale contact, or hardware performance. It
-locks the cloth equations, topology,
-contact geometry, three useful load cases, deterministic replay, and mesh export
-before a GPU implementation is admitted.
+- 1,465 massive knot particles;
+- 2,904 axial warp, weft, and bottom yarn segments;
+- 1,369 finite-compliance crossing-angle knot constraints;
+- 2,834 three-knot yarn-bend constraints; and
+- twelve fruits with translation, solid-sphere rotation, and friction.
 
-## Cloth discretization
+The 2,880 triangles in an exported OBJ exist only for rasterization and a
+minimum-area topology certificate. They are not stretch, bend, fruit-contact,
+or self-contact primitives.
 
-The grounded bag has a broad capped base, a scalloped ground skirt, a short
-corrugated body, an inward folded irregular cuff, and no anchors. The top two
-rows carry extra mass and a stiffer circumferential hem, but remain free. Warp,
-weft, and both diagonal shear families use XPBD distance constraints.
+This is a CPU reference. It does **not** prove a Metal cloth implementation,
+Temporal Cone cloth contact, hardware performance, or calibration to a
+particular physical bag. It does lock an executable topology, equations,
+collision geometry, three load cases, deterministic replay, and exported
+states for later implementations to match.
 
-The bottom uses a 13 by 13 square weave mapped continuously into the 48-node
-circular wall boundary. Its 121 interior particles remove the former
-single-center fan and its long, radially convergent constraints. Standard cloth
-nodes carry `0.05 g` and hem nodes carry `0.10 g`, for a total authored bag mass
-of `0.07805 kg` against `2.33 kg` of fruit. These are plausible authored values,
-not calibrated measurements from a physical specimen.
+## Topology and mass
 
-For a constrained pair `(i,j)`,
+The wall is a periodic 48 by 28 yarn grid. A 13 by 13 square bottom weave maps
+its boundary one-to-one onto the lowest 48-node wall ring, leaving no geometric
+hole or single-center fan. The upper rows form an irregular inward cuff and
+remain free except when the five-node grab is active.
+
+Ordinary knot particles carry `0.05 g`; the two hem rows carry `0.10 g`. Total
+bag mass is `0.07805 kg`, against `2.33 kg` of fruit. These are authored
+estimates, not specimen measurements.
+
+Each axial yarn segment uses the standard XPBD distance equation
 
 ```math
-C(x)=\|x_j-x_i\|-\ell_0,
+C_s(x)=\|x_j-x_i\|-\ell_0,
 \qquad
 \alpha=\frac{c}{\Delta t^2},
 ```
 
 ```math
 \Delta\lambda=
-\frac{-C-\alpha\lambda}
-{w_i+w_j+\alpha},
-\qquad
-x_k\leftarrow x_k+w_k\nabla C_k\Delta\lambda.
+\frac{-C_s-\alpha\lambda}{w_i+w_j+\alpha}.
 ```
 
-Interior triangle pairs use a signed dihedral-angle XPBD constraint. Its
-gradient is evaluated by centered differences in FP64. The bend compliance is
-`8e-2`, deliberately much softer than stretch/shear, so the textile can sag,
-fold, and twist without losing its woven lengths.
+There are no diagonal sheet-shear springs. At a woven crossing, a compliant
+knot instead preserves the authored angle between the local warp and weft
+directions:
 
 ```math
-C_b(x)=\operatorname{wrap}(\theta(x)-\theta_0).
+C_k(x)=\hat e_w\cdot\hat e_f-
+       \hat e_{w,0}\cdot\hat e_{f,0},
+\qquad c_k=2\times10^{-6}.
 ```
 
-After contact, a unilateral strain projection caps warp, weft, and bottom
-extension at `28.5%` and shear at `38%`. It does not resist compression or
-ordinary strain below those limits. Alternating primitive-contact and strain
-passes prevent self-separation from silently turning the textile into rubber.
-
-## Compliant-patch airborne spin
-
-`--scenario spin` raises the same bag into free space. A virtual handle follows
-a smoothly accelerated circular path:
+Every three consecutive knots along a yarn receive a soft chord constraint,
 
 ```math
-\theta(t)=\omega\left[t-\tau\left(1-e^{-t/\tau}\right)\right],
+C_b(x)=\|x_{i+1}-x_{i-1}\|-\ell_{\mathrm{chord},0},
+\qquad c_b=8\times10^{-2},
 ```
+
+which resists yarn curvature without turning the net into a triangulated
+sheet. A unilateral post-contact projection limits extension of every axial
+yarn to `28.5%`; it does not resist compression or replace ordinary compliant
+strain below that ceiling.
+
+## Fruit, ground, and yarn contact
+
+Fruit contact is sphere versus moving yarn capsule. For a sphere center `p`
+and the closest point `q` on a yarn segment,
 
 ```math
-g(t)=g_0+
-\begin{bmatrix}
-R(\cos\theta-1) & R\sin\theta & a\sin(\theta/2)
-\end{bmatrix},
+C_{fy}=\|p-q\|-(r_f+r_y)\ge0,
+\qquad r_y=0.004\ \mathrm{m}.
 ```
 
-with `R=0.28 m`, `omega=4.8 rad/s`, `tau=0.18 s`, and `a=0.035 m`.
-The handle attaches to five neighboring rim particles through isotropic XPBD
-constraints with `2e-3 m/N` compliance. All cloth particles and all twelve
-fruits remain dynamic. Gravity,
-inertial lag, the soft bend law, cloth contact, and the open mouth therefore
-decide the response. Fruit release is recorded as `released_mask`; it is an
-expected physical outcome for an open bag and is distinct from numerical
-escape. A fruit is classified as released once its center moves more than
-`0.45 m` from the bag's bottom-center particle.
+The correction uses the segment's actual closest-point weights and the true
+inverse masses of its two endpoint knots. A piecewise active-set projection
+stops either endpoint at its first ground-plane hit, activates unilateral
+support, recomputes the response, and transfers only the remaining correction.
+No artificial patch-mass cap is used.
 
-## Grounded pickup and pour
+Conservative advancement finds the first sphere/capsule hit using the relative
+motion of the fruit and both yarn endpoints, so endpoint-separated states
+cannot silently tunnel through one another. The independent
+`--yarn-mechanics-probe` drives a sphere completely across a yarn in one step
+and requires contact at the analytic combined radius. It also checks that a
+60-degree knot crossing moves deterministically toward its 90-degree rest
+angle under the production `2e-6` compliance, reducing angular error by more
+than 25% without center drift.
 
-`--scenario pickup` starts from the grounded geometry and retains its collision
-plane. It drives the same compliant five-node rim patch, first lifting it and
-then sweeping it sideways so gravity and the open mouth—not an authored fruit
-animation—determine the spill. With
-`s(x)=clamp(x,0,1)^2(3-2clamp(x,0,1))`,
+Nonlocal self-contact is capsule versus capsule, with two-ring exclusions
+derived from the axial yarn graph. Swept conservative advancement catches
+crossing segments before endpoint resolution; local knot-particle collision
+closes the remaining point cases. Render triangles never enter this path.
+Completed published frames are certified below `2 um` for nonlocal yarn
+overlap and extension-limit residual.
 
-```math
-u(t)=s(t/0.58),\qquad p(t)=s((t-0.48)/0.62),
-```
-
-```math
-g(t)=g_0+
-\begin{bmatrix}
--0.54p & 0.12\sin(\pi p) &
-0.72u+0.08\sin(\pi p)-0.12p
-\end{bmatrix}.
-```
-
-Every other degree of freedom remains dynamic. Ground contact continues during
-the whole motion, so released fruit falls to and settles on the plane. Peak
-attachment force and impulse are measured from the accumulated XPBD
-multipliers; force above `500 N` fails qualification.
-
-## Contact
-
-Sphere contact is generated against the actual cloth triangles, not a support
-plane. For each sphere/triangle pair the reference first rejects a padded AABB,
-then computes the exact closest point and barycentric weights. If distance `d`
-is smaller than sphere radius plus cloth radius, an inequality projection
-distributes the correction to all three cloth vertices and the sphere:
-
-```math
-C_c=d-(r_b+r_c)\ge0.
-```
-
-Contact uses each cloth node's authored inverse mass directly. A piecewise
-active-set projection advances a contacted patch only to its first plane hit,
-activates unilateral ground support, recomputes the coupled response, and
-transfers the remaining correction to the fruit or other free degrees of
-freedom. Ground-aware bending and contact/strain reconciliation prevent a
-later constraint family from reopening the plane or fruit contact. No
-artificial contact-patch mass cap remains.
-
-`--deformable-response-probe` independently checks the block response. A free
-three-node patch and sphere conserve center of mass under an `8 mm` separation;
-a plane-supported patch transfers all `8 mm` to the sphere; and a patch `1 mm`
-above the plane lands before transferring the remaining `7 mm`. All three
-cases require exact separation, zero ground violation, and deterministic
-replay.
-
-All 66 fruit pairs use nonpenetration constraints. Fruits carry solid-sphere
-inertia, angular velocity, and a normalized quaternion. At fruit/cloth,
-fruit/fruit, and fruit/plane contacts, the relative contact-point velocity
-includes `omega cross r`; a maximum-dissipation tangential impulse is capped
-by `|j_t| <= mu j_n` and applied with equal and opposite linear and angular
-response. Grounded fruit additionally use timestep-integrated rolling
-resistance.
-
-Conservative advancement finds first time of impact between each linearly
-moving fruit sphere and linearly moving cloth triangle. It uses a relative
-motion bound, so a step cannot skip a zero of the sphere-to-triangle distance
-function. The `--ccd-probe` deliberately moves a small sphere entirely through
-a triangle with both endpoints separated and requires contact at the analytic
-sphere-plus-cloth height.
-
-The grounded and pickup scenarios stop predicted cloth/plane and fruit/plane
-crossings at the plane before iterative contact. The removed free-flight
-advance is reported separately from any actual post-contact penetration.
-
-Cloth self-contact derives two-ring exclusions from the actual constraint
-graph, including the structured bottom. A deterministic AABB hierarchy broadphases nonlocal
-vertex/triangle and edge/edge pairs. Conservative advancement prevents both
-primitive classes from tunneling during prediction; endpoint projections and
-strain reconciliation finish each substep. Each captured frame adaptively
-reconciles fruit, plane, primitive-self, and strain constraints to internal
-targets below `1 um`; qualification independently requires every published
-maximum to remain below `2 um`. Normal
-separation supplies an accumulated contact impulse for maximum-dissipation
-Coulomb friction with `mu=0.34`. For either primitive pair,
+Fruit/yarn, fruit/fruit, fruit/plane, and yarn/yarn contacts apply a
+maximum-dissipation tangent impulse capped by Coulomb friction:
 
 ```math
 j_t=\min\left(\frac{\|v_t\|}{w_{\mathrm{eff}}},\mu j_n\right),
 \qquad \|j_t\|\le\mu j_n.
 ```
 
-The equal-and-opposite impulse is distributed through the same barycentric or
-segment weights as normal contact. Primitive IDs are sorted before velocity
-updates, preserving deterministic scan order. The independent
-`--self-friction-probe` checks exact sticking, cone-limited sliding, momentum,
-energy dissipation, and bit-identical replay.
+The same endpoint weights used for normal contact distribute equal and
+opposite friction impulses. Fruit contact-point velocity includes
+`omega cross r`; grounded fruit additionally use timestep-integrated rolling
+resistance. Sorted primitive IDs keep the update order deterministic.
 
-## Qualification gates
+## Top-opening seam grab
 
-A run fails on nonfinite state, numerical escape, triangle collapse, excessive
-warp/weft/shear/bottom strain, fruit/cloth penetration above `0.01 m`, vertex
-self-penetration at or above the cloth diameter, excessive linear/angular
-speed, grip force above `500 N`, a friction-cone violation, or a
-non-bit-identical replay. Final primitive self-overlap and strain-limit
-violation must each remain below `2 um`. Grounded runs additionally require fruit containment
-with `spilled_mask=0` and plane correction below one cloth radius. Extension
-and compression are reported separately: the gate limits warp/weft/bottom
-extension to `0.30` while
-allowing up to `0.60` compression so a folded sheet is not rejected merely for
-bunching.
+The orange marker in the rendered replay is a virtual handle. It connects by
+five independent XPBD constraints to five neighboring particles on the upper
+opening seam, each with `2e-3 m/N` compliance. No cloth particle is pinned and
+the handle is not attached to the bottom. The visible orange connector lines
+show the physical lag between the target and the five massive seam knots.
 
-Dihedral excursion is reported but intentionally is not capped as a failure:
-large reversible folds are required textile behavior. Stability is instead
-guarded by finite state, positive triangle area, bounded strain, contact
-penetration, self-separation, and deterministic replay.
+The airborne spin uses a smoothly accelerated orbit. The grounded pickup uses
+a lift followed by a downward/sideways whip. With
+`s(x)=clamp(x,0,1)^2(3-2clamp(x,0,1))`, its target is
 
-Run all three load cases:
+```math
+u(t)=s(t/0.58),\qquad w(t)=s((t-0.72)/0.30),
+```
+
+```math
+g(t)=g_0+
+\begin{bmatrix}
+-0.46w & 0.14\sin(\pi w) & 0.72u-0.52w
+\end{bmatrix}.
+```
+
+Only this seam target is authored. Every bag knot and fruit remains dynamic;
+gravity, inertia, capsule contact, the open mouth, and the ground determine
+the response. `released_mask` latches fruit that leave the mouth region and is
+kept separate from `escaped_mask`, which denotes numerical divergence.
+
+## Qualification
+
+A qualified run uses two authoritative replays and requires their complete
+state hashes to match. It fails on nonfinite state, numerical escape, collapsed
+render topology, axial extension beyond the unilateral limit, excessive
+fruit/yarn or yarn/yarn overlap, excessive speed, grip force above `500 N`, a
+friction-cone violation, or a completed-frame certificate above `2 um`.
+Grounded runs additionally require `spilled_mask=0` and bounded plane
+correction. Pickup additionally requires at least three released fruits.
+
+Run the three load cases and focused mechanics probes:
 
 ```sh
 ./build/numi-solver-cloth-bag \
-  --scenario grounded --steps 120 --substeps 12 --iterations 24 \
+  --scenario grounded --steps 120 --substeps 24 --iterations 32 --replays 2 \
   --dump-obj grounded-1s.obj
 
 ./build/numi-solver-cloth-bag \
-  --scenario spin --steps 60 --substeps 12 --iterations 24 \
+  --scenario spin --steps 60 --substeps 24 --iterations 32 --replays 2 \
   --dump-frames spin
 
 ./build/numi-solver-cloth-bag \
-  --scenario pickup --steps 144 --substeps 12 --iterations 24 \
-  --dump-frames pickup --dump-every 6
+  --scenario pickup --steps 240 --substeps 24 --iterations 32 --replays 2 \
+  --dump-frames pickup --dump-every 10
 
 ./build/numi-solver-cloth-bag --rolling-probe
-
-./build/numi-solver-cloth-bag --ccd-probe
-
+./build/numi-solver-cloth-bag --yarn-mechanics-probe
 ./build/numi-solver-cloth-bag --self-ccd-probe
-
 ./build/numi-solver-cloth-bag --strain-probe
-
 ./build/numi-solver-cloth-bag --self-friction-probe
-
 ./build/numi-solver-cloth-bag --deformable-response-probe
 ```
 
-The executed 1.0-second grounded checkpoint on 2026-08-20 was deterministic
-and passed with zero numerical escapes or physical spills:
+The qualified 2026-08-20 checkpoints are:
 
-```text
-nodes=1465
-triangles=2880
-stretch_constraints=5784
-bend_constraints=4296
-balls=12
-cloth_mass_kg=0.078050000
-fruit_mass_kg=2.330000000
-max_warp_extension=0.249969187
-max_shear_strain=0.024837783
-max_bottom_extension=0.015490722
-max_ball_contact_correction=0.004879633
-max_published_ball_penetration=0.000000000
-max_published_primitive_self_penetration=0.000000000
-max_published_strain_limit_violation=0.000000000
-max_self_penetration=0.002980520
-swept_ball_triangle_contacts=10625
-vertex_triangle_self_contacts=6231
-edge_edge_self_contacts=6000
-swept_edge_edge_self_contacts=1381
-cloth_self_friction_contacts=10291
-final_primitive_self_penetration=0.000000000
-final_strain_limit_violation=0.000000000
-escaped_mask=0
-spilled_mask=0
-released_mask=0
-max_ground_contact_correction=0.000628747
-max_published_ground_penetration=0.000000000
-max_swept_ground_advance=0.001251123
-max_swept_ball_advance=0.000822327
-max_swept_self_advance=0.000026671
-max_angular_speed=11.978276920
-max_friction_cone_ratio=1.000000000
-deterministic=true
-state_hash=0xb1f688566313c172
-result=PASS
-```
+| Scenario | Physical outcome | Published certificate | State hash |
+|---|---|---|---|
+| Grounded, `1.0 s` | no spill or escape | fruit/yarn `0.003 um`; final yarn overlap `0.636 um`; strain residual `0` | `0xea134e3e023cef02` |
+| Spin, `0.5 s` | visible lag/folding; no release or escape | published yarn overlap `0.123 um`; strain residual `0` | `0x7b40d6475e83062d` |
+| Pickup, `2.0 s` | three fruits released; no escape | fruit/yarn `0.965 um`; published yarn overlap `0.988 um`; final overlap `0.643 um`; strain residual `0` | `0xeab3cb21c536db49` |
 
-The matching 0.5-second compliant-patch spin checkpoint also passed. It reached
-`0.264638143` maximum warp extension and `0.085221605` maximum shear strain,
-resolved 4,725 cloth/cloth friction contacts, reached `18.085315189 rad/s`,
-measured `60.964692696 N` peak attachment force, and replayed bit-identically
-with `state_hash=0x30112d334f22a277`. `released_mask=3072` records fruits 10 and 11
-leaving the open mouth; `escaped_mask=0` distinguishes that physical
-release from numerical divergence.
+The pickup run reached `0.285000000` maximum axial warp extension,
+`0.043140803` maximum bottom extension, `59.092242546 N` peak five-node grip
+force, 72,464 swept fruit/yarn hits, 22,675 swept yarn/yarn hits, and 103,975
+yarn/yarn friction contacts. `released_mask=352`, `escaped_mask=0`, and the
+friction-cone ratio never exceeded `1.0`.
 
-The 1.2-second grounded pickup checkpoint passed with
-`max_warp_extension=0.285000000`, `max_shear_strain=0.072317910`,
-`max_bottom_extension=0.055308260`,
-`max_ball_contact_correction=0.004879633`,
-`max_self_penetration=0.003044920`, and `escaped_mask=0`. Its
-`released_mask=2944` records fruits 7, 8, 9, and 11 leaving the bag through the
-mouth. Maximum cloth/plane correction was `0.001295702 m`, while completed
-frames had zero plane and fruit penetration. The run resolved 8,699 swept
-sphere/triangle contacts, 7,442 vertex/triangle and 7,430 edge/edge endpoint
-contacts, 1,477 swept edge/edge impacts, and 12,952 cloth/cloth friction
-contacts. Maximum published primitive overlap was `0.386 um`; final primitive
-overlap and strain residual were zero. Peak fruit angular speed was
-`24.907180257 rad/s`, and peak five-node grip force was `51.421811870 N`.
-The independent replay matched `state_hash=0xd6fd63117c5e32ab`
-bit-for-bit.
+The direct deformable-response probe independently certifies true endpoint-mass
+coupling: a free yarn and sphere preserve center of mass during separation; a
+plane-supported yarn transfers the full `8 mm` to the sphere; and a yarn `1 mm`
+above the plane first lands and then transfers the remaining `7 mm`. The
+self-contact probe moves one yarn from `+0.02 m` to `-0.02 m` through another
+in one step and stops at the `0.008 m` two-capsule thickness. The friction
+probe certifies exact sticking, cone-limited sliding, momentum conservation,
+dissipation, and deterministic replay.
 
-The independent `--rolling-probe` begins a solid sphere sliding at `1 m/s` and
-reaches the analytic no-slip state `v = r omega = 5/7 m/s`, with zero reported
-contact slip, the expected `5/7` energy ratio, cone ratio `1.0`, and an exact
-deterministic replay.
+## Export and visual evidence
 
-The independent `--ccd-probe` moves a `0.02 m` sphere from `+0.08 m` to
-`-0.08 m` through a triangle in one `0.001 s` step. Conservative advancement
-stops it at `0.024000000560 m` against the analytic `0.024 m` target, removes
-`0.104000000560 m` of tunneling advance, and replays exactly.
-
-The independent `--self-ccd-probe` moves a vertex and a crossing edge from
-`+0.02 m` to `-0.02 m` through another cloth primitive in one step. Both stop
-at the `0.008 m` two-sided cloth thickness after removing `0.028 m` of
-tunneling advance, and both replay exactly. `--strain-probe` independently
-projects `50%` warp extension to exactly `28.5%` without center-of-mass drift.
-`--self-friction-probe` drives one unit-mass vertex tangentially against three
-dynamic unit-mass triangle vertices. Sufficient normal load produces zero slip,
-conserves total momentum at `1`, and dissipates energy to `0.125`; lower load
-produces cone-limited sliding with ratio exactly `1.0`. Both cases replay
-bit-for-bit.
-
-`--dump-obj` writes the actual simulated vertices and triangles plus fruit
-center/radius/appearance/orientation/angular-velocity comments. The spin and pickup scenarios also record
-the exact virtual grip target. `--dump-frames PREFIX` captures the initial,
-quarter, half, three-quarter, and final states from the first authoritative
-trajectory. Adding `--dump-every N` captures every Nth step plus the final
-state. The second trajectory independently verifies the final hash. A rendered
-replay is visual evidence for this FP64 trajectory only; it is not evidence for
-the future Metal path. `tools/render_cloth_obj.swift` rasterizes exported state
-with AppKit and does not advance or pose the simulation;
-`tools/compose_cloth_gif.swift` combines those PNGs into a looping GIF without
-interpolating new physics states.
-
-The rasterizer draws the mapped row and column yarn families across the same
-13 by 13 bottom surface used by contact. Yarn diameter is derived from the
-solver's `2 * 0.004 m` cloth thickness and receives cylindrical shadow,
-highlight, and twist cues. The visual bottom is therefore closed without
-inventing the former radial fan. In grasped scenarios, five orange seam nodes
-and their compliant connectors expose the exact attachment patch. A body-fixed
-fruit mark from the exported quaternion keeps rolling and spin tied to solver
-state.
-
-See [CLOTH_REALISM_AUDIT.md](CLOTH_REALISM_AUDIT.md) for the remaining limits;
-this checkpoint does not claim yarn-scale contact, calibrated textile
-material, or a Metal cloth runtime.
+`--dump-obj` writes the actual simulated knot positions plus render triangles,
+fruit center/radius/orientation/angular velocity, and the exact virtual grip
+target. `--dump-frames PREFIX` captures five evenly spaced states;
+`--dump-every N` captures every Nth step plus the final state. The AppKit
+renderer draws the axial yarn graph as cotton-like cylinders and the five seam
+connectors, but never modifies state. A PNG or GIF therefore visualizes the
+qualified CPU trajectory; it is not independent proof of material calibration
+or of a future Metal implementation.

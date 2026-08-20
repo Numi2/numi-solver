@@ -247,7 +247,7 @@ private func render(
     cameraProfile: String,
     output: String
 ) throws {
-    let width = grip == nil ? 1200 : 800
+    let width = cameraProfile == "pickup" ? 960 : (grip == nil ? 1200 : 800)
     let height = 800
     let yaw = -0.62
     let pitch = 0.19
@@ -267,8 +267,8 @@ private func render(
     let centerX: Double
     let centerY: Double
     if cameraProfile == "pickup" {
-        scale = 500.0
-        centerX = 500.0
+        scale = 450.0
+        centerX = 560.0
         centerY = 160.0
     } else if grip != nil {
         scale = 650.0
