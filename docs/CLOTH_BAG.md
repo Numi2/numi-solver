@@ -4,8 +4,8 @@
 
 `numi-solver-cloth-bag` is a deterministic FP64 mechanics reference for an
 open cotton produce bag containing twelve dynamic spheres. The live state is a
-48 by 28 periodic cloth grid plus a bottom cap: 1,345 particles, 2,640
-triangles, 5,280 stretch/shear constraints, and 3,936 interior-edge bend
+48 by 28 periodic wall joined to a structured 13 by 13 bottom: 1,465 particles,
+2,880 triangles, 5,784 stretch/shear constraints, and 4,296 interior-edge bend
 constraints.
 
 This reference runs on the CPU. It does **not** prove a Metal cloth path,
@@ -19,8 +19,16 @@ before a GPU implementation is admitted.
 The grounded bag has a broad capped base, a scalloped ground skirt, a short
 corrugated body, an inward folded irregular cuff, and no anchors. The top two
 rows carry extra mass and a stiffer circumferential hem, but remain free. Warp,
-weft, and both diagonal shear families use XPBD distance constraints. For a
-pair `(i,j)`,
+weft, and both diagonal shear families use XPBD distance constraints.
+
+The bottom uses a 13 by 13 square weave mapped continuously into the 48-node
+circular wall boundary. Its 121 interior particles remove the former
+single-center fan and its long, radially convergent constraints. Standard cloth
+nodes carry `0.05 g` and hem nodes carry `0.10 g`, for a total authored bag mass
+of `0.07805 kg` against `2.33 kg` of fruit. These are plausible authored values,
+not calibrated measurements from a physical specimen.
+
+For a constrained pair `(i,j)`,
 
 ```math
 C(x)=\|x_j-x_i\|-\ell_0,
@@ -104,23 +112,31 @@ distributes the correction to all three cloth vertices and the sphere:
 C_c=d-(r_b+r_c)\ge0.
 ```
 
+The triangle response caps each vertex's local contact inverse mass at the
+inverse total cloth mass. This approximates the effective response of the
+connected, tensioned patch instead of treating three `0.05 g` vertices as
+isolated masses. It is a bounded CPU-reference approximation, not a substitute
+for the future full coupled cloth response operator.
+
 All 66 fruit pairs use nonpenetration constraints. Touching pairs receive a
-deterministic tangential-velocity damping step so a produce pile has friction
+deterministic, timestep-integrated tangential damping rate so a produce pile
+has friction
 instead of behaving like perfectly smooth marbles. The grounded and pickup
 scenarios also project cloth and fruit against the plane. A deterministic
-spatial hash
-enforces vertex-level cloth self-separation for nonlocal topology pairs while
+spatial hash enforces vertex-level cloth self-separation for nonlocal topology
+pairs while
 excluding the local two-ring neighborhood. Self-contact incidence is execution
 evidence, not evidence of continuous triangle/triangle self-collision.
 
 ## Qualification gates
 
 A run fails on nonfinite state, numerical escape, triangle collapse, excessive
-warp/weft/shear strain, fruit/cloth penetration above `0.01 m`, vertex
+warp/weft/shear/bottom strain, fruit/cloth penetration above `0.01 m`, vertex
 self-penetration at or above the cloth diameter, excessive speed, or a
 non-bit-identical replay. Grounded runs additionally require fruit containment
-with `spilled_mask=0` and bounded plane penetration. Extension and compression
-are reported separately: the gate limits warp/weft extension to `0.30` while
+with `spilled_mask=0` and plane correction below one cloth radius. Extension
+and compression are reported separately: the gate limits warp/weft/bottom
+extension to `0.30` while
 allowing up to `0.60` compression so a folded sheet is not rejected merely for
 bunching.
 
@@ -145,47 +161,51 @@ Run all three load cases:
   --dump-frames pickup --dump-every 6
 ```
 
-The measured 1.0-second grounded checkpoint on 2026-08-20 was deterministic
+The executed 1.0-second grounded checkpoint on 2026-08-20 was deterministic
 and passed with zero numerical escapes or physical spills:
 
 ```text
-nodes=1345
-triangles=2640
-stretch_constraints=5280
-bend_constraints=3936
+nodes=1465
+triangles=2880
+stretch_constraints=5784
+bend_constraints=4296
 balls=12
-max_warp_strain=0.181820683
-max_warp_extension=0.067565456
-max_warp_compression=0.181820683
-max_weft_strain=0.016780570
-max_shear_strain=0.026652683
-max_bend_error=0.201407566
-min_triangle_area=0.000061569
-max_ball_penetration=0.004774631
+cloth_mass_kg=0.078050000
+fruit_mass_kg=2.330000000
+max_warp_strain=0.221845069
+max_warp_extension=0.076170409
+max_warp_compression=0.221845069
+max_weft_strain=0.011401548
+max_shear_strain=0.026139980
+max_bottom_extension=0.006337407
+max_bend_error=0.226902558
+min_triangle_area=0.000056068
+max_ball_penetration=0.004879665
 max_self_penetration=0.002980520
-ball_triangle_contacts=79193
+ball_triangle_contacts=75624
 self_contacts=17280
 escaped_mask=0
 spilled_mask=0
-max_ground_penetration=0.008685200
+max_ground_penetration=0.001865301
 deterministic=true
-state_hash=0xe4e38a3f34b0645f
+state_hash=0xfe292cef5e3eb5d4
 result=PASS
 ```
 
 The matching 0.5-second one-point spin checkpoint also passed. It reached
-`0.115408315` maximum warp extension and `0.053911317` maximum shear strain,
-recorded `34,379` fruit/triangle contacts, and replayed bit-identically with
-`state_hash=0x99db40bd86feb817`. `released_mask=3584` records fruits 9, 10,
+`0.098670795` maximum warp extension and `0.056124986` maximum shear strain,
+recorded `29,912` fruit/triangle contacts, and replayed bit-identically with
+`state_hash=0x3108f4c7e1ce7a76`. `released_mask=3584` records fruits 9, 10,
 and 11 leaving the open mouth; `escaped_mask=0` distinguishes that physical
 release from numerical divergence.
 
 The 1.2-second grounded pickup checkpoint passed with
-`max_warp_extension=0.253701462`, `max_shear_strain=0.073779296`,
-`max_ball_penetration=0.004774634`, `max_self_penetration=0.003547967`, and
-`escaped_mask=0`. Its `released_mask=3584` records fruits 9, 10, and 11
-leaving the bag; two are on the plane at the final checkpoint and one remains
-in flight. The independent replay matched `state_hash=0x2ee3fa9d255230cb`
+`max_warp_extension=0.194424871`, `max_shear_strain=0.095378970`,
+`max_bottom_extension=0.007369176`, `max_ball_penetration=0.004879665`,
+`max_self_penetration=0.004137716`, and `escaped_mask=0`. Its
+`released_mask=3745` records fruits 0, 5, 7, 9, 10, and 11 leaving the bag;
+four are on the plane at the final checkpoint and two remain in flight. The
+independent replay matched `state_hash=0xbf062725eeee95dc`
 bit-for-bit.
 
 `--dump-obj` writes the actual simulated vertices and triangles plus fruit
@@ -199,3 +219,11 @@ the future Metal path. `tools/render_cloth_obj.swift` rasterizes exported state
 with AppKit and does not advance or pose the simulation;
 `tools/compose_cloth_gif.swift` combines those PNGs into a looping GIF without
 interpolating new physics states.
+
+The rasterizer draws the mapped row and column yarn families across the same
+13 by 13 bottom surface used by contact. The visual bottom is therefore closed
+without inventing the former radial fan.
+
+See [CLOTH_REALISM_AUDIT.md](CLOTH_REALISM_AUDIT.md) for the remaining limits;
+this checkpoint does not claim yarn-scale contact, calibrated textile material,
+continuous collision, or a Metal cloth runtime.

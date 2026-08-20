@@ -18,9 +18,20 @@ namespace {
 
 constexpr std::uint32_t kAround = 48;
 constexpr std::uint32_t kLevels = 28;
+constexpr std::uint32_t kBottomGrid = 13;
+constexpr std::uint32_t kBottomInterior = kBottomGrid - 2u;
 constexpr std::size_t kFruitCount = 12;
 constexpr double kClothRadius = 0.004;
 constexpr double kAirborneLift = 0.52;
+constexpr double kInitialGroundLift = 0.009;
+constexpr double kClothNodeMass = 0.000050;
+constexpr double kClothHemNodeMass = 0.000100;
+constexpr double kClothMass =
+    static_cast<double>(
+        kAround * (kLevels - 2u) + kBottomInterior * kBottomInterior
+    ) * kClothNodeMass +
+    static_cast<double>(2u * kAround) * kClothHemNodeMass;
+constexpr double kClothContactPatchMass = kClothMass;
 
 enum class Scenario : std::uint8_t {
     grounded,
@@ -96,6 +107,7 @@ struct Particle {
     Vec3 velocity{};
     Vec3 rest{};
     double inverseMass{};
+    double mass{};
 };
 
 struct Ball {
@@ -155,6 +167,9 @@ struct Metrics {
     double maximumWarpCompression{};
     double maximumWeftExtension{};
     double maximumWeftCompression{};
+    double maximumBottomStrain{};
+    double maximumBottomExtension{};
+    double maximumBottomCompression{};
     std::uint32_t maximumWarpExtensionFirst{};
     std::uint32_t maximumWarpExtensionSecond{};
     double maximumBendError{};
@@ -236,7 +251,89 @@ Vec3 authoredPosition(const std::uint32_t level, const std::uint32_t ring) {
     return {
         radius * std::cos(angle),
         radius * std::sin(angle),
-        (vertical < 0.72 ? bodyHeight : foldedHeight) + rimSag + skirtSag,
+        (vertical < 0.72 ? bodyHeight : foldedHeight) +
+            rimSag + skirtSag + kInitialGroundLift,
+    };
+}
+
+std::pair<double, double> concentricBottomCoordinate(
+    const std::uint32_t row,
+    const std::uint32_t column
+) {
+    const double half = 0.5 * static_cast<double>(kBottomGrid - 1u);
+    const double u = (static_cast<double>(column) - half) / half;
+    const double v = (static_cast<double>(row) - half) / half;
+    if (std::abs(u) < 1.0e-12 && std::abs(v) < 1.0e-12) {
+        return {0.0, 0.0};
+    }
+    double radius{};
+    double angle{};
+    if (std::abs(u) >= std::abs(v)) {
+        radius = u;
+        angle = (std::numbers::pi / 4.0) * (v / u);
+    } else {
+        radius = v;
+        angle = std::numbers::pi / 2.0 -
+            (std::numbers::pi / 4.0) * (u / v);
+    }
+    return {radius * std::cos(angle), radius * std::sin(angle)};
+}
+
+bool bottomBoundary(const std::uint32_t row, const std::uint32_t column) {
+    return row == 0u || column == 0u ||
+        row + 1u == kBottomGrid || column + 1u == kBottomGrid;
+}
+
+std::uint32_t bottomGridIndex(
+    const std::uint32_t row,
+    const std::uint32_t column
+) {
+    if (bottomBoundary(row, column)) {
+        const auto [x, y] = concentricBottomCoordinate(row, column);
+        double angle = std::atan2(y, x);
+        if (angle < 0.0) {
+            angle += 2.0 * std::numbers::pi;
+        }
+        return nodeIndex(
+            0u,
+            static_cast<std::uint32_t>(std::llround(
+                angle * static_cast<double>(kAround) /
+                (2.0 * std::numbers::pi)
+            )) % kAround
+        );
+    }
+    return kAround * kLevels +
+        (row - 1u) * kBottomInterior + column - 1u;
+}
+
+Vec3 authoredBottomPosition(
+    const std::uint32_t row,
+    const std::uint32_t column
+) {
+    const auto [x, y] = concentricBottomCoordinate(row, column);
+    const double radial = std::hypot(x, y);
+    if (radial < 1.0e-12) {
+        return {0.0, 0.0, 0.012 + kInitialGroundLift};
+    }
+    double angle = std::atan2(y, x);
+    if (angle < 0.0) {
+        angle += 2.0 * std::numbers::pi;
+    }
+    const double ringCoordinate = angle * static_cast<double>(kAround) /
+        (2.0 * std::numbers::pi);
+    const std::uint32_t firstRing = static_cast<std::uint32_t>(
+        std::floor(ringCoordinate)
+    ) % kAround;
+    const std::uint32_t secondRing = (firstRing + 1u) % kAround;
+    const double fraction = ringCoordinate - std::floor(ringCoordinate);
+    const Vec3 first = authoredPosition(0u, firstRing);
+    const Vec3 second = authoredPosition(0u, secondRing);
+    const Vec3 outer = first * (1.0 - fraction) + second * fraction;
+    return {
+        outer.x * radial,
+        outer.y * radial,
+        0.012 + kInitialGroundLift +
+            radial * (outer.z - 0.012 - kInitialGroundLift),
     };
 }
 
@@ -275,30 +372,67 @@ std::uint64_t edgeKey(std::uint32_t first, std::uint32_t second) {
 
 ClothModel makeCloth(const Scenario scenario) {
     ClothModel model;
-    model.particles.reserve(kAround * kLevels + 1u);
+    std::array<std::uint32_t, kAround> bottomBoundaryUse{};
+    for (std::uint32_t row = 0u; row < kBottomGrid; ++row) {
+        for (std::uint32_t column = 0u; column < kBottomGrid; ++column) {
+            if (bottomBoundary(row, column)) {
+                ++bottomBoundaryUse[bottomGridIndex(row, column)];
+            }
+        }
+    }
+    if (!std::all_of(
+        bottomBoundaryUse.begin(),
+        bottomBoundaryUse.end(),
+        [](const std::uint32_t uses) { return uses == 1u; }
+    )) {
+        throw std::logic_error(
+            "bottom weave must map one-to-one onto the 48-node wall boundary"
+        );
+    }
+    model.particles.reserve(
+        kAround * kLevels + kBottomInterior * kBottomInterior
+    );
     for (std::uint32_t level = 0; level < kLevels; ++level) {
         for (std::uint32_t ring = 0; ring < kAround; ++ring) {
             Vec3 position = authoredPosition(level, ring);
             if (scenario == Scenario::spin) {
                 position.z += kAirborneLift;
             }
-            const double mass = level + 2u >= kLevels ? 0.008 : 0.004;
+            const double mass = level + 2u >= kLevels
+                ? kClothHemNodeMass
+                : kClothNodeMass;
             model.particles.push_back({
                 position,
                 position,
                 {},
                 position,
                 1.0 / mass,
+                mass,
             });
         }
     }
-    model.bottomCenter = static_cast<std::uint32_t>(model.particles.size());
-    const Vec3 center{
-        0.0,
-        0.0,
-        0.012 + (scenario == Scenario::spin ? kAirborneLift : 0.0),
-    };
-    model.particles.push_back({center, center, {}, center, 1.0 / 0.025});
+    for (std::uint32_t row = 1u; row + 1u < kBottomGrid; ++row) {
+        for (std::uint32_t column = 1u;
+             column + 1u < kBottomGrid;
+             ++column) {
+            Vec3 position = authoredBottomPosition(row, column);
+            if (scenario == Scenario::spin) {
+                position.z += kAirborneLift;
+            }
+            model.particles.push_back({
+                position,
+                position,
+                {},
+                position,
+                1.0 / kClothNodeMass,
+                kClothNodeMass,
+            });
+        }
+    }
+    model.bottomCenter = bottomGridIndex(
+        (kBottomGrid - 1u) / 2u,
+        (kBottomGrid - 1u) / 2u
+    );
     if (scenario != Scenario::grounded) {
         model.particles[nodeIndex(kLevels - 1u, 0u)].inverseMass = 0.0;
     }
@@ -351,13 +485,51 @@ ClothModel makeCloth(const Scenario scenario) {
             );
         }
     }
-    for (std::uint32_t ring = 0; ring < kAround; ++ring) {
-        addDistance(
-            model.bottomCenter,
-            nodeIndex(0u, ring),
-            1.0e-8,
-            DistanceKind::bottom
-        );
+    for (std::uint32_t row = 0u; row < kBottomGrid; ++row) {
+        for (std::uint32_t column = 0u;
+             column + 1u < kBottomGrid;
+             ++column) {
+            if (!(bottomBoundary(row, column) &&
+                  bottomBoundary(row, column + 1u))) {
+                addDistance(
+                    bottomGridIndex(row, column),
+                    bottomGridIndex(row, column + 1u),
+                    1.0e-8,
+                    DistanceKind::bottom
+                );
+            }
+        }
+    }
+    for (std::uint32_t column = 0u; column < kBottomGrid; ++column) {
+        for (std::uint32_t row = 0u; row + 1u < kBottomGrid; ++row) {
+            if (!(bottomBoundary(row, column) &&
+                  bottomBoundary(row + 1u, column))) {
+                addDistance(
+                    bottomGridIndex(row, column),
+                    bottomGridIndex(row + 1u, column),
+                    1.0e-8,
+                    DistanceKind::bottom
+                );
+            }
+        }
+    }
+    for (std::uint32_t row = 0u; row + 1u < kBottomGrid; ++row) {
+        for (std::uint32_t column = 0u;
+             column + 1u < kBottomGrid;
+             ++column) {
+            addDistance(
+                bottomGridIndex(row, column),
+                bottomGridIndex(row + 1u, column + 1u),
+                4.0e-8,
+                DistanceKind::bottom
+            );
+            addDistance(
+                bottomGridIndex(row, column + 1u),
+                bottomGridIndex(row + 1u, column),
+                4.0e-8,
+                DistanceKind::bottom
+            );
+        }
     }
 
     for (std::uint32_t level = 0; level + 1u < kLevels; ++level) {
@@ -371,12 +543,22 @@ ClothModel makeCloth(const Scenario scenario) {
             model.triangles.push_back({b, d, c});
         }
     }
-    for (std::uint32_t ring = 0; ring < kAround; ++ring) {
-        model.triangles.push_back({
-            model.bottomCenter,
-            nodeIndex(0u, ring + 1u),
-            nodeIndex(0u, ring),
-        });
+    for (std::uint32_t row = 0u; row + 1u < kBottomGrid; ++row) {
+        for (std::uint32_t column = 0u;
+             column + 1u < kBottomGrid;
+             ++column) {
+            const std::uint32_t a = bottomGridIndex(row, column);
+            const std::uint32_t b = bottomGridIndex(row, column + 1u);
+            const std::uint32_t c = bottomGridIndex(row + 1u, column);
+            const std::uint32_t d = bottomGridIndex(row + 1u, column + 1u);
+            if ((row + column) % 2u == 0u) {
+                model.triangles.push_back({a, c, b});
+                model.triangles.push_back({b, c, d});
+            } else {
+                model.triangles.push_back({a, d, b});
+                model.triangles.push_back({a, c, d});
+            }
+        }
     }
 
     struct HalfEdge {
@@ -454,7 +636,8 @@ std::array<Ball, kFruitCount> makeBalls(const Scenario scenario) {
         const Vec3 position = groundedPositions[index] + Vec3{
             0.0,
             0.0,
-            scenario == Scenario::spin ? kAirborneLift : 0.0,
+            kInitialGroundLift +
+                (scenario == Scenario::spin ? kAirborneLift : 0.0),
         };
         balls[index].position = position;
         balls[index].previous = position;
@@ -682,9 +865,14 @@ double solveBallTriangle(
         distance = 0.0;
     }
     const Vec3 normal = normalized(separation);
+    std::array<double, 3> clothContactInverseMass{};
     double denominator = ball.inverseMass;
     for (std::size_t index = 0; index < 3; ++index) {
-        denominator += particles[indices[index]].inverseMass *
+        clothContactInverseMass[index] = std::min(
+            particles[indices[index]].inverseMass,
+            1.0 / kClothContactPatchMass
+        );
+        denominator += clothContactInverseMass[index] *
             closest.barycentric[index] * closest.barycentric[index];
     }
     if (denominator <= 0.0) {
@@ -693,7 +881,7 @@ double solveBallTriangle(
     const double correction = (target - distance) / denominator;
     for (std::size_t index = 0; index < 3; ++index) {
         particles[indices[index]].position += normal *
-            (particles[indices[index]].inverseMass *
+            (clothContactInverseMass[index] *
              closest.barycentric[index] * correction);
     }
     ball.position -= normal * (ball.inverseMass * correction);
@@ -716,8 +904,12 @@ double solveBallPair(Ball& first, Ball& second) {
     return target - currentLength;
 }
 
-void dampBallPairFriction(std::array<Ball, kFruitCount>& balls) {
-    constexpr double damping = 0.70;
+void dampBallPairFriction(
+    std::array<Ball, kFruitCount>& balls,
+    const double timestep
+) {
+    constexpr double dampingRate = 12.0;
+    const double damping = 1.0 - std::exp(-dampingRate * timestep);
     constexpr double contactSlop = 0.002;
     for (std::size_t firstIndex = 0; firstIndex < balls.size(); ++firstIndex) {
         for (std::size_t secondIndex = firstIndex + 1u;
@@ -901,6 +1093,19 @@ void updateMetrics(
             );
         } else if (constraint.kind == DistanceKind::shear) {
             metrics.maximumShearStrain = std::max(metrics.maximumShearStrain, strain);
+        } else if (constraint.kind == DistanceKind::bottom) {
+            metrics.maximumBottomStrain = std::max(
+                metrics.maximumBottomStrain,
+                strain
+            );
+            metrics.maximumBottomExtension = std::max(
+                metrics.maximumBottomExtension,
+                extension
+            );
+            metrics.maximumBottomCompression = std::max(
+                metrics.maximumBottomCompression,
+                compression
+            );
         }
     }
     for (const BendConstraint& bend : cloth.bends) {
@@ -972,7 +1177,8 @@ SimulationResult simulate(
                 particle.previous = particle.position;
                 if (particle.inverseMass == 0.0) {
                     particle.position = particle.rest;
-                    particle.velocity = {};
+                    particle.velocity =
+                        (particle.position - particle.previous) / timestep;
                     continue;
                 }
                 particle.velocity += gravity * timestep;
@@ -1047,26 +1253,41 @@ SimulationResult simulate(
             for (Particle& particle : result.cloth.particles) {
                 if (particle.inverseMass == 0.0) {
                     particle.position = particle.rest;
-                    particle.velocity = {};
+                    particle.velocity =
+                        (particle.position - particle.previous) / timestep;
                 } else {
                     particle.velocity =
                         (particle.position - particle.previous) / timestep;
                     if (particle.position.z <= kClothRadius + 1.0e-6) {
-                        particle.velocity.x *= 0.45;
-                        particle.velocity.y *= 0.45;
+                        const double friction = std::exp(-12.0 * timestep);
+                        particle.velocity.x *= friction;
+                        particle.velocity.y *= friction;
                     }
                 }
             }
             for (Ball& ball : result.balls) {
                 ball.velocity = (ball.position - ball.previous) / timestep;
                 if (ball.position.z <= ball.radius + 1.0e-6) {
-                    ball.velocity.x *= 0.60;
-                    ball.velocity.y *= 0.60;
+                    const double friction = std::exp(-8.0 * timestep);
+                    ball.velocity.x *= friction;
+                    ball.velocity.y *= friction;
                 }
             }
-            dampBallPairFriction(result.balls);
+            dampBallPairFriction(result.balls, timestep);
         }
         updateMetrics(result.cloth, result.balls, result.metrics);
+        if (scenario != Scenario::grounded) {
+            for (std::size_t ballIndex = 0;
+                 ballIndex < result.balls.size();
+                 ++ballIndex) {
+                if (length(
+                    result.balls[ballIndex].position -
+                    result.cloth.particles[result.cloth.bottomCenter].position
+                ) > 0.45) {
+                    result.metrics.releasedMask |= 1u << ballIndex;
+                }
+            }
+        }
         capture(step + 1u);
     }
 
@@ -1163,14 +1384,21 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
         allFinite = allFinite && finite(ball.position) && finite(ball.velocity);
     }
     const bool groundValid = result.scenario == Scenario::spin ||
-        result.metrics.maximumGroundPenetration < 0.030;
+        result.metrics.maximumGroundPenetration < kClothRadius + 1.0e-6;
+    double clothMass = 0.0;
+    for (const Particle& particle : result.cloth.particles) {
+        clothMass += particle.mass;
+    }
     return allFinite && deterministic && result.metrics.escapedMask == 0u &&
         result.metrics.spilledMask == 0u && groundValid &&
+        std::abs(clothMass - kClothMass) < 1.0e-12 &&
         result.metrics.minimumTriangleArea > 1.0e-8 &&
         result.metrics.maximumWarpExtension < 0.30 &&
         result.metrics.maximumWarpCompression < 0.60 &&
         result.metrics.maximumWeftExtension < 0.30 &&
         result.metrics.maximumWeftCompression < 0.60 &&
+        result.metrics.maximumBottomExtension < 0.30 &&
+        result.metrics.maximumBottomCompression < 0.60 &&
         result.metrics.maximumShearStrain < 0.40 &&
         result.metrics.maximumBallPenetration < 0.010 &&
         result.metrics.maximumSelfPenetration < 2.0 * kClothRadius &&
@@ -1286,6 +1514,14 @@ int main(int argc, char** argv) try {
     }
 
     const Metrics& metrics = first.metrics;
+    double clothMass = 0.0;
+    for (const Particle& particle : first.cloth.particles) {
+        clothMass += particle.mass;
+    }
+    double fruitMass = 0.0;
+    for (const Ball& ball : first.balls) {
+        fruitMass += 1.0 / ball.inverseMass;
+    }
     std::cout << std::fixed << std::setprecision(9);
     const char* scenarioName = scenario == Scenario::grounded ? "grounded" :
         scenario == Scenario::spin ? "spin" : "pickup";
@@ -1296,6 +1532,8 @@ int main(int argc, char** argv) try {
               << " stretch_constraints=" << first.cloth.distances.size()
               << " bend_constraints=" << first.cloth.bends.size()
               << " balls=" << first.balls.size()
+              << " cloth_mass_kg=" << clothMass
+              << " fruit_mass_kg=" << fruitMass
               << " steps=" << steps
               << " substeps=" << substeps
               << " iterations=" << iterations
@@ -1316,6 +1554,10 @@ int main(int argc, char** argv) try {
               << " max_warp_extension_edge="
               << metrics.maximumWarpExtensionFirst << ':'
               << metrics.maximumWarpExtensionSecond
+              << '\n';
+    std::cout << "max_bottom_strain=" << metrics.maximumBottomStrain
+              << " max_bottom_extension=" << metrics.maximumBottomExtension
+              << " max_bottom_compression=" << metrics.maximumBottomCompression
               << '\n';
     std::cout << "max_ball_penetration=" << metrics.maximumBallPenetration
               << " max_self_penetration=" << metrics.maximumSelfPenetration

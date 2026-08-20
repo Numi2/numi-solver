@@ -14,15 +14,16 @@ application scene.
 ![A deterministic cloth-solver replay lifting a produce bag from one rim point and spilling fruit onto the ground](docs/assets/cloth-pickup-spill.gif)
 
 This looping GIF contains 25 fixed-camera frames from one 1.2-second solver
-trajectory. The orange ring is the only kinematic cloth vertex: the other 1,344
+trajectory. The orange ring is the only kinematic cloth vertex: the other 1,464
 cloth particles and all twelve fruits remain dynamic. The bag starts resting on
-the plane, rises under the one-point grip, tips, and releases fruits 9, 10, and
-11. Two have landed by the final frame while the third is still falling.
+the plane, rises under the one-point grip, tips, and releases fruits 0, 5, 7, 9,
+10, and 11. Four have landed by the final frame while two are still falling.
 
-The replay passed every mechanics gate with `released_mask=3584`,
-`escaped_mask=0`, `0.253701462` maximum warp extension,
-`0.073779296` maximum shear strain, and bit-identical state hash
-`0x2ee3fa9d255230cb`. The GIF is rasterized from those exported states; it is
+The replay passed every mechanics gate with `released_mask=3745`,
+`escaped_mask=0`, `0.194424871` maximum warp extension, `0.095378970`
+maximum shear strain, `0.007369176` maximum woven-bottom extension, and
+bit-identical state hash `0xbf062725eeee95dc`. The GIF is rasterized from those
+exported states; it is
 CPU FP64 cloth evidence, not Metal-performance or Temporal Cone cloth-contact
 evidence.
 
@@ -32,14 +33,15 @@ evidence.
 
 This PNG is rasterized directly from the actual deterministic FP64 solver state;
 it is not concept art or a hand-posed scene. The replay advances a free 48 by 28
-cloth control surface and twelve dynamic fruit spheres for one second. The
+cloth wall, a structured 13 by 13 woven bottom, and twelve dynamic fruit
+spheres for one second. The
 AppKit rasterizer adds cotton-fiber strokes between control points but does not
 move the exported state.
 
 The qualified replay passed with no escaped or spilled fruit, no collapsed
-triangles, `0.004774631 m` maximum fruit/cloth penetration,
+triangles, `0.004879665 m` maximum fruit/cloth penetration,
 `0.002980520 m` maximum vertex self-penetration, and bit-identical replay hash
-`0xe4e38a3f34b0645f`. This is CPU FP64 cloth evidence, not Metal-performance or
+`0xfe292cef5e3eb5d4`. This is CPU FP64 cloth evidence, not Metal-performance or
 Temporal Cone cloth-contact evidence.
 
 ### Grab one rim point and spin
@@ -56,9 +58,9 @@ all twelve fruits remain dynamic. These five fixed-camera frames come from one
 |:--:|:--:|
 | ![Open cloth bag releasing fruit while spinning](docs/assets/cloth-spin-45.png) | ![Vertically lagging cloth bag after three fruits are released](docs/assets/cloth-spin-60.png) |
 
-The spin replay passed with `0.115408315` maximum warp extension,
-`0.053911317` maximum shear strain, zero numerical escapes, and bit-identical
-hash `0x99db40bd86feb817`. `released_mask=3584` records fruits 9, 10, and 11
+The spin replay passed with `0.098670795` maximum warp extension,
+`0.056124986` maximum shear strain, zero numerical escapes, and bit-identical
+hash `0x3108f4c7e1ce7a76`. `released_mask=3584` records fruits 9, 10, and 11
 leaving the open mouth; the images and the outcome metric agree.
 
 Reproduce the README image from the executable state:
@@ -202,6 +204,9 @@ a plane, `spin` begins airborne and drives one rim vertex around a smooth
 orbit, and `pickup` lifts that same one-point grip from the grounded state and
 pours fruit onto the plane. Its FP64 mechanics and evidence boundary are
 separate from the Metal harnesses.
+
+The remaining physical-realism limits and their required evidence are tracked
+explicitly in [docs/CLOTH_REALISM_AUDIT.md](docs/CLOTH_REALISM_AUDIT.md).
 
 An installed or relocated harness can load a specific library with
 `--metallib path/to/NumiTemporalCone.metallib`.

@@ -48,7 +48,9 @@ private struct Primitive {
 
 private let around = 48
 private let levels = 28
-private let expectedVertices = around * levels + 1
+private let bottomGrid = 13
+private let bottomInterior = bottomGrid - 2
+private let expectedVertices = around * levels + bottomInterior * bottomInterior
 
 private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit], Grip?) {
     let source = try String(contentsOfFile: path, encoding: .utf8)
@@ -123,6 +125,61 @@ private func surface(_ vertices: [Vec3], level: Double, ring: Double) -> Vec3 {
         ringT
     )
     return mix(first, second, levelT)
+}
+
+private func concentricBottomCoordinate(row: Int, column: Int) -> CGPoint {
+    let half = 0.5 * Double(bottomGrid - 1)
+    let u = (Double(column) - half) / half
+    let v = (Double(row) - half) / half
+    if abs(u) < 1.0e-12 && abs(v) < 1.0e-12 {
+        return .zero
+    }
+    let radius: Double
+    let angle: Double
+    if abs(u) >= abs(v) {
+        radius = u
+        angle = .pi / 4.0 * (v / u)
+    } else {
+        radius = v
+        angle = .pi / 2.0 - .pi / 4.0 * (u / v)
+    }
+    return CGPoint(x: radius * cos(angle), y: radius * sin(angle))
+}
+
+private func bottomVertexIndex(row: Int, column: Int) -> Int {
+    if row == 0 || column == 0 ||
+       row == bottomGrid - 1 || column == bottomGrid - 1 {
+        let coordinate = concentricBottomCoordinate(row: row, column: column)
+        var angle = atan2(coordinate.y, coordinate.x)
+        if angle < 0.0 { angle += 2.0 * .pi }
+        return Int((angle * Double(around) / (2.0 * .pi)).rounded()) % around
+    }
+    return around * levels +
+        (row - 1) * bottomInterior + column - 1
+}
+
+private func bottomSurface(
+    _ vertices: [Vec3],
+    row: Double,
+    column: Double
+) -> Vec3 {
+    let row0 = max(0, min(bottomGrid - 1, Int(floor(row))))
+    let row1 = min(bottomGrid - 1, row0 + 1)
+    let column0 = max(0, min(bottomGrid - 1, Int(floor(column))))
+    let column1 = min(bottomGrid - 1, column0 + 1)
+    let rowT = row - Double(row0)
+    let columnT = column - Double(column0)
+    let first = mix(
+        vertices[bottomVertexIndex(row: row0, column: column0)],
+        vertices[bottomVertexIndex(row: row0, column: column1)],
+        columnT
+    )
+    let second = mix(
+        vertices[bottomVertexIndex(row: row1, column: column0)],
+        vertices[bottomVertexIndex(row: row1, column: column1)],
+        columnT
+    )
+    return mix(first, second, rowT)
 }
 
 private func camera(_ point: Vec3, yaw: Double, pitch: Double) -> Vec3 {
@@ -269,6 +326,44 @@ private func render(
                     second.point,
                     Double(level) >= 0.72 * Double(levels - 1)
                 )
+            ))
+        }
+    }
+    for halfRow in 0...(2 * (bottomGrid - 1)) {
+        let row = 0.5 * Double(halfRow)
+        for column in 0..<(bottomGrid - 1) {
+            let first = project(bottomSurface(
+                vertices,
+                row: row,
+                column: Double(column)
+            ))
+            let second = project(bottomSurface(
+                vertices,
+                row: row,
+                column: Double(column + 1)
+            ))
+            primitives.append(Primitive(
+                depth: 0.5 * (first.depth + second.depth),
+                kind: .yarn(first.point, second.point, false)
+            ))
+        }
+    }
+    for halfColumn in 0...(2 * (bottomGrid - 1)) {
+        let column = 0.5 * Double(halfColumn)
+        for row in 0..<(bottomGrid - 1) {
+            let first = project(bottomSurface(
+                vertices,
+                row: Double(row),
+                column: column
+            ))
+            let second = project(bottomSurface(
+                vertices,
+                row: Double(row + 1),
+                column: column
+            ))
+            primitives.append(Primitive(
+                depth: 0.5 * (first.depth + second.depth),
+                kind: .yarn(first.point, second.point, false)
             ))
         }
     }
