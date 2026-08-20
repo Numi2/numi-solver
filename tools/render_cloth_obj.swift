@@ -59,6 +59,7 @@ private struct Fruit {
 
 private struct Grip {
     var center: Vec3
+    var active: Bool
 }
 
 private enum PrimitiveKind {
@@ -126,7 +127,9 @@ private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit], Grip?) {
                   let x = Double(fields[3]),
                   let y = Double(fields[4]),
                   let z = Double(fields[5]) {
-            grip = Grip(center: Vec3(x: x, y: y, z: z))
+            let active = fields.count < 8 ||
+                fields[6] != "active" || fields[7] == "1"
+            grip = Grip(center: Vec3(x: x, y: y, z: z), active: active)
         }
     }
     guard vertices.count == expectedVertices else {
@@ -551,28 +554,31 @@ private func render(
         }
     }
 
-    if let grip {
+    if let grip, grip.active {
         let center = project(grip.center).point
         context.saveGState()
         context.setLineCap(.round)
         context.setStrokeColor(color(242, 145, 38, 0.72))
         context.setLineWidth(1.8)
-        for offset in -2...2 {
-            let ring = (around + offset) % around
-            let seamPoint = project(
-                vertices[(levels - 1) * around + ring]
-            ).point
-            context.move(to: center)
-            context.addLine(to: seamPoint)
-            context.strokePath()
-            let nodeRadius: CGFloat = offset == 0 ? 3.2 : 2.5
-            context.setFillColor(color(255, 181, 64, 0.94))
-            context.fillEllipse(in: CGRect(
-                x: seamPoint.x - nodeRadius,
-                y: seamPoint.y - nodeRadius,
-                width: 2.0 * nodeRadius,
-                height: 2.0 * nodeRadius
-            ))
+        for level in (levels - 2)..<levels {
+            for offset in -2...2 {
+                let ring = (around + offset) % around
+                let seamPoint = project(
+                    vertices[level * around + ring]
+                ).point
+                context.move(to: center)
+                context.addLine(to: seamPoint)
+                context.strokePath()
+                let nodeRadius: CGFloat =
+                    level == levels - 1 && offset == 0 ? 3.2 : 2.3
+                context.setFillColor(color(255, 181, 64, 0.94))
+                context.fillEllipse(in: CGRect(
+                    x: seamPoint.x - nodeRadius,
+                    y: seamPoint.y - nodeRadius,
+                    width: 2.0 * nodeRadius,
+                    height: 2.0 * nodeRadius
+                ))
+            }
         }
         context.restoreGState()
         let marker = CGRect(x: center.x - 9.0, y: center.y - 9.0,

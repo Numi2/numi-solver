@@ -25,24 +25,46 @@ to a real produce bag.
   fruit/yarn, fruit/fruit, fruit/plane, and yarn/yarn contact. Focused probes
   certify analytic slide-to-roll, sticking, cone-limited sliding, momentum
   conservation, dissipation, cone feasibility, and exact replay.
+- Air loads replace the former global linear and angular velocity dampers.
+  Yarn drag resolves cylinder crossflow and axial skin friction from segment
+  length and orientation; fruit drag resolves projected area and rotational
+  surface drag. The probe matches the analytic force and torque, verifies
+  kinetic-energy removal, subdivision invariance, a zero-force co-moving case,
+  and exact replay.
+- Cloth/plane friction replaces the former fixed horizontal decay with a
+  maximum-dissipation Coulomb impulse capped by the reconstructed normal
+  reaction. Fruit rolling resistance replaces load-independent exponential
+  angular decay with a normal-load-dependent torque cap that preserves
+  vertical spin. Independent probes cover loaded, sticking, sliding, and
+  zero-load cases.
 - A unilateral limiter caps axial extension at `28.5%` while leaving
   compression and ordinary compliant strain unchanged. Contact/strain
   reconciliation certifies the final residual.
-- The grab is a finite-compliance five-node attachment to the top opening seam,
-  not a pinned point or a bottom handle. All 1,465 knots and twelve fruits stay
-  dynamic; attachment force and impulse are measured and gated.
+- The grab is a finite-compliance ten-knot patch spanning five neighboring
+  knots on each of the two folded top-cuff rows, not a pinned point or a bottom
+  handle. All 1,465 knots and twelve fruits stay dynamic; attachment force and
+  impulse are measured and gated. The two cuff rows have authored local bend
+  reinforcement while the body yarn remains soft.
 - Release masks latch across the trajectory and are distinct from numerical
-  escape. The qualified pickup releases three fruits through the open mouth
-  with `escaped_mask=0` and a bit-identical second replay.
+  escape. Classification uses all 48 top-rim knots, an outward-oriented mouth
+  plane, the projected opening polygon, and full-sphere clearance; it no longer
+  relies on distance to one bottom particle. The focused probe certifies
+  contained, crossing, outside-projection, and rotated-mouth cases.
+- The qualified two-second pickup replay lifts the seam patch, snaps it
+  downward, and records four complete sphere crossings of the 48-knot mouth,
+  followed by plane contact. It has `escaped_mask=0`, sub-micrometer published
+  contact/strain residuals, and a bit-identical second replay; no fruit path is
+  prescribed.
 - Exported fruit quaternions drive the visible body marks. The rasterizer draws
   only the exported axial yarn graph and grip connectors; it does not pose the
   bag or fruit.
 
 ## Still open: specimen fidelity
 
-- Mass distribution, axial and knot compliance, bend compliance, damping,
-  friction, rolling resistance, yarn diameter, bag geometry, and grip motion
-  are authored estimates. They are not measurements of the pictured bag.
+- Mass distribution, axial and knot compliance, bend compliance,
+  aerodynamic coefficients, contact friction, rolling resistance, yarn
+  diameter, bag geometry, and grip motion are authored estimates. They are not
+  measurements of the pictured bag.
 - Each simulated yarn is one control-scale capsule between lumped knot masses.
   The model does not resolve multi-filament twist, fiber migration, knot
   tightening or sliding, plastic set, creep, damage, moisture, or rate- and

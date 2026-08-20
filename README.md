@@ -15,23 +15,28 @@ application scene.
 
 This looping GIF contains 25 fixed-camera frames from one 2.0-second solver
 trajectory. The orange ring is a virtual handle attached through finite
-compliance to five neighboring nodes on the top opening seam. Orange connector
-lines expose that five-node pinch patch and its physical lag: all 1,465 cloth
+compliance to ten neighboring knots across the two-row top cuff. Orange connector
+lines expose that small seam-pinch patch and its physical lag: all 1,465 cloth
 particles and all twelve fruits remain dynamic. The bag starts resting on the
-plane, rises under the seam grip, lags and folds under load, then tips and
-releases three fruits through the mouth. The small body-fixed marks are driven by each fruit's
+plane, rises under the seam grip, lags and folds under load, then a vertical
+hand snap carries the cuff downward while four inertially lagging fruits cross
+the top mouth and fall onto the plane. The small body-fixed marks are driven by each fruit's
 exported solver quaternion, so their motion exposes physical rolling and spin.
 
-The replay passed every mechanics gate with `released_mask=352`,
-`escaped_mask=0`, `0.285000000` maximum warp extension, `0.159668450`
-maximum weft strain, `0.043140803` maximum woven-bottom extension,
-`59.092242546 N` peak grip force, 72,464 swept sphere/yarn impacts,
-103,975 yarn/yarn friction contacts, `0.643 um` final primitive overlap, zero
+The replay passed every mechanics gate with `released_mask=3089`,
+`escaped_mask=0`, `0.285000000` maximum warp extension, `0.069321382`
+maximum weft strain, `0.084238155` maximum woven-bottom extension,
+`116.933051607 N` peak grip force, 61,592 swept sphere/yarn impacts,
+25,202 yarn/yarn friction contacts, zero final primitive overlap and zero
 final strain-limit violation, maximum published fruit/yarn penetration
-`0.965 um`, a friction-cone ratio never above `1.0`, and bit-identical state
-hash `0xeab3cb21c536db49`. The GIF is rasterized from those exported states; it is
+`0.504 um`, a friction-cone ratio never above `1.0`, and bit-identical state
+hash `0x3452eeca5b4c1c9`. The GIF is rasterized from those exported states; it is
 CPU FP64 cloth evidence, not Metal-performance or Temporal Cone cloth-contact
 evidence.
+
+| Start | Seam lift | Loaded cuff | Four-fruit exit | Ground contact |
+|:--:|:--:|:--:|:--:|:--:|
+| ![Grounded bag before the seam lift](docs/assets/cloth-pickup-0.png) | ![Bag hanging from the highlighted top cuff](docs/assets/cloth-pickup-60.png) | ![Fruit loading the deforming cuff before the downward snap](docs/assets/cloth-pickup-120.png) | ![Four fruit crossing the top mouth](docs/assets/cloth-pickup-160.png) | ![Released fruit contacting and rolling on the plane](docs/assets/cloth-pickup-200.png) |
 
 ## Grounded cloth produce-bag replay
 
@@ -46,17 +51,17 @@ move the exported state.
 
 The qualified replay passed with no escaped or spilled fruit, no collapsed
 render triangles, `0.004774618 m` maximum fruit/yarn contact correction,
-`0.101712884` maximum warp extension, `0.000000003 m` maximum published
-fruit/yarn penetration, `0.636 um` final nonlocal yarn overlap, zero final
+`0.104838336` maximum warp extension, zero maximum published
+fruit/yarn penetration, `0.743 um` final nonlocal yarn overlap, zero final
 strain-limit violation, and bit-identical replay hash
-`0xea134e3e023cef02`. Every resolved tangent impulse remained inside its Coulomb
+`0xbe244ce43db42aca`. Every resolved tangent impulse remained inside its Coulomb
 cone. This is CPU FP64 cloth evidence, not Metal-performance or Temporal Cone
 cloth-contact evidence.
 
 ### Grab a compliant rim patch and spin
 
-The orange ring marks the target of a compliant five-node rim attachment. All
-cloth nodes and all twelve fruits remain dynamic. These five fixed-camera frames come from one
+The orange ring marks the target of the same compliant ten-knot, two-row cuff
+attachment. All cloth nodes and all twelve fruits remain dynamic. These five fixed-camera frames come from one
 0.5-second trajectory; they are not separately posed simulations.
 
 | `t=0.000 s` | `t=0.125 s` | `t=0.250 s` |
@@ -67,10 +72,12 @@ cloth nodes and all twelve fruits remain dynamic. These five fixed-camera frames
 |:--:|:--:|
 | ![Open cloth bag deforming under circular seam motion](docs/assets/cloth-spin-45.png) | ![Vertically lagging cloth bag at the end of the spin](docs/assets/cloth-spin-60.png) |
 
-The spin replay passed with `0.285001134` maximum warp extension,
-`0.053655811` maximum weft strain, zero numerical escapes or releases,
-`102.676012300 N` peak attachment force, maximum published yarn overlap
-`0.123 um`, and bit-identical hash `0x7b40d6475e83062d`. The contents press into
+The 48-substep spin replay passed with `0.273327554` maximum warp extension,
+`0.037261709` maximum weft strain, zero numerical escapes or releases,
+`147.388618414 N` peak attachment force, maximum published yarn overlap
+`0.342 um`, and bit-identical hash `0xee2d0f53fddd96c9`. Explicit air loads
+reached `0.142724430 N` on a yarn segment and `0.028645775 N` on a fruit while
+removing `0.738167581 J` of relative kinetic energy. The contents press into
 the deforming bag during this half-second orbit; the separate pickup replay
 contains the spill.
 
@@ -85,7 +92,7 @@ swift tools/render_cloth_obj.swift \
   build/cloth-produce-bag-1s.obj docs/assets/cloth-produce-bag.png
 
 ./build/numi-solver-cloth-bag \
-  --scenario spin --steps 60 --substeps 24 --iterations 32 --replays 2 \
+  --scenario spin --steps 60 --substeps 48 --iterations 32 --replays 2 \
   --dump-frames build/cloth-spin
 
 for step in 0 15 30 45 60; do
@@ -162,9 +169,12 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
   reference with a free folded rim, 2,904 axial yarn segments, 1,369 compliant
   crossing-angle knots, 2,834 three-knot bend chords, twelve-fruit sphere/yarn
   contact and friction, continuous yarn/yarn collision, unilateral extension
-  limits, maximum-dissipation yarn friction, and a compliant five-node top-seam
-  grip. Its 2,880 triangles are export/raster and area-certificate geometry,
-  never collision or mechanical constraints. This is a CPU reference, not
+  limits, maximum-dissipation yarn friction, a stiff authored two-row cuff, and
+  a compliant ten-knot top-seam grip patch. Cylinder/sphere air loads,
+  load-dependent cloth/ground friction, and
+  load-dependent fruit rolling resistance replace global velocity damping.
+  Its 2,880 triangles are export/raster and area-certificate geometry, never
+  collision or mechanical constraints. This is a CPU reference, not
   Metal-performance evidence.
 - `build/numi-solver-articulated` for canonical articulated mass/Jacobian
   factorization, response-column solves, cone contact, and deterministic
@@ -218,16 +228,20 @@ The explicit-yarn cloth reference accepts `--steps N`, `--substeps N`,
 `--iterations N`, `--replays 1|2`, `--timestep DT`,
 `--scenario grounded|spin|pickup`, and `--dump-obj PATH`. Qualification requires
 two replays. `--rolling-probe` executes the analytic solid-sphere slide-to-roll
-oracle; `--yarn-mechanics-probe` certifies swept sphere/yarn contact and a
+oracle; `--rolling-resistance-probe` checks load-capped rolling torque without
+damping vertical spin; `--aerodynamics-probe` checks analytic yarn/fruit drag,
+energy removal, subdivision invariance, and co-moving air;
+`--yarn-mechanics-probe` certifies swept sphere/yarn contact and a
 finite-compliance knot-angle solve; `--self-ccd-probe` certifies continuous
 yarn/yarn contact; and `--strain-probe` certifies the unilateral extension
 ceiling. `--deformable-response-probe` checks true endpoint-mass transfer with
 free and plane-supported yarn. `--self-friction-probe` independently checks
 yarn/yarn sticking, sliding, momentum conservation, dissipation, cone
-feasibility, and replay. `--dump-frames PREFIX` exports five evenly spaced states
+feasibility, and replay; `--cloth-ground-friction-probe` checks loaded sticking,
+cone-limited sliding, and zero-load invariance. `--dump-frames PREFIX` exports five evenly spaced states
 from the first authoritative trajectory; `--dump-every N` instead exports
 every Nth step plus the final state. `grounded` settles an open produce bag on
-a plane, `spin` begins airborne and drives a compliant five-node rim patch
+a plane, `spin` begins airborne and drives a compliant ten-knot cuff patch
 around a smooth orbit, and `pickup` lifts that same grip patch from the grounded state and
 pours fruit onto the plane. Its FP64 mechanics and evidence boundary are
 separate from the Metal harnesses.

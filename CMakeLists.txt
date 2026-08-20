@@ -460,6 +460,50 @@ if(BUILD_TESTING)
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
             --yarn-mechanics-probe
     )
+    add_test(
+        NAME cloth_bag.aerodynamics
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
+            --aerodynamics-probe
+    )
+    add_test(
+        NAME cloth_bag.cloth_ground_friction
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
+            --cloth-ground-friction-probe
+    )
+    add_test(
+        NAME cloth_bag.rolling_resistance
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
+            --rolling-resistance-probe
+    )
+    add_test(
+        NAME cloth_bag.mouth_release
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
+            --mouth-release-probe
+    )
+    set_tests_properties(
+        cloth_bag.mouth_release
+        PROPERTIES
+            LABELS "physics;cloth;reference;contact;release;mouth;yarn"
+            TIMEOUT 30
+    )
+    set_tests_properties(
+        cloth_bag.rolling_resistance
+        PROPERTIES
+            LABELS "physics;cloth;reference;contact;friction;rolling;fruit"
+            TIMEOUT 30
+    )
+    set_tests_properties(
+        cloth_bag.cloth_ground_friction
+        PROPERTIES
+            LABELS "physics;cloth;reference;contact;friction;ground;yarn"
+            TIMEOUT 30
+    )
+    set_tests_properties(
+        cloth_bag.aerodynamics
+        PROPERTIES
+            LABELS "physics;cloth;reference;aerodynamics;yarn;fruit"
+            TIMEOUT 30
+    )
     set_tests_properties(
         cloth_bag.yarn_mechanics
         PROPERTIES
@@ -508,7 +552,7 @@ if(BUILD_TESTING)
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
             --scenario spin
             --steps 60
-            --substeps 24
+            --substeps 48
             --iterations 32
             --dump-frames ${CMAKE_CURRENT_BINARY_DIR}/cloth-spin-test
     )
@@ -517,7 +561,7 @@ if(BUILD_TESTING)
         PROPERTIES
             LABELS "physics;cloth;reference;contact;determinism;spin"
             RUN_SERIAL TRUE
-            TIMEOUT 180
+            TIMEOUT 300
     )
     add_test(
         NAME cloth_bag.pickup

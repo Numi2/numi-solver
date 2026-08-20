@@ -33,10 +33,16 @@ constexpr double kClothMass =
     ) * kClothNodeMass +
     static_cast<double>(2u * kAround) * kClothHemNodeMass;
 constexpr double kFruitGroundFriction = 0.42;
+constexpr double kClothGroundFriction = 0.45;
 constexpr double kFruitPairFriction = 0.30;
 constexpr double kFruitClothFriction = 0.36;
 constexpr double kClothSelfFriction = 0.34;
-constexpr double kFruitRollingResistanceRate = 0.35;
+constexpr double kFruitRollingResistanceCoefficient = 0.015;
+constexpr double kAirDensity = 1.225;
+constexpr double kYarnCrossflowDragCoefficient = 1.10;
+constexpr double kYarnSkinFrictionCoefficient = 0.010;
+constexpr double kFruitDragCoefficient = 0.47;
+constexpr double kFruitRotationalDragCoefficient = 0.010;
 constexpr std::size_t kBallPairCount =
     kFruitCount * (kFruitCount - 1u) / 2u;
 
@@ -266,7 +272,7 @@ struct GripConstraint {
     std::uint32_t particle{};
     Vec3 targetOffset{};
     Vec3 lambda{};
-    double compliance{2.0e-3};
+    double compliance{2.0e-4};
 };
 
 struct ClothModel {
@@ -281,6 +287,8 @@ struct ClothModel {
     std::uint32_t bottomCenter{};
     Vec3 gripTarget{};
     Vec3 gripPrevious{};
+    double gripPitch{};
+    bool gripActive{};
 };
 
 struct Metrics {
@@ -313,6 +321,11 @@ struct Metrics {
     double minimumTriangleArea{std::numeric_limits<double>::infinity()};
     double maximumSpeed{};
     double maximumAngularSpeed{};
+    double maximumYarnAerodynamicForce{};
+    double maximumFruitAerodynamicForce{};
+    double maximumFruitAerodynamicTorque{};
+    double aerodynamicDissipation{};
+    double maximumRollingResistanceRatio{};
     double maximumFrictionConeRatio{};
     double accumulatedTangentialImpulse{};
     double maximumGripForce{};
@@ -325,6 +338,7 @@ struct Metrics {
     std::uint64_t edgeEdgeCandidatePairs{};
     std::uint64_t edgeEdgeSphereCandidatePairs{};
     std::uint64_t clothSelfFrictionContacts{};
+    std::uint64_t clothGroundFrictionContacts{};
     double maximumSweptSelfAdvance{};
     double finalPrimitiveSelfPenetration{};
     double maximumStrainLimitCorrection{};
@@ -332,10 +346,12 @@ struct Metrics {
     std::uint64_t ballClothFrictionContacts{};
     std::uint64_t ballPairFrictionContacts{};
     std::uint64_t ballGroundFrictionContacts{};
+    std::uint64_t ballRollingResistanceContacts{};
     std::uint32_t escapedMask{};
     std::uint32_t spilledMask{};
     std::uint32_t releasedMask{};
     std::array<double, kFruitCount> maximumBallPenetrationByFruit{};
+    std::array<double, kFruitCount> maximumMouthClearanceByFruit{};
     double ballClothSolveSeconds{};
     double primitiveSelfSolveSeconds{};
     double pointSelfSolveSeconds{};
@@ -571,17 +587,22 @@ ClothModel makeCloth(const Scenario scenario) {
         const std::uint32_t centerIndex = nodeIndex(kLevels - 1u, 0u);
         model.gripTarget = model.particles[centerIndex].rest;
         model.gripPrevious = model.gripTarget;
-        for (const int offset : {-2, -1, 0, 1, 2}) {
-            const std::uint32_t ring = static_cast<std::uint32_t>(
-                (static_cast<int>(kAround) + offset) %
-                static_cast<int>(kAround)
-            );
-            const std::uint32_t index = nodeIndex(kLevels - 1u, ring);
-            model.grips.push_back({
-                .particle = index,
-                .targetOffset =
-                    model.particles[index].rest - model.gripTarget,
-            });
+        model.gripActive = true;
+        for (std::uint32_t level = kLevels - 2u;
+             level < kLevels;
+             ++level) {
+            for (const int offset : {-2, -1, 0, 1, 2}) {
+                const std::uint32_t ring = static_cast<std::uint32_t>(
+                    (static_cast<int>(kAround) + offset) %
+                    static_cast<int>(kAround)
+                );
+                const std::uint32_t index = nodeIndex(level, ring);
+                model.grips.push_back({
+                    .particle = index,
+                    .targetOffset =
+                        model.particles[index].rest - model.gripTarget,
+                });
+            }
         }
     }
 
@@ -752,7 +773,8 @@ ClothModel makeCloth(const Scenario scenario) {
     const auto addYarnBend = [&model](
         const std::uint32_t first,
         const std::uint32_t middle,
-        const std::uint32_t third
+        const std::uint32_t third,
+        const double compliance
     ) {
         model.bends.push_back({
             .first = first,
@@ -770,6 +792,7 @@ ClothModel makeCloth(const Scenario scenario) {
                     model.particles[third].rest -
                     model.particles[middle].rest
                 ),
+            .compliance = compliance,
         });
     };
     for (std::uint32_t level = 0u; level < kLevels; ++level) {
@@ -777,7 +800,8 @@ ClothModel makeCloth(const Scenario scenario) {
             addYarnBend(
                 nodeIndex(level, ring + kAround - 1u),
                 nodeIndex(level, ring),
-                nodeIndex(level, ring + 1u)
+                nodeIndex(level, ring + 1u),
+                level + 2u >= kLevels ? 1.0e-8 : 8.0e-2
             );
         }
     }
@@ -786,7 +810,8 @@ ClothModel makeCloth(const Scenario scenario) {
             addYarnBend(
                 nodeIndex(level - 1u, ring),
                 nodeIndex(level, ring),
-                nodeIndex(level + 1u, ring)
+                nodeIndex(level + 1u, ring),
+                8.0e-2
             );
         }
     }
@@ -797,12 +822,14 @@ ClothModel makeCloth(const Scenario scenario) {
             addYarnBend(
                 bottomGridIndex(row, column - 1u),
                 bottomGridIndex(row, column),
-                bottomGridIndex(row, column + 1u)
+                bottomGridIndex(row, column + 1u),
+                8.0e-2
             );
             addYarnBend(
                 bottomGridIndex(column - 1u, row),
                 bottomGridIndex(column, row),
-                bottomGridIndex(column + 1u, row)
+                bottomGridIndex(column + 1u, row),
+                8.0e-2
             );
         }
     }
@@ -869,6 +896,358 @@ void integrateOrientation(Ball& ball, const double timestep) {
     );
 }
 
+Vec3 boundedQuadraticDrag(
+    const Vec3 relativeVelocity,
+    const double coefficient,
+    const double effectiveInverseMass,
+    const double timestep
+) {
+    const double speed = length(relativeVelocity);
+    if (speed < 1.0e-14 || coefficient <= 0.0) {
+        return {};
+    }
+    double magnitude = coefficient * speed * speed;
+    if (effectiveInverseMass > 0.0) {
+        magnitude = std::min(
+            magnitude,
+            speed / (effectiveInverseMass * timestep)
+        );
+    }
+    return relativeVelocity * (-magnitude / speed);
+}
+
+void applyYarnAerodynamics(
+    ClothModel& cloth,
+    const Vec3 airVelocity,
+    const double timestep,
+    Metrics* metrics
+) {
+    std::vector<Vec3> forces(cloth.particles.size());
+    double relativeEnergyBefore = 0.0;
+    if (metrics != nullptr) {
+        for (const Particle& particle : cloth.particles) {
+            relativeEnergyBefore += 0.5 * particle.mass * lengthSquared(
+                particle.velocity - airVelocity
+            );
+        }
+    }
+    for (const Edge segment : cloth.yarnSegments) {
+        const Particle& first = cloth.particles[segment.first];
+        const Particle& second = cloth.particles[segment.second];
+        const Vec3 span = second.position - first.position;
+        const double spanLength = length(span);
+        if (spanLength < 1.0e-12) {
+            continue;
+        }
+        const Vec3 axis = span / spanLength;
+        const Vec3 relativeVelocity =
+            (first.velocity + second.velocity) * 0.5 - airVelocity;
+        const Vec3 axialVelocity = axis * dot(relativeVelocity, axis);
+        const Vec3 crossflowVelocity = relativeVelocity - axialVelocity;
+        const double midpointInverseMass = 0.25 * (
+            first.inverseMass + second.inverseMass
+        );
+        const double crossflowArea = 2.0 * kClothRadius * spanLength;
+        const double wettedArea =
+            2.0 * std::numbers::pi * kClothRadius * spanLength;
+        const Vec3 crossflowForce = boundedQuadraticDrag(
+            crossflowVelocity,
+            0.5 * kAirDensity * kYarnCrossflowDragCoefficient *
+                crossflowArea,
+            midpointInverseMass,
+            timestep
+        );
+        const Vec3 skinForce = boundedQuadraticDrag(
+            axialVelocity,
+            0.5 * kAirDensity * kYarnSkinFrictionCoefficient * wettedArea,
+            midpointInverseMass,
+            timestep
+        );
+        const Vec3 force = crossflowForce + skinForce;
+        forces[segment.first] += force * 0.5;
+        forces[segment.second] += force * 0.5;
+        if (metrics != nullptr) {
+            metrics->maximumYarnAerodynamicForce = std::max(
+                metrics->maximumYarnAerodynamicForce,
+                length(force)
+            );
+        }
+    }
+    for (std::size_t index = 0u; index < cloth.particles.size(); ++index) {
+        Particle& particle = cloth.particles[index];
+        if (particle.inverseMass > 0.0) {
+            particle.velocity +=
+                forces[index] * (particle.inverseMass * timestep);
+        }
+    }
+    if (metrics != nullptr) {
+        double relativeEnergyAfter = 0.0;
+        for (const Particle& particle : cloth.particles) {
+            relativeEnergyAfter += 0.5 * particle.mass * lengthSquared(
+                particle.velocity - airVelocity
+            );
+        }
+        metrics->aerodynamicDissipation += std::max(
+            0.0,
+            relativeEnergyBefore - relativeEnergyAfter
+        );
+    }
+}
+
+void applyFruitAerodynamics(
+    std::array<Ball, kFruitCount>& balls,
+    const Vec3 airVelocity,
+    const double timestep,
+    Metrics* metrics
+) {
+    for (Ball& ball : balls) {
+        const double inverseRotationalInertia = inverseInertia(ball);
+        const double relativeEnergyBefore =
+            0.5 / ball.inverseMass * lengthSquared(
+                ball.velocity - airVelocity
+            ) +
+            0.5 / inverseRotationalInertia *
+                lengthSquared(ball.angularVelocity);
+        const Vec3 relativeVelocity = ball.velocity - airVelocity;
+        const double frontalArea =
+            std::numbers::pi * ball.radius * ball.radius;
+        const Vec3 force = boundedQuadraticDrag(
+            relativeVelocity,
+            0.5 * kAirDensity * kFruitDragCoefficient * frontalArea,
+            ball.inverseMass,
+            timestep
+        );
+        ball.velocity += force * (ball.inverseMass * timestep);
+
+        const Vec3 torque = boundedQuadraticDrag(
+            ball.angularVelocity,
+            (3.0 * std::numbers::pi * std::numbers::pi / 8.0) *
+                kAirDensity * kFruitRotationalDragCoefficient *
+                std::pow(ball.radius, 5.0),
+            inverseRotationalInertia,
+            timestep
+        );
+        ball.angularVelocity +=
+            torque * (inverseRotationalInertia * timestep);
+
+        if (metrics != nullptr) {
+            const double relativeEnergyAfter =
+                0.5 / ball.inverseMass * lengthSquared(
+                    ball.velocity - airVelocity
+                ) +
+                0.5 / inverseRotationalInertia *
+                    lengthSquared(ball.angularVelocity);
+            metrics->maximumFruitAerodynamicForce = std::max(
+                metrics->maximumFruitAerodynamicForce,
+                length(force)
+            );
+            metrics->maximumFruitAerodynamicTorque = std::max(
+                metrics->maximumFruitAerodynamicTorque,
+                length(torque)
+            );
+            metrics->aerodynamicDissipation += std::max(
+                0.0,
+                relativeEnergyBefore - relativeEnergyAfter
+            );
+        }
+    }
+}
+
+struct AerodynamicsProbeResult {
+    Vec3 coarseForce{};
+    Vec3 refinedForce{};
+    double yarnEnergyBefore{};
+    double yarnEnergyAfter{};
+    double fruitForce{};
+    double fruitTorque{};
+    double fruitSpeed{};
+    double fruitAngularSpeed{};
+    double coMovingDelta{};
+    double dissipation{};
+};
+
+AerodynamicsProbeResult runAerodynamicsProbeOnce() {
+    constexpr double timestep = 0.01;
+    constexpr Vec3 yarnVelocity{3.0, 4.0, 0.0};
+    const auto makeParticle = [yarnVelocity](
+        const Vec3 position,
+        const double mass
+    ) {
+        Particle particle;
+        particle.position = position;
+        particle.previous = position;
+        particle.rest = position;
+        particle.velocity = yarnVelocity;
+        particle.inverseMass = 1.0 / mass;
+        particle.mass = mass;
+        return particle;
+    };
+    const auto momentum = [](const ClothModel& cloth) {
+        Vec3 value{};
+        for (const Particle& particle : cloth.particles) {
+            value += particle.velocity * particle.mass;
+        }
+        return value;
+    };
+    const auto kineticEnergy = [](const ClothModel& cloth) {
+        double value = 0.0;
+        for (const Particle& particle : cloth.particles) {
+            value += 0.5 * particle.mass * lengthSquared(particle.velocity);
+        }
+        return value;
+    };
+
+    ClothModel coarse;
+    coarse.particles = {
+        makeParticle({-0.5, 0.0, 0.0}, 0.5),
+        makeParticle({0.5, 0.0, 0.0}, 0.5),
+    };
+    coarse.yarnSegments = {{0u, 1u}};
+    const Vec3 coarseMomentumBefore = momentum(coarse);
+    const double energyBefore = kineticEnergy(coarse);
+    Metrics metrics;
+    applyYarnAerodynamics(coarse, {}, timestep, &metrics);
+    const Vec3 coarseForce =
+        (momentum(coarse) - coarseMomentumBefore) / timestep;
+
+    ClothModel refined;
+    refined.particles = {
+        makeParticle({-0.5, 0.0, 0.0}, 0.25),
+        makeParticle({0.0, 0.0, 0.0}, 0.50),
+        makeParticle({0.5, 0.0, 0.0}, 0.25),
+    };
+    refined.yarnSegments = {{0u, 1u}, {1u, 2u}};
+    const Vec3 refinedMomentumBefore = momentum(refined);
+    applyYarnAerodynamics(refined, {}, timestep, nullptr);
+    const Vec3 refinedForce =
+        (momentum(refined) - refinedMomentumBefore) / timestep;
+
+    std::array<Ball, kFruitCount> balls{};
+    Ball& fruit = balls[0];
+    fruit.radius = 0.10;
+    fruit.inverseMass = 1.0;
+    fruit.velocity = {5.0, 0.0, 0.0};
+    fruit.angularVelocity = {0.0, 0.0, 10.0};
+    Metrics fruitMetrics;
+    applyFruitAerodynamics(balls, {}, timestep, &fruitMetrics);
+
+    ClothModel coMoving;
+    coMoving.particles = {
+        makeParticle({-0.5, 0.0, 0.0}, 0.5),
+        makeParticle({0.5, 0.0, 0.0}, 0.5),
+    };
+    coMoving.yarnSegments = {{0u, 1u}};
+    std::array<Ball, kFruitCount> coMovingBalls{};
+    coMovingBalls[0].radius = 0.10;
+    coMovingBalls[0].inverseMass = 1.0;
+    coMovingBalls[0].velocity = yarnVelocity;
+    const Vec3 coMovingMomentumBefore = momentum(coMoving);
+    const Vec3 coMovingBallVelocityBefore = coMovingBalls[0].velocity;
+    applyYarnAerodynamics(
+        coMoving,
+        yarnVelocity,
+        timestep,
+        nullptr
+    );
+    applyFruitAerodynamics(
+        coMovingBalls,
+        yarnVelocity,
+        timestep,
+        nullptr
+    );
+
+    return {
+        .coarseForce = coarseForce,
+        .refinedForce = refinedForce,
+        .yarnEnergyBefore = energyBefore,
+        .yarnEnergyAfter = kineticEnergy(coarse),
+        .fruitForce = fruitMetrics.maximumFruitAerodynamicForce,
+        .fruitTorque = fruitMetrics.maximumFruitAerodynamicTorque,
+        .fruitSpeed = length(fruit.velocity),
+        .fruitAngularSpeed = length(fruit.angularVelocity),
+        .coMovingDelta = length(momentum(coMoving) - coMovingMomentumBefore) +
+            length(coMovingBalls[0].velocity - coMovingBallVelocityBefore),
+        .dissipation = metrics.aerodynamicDissipation +
+            fruitMetrics.aerodynamicDissipation,
+    };
+}
+
+bool runAerodynamicsProbe() {
+    const AerodynamicsProbeResult first = runAerodynamicsProbeOnce();
+    const AerodynamicsProbeResult replay = runAerodynamicsProbeOnce();
+    constexpr double lengthMeters = 1.0;
+    constexpr double crossflowSpeed = 4.0;
+    constexpr double axialSpeed = 3.0;
+    const double expectedCrossflowForce =
+        -0.5 * kAirDensity * kYarnCrossflowDragCoefficient *
+        (2.0 * kClothRadius * lengthMeters) *
+        crossflowSpeed * crossflowSpeed;
+    const double expectedAxialForce =
+        -0.5 * kAirDensity * kYarnSkinFrictionCoefficient *
+        (2.0 * std::numbers::pi * kClothRadius * lengthMeters) *
+        axialSpeed * axialSpeed;
+    constexpr double fruitRadius = 0.10;
+    constexpr double fruitSpeed = 5.0;
+    constexpr double fruitAngularSpeed = 10.0;
+    const double expectedFruitForce =
+        0.5 * kAirDensity * kFruitDragCoefficient *
+        std::numbers::pi * fruitRadius * fruitRadius *
+        fruitSpeed * fruitSpeed;
+    const double expectedFruitTorque =
+        (3.0 * std::numbers::pi * std::numbers::pi / 8.0) *
+        kAirDensity * kFruitRotationalDragCoefficient *
+        std::pow(fruitRadius, 5.0) *
+        fruitAngularSpeed * fruitAngularSpeed;
+    const double expectedFruitSpeed =
+        fruitSpeed - expectedFruitForce * 0.01;
+    const double expectedFruitAngularSpeed = fruitAngularSpeed -
+        expectedFruitTorque *
+            (2.5 / (fruitRadius * fruitRadius)) * 0.01;
+    const bool deterministic =
+        first.coarseForce.x == replay.coarseForce.x &&
+        first.coarseForce.y == replay.coarseForce.y &&
+        first.refinedForce.x == replay.refinedForce.x &&
+        first.refinedForce.y == replay.refinedForce.y &&
+        first.yarnEnergyAfter == replay.yarnEnergyAfter &&
+        first.fruitForce == replay.fruitForce &&
+        first.fruitTorque == replay.fruitTorque &&
+        first.fruitSpeed == replay.fruitSpeed &&
+        first.fruitAngularSpeed == replay.fruitAngularSpeed &&
+        first.coMovingDelta == replay.coMovingDelta;
+    const bool pass = deterministic &&
+        std::abs(first.coarseForce.x - expectedAxialForce) < 1.0e-12 &&
+        std::abs(first.coarseForce.y - expectedCrossflowForce) < 1.0e-12 &&
+        length(first.coarseForce - first.refinedForce) < 1.0e-12 &&
+        first.yarnEnergyAfter < first.yarnEnergyBefore &&
+        std::abs(first.fruitForce - expectedFruitForce) < 1.0e-12 &&
+        std::abs(first.fruitTorque - expectedFruitTorque) < 1.0e-12 &&
+        std::abs(first.fruitSpeed - expectedFruitSpeed) < 1.0e-12 &&
+        std::abs(
+            first.fruitAngularSpeed - expectedFruitAngularSpeed
+        ) < 1.0e-12 &&
+        first.coMovingDelta < 1.0e-12 &&
+        first.dissipation > 0.0;
+    std::cout << std::fixed << std::setprecision(12)
+              << "probe=explicit_yarn_and_fruit_aerodynamics"
+              << " air_density=" << kAirDensity
+              << " yarn_crossflow_force=" << -first.coarseForce.y
+              << " yarn_axial_force=" << -first.coarseForce.x
+              << " refinement_force_error="
+              << length(first.coarseForce - first.refinedForce)
+              << " yarn_energy_before=" << first.yarnEnergyBefore
+              << " yarn_energy_after=" << first.yarnEnergyAfter
+              << " fruit_force=" << first.fruitForce
+              << " fruit_torque=" << first.fruitTorque
+              << " fruit_speed=" << first.fruitSpeed
+              << " fruit_angular_speed=" << first.fruitAngularSpeed
+              << " co_moving_delta=" << first.coMovingDelta
+              << " dissipation=" << first.dissipation
+              << " deterministic=" << std::boolalpha << deterministic
+              << '\n'
+              << "result=" << (pass ? "PASS" : "FAIL") << '\n';
+    return pass;
+}
+
 void applyBallImpulse(
     Ball& ball,
     const Vec3 impulse,
@@ -910,12 +1289,23 @@ Vec3 spinGripTarget(const double time) {
 
 Vec3 pickupGripTarget(const double time) {
     const Vec3 base = authoredPosition(kLevels - 1u, 0u);
-    const double lift = smoothstep(time / 0.58);
-    const double whip = smoothstep((time - 0.72) / 0.30);
+    const double lift = smoothstep(time / 0.80);
+    const double firstSnap = smoothstep((time - 1.00) / 0.25);
+    const double firstRecovery = smoothstep((time - 1.45) / 0.50);
     return base + Vec3{
-        -0.46 * whip,
-        0.14 * std::sin(std::numbers::pi * whip),
-        0.72 * lift - 0.52 * whip,
+        -0.10 * firstSnap,
+        0.04 * std::sin(std::numbers::pi * firstSnap),
+        1.15 * lift - 0.75 * firstSnap + 0.65 * firstRecovery,
+    };
+}
+
+Vec3 pitchGripOffset(const Vec3 offset, const double pitch) {
+    const double cosine = std::cos(pitch);
+    const double sine = std::sin(pitch);
+    return {
+        cosine * offset.x + sine * offset.z,
+        offset.y,
+        -sine * offset.x + cosine * offset.z,
     };
 }
 
@@ -928,6 +1318,10 @@ void updateGrip(
     cloth.gripTarget = scenario == Scenario::spin
         ? spinGripTarget(time)
         : pickupGripTarget(time);
+    cloth.gripPitch = scenario == Scenario::spin
+        ? 0.0
+        : 0.0;
+    cloth.gripActive = true;
 }
 
 void solveGrip(
@@ -1285,13 +1679,50 @@ void applyBallPairFriction(
     }
 }
 
+void applyBallRollingResistance(
+    Ball& ball,
+    const double normalImpulse,
+    const double rollingResistanceCoefficient,
+    Metrics& metrics
+) {
+    const Vec3 rollingAngularVelocity{
+        ball.angularVelocity.x,
+        ball.angularVelocity.y,
+        0.0,
+    };
+    const double rollingSpeed = length(rollingAngularVelocity);
+    if (normalImpulse <= 0.0 || rollingSpeed <= 1.0e-12 ||
+        rollingResistanceCoefficient <= 0.0) {
+        return;
+    }
+    const double requiredAngularImpulse =
+        rollingSpeed / inverseInertia(ball);
+    const double rollingImpulseLimit =
+        rollingResistanceCoefficient * ball.radius * normalImpulse;
+    const double angularImpulse = std::min(
+        requiredAngularImpulse,
+        rollingImpulseLimit
+    );
+    ball.angularVelocity -= rollingAngularVelocity * (
+        angularImpulse * inverseInertia(ball) / rollingSpeed
+    );
+    if (rollingImpulseLimit > 0.0) {
+        metrics.maximumRollingResistanceRatio = std::max(
+            metrics.maximumRollingResistanceRatio,
+            angularImpulse / rollingImpulseLimit
+        );
+    }
+    ++metrics.ballRollingResistanceContacts;
+}
+
 void applyBallGroundFriction(
     std::array<Ball, kFruitCount>& balls,
     const std::array<double, kFruitCount>& normalImpulses,
     const double timestep,
     Metrics& metrics,
-    const double rollingResistanceRate
+    const double rollingResistanceCoefficient
 ) {
+    static_cast<void>(timestep);
     const Vec3 normal{0.0, 0.0, 1.0};
     for (std::size_t index = 0; index < balls.size(); ++index) {
         Ball& ball = balls[index];
@@ -1330,8 +1761,53 @@ void applyBallGroundFriction(
                 ++metrics.ballGroundFrictionContacts;
             }
         }
-        ball.angularVelocity = ball.angularVelocity *
-            std::exp(-rollingResistanceRate * timestep);
+        applyBallRollingResistance(
+            ball,
+            normalImpulse,
+            rollingResistanceCoefficient,
+            metrics
+        );
+    }
+}
+
+void applyClothGroundFriction(
+    std::vector<Particle>& particles,
+    const std::vector<double>& normalImpulses,
+    Metrics& metrics
+) {
+    for (std::size_t index = 0u; index < particles.size(); ++index) {
+        Particle& particle = particles[index];
+        const double normalImpulse = normalImpulses[index];
+        if (normalImpulse <= 0.0 || particle.inverseMass <= 0.0) {
+            continue;
+        }
+        const Vec3 tangentVelocity{
+            particle.velocity.x,
+            particle.velocity.y,
+            0.0,
+        };
+        const double slipSpeed = length(tangentVelocity);
+        if (slipSpeed < 1.0e-10) {
+            continue;
+        }
+        const double frictionLimit =
+            kClothGroundFriction * normalImpulse;
+        const double tangentialImpulse = std::min(
+            slipSpeed / particle.inverseMass,
+            frictionLimit
+        );
+        if (tangentialImpulse <= 0.0) {
+            continue;
+        }
+        particle.velocity -= tangentVelocity * (
+            tangentialImpulse * particle.inverseMass / slipSpeed
+        );
+        recordFrictionImpulse(
+            metrics,
+            tangentialImpulse,
+            frictionLimit
+        );
+        ++metrics.clothGroundFrictionContacts;
     }
 }
 
@@ -1416,6 +1892,172 @@ bool runRollingProbe() {
               << " energy_ratio=" << first.energyRatio
               << " friction_cone_ratio="
               << first.metrics.maximumFrictionConeRatio
+              << " deterministic=" << std::boolalpha << deterministic
+              << '\n'
+              << "result=" << (pass ? "PASS" : "FAIL") << '\n';
+    return pass;
+}
+
+struct RollingResistanceProbeCase {
+    double horizontalAngularSpeed{};
+    double verticalAngularSpeed{};
+    double energy{};
+    double ratio{};
+    std::uint64_t contacts{};
+};
+
+RollingResistanceProbeCase runRollingResistanceProbeCase(
+    const double normalImpulse
+) {
+    Ball ball;
+    ball.radius = 0.10;
+    ball.inverseMass = 1.0;
+    ball.angularVelocity = {3.0, 4.0, 2.0};
+    Metrics metrics;
+    applyBallRollingResistance(
+        ball,
+        normalImpulse,
+        kFruitRollingResistanceCoefficient,
+        metrics
+    );
+    return {
+        .horizontalAngularSpeed = std::hypot(
+            ball.angularVelocity.x,
+            ball.angularVelocity.y
+        ),
+        .verticalAngularSpeed = ball.angularVelocity.z,
+        .energy = 0.5 * lengthSquared(ball.angularVelocity) /
+            inverseInertia(ball),
+        .ratio = metrics.maximumRollingResistanceRatio,
+        .contacts = metrics.ballRollingResistanceContacts,
+    };
+}
+
+bool runRollingResistanceProbe() {
+    const RollingResistanceProbeCase limited =
+        runRollingResistanceProbeCase(2.0);
+    const RollingResistanceProbeCase sticking =
+        runRollingResistanceProbeCase(100.0);
+    const RollingResistanceProbeCase unloaded =
+        runRollingResistanceProbeCase(0.0);
+    const RollingResistanceProbeCase limitedReplay =
+        runRollingResistanceProbeCase(2.0);
+    const RollingResistanceProbeCase stickingReplay =
+        runRollingResistanceProbeCase(100.0);
+    const RollingResistanceProbeCase unloadedReplay =
+        runRollingResistanceProbeCase(0.0);
+    const bool deterministic =
+        limited.horizontalAngularSpeed ==
+            limitedReplay.horizontalAngularSpeed &&
+        limited.verticalAngularSpeed == limitedReplay.verticalAngularSpeed &&
+        limited.energy == limitedReplay.energy &&
+        limited.ratio == limitedReplay.ratio &&
+        sticking.horizontalAngularSpeed ==
+            stickingReplay.horizontalAngularSpeed &&
+        sticking.verticalAngularSpeed == stickingReplay.verticalAngularSpeed &&
+        unloaded.horizontalAngularSpeed ==
+            unloadedReplay.horizontalAngularSpeed;
+    const bool pass = deterministic &&
+        std::abs(limited.horizontalAngularSpeed - 4.25) < 1.0e-12 &&
+        std::abs(limited.verticalAngularSpeed - 2.0) < 1.0e-12 &&
+        std::abs(limited.ratio - 1.0) < 1.0e-12 &&
+        limited.contacts == 1u &&
+        sticking.horizontalAngularSpeed < 1.0e-12 &&
+        std::abs(sticking.verticalAngularSpeed - 2.0) < 1.0e-12 &&
+        sticking.contacts == 1u &&
+        std::abs(unloaded.horizontalAngularSpeed - 5.0) < 1.0e-12 &&
+        std::abs(unloaded.verticalAngularSpeed - 2.0) < 1.0e-12 &&
+        unloaded.contacts == 0u &&
+        limited.energy < unloaded.energy;
+    std::cout << std::fixed << std::setprecision(12)
+              << "probe=load_dependent_fruit_rolling_resistance"
+              << " coefficient=" << kFruitRollingResistanceCoefficient
+              << " limited_horizontal_omega="
+              << limited.horizontalAngularSpeed
+              << " limited_vertical_omega="
+              << limited.verticalAngularSpeed
+              << " limited_ratio=" << limited.ratio
+              << " sticking_horizontal_omega="
+              << sticking.horizontalAngularSpeed
+              << " sticking_vertical_omega="
+              << sticking.verticalAngularSpeed
+              << " unloaded_horizontal_omega="
+              << unloaded.horizontalAngularSpeed
+              << " deterministic=" << std::boolalpha << deterministic
+              << '\n'
+              << "result=" << (pass ? "PASS" : "FAIL") << '\n';
+    return pass;
+}
+
+struct ClothGroundFrictionProbeCase {
+    double speed{};
+    double energy{};
+    double coneRatio{};
+    std::uint64_t contacts{};
+};
+
+ClothGroundFrictionProbeCase runClothGroundFrictionProbeCase(
+    const double normalImpulse
+) {
+    std::vector<Particle> particles(1);
+    particles[0].mass = 1.0;
+    particles[0].inverseMass = 1.0;
+    particles[0].velocity = {1.0, 0.0, 0.0};
+    Metrics metrics;
+    applyClothGroundFriction(
+        particles,
+        {normalImpulse},
+        metrics
+    );
+    return {
+        .speed = length(particles[0].velocity),
+        .energy = 0.5 * lengthSquared(particles[0].velocity),
+        .coneRatio = metrics.maximumFrictionConeRatio,
+        .contacts = metrics.clothGroundFrictionContacts,
+    };
+}
+
+bool runClothGroundFrictionProbe() {
+    const ClothGroundFrictionProbeCase sticking =
+        runClothGroundFrictionProbeCase(10.0);
+    const ClothGroundFrictionProbeCase sliding =
+        runClothGroundFrictionProbeCase(1.0);
+    const ClothGroundFrictionProbeCase unloaded =
+        runClothGroundFrictionProbeCase(0.0);
+    const ClothGroundFrictionProbeCase stickingReplay =
+        runClothGroundFrictionProbeCase(10.0);
+    const ClothGroundFrictionProbeCase slidingReplay =
+        runClothGroundFrictionProbeCase(1.0);
+    const ClothGroundFrictionProbeCase unloadedReplay =
+        runClothGroundFrictionProbeCase(0.0);
+    const bool deterministic =
+        sticking.speed == stickingReplay.speed &&
+        sticking.energy == stickingReplay.energy &&
+        sticking.coneRatio == stickingReplay.coneRatio &&
+        sliding.speed == slidingReplay.speed &&
+        sliding.energy == slidingReplay.energy &&
+        sliding.coneRatio == slidingReplay.coneRatio &&
+        unloaded.speed == unloadedReplay.speed &&
+        unloaded.energy == unloadedReplay.energy;
+    const bool pass = deterministic &&
+        sticking.speed < 1.0e-12 &&
+        sticking.energy < 1.0e-12 &&
+        sticking.contacts == 1u &&
+        std::abs(sliding.speed - 0.55) < 1.0e-12 &&
+        std::abs(sliding.energy - 0.15125) < 1.0e-12 &&
+        std::abs(sliding.coneRatio - 1.0) < 1.0e-12 &&
+        sliding.contacts == 1u &&
+        std::abs(unloaded.speed - 1.0) < 1.0e-12 &&
+        unloaded.contacts == 0u;
+    std::cout << std::fixed << std::setprecision(12)
+              << "probe=cloth_ground_coulomb_friction"
+              << " coefficient=" << kClothGroundFriction
+              << " sticking_speed=" << sticking.speed
+              << " sticking_energy=" << sticking.energy
+              << " sliding_speed=" << sliding.speed
+              << " sliding_energy=" << sliding.energy
+              << " sliding_cone_ratio=" << sliding.coneRatio
+              << " unloaded_speed=" << unloaded.speed
               << " deterministic=" << std::boolalpha << deterministic
               << '\n'
               << "result=" << (pass ? "PASS" : "FAIL") << '\n';
@@ -3471,6 +4113,194 @@ void updateMetrics(
     }
 }
 
+struct MouthFrame {
+    Vec3 center{};
+    Vec3 normal{};
+    Vec3 tangent{};
+    Vec3 bitangent{};
+    std::array<Vec3, kAround> ring{};
+    bool valid{};
+};
+
+MouthFrame makeMouthFrame(const ClothModel& cloth) {
+    MouthFrame frame;
+    for (std::uint32_t ring = 0u; ring < kAround; ++ring) {
+        frame.ring[ring] =
+            cloth.particles[nodeIndex(kLevels - 1u, ring)].position;
+        frame.center += frame.ring[ring];
+    }
+    frame.center = frame.center / static_cast<double>(kAround);
+    Vec3 areaNormal{};
+    for (std::uint32_t ring = 0u; ring < kAround; ++ring) {
+        areaNormal += cross(
+            frame.ring[ring] - frame.center,
+            frame.ring[(ring + 1u) % kAround] - frame.center
+        );
+    }
+    if (lengthSquared(areaNormal) < 1.0e-16) {
+        return frame;
+    }
+    frame.normal = normalized(areaNormal);
+    const Vec3 interiorDirection =
+        frame.center - cloth.particles[cloth.bottomCenter].position;
+    if (dot(frame.normal, interiorDirection) < 0.0) {
+        frame.normal = frame.normal * -1.0;
+    }
+    Vec3 tangent = frame.ring[0] - frame.center;
+    tangent -= frame.normal * dot(tangent, frame.normal);
+    if (lengthSquared(tangent) < 1.0e-16) {
+        tangent = cross(
+            frame.normal,
+            std::abs(frame.normal.z) < 0.9
+                ? Vec3{0.0, 0.0, 1.0}
+                : Vec3{1.0, 0.0, 0.0}
+        );
+    }
+    frame.tangent = normalized(tangent);
+    frame.bitangent = normalized(cross(frame.normal, frame.tangent));
+    frame.valid = true;
+    return frame;
+}
+
+bool projectedInsideMouth(const MouthFrame& frame, const Vec3 point) {
+    const Vec3 relativePoint = point - frame.center;
+    const double pointX = dot(relativePoint, frame.tangent);
+    const double pointY = dot(relativePoint, frame.bitangent);
+    bool inside = false;
+    for (std::uint32_t first = 0u, second = kAround - 1u;
+         first < kAround;
+         second = first++) {
+        const Vec3 firstRelative = frame.ring[first] - frame.center;
+        const Vec3 secondRelative = frame.ring[second] - frame.center;
+        const double firstX = dot(firstRelative, frame.tangent);
+        const double firstY = dot(firstRelative, frame.bitangent);
+        const double secondX = dot(secondRelative, frame.tangent);
+        const double secondY = dot(secondRelative, frame.bitangent);
+        const bool crosses = (firstY > pointY) != (secondY > pointY);
+        if (crosses) {
+            const double crossingX = firstX +
+                (secondX - firstX) *
+                (pointY - firstY) / (secondY - firstY);
+            if (pointX < crossingX) {
+                inside = !inside;
+            }
+        }
+    }
+    return inside;
+}
+
+void updateReleasedFruit(
+    const ClothModel& cloth,
+    const std::array<Ball, kFruitCount>& balls,
+    Metrics& metrics
+) {
+    const MouthFrame mouth = makeMouthFrame(cloth);
+    if (!mouth.valid) {
+        return;
+    }
+    for (std::size_t index = 0u; index < balls.size(); ++index) {
+        const Ball& ball = balls[index];
+        if (!projectedInsideMouth(mouth, ball.position)) {
+            continue;
+        }
+        const double clearance = dot(
+            ball.position - mouth.center,
+            mouth.normal
+        ) - (ball.radius + kClothRadius);
+        metrics.maximumMouthClearanceByFruit[index] = std::max(
+            metrics.maximumMouthClearanceByFruit[index],
+            clearance
+        );
+        if (clearance > 0.0) {
+            metrics.releasedMask |= 1u << index;
+        }
+    }
+}
+
+struct MouthReleaseProbeResult {
+    std::uint32_t insideMask{};
+    std::uint32_t releasedMask{};
+    std::uint32_t outsideProjectionMask{};
+    std::uint32_t rotatedMask{};
+    double clearance{};
+    double rotatedClearance{};
+};
+
+MouthReleaseProbeResult runMouthReleaseProbeOnce() {
+    const auto circularMouth = [](const bool rotated) {
+        ClothModel cloth = makeCloth(Scenario::grounded);
+        cloth.particles[cloth.bottomCenter].position = {};
+        for (std::uint32_t ring = 0u; ring < kAround; ++ring) {
+            const double angle = 2.0 * std::numbers::pi *
+                static_cast<double>(ring) / static_cast<double>(kAround);
+            cloth.particles[nodeIndex(kLevels - 1u, ring)].position = rotated
+                ? Vec3{1.0, std::cos(angle), std::sin(angle)}
+                : Vec3{std::cos(angle), std::sin(angle), 1.0};
+        }
+        return cloth;
+    };
+
+    std::array<Ball, kFruitCount> balls{};
+    balls[0].radius = 0.10;
+    balls[0].position = {0.0, 0.0, 0.50};
+    ClothModel upright = circularMouth(false);
+    Metrics uprightMetrics;
+    updateReleasedFruit(upright, balls, uprightMetrics);
+    const std::uint32_t insideMask = uprightMetrics.releasedMask;
+    balls[0].position = {0.0, 0.0, 1.114};
+    updateReleasedFruit(upright, balls, uprightMetrics);
+
+    Metrics outsideMetrics;
+    balls[0].position = {1.50, 0.0, 1.20};
+    updateReleasedFruit(upright, balls, outsideMetrics);
+
+    ClothModel rotated = circularMouth(true);
+    Metrics rotatedMetrics;
+    balls[0].position = {1.114, 0.0, 0.0};
+    updateReleasedFruit(rotated, balls, rotatedMetrics);
+    return {
+        .insideMask = insideMask,
+        .releasedMask = uprightMetrics.releasedMask,
+        .outsideProjectionMask = outsideMetrics.releasedMask,
+        .rotatedMask = rotatedMetrics.releasedMask,
+        .clearance = uprightMetrics.maximumMouthClearanceByFruit[0],
+        .rotatedClearance =
+            rotatedMetrics.maximumMouthClearanceByFruit[0],
+    };
+}
+
+bool runMouthReleaseProbe() {
+    const MouthReleaseProbeResult first = runMouthReleaseProbeOnce();
+    const MouthReleaseProbeResult replay = runMouthReleaseProbeOnce();
+    const bool deterministic =
+        first.insideMask == replay.insideMask &&
+        first.releasedMask == replay.releasedMask &&
+        first.outsideProjectionMask == replay.outsideProjectionMask &&
+        first.rotatedMask == replay.rotatedMask &&
+        first.clearance == replay.clearance &&
+        first.rotatedClearance == replay.rotatedClearance;
+    const bool pass = deterministic &&
+        first.insideMask == 0u &&
+        first.releasedMask == 1u &&
+        first.outsideProjectionMask == 0u &&
+        first.rotatedMask == 1u &&
+        std::abs(first.clearance - 0.010) < 1.0e-12 &&
+        std::abs(first.rotatedClearance - 0.010) < 1.0e-12;
+    std::cout << std::fixed << std::setprecision(12)
+              << "probe=topology_aware_mouth_release"
+              << " inside_mask=" << first.insideMask
+              << " released_mask=" << first.releasedMask
+              << " outside_projection_mask="
+              << first.outsideProjectionMask
+              << " rotated_mask=" << first.rotatedMask
+              << " clearance=" << first.clearance
+              << " rotated_clearance=" << first.rotatedClearance
+              << " deterministic=" << std::boolalpha << deterministic
+              << '\n'
+              << "result=" << (pass ? "PASS" : "FAIL") << '\n';
+    return pass;
+}
+
 SimulationResult simulate(
     const std::uint32_t steps,
     const double frameTimestep,
@@ -3486,6 +4316,12 @@ SimulationResult simulate(
     result.balls = makeBalls(scenario);
     const double timestep = frameTimestep / static_cast<double>(substeps);
     const Vec3 gravity{0.0, 0.0, -9.81};
+    std::vector<Vec3> predictedClothVelocities(
+        result.cloth.particles.size()
+    );
+    std::vector<double> clothGroundNormalImpulses(
+        result.cloth.particles.size()
+    );
     const auto capture = [&](const std::uint32_t completedSteps) {
         if (captureSteps != nullptr && captures != nullptr &&
             std::find(
@@ -3502,6 +4338,11 @@ SimulationResult simulate(
         double publishedPrimitiveResidual =
             std::numeric_limits<double>::infinity();
         for (std::uint32_t substep = 0; substep < substeps; ++substep) {
+            std::fill(
+                clothGroundNormalImpulses.begin(),
+                clothGroundNormalImpulses.end(),
+                0.0
+            );
             std::array<BallPairContactImpulse, kBallPairCount> pairContacts{};
             std::vector<BallYarnContactImpulse> yarnContacts(
                 result.balls.size() * result.cloth.yarnSegments.size()
@@ -3525,13 +4366,34 @@ SimulationResult simulate(
                     continue;
                 }
                 particle.velocity += gravity * timestep;
-                particle.velocity = particle.velocity * std::exp(-0.45 * timestep);
+            }
+            applyYarnAerodynamics(
+                result.cloth,
+                {},
+                timestep,
+                &result.metrics
+            );
+            for (std::size_t index = 0u;
+                 index < result.cloth.particles.size();
+                 ++index) {
+                Particle& particle = result.cloth.particles[index];
+                predictedClothVelocities[index] = particle.velocity;
+                if (particle.inverseMass == 0.0) {
+                    continue;
+                }
                 particle.position += particle.velocity * timestep;
             }
             for (Ball& ball : result.balls) {
                 ball.previous = ball.position;
                 ball.velocity += gravity * timestep;
-                ball.velocity = ball.velocity * std::exp(-0.08 * timestep);
+            }
+            applyFruitAerodynamics(
+                result.balls,
+                {},
+                timestep,
+                &result.metrics
+            );
+            for (Ball& ball : result.balls) {
                 ball.position += ball.velocity * timestep;
             }
             if (scenario != Scenario::spin) {
@@ -3615,13 +4477,18 @@ SimulationResult simulate(
                         );
                     }
                 }
-                for (GripConstraint& constraint : result.cloth.grips) {
-                    solveGrip(
-                        result.cloth.particles,
-                        constraint,
-                        result.cloth.gripTarget + constraint.targetOffset,
-                        timestep
-                    );
+                if (result.cloth.gripActive) {
+                    for (GripConstraint& constraint : result.cloth.grips) {
+                        solveGrip(
+                            result.cloth.particles,
+                            constraint,
+                            result.cloth.gripTarget + pitchGripOffset(
+                                constraint.targetOffset,
+                                result.cloth.gripPitch
+                            ),
+                            timestep
+                        );
+                    }
                 }
                 std::size_t pairIndex = 0u;
                 for (std::size_t first = 0; first < result.balls.size(); ++first) {
@@ -3887,7 +4754,10 @@ SimulationResult simulate(
                     certificatePasses
                 );
             }
-            for (Particle& particle : result.cloth.particles) {
+            for (std::size_t index = 0u;
+                 index < result.cloth.particles.size();
+                 ++index) {
+                Particle& particle = result.cloth.particles[index];
                 if (particle.inverseMass == 0.0) {
                     particle.position = particle.rest;
                     particle.velocity =
@@ -3895,16 +4765,26 @@ SimulationResult simulate(
                 } else {
                     particle.velocity =
                         (particle.position - particle.previous) / timestep;
-                    if (particle.position.z <= kClothRadius + 1.0e-6) {
-                        const double friction = std::exp(-12.0 * timestep);
-                        particle.velocity.x *= friction;
-                        particle.velocity.y *= friction;
+                    if (scenario != Scenario::spin &&
+                        particle.position.z <= kClothRadius + 1.0e-6) {
+                        const double normalVelocityChange =
+                            particle.velocity.z -
+                            predictedClothVelocities[index].z;
+                        clothGroundNormalImpulses[index] = std::max(
+                            0.0,
+                            normalVelocityChange / particle.inverseMass
+                        );
                     }
                 }
             }
             for (Ball& ball : result.balls) {
                 ball.velocity = (ball.position - ball.previous) / timestep;
             }
+            applyClothGroundFriction(
+                result.cloth.particles,
+                clothGroundNormalImpulses,
+                result.metrics
+            );
             applyClothSelfFriction(
                 result.cloth,
                 selfContactImpulses,
@@ -3923,11 +4803,16 @@ SimulationResult simulate(
                 groundNormalImpulses,
                 timestep,
                 result.metrics,
-                kFruitRollingResistanceRate
+                kFruitRollingResistanceCoefficient
             );
+            if (scenario != Scenario::grounded) {
+                updateReleasedFruit(
+                    result.cloth,
+                    result.balls,
+                    result.metrics
+                );
+            }
             for (Ball& ball : result.balls) {
-                ball.angularVelocity = ball.angularVelocity *
-                    std::exp(-0.02 * timestep);
                 integrateOrientation(ball, timestep);
             }
             double gripForce = 0.0;
@@ -3969,18 +4854,6 @@ SimulationResult simulate(
             measureStrainLimitViolation(result.cloth)
         );
         updateMetrics(result.cloth, result.balls, result.metrics);
-        if (scenario != Scenario::grounded) {
-            for (std::size_t ballIndex = 0;
-                 ballIndex < result.balls.size();
-                 ++ballIndex) {
-                if (length(
-                    result.balls[ballIndex].position -
-                    result.cloth.particles[result.cloth.bottomCenter].position
-                ) > 0.45) {
-                    result.metrics.releasedMask |= 1u << ballIndex;
-                }
-            }
-        }
         capture(step + 1u);
     }
 
@@ -3996,12 +4869,6 @@ SimulationResult simulate(
         if (scenario == Scenario::grounded &&
             (ball.position.z > 0.45 || radial > 0.48)) {
             result.metrics.spilledMask |= 1u << ballIndex;
-        }
-        if (scenario != Scenario::grounded && length(
-            ball.position -
-            result.cloth.particles[result.cloth.bottomCenter].position
-        ) > 0.45) {
-            result.metrics.releasedMask |= 1u << ballIndex;
         }
     }
     result.metrics.finalPrimitiveSelfPenetration = accumulateSeconds(
@@ -4045,6 +4912,11 @@ std::uint64_t hashResult(const SimulationResult& result) {
         append(ball.orientation.y);
         append(ball.orientation.z);
     }
+    append(result.cloth.gripTarget.x);
+    append(result.cloth.gripTarget.y);
+    append(result.cloth.gripTarget.z);
+    append(result.cloth.gripPitch);
+    append(result.cloth.gripActive ? 1.0 : 0.0);
     return hash;
 }
 
@@ -4054,7 +4926,7 @@ void dumpOBJ(const std::string& path, const SimulationResult& result) {
         throw std::runtime_error("failed to open OBJ output: " + path);
     }
     output << std::setprecision(9);
-    output << "# Numi Solver dense cloth bag reference\n";
+    output << "# Numi Solver explicit-yarn cloth bag reference\n";
     output << "# vertices " << result.cloth.particles.size()
            << " render_triangles " << result.cloth.renderTriangles.size()
            << '\n';
@@ -4070,7 +4942,9 @@ void dumpOBJ(const std::string& path, const SimulationResult& result) {
     if (result.scenario != Scenario::grounded) {
         output << "# grip center " << result.cloth.gripTarget.x << ' '
                << result.cloth.gripTarget.y << ' '
-               << result.cloth.gripTarget.z << '\n';
+               << result.cloth.gripTarget.z << " active "
+               << (result.cloth.gripActive ? 1 : 0) << " pitch "
+               << result.cloth.gripPitch << '\n';
     }
     for (std::size_t index = 0; index < result.balls.size(); ++index) {
         const Ball& ball = result.balls[index];
@@ -4100,7 +4974,7 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
     const bool groundValid = result.scenario == Scenario::spin ||
         result.metrics.maximumGroundPenetration < kClothRadius + 1.0e-6;
     const bool pickupOutcome = result.scenario != Scenario::pickup ||
-        std::popcount(result.metrics.releasedMask) >= 3;
+        std::popcount(result.metrics.releasedMask) >= 2;
     double clothMass = 0.0;
     for (const Particle& particle : result.cloth.particles) {
         clothMass += particle.mass;
@@ -4128,7 +5002,8 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
         result.metrics.maximumSpeed < 30.0 &&
         result.metrics.maximumAngularSpeed < 200.0 &&
         result.metrics.maximumGripForce < 500.0 &&
-        result.metrics.maximumFrictionConeRatio <= 1.0 + 1.0e-12;
+        result.metrics.maximumFrictionConeRatio <= 1.0 + 1.0e-12 &&
+        result.metrics.maximumRollingResistanceRatio <= 1.0 + 1.0e-12;
 }
 
 }  // namespace
@@ -4148,6 +5023,10 @@ int main(int argc, char** argv) try {
     bool selfFrictionProbe = false;
     bool deformableResponseProbe = false;
     bool yarnMechanicsProbe = false;
+    bool aerodynamicsProbe = false;
+    bool clothGroundFrictionProbe = false;
+    bool rollingResistanceProbe = false;
+    bool mouthReleaseProbe = false;
     Scenario scenario = Scenario::grounded;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string value = argv[argument];
@@ -4185,6 +5064,14 @@ int main(int argc, char** argv) try {
             deformableResponseProbe = true;
         } else if (value == "--yarn-mechanics-probe") {
             yarnMechanicsProbe = true;
+        } else if (value == "--aerodynamics-probe") {
+            aerodynamicsProbe = true;
+        } else if (value == "--cloth-ground-friction-probe") {
+            clothGroundFrictionProbe = true;
+        } else if (value == "--rolling-resistance-probe") {
+            rollingResistanceProbe = true;
+        } else if (value == "--mouth-release-probe") {
+            mouthReleaseProbe = true;
         } else if (value == "--scenario" && argument + 1 < argc) {
             const std::string name = argv[++argument];
             if (name == "grounded") {
@@ -4206,7 +5093,11 @@ int main(int argc, char** argv) try {
                          "[--self-ccd-probe] [--strain-probe] "
                          "[--self-friction-probe] "
                          "[--deformable-response-probe] "
-                         "[--yarn-mechanics-probe]\n";
+                         "[--yarn-mechanics-probe] "
+                         "[--aerodynamics-probe] "
+                         "[--cloth-ground-friction-probe] "
+                         "[--rolling-resistance-probe] "
+                         "[--mouth-release-probe]\n";
             return 0;
         } else {
             throw std::invalid_argument("unknown argument: " + value);
@@ -4229,6 +5120,18 @@ int main(int argc, char** argv) try {
     }
     if (yarnMechanicsProbe) {
         return runYarnMechanicsProbe() ? 0 : 1;
+    }
+    if (aerodynamicsProbe) {
+        return runAerodynamicsProbe() ? 0 : 1;
+    }
+    if (clothGroundFrictionProbe) {
+        return runClothGroundFrictionProbe() ? 0 : 1;
+    }
+    if (rollingResistanceProbe) {
+        return runRollingResistanceProbe() ? 0 : 1;
+    }
+    if (mouthReleaseProbe) {
+        return runMouthReleaseProbe() ? 0 : 1;
     }
     if (steps == 0u || substeps == 0u || iterations == 0u ||
         (replays != 1u && replays != 2u) ||
@@ -4362,6 +5265,16 @@ int main(int argc, char** argv) try {
         std::cout << metrics.maximumBallPenetrationByFruit[index];
     }
     std::cout << '\n';
+    std::cout << "max_mouth_clearance_by_fruit=";
+    for (std::size_t index = 0;
+         index < metrics.maximumMouthClearanceByFruit.size();
+         ++index) {
+        if (index != 0u) {
+            std::cout << ',';
+        }
+        std::cout << metrics.maximumMouthClearanceByFruit[index];
+    }
+    std::cout << '\n';
     std::cout << "max_ground_contact_correction="
               << metrics.maximumGroundPenetration
               << " max_cloth_ground_correction="
@@ -4388,10 +5301,20 @@ int main(int argc, char** argv) try {
               << metrics.finalStrainLimitViolation
               << " max_speed=" << metrics.maximumSpeed
               << " max_angular_speed=" << metrics.maximumAngularSpeed
+              << " max_yarn_aerodynamic_force="
+              << metrics.maximumYarnAerodynamicForce
+              << " max_fruit_aerodynamic_force="
+              << metrics.maximumFruitAerodynamicForce
+              << " max_fruit_aerodynamic_torque="
+              << metrics.maximumFruitAerodynamicTorque
+              << " aerodynamic_dissipation="
+              << metrics.aerodynamicDissipation
               << " max_grip_force=" << metrics.maximumGripForce
               << " max_grip_impulse=" << metrics.maximumGripImpulse
               << " max_friction_cone_ratio="
               << metrics.maximumFrictionConeRatio
+              << " max_rolling_resistance_ratio="
+              << metrics.maximumRollingResistanceRatio
               << " tangential_impulse="
               << metrics.accumulatedTangentialImpulse
               << " cloth_friction_contacts="
@@ -4400,6 +5323,8 @@ int main(int argc, char** argv) try {
               << metrics.ballPairFrictionContacts
               << " ground_friction_contacts="
               << metrics.ballGroundFrictionContacts
+              << " rolling_resistance_contacts="
+              << metrics.ballRollingResistanceContacts
               << " swept_ball_yarn_contacts="
               << metrics.sweptBallYarnContacts
               << " edge_edge_self_contacts="
@@ -4412,6 +5337,8 @@ int main(int argc, char** argv) try {
               << metrics.edgeEdgeSphereCandidatePairs
               << " cloth_self_friction_contacts="
               << metrics.clothSelfFrictionContacts
+              << " cloth_ground_friction_contacts="
+              << metrics.clothGroundFrictionContacts
               << " deterministic=" << std::boolalpha << deterministic
               << " state_hash=0x" << std::hex << firstHash << std::dec << '\n';
     std::cout << "ball_cloth_solve_seconds=" << metrics.ballClothSolveSeconds

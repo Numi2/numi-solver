@@ -27,7 +27,7 @@ states for later implementations to match.
 The wall is a periodic 48 by 28 yarn grid. A 13 by 13 square bottom weave maps
 its boundary one-to-one onto the lowest 48-node wall ring, leaving no geometric
 hole or single-center fan. The upper rows form an irregular inward cuff and
-remain free except when the five-node grab is active.
+remain free except for the small two-row patch held by the grab.
 
 Ordinary knot particles carry `0.05 g`; the two hem rows carry `0.10 g`. Total
 bag mass is `0.07805 kg`, against `2.33 kg` of fruit. These are authored
@@ -67,6 +67,11 @@ which resists yarn curvature without turning the net into a triangulated
 sheet. A unilateral post-contact projection limits extension of every axial
 yarn to `28.5%`; it does not resist compression or replace ordinary compliant
 strain below that ceiling.
+
+The two folded top-cuff rows use the same three-knot equation with authored
+`c_b=1e-8`; the rest of the bag remains at `8e-2`. This represents the sewn,
+doubled opening seam visible in the target bag rather than making all net yarn
+rigid. The cuff value is not specimen-calibrated.
 
 ## Fruit, ground, and yarn contact
 
@@ -110,36 +115,97 @@ j_t=\min\left(\frac{\|v_t\|}{w_{\mathrm{eff}}},\mu j_n\right),
 
 The same endpoint weights used for normal contact distribute equal and
 opposite friction impulses. Fruit contact-point velocity includes
-`omega cross r`; grounded fruit additionally use timestep-integrated rolling
-resistance. Sorted primitive IDs keep the update order deterministic.
+`omega cross r`. Sorted primitive IDs keep the update order deterministic.
+
+## Air and ground resistance
+
+Air resistance is applied to the resolved yarn and fruit geometry instead of
+using global velocity damping. For a yarn segment of length `L`, diameter `d`,
+axis-parallel velocity `v_parallel`, and crossflow velocity `v_perp`,
+
+```math
+F_y=-\frac12\rho L\left[
+C_d d\|v_\perp\|v_\perp+
+C_f\pi d\|v_\parallel\|v_\parallel
+\right].
+```
+
+The reference uses `rho=1.225 kg/m^3`, cylinder crossflow `C_d=1.10`, and
+axial skin-friction `C_f=0.010`. Each segment force is evaluated from its
+midpoint velocity and split equally between its endpoint masses. This makes
+the total force invariant when a uniformly moving segment is subdivided.
+
+Fruit use projected-area sphere drag and a surface-integrated rotational drag:
+
+```math
+F_f=-\frac12\rho C_{d,f}\pi r^2\|v\|v,
+\qquad C_{d,f}=0.47,
+```
+
+```math
+\tau_f=-\frac{3\pi^2}{8}\rho C_\omega r^5\|\omega\|\omega,
+\qquad C_\omega=0.010.
+```
+
+Every explicit drag impulse is capped before it can reverse its relative
+velocity in one substep. The run reports peak yarn force, peak fruit force and
+torque, and the exact discrete relative kinetic energy removed by air loads.
+`--aerodynamics-probe` checks the analytic forces, energy reduction,
+subdivision invariance, a zero-force co-moving-air case, and replay.
+
+Cloth/plane motion uses load-dependent maximum-dissipation Coulomb friction,
+not a fixed horizontal decay. The normal impulse is reconstructed from the
+ground-active velocity response, and the tangent impulse satisfies
+
+```math
+j_t=\min(m\|v_t\|,\mu_g j_n),\qquad \mu_g=0.45.
+```
+
+Fruit rolling resistance is likewise load dependent. Its angular impulse is
+capped by `mu_r r j_n`, with `mu_r=0.015`, and acts only on the two horizontal
+rolling axes; it does not incorrectly damp vertical spin. Independent probes
+cover sticking, cone-limited sliding, zero-load invariance, rolling-axis
+stopping, vertical-spin preservation, and deterministic replay.
 
 ## Top-opening seam grab
 
 The orange marker in the rendered replay is a virtual handle. It connects by
-five independent XPBD constraints to five neighboring particles on the upper
-opening seam, each with `2e-3 m/N` compliance. No cloth particle is pinned and
-the handle is not attached to the bottom. The visible orange connector lines
-show the physical lag between the target and the five massive seam knots.
+ten independent XPBD constraints to five neighboring knots on each of the two
+folded opening-seam rows, each with `2e-4 m/N` compliance. No cloth particle is
+pinned and the handle is not attached to the bottom. The visible orange
+connector lines show the physical lag between the target and the ten massive
+seam knots.
 
-The airborne spin uses a smoothly accelerated orbit. The grounded pickup uses
-a lift followed by a downward/sideways whip. With
+The airborne spin uses a smoothly accelerated orbit. The qualified grounded
+pickup uses a lift, a brief loaded interval, a vertical downward snap, and a
+slower recovery. With
 `s(x)=clamp(x,0,1)^2(3-2clamp(x,0,1))`, its target is
 
 ```math
-u(t)=s(t/0.58),\qquad w(t)=s((t-0.72)/0.30),
+u(t)=s(t/0.80),\qquad d(t)=s((t-1.00)/0.25),
+\qquad r(t)=s((t-1.45)/0.50),
 ```
 
 ```math
 g(t)=g_0+
 \begin{bmatrix}
--0.46w & 0.14\sin(\pi w) & 0.72u-0.52w
+-0.10d & 0.04\sin(\pi d) & 1.15u-0.75d+0.65r
 \end{bmatrix}.
 ```
 
 Only this seam target is authored. Every bag knot and fruit remains dynamic;
 gravity, inertia, capsule contact, the open mouth, and the ground determine
-the response. `released_mask` latches fruit that leave the mouth region and is
+the response. The downward cuff motion does not prescribe a fruit trajectory:
+four fruits lag inertially, cross the top opening, fall, and resolve ground
+contact. `released_mask` latches fruit that leave the mouth region and is
 kept separate from `escaped_mask`, which denotes numerical divergence.
+
+Release is not inferred from distance to one bottom particle. Every substep
+constructs an outward-oriented frame from all 48 upper-rim knots, projects the
+ordered rim into that frame, and requires the fruit center to lie inside the
+opening polygon while the complete sphere clears the rim plane by more than
+the yarn radius. `--mouth-release-probe` checks contained, valid crossing,
+outside-projection, and rigidly rotated opening cases with exact replay.
 
 ## Qualification
 
@@ -149,7 +215,8 @@ render topology, axial extension beyond the unilateral limit, excessive
 fruit/yarn or yarn/yarn overlap, excessive speed, grip force above `500 N`, a
 friction-cone violation, or a completed-frame certificate above `2 um`.
 Grounded runs additionally require `spilled_mask=0` and bounded plane
-correction. Pickup additionally requires at least three released fruits.
+correction. Pickup additionally requires at least two released fruits; the
+qualified replay releases four.
 
 Run the three load cases and focused mechanics probes:
 
@@ -159,7 +226,7 @@ Run the three load cases and focused mechanics probes:
   --dump-obj grounded-1s.obj
 
 ./build/numi-solver-cloth-bag \
-  --scenario spin --steps 60 --substeps 24 --iterations 32 --replays 2 \
+  --scenario spin --steps 60 --substeps 48 --iterations 32 --replays 2 \
   --dump-frames spin
 
 ./build/numi-solver-cloth-bag \
@@ -167,25 +234,29 @@ Run the three load cases and focused mechanics probes:
   --dump-frames pickup --dump-every 10
 
 ./build/numi-solver-cloth-bag --rolling-probe
+./build/numi-solver-cloth-bag --rolling-resistance-probe
+./build/numi-solver-cloth-bag --mouth-release-probe
 ./build/numi-solver-cloth-bag --yarn-mechanics-probe
+./build/numi-solver-cloth-bag --aerodynamics-probe
 ./build/numi-solver-cloth-bag --self-ccd-probe
 ./build/numi-solver-cloth-bag --strain-probe
 ./build/numi-solver-cloth-bag --self-friction-probe
+./build/numi-solver-cloth-bag --cloth-ground-friction-probe
 ./build/numi-solver-cloth-bag --deformable-response-probe
 ```
 
-The qualified 2026-08-20 checkpoints are:
+The qualified 2026-08-21 checkpoints are:
 
 | Scenario | Physical outcome | Published certificate | State hash |
 |---|---|---|---|
-| Grounded, `1.0 s` | no spill or escape | fruit/yarn `0.003 um`; final yarn overlap `0.636 um`; strain residual `0` | `0xea134e3e023cef02` |
-| Spin, `0.5 s` | visible lag/folding; no release or escape | published yarn overlap `0.123 um`; strain residual `0` | `0x7b40d6475e83062d` |
-| Pickup, `2.0 s` | three fruits released; no escape | fruit/yarn `0.965 um`; published yarn overlap `0.988 um`; final overlap `0.643 um`; strain residual `0` | `0xeab3cb21c536db49` |
+| Grounded, `1.0 s` | no spill or escape | fruit/yarn `0`; final yarn overlap `0.743 um`; strain residual `0` | `0xbe244ce43db42aca` |
+| Spin, `0.5 s`, 48 substeps | visible lag/folding; no release or escape | fruit/yarn `0.646 um`; published yarn overlap `0.342 um`; strain residual `0` | `0xee2d0f53fddd96c9` |
+| Pickup, `2.0 s` | four fruits released; no escape | fruit/yarn `0.504 um`; published yarn overlap `0.967 um`; final overlap `0`; strain residual `0` | `0x3452eeca5b4c1c9` |
 
 The pickup run reached `0.285000000` maximum axial warp extension,
-`0.043140803` maximum bottom extension, `59.092242546 N` peak five-node grip
-force, 72,464 swept fruit/yarn hits, 22,675 swept yarn/yarn hits, and 103,975
-yarn/yarn friction contacts. `released_mask=352`, `escaped_mask=0`, and the
+`0.084238155` maximum bottom extension, `116.933051607 N` peak ten-knot grip
+force, 61,592 swept fruit/yarn hits, 6,836 swept yarn/yarn hits, and 25,202
+yarn/yarn friction contacts. `released_mask=3089`, `escaped_mask=0`, and the
 friction-cone ratio never exceeded `1.0`.
 
 The direct deformable-response probe independently certifies true endpoint-mass
@@ -203,7 +274,7 @@ dissipation, and deterministic replay.
 fruit center/radius/orientation/angular velocity, and the exact virtual grip
 target. `--dump-frames PREFIX` captures five evenly spaced states;
 `--dump-every N` captures every Nth step plus the final state. The AppKit
-renderer draws the axial yarn graph as cotton-like cylinders and the five seam
+renderer draws the axial yarn graph as cotton-like cylinders and the ten seam
 connectors, but never modifies state. A PNG or GIF therefore visualizes the
 qualified CPU trajectory; it is not independent proof of material calibration
 or of a future Metal implementation.
