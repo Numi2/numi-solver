@@ -35,6 +35,7 @@ constexpr double kClothContactPatchMass = kClothMass;
 constexpr double kFruitGroundFriction = 0.42;
 constexpr double kFruitPairFriction = 0.30;
 constexpr double kFruitClothFriction = 0.36;
+constexpr double kClothSelfFriction = 0.34;
 constexpr double kFruitRollingResistanceRate = 0.35;
 constexpr std::size_t kBallPairCount =
     kFruitCount * (kFruitCount - 1u) / 2u;
@@ -205,6 +206,29 @@ struct Edge {
     std::uint32_t second{};
 };
 
+struct SelfVertexTriangleContactImpulse {
+    std::uint32_t vertex{};
+    Triangle triangle{};
+    Vec3 weightedNormalOnVertex{};
+    std::array<double, 3> weightedBarycentric{};
+    double normalImpulse{};
+};
+
+struct SelfEdgeEdgeContactImpulse {
+    Edge first{};
+    Edge second{};
+    Vec3 weightedNormalOnFirst{};
+    std::array<double, 2> weightedFirst{};
+    std::array<double, 2> weightedSecond{};
+    double normalImpulse{};
+};
+
+struct SelfContactImpulses {
+    std::unordered_map<std::uint64_t, SelfVertexTriangleContactImpulse>
+        vertexTriangle;
+    std::unordered_map<std::uint64_t, SelfEdgeEdgeContactImpulse> edgeEdge;
+};
+
 struct BendConstraint {
     std::uint32_t edgeFirst{};
     std::uint32_t edgeSecond{};
@@ -268,6 +292,7 @@ struct Metrics {
     std::uint64_t edgeEdgeSelfContacts{};
     std::uint64_t sweptVertexTriangleSelfContacts{};
     std::uint64_t sweptEdgeEdgeSelfContacts{};
+    std::uint64_t clothSelfFrictionContacts{};
     double maximumSweptSelfAdvance{};
     double finalPrimitiveSelfPenetration{};
     double maximumStrainLimitCorrection{};
@@ -1716,14 +1741,18 @@ double solveSweptVertexTriangle(
     ClothModel& cloth,
     std::uint32_t vertexIndex,
     Triangle triangle,
-    std::uint64_t& contactCount
+    std::uint64_t& contactCount,
+    SelfVertexTriangleContactImpulse* contactImpulse = nullptr,
+    double timestep = 1.0
 );
 
 double solveSweptEdgeEdge(
     ClothModel& cloth,
     Edge first,
     Edge second,
-    std::uint64_t& contactCount
+    std::uint64_t& contactCount,
+    SelfEdgeEdgeContactImpulse* contactImpulse = nullptr,
+    double timestep = 1.0
 );
 
 struct SelfCCDProbeResult {
@@ -2110,7 +2139,9 @@ double solveSweptVertexTriangle(
     ClothModel& cloth,
     const std::uint32_t vertexIndex,
     const Triangle triangle,
-    std::uint64_t& contactCount
+    std::uint64_t& contactCount,
+    SelfVertexTriangleContactImpulse* contactImpulse,
+    const double timestep
 ) {
     constexpr double target = 2.0 * kClothRadius;
     constexpr double tolerance = 1.0e-9;
@@ -2193,6 +2224,16 @@ double solveSweptVertexTriangle(
             (cloth.particles[indices[index]].inverseMass *
              impact.closest.barycentric[index] * lambda);
     }
+    if (contactImpulse != nullptr) {
+        const double impulseMagnitude = lambda / timestep;
+        contactImpulse->weightedNormalOnVertex -=
+            normal * impulseMagnitude;
+        for (std::size_t index = 0; index < 3; ++index) {
+            contactImpulse->weightedBarycentric[index] +=
+                impact.closest.barycentric[index] * impulseMagnitude;
+        }
+        contactImpulse->normalImpulse += impulseMagnitude;
+    }
     ++contactCount;
     return removedAdvance;
 }
@@ -2201,7 +2242,9 @@ double solveVertexTriangle(
     ClothModel& cloth,
     const std::uint32_t vertexIndex,
     const Triangle triangle,
-    std::uint64_t& contactCount
+    std::uint64_t& contactCount,
+    SelfVertexTriangleContactImpulse* contactImpulse,
+    const double timestep
 ) {
     constexpr double target = 2.0 * kClothRadius;
     Particle& vertex = cloth.particles[vertexIndex];
@@ -2246,6 +2289,16 @@ double solveVertexTriangle(
             (cloth.particles[indices[index]].inverseMass *
              closest.barycentric[index] * lambda);
     }
+    if (contactImpulse != nullptr) {
+        const double impulseMagnitude = lambda / timestep;
+        contactImpulse->weightedNormalOnVertex -=
+            normal * impulseMagnitude;
+        for (std::size_t index = 0; index < 3; ++index) {
+            contactImpulse->weightedBarycentric[index] +=
+                closest.barycentric[index] * impulseMagnitude;
+        }
+        contactImpulse->normalImpulse += impulseMagnitude;
+    }
     ++contactCount;
     return target - distance;
 }
@@ -2289,7 +2342,9 @@ double solveSweptEdgeEdge(
     ClothModel& cloth,
     const Edge first,
     const Edge second,
-    std::uint64_t& contactCount
+    std::uint64_t& contactCount,
+    SelfEdgeEdgeContactImpulse* contactImpulse,
+    const double timestep
 ) {
     constexpr double target = 2.0 * kClothRadius;
     constexpr double tolerance = 1.0e-9;
@@ -2384,6 +2439,18 @@ double solveSweptEdgeEdge(
             (cloth.particles[indices[index + 2u]].inverseMass *
              secondWeights[index] * lambda);
     }
+    if (contactImpulse != nullptr) {
+        const double impulseMagnitude = lambda / timestep;
+        contactImpulse->weightedNormalOnFirst -=
+            normal * impulseMagnitude;
+        for (std::size_t index = 0; index < 2; ++index) {
+            contactImpulse->weightedFirst[index] +=
+                firstWeights[index] * impulseMagnitude;
+            contactImpulse->weightedSecond[index] +=
+                secondWeights[index] * impulseMagnitude;
+        }
+        contactImpulse->normalImpulse += impulseMagnitude;
+    }
     ++contactCount;
     return removedAdvance;
 }
@@ -2392,7 +2459,9 @@ double solveEdgeEdge(
     ClothModel& cloth,
     const Edge first,
     const Edge second,
-    std::uint64_t& contactCount
+    std::uint64_t& contactCount,
+    SelfEdgeEdgeContactImpulse* contactImpulse,
+    const double timestep
 ) {
     constexpr double target = 2.0 * kClothRadius;
     const SegmentClosest closest = closestPointsOnSegments(
@@ -2447,6 +2516,18 @@ double solveEdgeEdge(
         cloth.particles[indices[index + 2u]].position += normal *
             (cloth.particles[indices[index + 2u]].inverseMass *
              secondWeights[index] * lambda);
+    }
+    if (contactImpulse != nullptr) {
+        const double impulseMagnitude = lambda / timestep;
+        contactImpulse->weightedNormalOnFirst -=
+            normal * impulseMagnitude;
+        for (std::size_t index = 0; index < 2; ++index) {
+            contactImpulse->weightedFirst[index] +=
+                firstWeights[index] * impulseMagnitude;
+            contactImpulse->weightedSecond[index] +=
+                secondWeights[index] * impulseMagnitude;
+        }
+        contactImpulse->normalImpulse += impulseMagnitude;
     }
     ++contactCount;
     return target - distance;
@@ -2617,7 +2698,9 @@ void gatherCollisionCandidates(
 double solvePrimitiveSelfCollision(
     ClothModel& cloth,
     const bool swept,
-    Metrics& metrics
+    Metrics& metrics,
+    const double timestep,
+    SelfContactImpulses* contactImpulses
 ) {
     constexpr double target = 2.0 * kClothRadius;
     constexpr double cellSize = 5.0 * target;
@@ -2651,14 +2734,37 @@ double solvePrimitiveSelfCollision(
             if (vertexTriangleLocal(cloth, vertex, triangle)) {
                 continue;
             }
+            SelfVertexTriangleContactImpulse* contactImpulse = nullptr;
+            if (contactImpulses != nullptr) {
+                const std::uint64_t key =
+                    (static_cast<std::uint64_t>(vertex) << 32u) |
+                    triangleIndex;
+                auto [found, inserted] =
+                    contactImpulses->vertexTriangle.try_emplace(key);
+                if (inserted) {
+                    found->second.vertex = vertex;
+                    found->second.triangle = triangle;
+                }
+                contactImpulse = &found->second;
+            }
             maximum = std::max(
                 maximum,
                 swept
                     ? solveSweptVertexTriangle(
-                        cloth, vertex, triangle, vertexContacts
+                        cloth,
+                        vertex,
+                        triangle,
+                        vertexContacts,
+                        contactImpulse,
+                        timestep
                     )
                     : solveVertexTriangle(
-                        cloth, vertex, triangle, vertexContacts
+                        cloth,
+                        vertex,
+                        triangle,
+                        vertexContacts,
+                        contactImpulse,
+                        timestep
                     )
             );
         }
@@ -2704,13 +2810,38 @@ double solvePrimitiveSelfCollision(
             if (edgePairLocal(cloth, first, second)) {
                 continue;
             }
+            SelfEdgeEdgeContactImpulse* contactImpulse = nullptr;
+            if (contactImpulses != nullptr) {
+                const std::uint64_t key =
+                    (static_cast<std::uint64_t>(firstIndex) << 32u) |
+                    secondIndex;
+                auto [found, inserted] =
+                    contactImpulses->edgeEdge.try_emplace(key);
+                if (inserted) {
+                    found->second.first = first;
+                    found->second.second = second;
+                }
+                contactImpulse = &found->second;
+            }
             maximum = std::max(
                 maximum,
                 swept
                     ? solveSweptEdgeEdge(
-                        cloth, first, second, edgeContacts
+                        cloth,
+                        first,
+                        second,
+                        edgeContacts,
+                        contactImpulse,
+                        timestep
                     )
-                    : solveEdgeEdge(cloth, first, second, edgeContacts)
+                    : solveEdgeEdge(
+                        cloth,
+                        first,
+                        second,
+                        edgeContacts,
+                        contactImpulse,
+                        timestep
+                    )
             );
         }
     }
@@ -2721,6 +2852,266 @@ double solvePrimitiveSelfCollision(
     }
     metrics.selfContacts += edgeContacts;
     return maximum;
+}
+
+void applyClothSelfFriction(
+    ClothModel& cloth,
+    const SelfContactImpulses& contacts,
+    Metrics& metrics
+) {
+    std::vector<std::uint64_t> vertexKeys;
+    vertexKeys.reserve(contacts.vertexTriangle.size());
+    for (const auto& entry : contacts.vertexTriangle) {
+        vertexKeys.push_back(entry.first);
+    }
+    std::sort(vertexKeys.begin(), vertexKeys.end());
+    for (const std::uint64_t key : vertexKeys) {
+        const SelfVertexTriangleContactImpulse& contact =
+            contacts.vertexTriangle.at(key);
+        if (contact.normalImpulse <= 0.0 ||
+            lengthSquared(contact.weightedNormalOnVertex) < 1.0e-20) {
+            continue;
+        }
+        const Vec3 normal = normalized(contact.weightedNormalOnVertex);
+        const std::array<std::uint32_t, 3> indices{{
+            contact.triangle.first,
+            contact.triangle.second,
+            contact.triangle.third,
+        }};
+        std::array<double, 3> barycentric{};
+        Vec3 triangleVelocity{};
+        double weightSum = 0.0;
+        for (std::size_t index = 0; index < 3; ++index) {
+            barycentric[index] =
+                contact.weightedBarycentric[index] / contact.normalImpulse;
+            weightSum += barycentric[index];
+        }
+        if (weightSum <= 1.0e-12) {
+            continue;
+        }
+        for (std::size_t index = 0; index < 3; ++index) {
+            barycentric[index] /= weightSum;
+            triangleVelocity += cloth.particles[indices[index]].velocity *
+                barycentric[index];
+        }
+        const Vec3 relativeVelocity =
+            cloth.particles[contact.vertex].velocity - triangleVelocity;
+        const Vec3 tangentVelocity = relativeVelocity -
+            normal * dot(relativeVelocity, normal);
+        const double slipSpeed = length(tangentVelocity);
+        if (slipSpeed < 1.0e-10) {
+            continue;
+        }
+        const Vec3 tangent = tangentVelocity / slipSpeed;
+        double denominator = cloth.particles[contact.vertex].inverseMass;
+        for (std::size_t index = 0; index < 3; ++index) {
+            denominator += cloth.particles[indices[index]].inverseMass *
+                barycentric[index] * barycentric[index];
+        }
+        if (denominator <= 0.0) {
+            continue;
+        }
+        const double frictionLimit =
+            kClothSelfFriction * contact.normalImpulse;
+        const double tangentialImpulse = std::min(
+            slipSpeed / denominator,
+            frictionLimit
+        );
+        if (tangentialImpulse <= 0.0) {
+            continue;
+        }
+        const Vec3 impulseOnVertex = tangent * -tangentialImpulse;
+        cloth.particles[contact.vertex].velocity += impulseOnVertex *
+            cloth.particles[contact.vertex].inverseMass;
+        for (std::size_t index = 0; index < 3; ++index) {
+            cloth.particles[indices[index]].velocity -= impulseOnVertex *
+                (cloth.particles[indices[index]].inverseMass *
+                 barycentric[index]);
+        }
+        recordFrictionImpulse(
+            metrics,
+            tangentialImpulse,
+            frictionLimit
+        );
+        ++metrics.clothSelfFrictionContacts;
+    }
+
+    std::vector<std::uint64_t> edgeKeys;
+    edgeKeys.reserve(contacts.edgeEdge.size());
+    for (const auto& entry : contacts.edgeEdge) {
+        edgeKeys.push_back(entry.first);
+    }
+    std::sort(edgeKeys.begin(), edgeKeys.end());
+    for (const std::uint64_t key : edgeKeys) {
+        const SelfEdgeEdgeContactImpulse& contact = contacts.edgeEdge.at(key);
+        if (contact.normalImpulse <= 0.0 ||
+            lengthSquared(contact.weightedNormalOnFirst) < 1.0e-20) {
+            continue;
+        }
+        const Vec3 normal = normalized(contact.weightedNormalOnFirst);
+        std::array<double, 2> firstWeights{};
+        std::array<double, 2> secondWeights{};
+        double firstSum = 0.0;
+        double secondSum = 0.0;
+        for (std::size_t index = 0; index < 2; ++index) {
+            firstWeights[index] =
+                contact.weightedFirst[index] / contact.normalImpulse;
+            secondWeights[index] =
+                contact.weightedSecond[index] / contact.normalImpulse;
+            firstSum += firstWeights[index];
+            secondSum += secondWeights[index];
+        }
+        if (firstSum <= 1.0e-12 || secondSum <= 1.0e-12) {
+            continue;
+        }
+        Vec3 firstVelocity{};
+        Vec3 secondVelocity{};
+        const std::array<std::uint32_t, 2> firstIndices{{
+            contact.first.first, contact.first.second,
+        }};
+        const std::array<std::uint32_t, 2> secondIndices{{
+            contact.second.first, contact.second.second,
+        }};
+        for (std::size_t index = 0; index < 2; ++index) {
+            firstWeights[index] /= firstSum;
+            secondWeights[index] /= secondSum;
+            firstVelocity += cloth.particles[firstIndices[index]].velocity *
+                firstWeights[index];
+            secondVelocity += cloth.particles[secondIndices[index]].velocity *
+                secondWeights[index];
+        }
+        const Vec3 relativeVelocity = firstVelocity - secondVelocity;
+        const Vec3 tangentVelocity = relativeVelocity -
+            normal * dot(relativeVelocity, normal);
+        const double slipSpeed = length(tangentVelocity);
+        if (slipSpeed < 1.0e-10) {
+            continue;
+        }
+        const Vec3 tangent = tangentVelocity / slipSpeed;
+        double denominator = 0.0;
+        for (std::size_t index = 0; index < 2; ++index) {
+            denominator += cloth.particles[firstIndices[index]].inverseMass *
+                firstWeights[index] * firstWeights[index];
+            denominator += cloth.particles[secondIndices[index]].inverseMass *
+                secondWeights[index] * secondWeights[index];
+        }
+        if (denominator <= 0.0) {
+            continue;
+        }
+        const double frictionLimit =
+            kClothSelfFriction * contact.normalImpulse;
+        const double tangentialImpulse = std::min(
+            slipSpeed / denominator,
+            frictionLimit
+        );
+        if (tangentialImpulse <= 0.0) {
+            continue;
+        }
+        const Vec3 impulseOnFirst = tangent * -tangentialImpulse;
+        for (std::size_t index = 0; index < 2; ++index) {
+            cloth.particles[firstIndices[index]].velocity += impulseOnFirst *
+                (cloth.particles[firstIndices[index]].inverseMass *
+                 firstWeights[index]);
+            cloth.particles[secondIndices[index]].velocity -= impulseOnFirst *
+                (cloth.particles[secondIndices[index]].inverseMass *
+                 secondWeights[index]);
+        }
+        recordFrictionImpulse(
+            metrics,
+            tangentialImpulse,
+            frictionLimit
+        );
+        ++metrics.clothSelfFrictionContacts;
+    }
+}
+
+struct SelfFrictionProbeCase {
+    double slipSpeed{};
+    double momentum{};
+    double energy{};
+    double coneRatio{};
+    std::uint64_t contacts{};
+};
+
+SelfFrictionProbeCase runSelfFrictionProbeCase(
+    const double normalImpulse
+) {
+    ClothModel cloth;
+    cloth.particles.resize(4);
+    for (Particle& particle : cloth.particles) {
+        particle.inverseMass = 1.0;
+    }
+    cloth.particles[0].velocity = {1.0, 0.0, 0.0};
+    SelfContactImpulses contacts;
+    SelfVertexTriangleContactImpulse contact;
+    contact.vertex = 0u;
+    contact.triangle = {1u, 2u, 3u};
+    contact.weightedNormalOnVertex = {0.0, 0.0, normalImpulse};
+    contact.weightedBarycentric = {
+        normalImpulse / 3.0,
+        normalImpulse / 3.0,
+        normalImpulse / 3.0,
+    };
+    contact.normalImpulse = normalImpulse;
+    contacts.vertexTriangle.emplace(0u, contact);
+    Metrics metrics;
+    applyClothSelfFriction(cloth, contacts, metrics);
+    const Vec3 triangleVelocity = (
+        cloth.particles[1].velocity +
+        cloth.particles[2].velocity +
+        cloth.particles[3].velocity
+    ) / 3.0;
+    double momentum = 0.0;
+    double energy = 0.0;
+    for (const Particle& particle : cloth.particles) {
+        momentum += particle.velocity.x;
+        energy += 0.5 * lengthSquared(particle.velocity);
+    }
+    return {
+        .slipSpeed = length(cloth.particles[0].velocity - triangleVelocity),
+        .momentum = momentum,
+        .energy = energy,
+        .coneRatio = metrics.maximumFrictionConeRatio,
+        .contacts = metrics.clothSelfFrictionContacts,
+    };
+}
+
+bool runSelfFrictionProbe() {
+    const SelfFrictionProbeCase sticking = runSelfFrictionProbeCase(10.0);
+    const SelfFrictionProbeCase sliding = runSelfFrictionProbeCase(1.0);
+    const SelfFrictionProbeCase stickingReplay =
+        runSelfFrictionProbeCase(10.0);
+    const SelfFrictionProbeCase slidingReplay =
+        runSelfFrictionProbeCase(1.0);
+    const bool deterministic =
+        sticking.slipSpeed == stickingReplay.slipSpeed &&
+        sticking.momentum == stickingReplay.momentum &&
+        sticking.energy == stickingReplay.energy &&
+        sticking.coneRatio == stickingReplay.coneRatio &&
+        sliding.slipSpeed == slidingReplay.slipSpeed &&
+        sliding.momentum == slidingReplay.momentum &&
+        sliding.energy == slidingReplay.energy &&
+        sliding.coneRatio == slidingReplay.coneRatio;
+    const bool pass = deterministic &&
+        sticking.slipSpeed < 1.0e-12 &&
+        std::abs(sticking.momentum - 1.0) < 1.0e-12 &&
+        std::abs(sticking.energy - 0.125) < 1.0e-12 &&
+        sliding.slipSpeed > 0.5 &&
+        std::abs(sliding.momentum - 1.0) < 1.0e-12 &&
+        std::abs(sliding.coneRatio - 1.0) < 1.0e-12 &&
+        sticking.contacts == 1u && sliding.contacts == 1u;
+    std::cout << std::fixed << std::setprecision(12)
+              << "probe=cloth_self_coulomb_friction"
+              << " sticking_slip=" << sticking.slipSpeed
+              << " sticking_momentum=" << sticking.momentum
+              << " sticking_energy=" << sticking.energy
+              << " sliding_slip=" << sliding.slipSpeed
+              << " sliding_momentum=" << sliding.momentum
+              << " sliding_cone_ratio=" << sliding.coneRatio
+              << " deterministic=" << std::boolalpha << deterministic
+              << '\n'
+              << "result=" << (pass ? "PASS" : "FAIL") << '\n';
+    return pass;
 }
 
 double measurePrimitiveSelfPenetration(const ClothModel& cloth) {
@@ -3007,6 +3398,9 @@ SimulationResult simulate(
                 result.balls.size() * result.cloth.triangles.size()
             );
             std::array<double, kFruitCount> groundNormalImpulses{};
+            SelfContactImpulses selfContactImpulses;
+            selfContactImpulses.vertexTriangle.reserve(256u);
+            selfContactImpulses.edgeEdge.reserve(256u);
             if (scenario != Scenario::grounded) {
                 const double time = (
                     static_cast<double>(step * substeps + substep + 1u) *
@@ -3055,7 +3449,13 @@ SimulationResult simulate(
 
             result.metrics.maximumSweptSelfAdvance = std::max(
                 result.metrics.maximumSweptSelfAdvance,
-                solvePrimitiveSelfCollision(result.cloth, true, result.metrics)
+                solvePrimitiveSelfCollision(
+                    result.cloth,
+                    true,
+                    result.metrics,
+                    timestep,
+                    &selfContactImpulses
+                )
             );
 
             for (std::size_t ballIndex = 0;
@@ -3163,7 +3563,9 @@ SimulationResult simulate(
                             solvePrimitiveSelfCollision(
                                 result.cloth,
                                 false,
-                                result.metrics
+                                result.metrics,
+                                timestep,
+                                &selfContactImpulses
                             )
                         );
                         result.metrics.maximumStrainLimitCorrection = std::max(
@@ -3205,6 +3607,11 @@ SimulationResult simulate(
             for (Ball& ball : result.balls) {
                 ball.velocity = (ball.position - ball.previous) / timestep;
             }
+            applyClothSelfFriction(
+                result.cloth,
+                selfContactImpulses,
+                result.metrics
+            );
             applyBallClothFriction(
                 result.cloth.particles,
                 result.cloth.triangles,
@@ -3408,6 +3815,7 @@ int main(int argc, char** argv) try {
     bool ccdProbe = false;
     bool selfCCDProbe = false;
     bool strainProbe = false;
+    bool selfFrictionProbe = false;
     Scenario scenario = Scenario::grounded;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string value = argv[argument];
@@ -3439,6 +3847,8 @@ int main(int argc, char** argv) try {
             selfCCDProbe = true;
         } else if (value == "--strain-probe") {
             strainProbe = true;
+        } else if (value == "--self-friction-probe") {
+            selfFrictionProbe = true;
         } else if (value == "--scenario" && argument + 1 < argc) {
             const std::string name = argv[++argument];
             if (name == "grounded") {
@@ -3456,7 +3866,8 @@ int main(int argc, char** argv) try {
                          "[--timestep DT] [--scenario grounded|spin|pickup] "
                          "[--dump-obj PATH] [--dump-frames PREFIX] "
                          "[--dump-every N] [--rolling-probe] [--ccd-probe] "
-                         "[--self-ccd-probe] [--strain-probe]\n";
+                         "[--self-ccd-probe] [--strain-probe] "
+                         "[--self-friction-probe]\n";
             return 0;
         } else {
             throw std::invalid_argument("unknown argument: " + value);
@@ -3473,6 +3884,9 @@ int main(int argc, char** argv) try {
     }
     if (strainProbe) {
         return runStrainProbe() ? 0 : 1;
+    }
+    if (selfFrictionProbe) {
+        return runSelfFrictionProbe() ? 0 : 1;
     }
     if (steps == 0u || substeps == 0u || iterations == 0u ||
         !std::isfinite(timestep) || timestep <= 0.0) {
@@ -3627,6 +4041,8 @@ int main(int argc, char** argv) try {
               << metrics.sweptVertexTriangleSelfContacts
               << " swept_edge_edge_self_contacts="
               << metrics.sweptEdgeEdgeSelfContacts
+              << " cloth_self_friction_contacts="
+              << metrics.clothSelfFrictionContacts
               << " deterministic=" << std::boolalpha << deterministic
               << " state_hash=0x" << std::hex << firstHash << std::dec << '\n';
     const bool pass = acceptable(first, deterministic);

@@ -443,6 +443,16 @@ if(BUILD_TESTING)
         NAME cloth_bag.strain_limit
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --strain-probe
     )
+    add_test(
+        NAME cloth_bag.self_friction
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --self-friction-probe
+    )
+    set_tests_properties(
+        cloth_bag.self_friction
+        PROPERTIES
+            LABELS "physics;cloth;reference;friction;self_contact"
+            TIMEOUT 30
+    )
     set_tests_properties(
         cloth_bag.strain_limit
         PROPERTIES

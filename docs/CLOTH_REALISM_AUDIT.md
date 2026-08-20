@@ -39,6 +39,12 @@ owning mechanics or evidence is absent.
   below `2 um`. `--self-ccd-probe` crosses both a vertex and an edge completely
   through another cloth primitive in one step and requires exact deterministic
   separation at twice the cloth radius.
+- Cloth/cloth contact now applies maximum-dissipation Coulomb friction with
+  `mu=0.34` to both vertex/triangle and edge/edge folds. Contact impulses are
+  applied in sorted primitive-ID order, conserve linear momentum, and remain
+  inside the friction cone. `--self-friction-probe` independently certifies
+  exact sticking under sufficient load, cone-limited sliding under lower load,
+  energy dissipation, momentum conservation, and bit-identical replay.
 - A unilateral strain limiter caps warp, weft, and bottom extension at `28.5%`
   and shear at `38%` while leaving compression and ordinary strain unchanged.
   `--strain-probe` projects a predicted `50%` warp extension to exactly `28.5%`
@@ -56,8 +62,6 @@ owning mechanics or evidence is absent.
 
 ## Still open
 
-- Cloth self-contact currently resolves normal separation without a
-  cloth/cloth tangential friction impulse.
 - The connected-patch contact mass is an explicit approximation, not the full
   coupled deformable response operator targeted for the Metal path.
 - Mass, compliance, damping, fruit friction, and geometry are authored
