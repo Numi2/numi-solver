@@ -11,21 +11,22 @@ application scene.
 
 ## Pick up the bag and spill the fruit
 
-![A deterministic cloth-solver replay lifting a produce bag from one rim point and spilling fruit onto the ground](docs/assets/cloth-pickup-spill.gif)
+![A deterministic cloth-solver replay lifting a produce bag from a compliant rim patch and spilling fruit onto the ground](docs/assets/cloth-pickup-spill.gif)
 
 This looping GIF contains 25 fixed-camera frames from one 1.2-second solver
-trajectory. The orange ring is the only kinematic cloth vertex: the other 1,464
-cloth particles and all twelve fruits remain dynamic. The bag starts resting on
-the plane, rises under the one-point grip, tips, and releases fruits 0 and 6
-through 11 through the mouth. Four have landed by the final frame while three
-are still falling. The small body-fixed marks are driven by each fruit's
+trajectory. The orange ring is a virtual handle attached through finite
+compliance to five neighboring rim nodes: all 1,465 cloth particles and all
+twelve fruits remain dynamic. The bag starts resting on the plane, rises under
+the grip patch, tips, and releases fruits 6 through 11 through the mouth. Four
+have landed by the final frame while two are still falling. The small body-fixed marks are driven by each fruit's
 exported solver quaternion, so their motion exposes physical rolling and spin.
 
-The replay passed every mechanics gate with `released_mask=4033`,
-`escaped_mask=0`, `0.184299570` maximum warp extension, `0.095360710`
-maximum shear strain, `0.006719857` maximum woven-bottom extension,
-`0.001812898 m` maximum post-contact plane penetration, a friction-cone ratio
-never above `1.0`, and bit-identical state hash `0x74fecdc8e429099e`. The GIF is rasterized from those
+The replay passed every mechanics gate with `released_mask=4032`,
+`escaped_mask=0`, `0.127685096` maximum warp extension, `0.077527676`
+maximum shear strain, `0.006222924` maximum woven-bottom extension,
+`0.001742280 m` maximum post-contact plane penetration, `2.854568983 N` peak
+grip force, 2,011 swept sphere/triangle impacts, a friction-cone ratio never
+above `1.0`, and bit-identical state hash `0xd66dcb1fdb25da5a`. The GIF is rasterized from those
 exported states; it is
 CPU FP64 cloth evidence, not Metal-performance or Temporal Cone cloth-contact
 evidence.
@@ -44,28 +45,29 @@ move the exported state.
 The qualified replay passed with no escaped or spilled fruit, no collapsed
 triangles, `0.004879665 m` maximum fruit/cloth penetration,
 `0.002980520 m` maximum vertex self-penetration, and bit-identical replay hash
-`0x5ebccd032b7312ae`. Fruit reached `11.842500662 rad/s` through resolved
+`0xe681ece65f8b0046`. Fruit reached `11.830598087 rad/s` through resolved
 tangential contact while every impulse remained inside its Coulomb cone. This
 is CPU FP64 cloth evidence, not Metal-performance or
 Temporal Cone cloth-contact evidence.
 
-### Grab one rim point and spin
+### Grab a compliant rim patch and spin
 
-The orange ring marks the one kinematic rim vertex. Every other cloth node and
-all twelve fruits remain dynamic. These five fixed-camera frames come from one
+The orange ring marks the target of a compliant five-node rim attachment. All
+cloth nodes and all twelve fruits remain dynamic. These five fixed-camera frames come from one
 0.5-second trajectory; they are not separately posed simulations.
 
 | `t=0.000 s` | `t=0.125 s` | `t=0.250 s` |
 |:--:|:--:|:--:|
-| ![Initial airborne cloth bag](docs/assets/cloth-spin-0.png) | ![Cloth bag beginning to lag behind its moving grip](docs/assets/cloth-spin-15.png) | ![Cloth bag twisting around the one-point grip](docs/assets/cloth-spin-30.png) |
+| ![Initial airborne cloth bag](docs/assets/cloth-spin-0.png) | ![Cloth bag beginning to lag behind its moving grip](docs/assets/cloth-spin-15.png) | ![Cloth bag twisting around the compliant grip patch](docs/assets/cloth-spin-30.png) |
 
 | `t=0.375 s` | `t=0.500 s` |
 |:--:|:--:|
 | ![Open cloth bag releasing fruit while spinning](docs/assets/cloth-spin-45.png) | ![Vertically lagging cloth bag after three fruits are released](docs/assets/cloth-spin-60.png) |
 
-The spin replay passed with `0.100050682` maximum warp extension,
-`0.057931607` maximum shear strain, zero numerical escapes, and bit-identical
-hash `0x611fa000f8b7466a`. `released_mask=3584` records fruits 9, 10, and 11
+The spin replay passed with `0.125558459` maximum warp extension,
+`0.090402133` maximum shear strain, zero numerical escapes, `3.706197351 N`
+peak attachment force, and bit-identical
+hash `0xa586efe35d791d79`. `released_mask=1536` records fruits 9 and 10
 leaving the open mouth; the images and the outcome metric agree.
 
 Reproduce the README image from the executable state:
@@ -149,7 +151,8 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
   containing six falling balls, with matched dense and streamed trajectories.
 - `build/numi-solver-cloth-bag` for a deterministic FP64 dense-cloth reference
   with a free folded rim, stretch/shear, soft dihedral bending, twelve-fruit
-  contact and friction, ground contact, vertex self-collision, and a one-point
+  contact and friction, ground contact, vertex self-collision, and a compliant
+  five-node
   airborne spin scenario. This is a CPU reference, not Metal-performance
   evidence.
 - `build/numi-solver-articulated` for canonical articulated mass/Jacobian
@@ -203,11 +206,12 @@ state/frame/material rollback.
 The dense cloth reference accepts `--steps N`, `--substeps N`,
 `--iterations N`, `--timestep DT`, `--scenario grounded|spin|pickup`, and
 `--dump-obj PATH`. `--rolling-probe` executes the analytic solid-sphere
-slide-to-roll oracle. `--dump-frames PREFIX` exports five evenly spaced states
+slide-to-roll oracle; `--ccd-probe` executes a one-step swept
+sphere/triangle tunneling oracle. `--dump-frames PREFIX` exports five evenly spaced states
 from the first authoritative trajectory; `--dump-every N` instead exports
 every Nth step plus the final state. `grounded` settles an open produce bag on
-a plane, `spin` begins airborne and drives one rim vertex around a smooth
-orbit, and `pickup` lifts that same one-point grip from the grounded state and
+a plane, `spin` begins airborne and drives a compliant five-node rim patch
+around a smooth orbit, and `pickup` lifts that same grip patch from the grounded state and
 pours fruit onto the plane. Its FP64 mechanics and evidence boundary are
 separate from the Metal harnesses.
 

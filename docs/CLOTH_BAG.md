@@ -9,7 +9,7 @@ open cotton produce bag containing twelve dynamic spheres. The live state is a
 constraints.
 
 This reference runs on the CPU. It does **not** prove a Metal cloth path,
-Temporal Cone cloth contact, continuous collision detection, yarn-scale
+Temporal Cone cloth contact, continuous cloth self-collision, yarn-scale
 friction, or hardware performance. It locks the cloth equations, topology,
 contact geometry, three useful load cases, deterministic replay, and mesh export
 before a GPU implementation is admitted.
@@ -53,10 +53,10 @@ fold, and twist without losing its woven lengths.
 C_b(x)=\operatorname{wrap}(\theta(x)-\theta_0).
 ```
 
-## One-point airborne spin
+## Compliant-patch airborne spin
 
-`--scenario spin` raises the same bag into free space and makes exactly one rim
-particle kinematic. The grip follows a smoothly accelerated circular path:
+`--scenario spin` raises the same bag into free space. A virtual handle follows
+a smoothly accelerated circular path:
 
 ```math
 \theta(t)=\omega\left[t-\tau\left(1-e^{-t/\tau}\right)\right],
@@ -70,7 +70,9 @@ R(\cos\theta-1) & R\sin\theta & a\sin(\theta/2)
 ```
 
 with `R=0.28 m`, `omega=4.8 rad/s`, `tau=0.18 s`, and `a=0.035 m`.
-Every other cloth particle and all twelve fruits remain dynamic. Gravity,
+The handle attaches to five neighboring rim particles through isotropic XPBD
+constraints with `2e-3 m/N` compliance. All cloth particles and all twelve
+fruits remain dynamic. Gravity,
 inertial lag, the soft bend law, cloth contact, and the open mouth therefore
 decide the response. Fruit release is recorded as `released_mask`; it is an
 expected physical outcome for an open bag and is distinct from numerical
@@ -80,8 +82,8 @@ escape. A fruit is classified as released once its center moves more than
 ## Grounded pickup and pour
 
 `--scenario pickup` starts from the grounded geometry and retains its collision
-plane. It makes the same one rim particle kinematic, first lifting it and then
-sweeping it sideways so gravity and the open mouth—not an authored fruit
+plane. It drives the same compliant five-node rim patch, first lifting it and
+then sweeping it sideways so gravity and the open mouth—not an authored fruit
 animation—determine the spill. With
 `s(x)=clamp(x,0,1)^2(3-2clamp(x,0,1))`,
 
@@ -98,7 +100,9 @@ g(t)=g_0+
 ```
 
 Every other degree of freedom remains dynamic. Ground contact continues during
-the whole motion, so released fruit falls to and settles on the plane.
+the whole motion, so released fruit falls to and settles on the plane. Peak
+attachment force and impulse are measured from the accumulated XPBD
+multipliers; force above `500 N` fails qualification.
 
 ## Contact
 
@@ -126,6 +130,13 @@ by `|j_t| <= mu j_n` and applied with equal and opposite linear and angular
 response. Grounded fruit additionally use timestep-integrated rolling
 resistance.
 
+Conservative advancement finds first time of impact between each linearly
+moving fruit sphere and linearly moving cloth triangle. It uses a relative
+motion bound, so a step cannot skip a zero of the sphere-to-triangle distance
+function. The `--ccd-probe` deliberately moves a small sphere entirely through
+a triangle with both endpoints separated and requires contact at the analytic
+sphere-plus-cloth height.
+
 The grounded and pickup scenarios stop predicted cloth/plane and fruit/plane
 crossings at the plane before iterative contact. The removed free-flight
 advance is reported separately from any actual post-contact penetration. A deterministic
@@ -139,7 +150,7 @@ evidence, not evidence of continuous triangle/triangle self-collision.
 A run fails on nonfinite state, numerical escape, triangle collapse, excessive
 warp/weft/shear/bottom strain, fruit/cloth penetration above `0.01 m`, vertex
 self-penetration at or above the cloth diameter, excessive linear/angular
-speed, a friction-cone violation, or a
+speed, grip force above `500 N`, a friction-cone violation, or a
 non-bit-identical replay. Grounded runs additionally require fruit containment
 with `spilled_mask=0` and plane correction below one cloth radius. Extension
 and compression are reported separately: the gate limits warp/weft/bottom
@@ -168,6 +179,8 @@ Run all three load cases:
   --dump-frames pickup --dump-every 6
 
 ./build/numi-solver-cloth-bag --rolling-probe
+
+./build/numi-solver-cloth-bag --ccd-probe
 ```
 
 The executed 1.0-second grounded checkpoint on 2026-08-20 was deterministic
@@ -181,47 +194,52 @@ bend_constraints=4296
 balls=12
 cloth_mass_kg=0.078050000
 fruit_mass_kg=2.330000000
-max_warp_strain=0.221880819
-max_warp_extension=0.076248897
-max_warp_compression=0.221880819
-max_weft_strain=0.011912098
-max_shear_strain=0.025302279
-max_bottom_extension=0.006241203
-max_bend_error=0.225660188
+max_warp_strain=0.221851949
+max_warp_extension=0.076235568
+max_warp_compression=0.221851949
+max_weft_strain=0.011903887
+max_shear_strain=0.025307194
+max_bottom_extension=0.006238406
+max_bend_error=0.225639858
 min_triangle_area=0.000056068
-max_ball_penetration=0.004879665
+max_ball_penetration=0.004879649
 max_self_penetration=0.002980520
-ball_triangle_contacts=73782
+ball_triangle_contacts=72822
+swept_ball_triangle_contacts=3248
 self_contacts=17280
 escaped_mask=0
 spilled_mask=0
-max_ground_penetration=0.001848076
-max_swept_ground_advance=0.000765302
-max_angular_speed=11.842500662
+max_ground_penetration=0.001848128
+max_swept_ground_advance=0.000764931
+max_swept_ball_advance=0.003056710
+max_angular_speed=11.830598087
 max_friction_cone_ratio=1.000000000
 deterministic=true
-state_hash=0x5ebccd032b7312ae
+state_hash=0xe681ece65f8b0046
 result=PASS
 ```
 
-The matching 0.5-second one-point spin checkpoint also passed. It reached
-`0.100050682` maximum warp extension and `0.057931607` maximum shear strain,
-recorded `27,325` fruit/triangle contacts, reached `21.270293009 rad/s`, and
+The matching 0.5-second compliant-patch spin checkpoint also passed. It reached
+`0.125558459` maximum warp extension and `0.090402133` maximum shear strain,
+recorded `27,742` fruit/triangle contacts and 731 swept first-impact contacts,
+reached `18.618713269 rad/s`, measured `3.706197351 N` peak attachment force, and
 replayed bit-identically with
-`state_hash=0x611fa000f8b7466a`. `released_mask=3584` records fruits 9, 10,
-and 11 leaving the open mouth; `escaped_mask=0` distinguishes that physical
+`state_hash=0xa586efe35d791d79`. `released_mask=1536` records fruits 9 and 10
+leaving the open mouth; `escaped_mask=0` distinguishes that physical
 release from numerical divergence.
 
 The 1.2-second grounded pickup checkpoint passed with
-`max_warp_extension=0.184299570`, `max_shear_strain=0.095360710`,
-`max_bottom_extension=0.006719857`, `max_ball_penetration=0.004879665`,
-`max_self_penetration=0.003827779`, and `escaped_mask=0`. Its
-`released_mask=4033` records fruits 0 and 6 through 11 leaving the bag;
-four are on the plane at the final checkpoint and three remain in flight. The
-maximum post-contact plane penetration was `0.001812898 m`, the maximum
-discarded swept advance was `0.006178941 m`, and the peak fruit angular speed
-was `23.627168800 rad/s`. The independent replay matched
-`state_hash=0x74fecdc8e429099e`
+`max_warp_extension=0.127685096`, `max_shear_strain=0.077527676`,
+`max_bottom_extension=0.006222924`, `max_ball_penetration=0.004879649`,
+`max_self_penetration=0.003286022`, and `escaped_mask=0`. Its
+`released_mask=4032` records fruits 6 through 11 leaving the bag;
+four are on the plane at the final checkpoint and two remain in flight. The
+maximum post-contact plane penetration was `0.001742280 m`, the maximum
+discarded swept plane advance was `0.007903588 m`, and 2,011 swept
+sphere/triangle contacts prevented up to `0.003056290 m` of relative advance.
+Peak fruit angular speed was `29.998059471 rad/s`, and peak five-node grip force
+was `2.854568983 N`. The independent replay matched
+`state_hash=0xd66dcb1fdb25da5a`
 bit-for-bit.
 
 The independent `--rolling-probe` begins a solid sphere sliding at `1 m/s` and
@@ -229,9 +247,14 @@ reaches the analytic no-slip state `v = r omega = 5/7 m/s`, with zero reported
 contact slip, the expected `5/7` energy ratio, cone ratio `1.0`, and an exact
 deterministic replay.
 
+The independent `--ccd-probe` moves a `0.02 m` sphere from `+0.08 m` to
+`-0.08 m` through a triangle in one `0.001 s` step. Conservative advancement
+stops it at `0.024000000560 m` against the analytic `0.024 m` target, removes
+`0.104000000560 m` of tunneling advance, and replays exactly.
+
 `--dump-obj` writes the actual simulated vertices and triangles plus fruit
 center/radius/appearance/orientation/angular-velocity comments. The spin and pickup scenarios also record
-the exact kinematic grip position. `--dump-frames PREFIX` captures the initial,
+the exact virtual grip target. `--dump-frames PREFIX` captures the initial,
 quarter, half, three-quarter, and final states from the first authoritative
 trajectory. Adding `--dump-every N` captures every Nth step plus the final
 state. The second trajectory independently verifies the final hash. A rendered
@@ -248,4 +271,4 @@ from the exported quaternion so rolling and spin remain tied to solver state.
 
 See [CLOTH_REALISM_AUDIT.md](CLOTH_REALISM_AUDIT.md) for the remaining limits;
 this checkpoint does not claim yarn-scale contact, calibrated textile material,
-continuous collision, or a Metal cloth runtime.
+continuous cloth self-collision, or a Metal cloth runtime.

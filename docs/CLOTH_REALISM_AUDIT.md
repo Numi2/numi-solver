@@ -14,8 +14,8 @@ owning mechanics or evidence is absent.
 - Sphere/cloth position contact uses a bounded connected-patch effective mass,
   preventing three isolated light vertices from producing an explosive local
   response under the realistic load ratio.
-- The moving kinematic grip publishes its actual velocity. Release masks latch
-  across the trajectory instead of inspecting only the final frame.
+- The moving virtual grip target follows an explicit trajectory. Release masks
+  latch across the trajectory instead of inspecting only the final frame.
 - Fruit carry solid-sphere inertia, angular velocity, and normalized
   orientation. Maximum-dissipation Coulomb impulses couple translation and
   spin at fruit/cloth, fruit/fruit, and fruit/plane contacts; every resolved
@@ -28,6 +28,14 @@ owning mechanics or evidence is absent.
 - Predicted cloth/plane and fruit/plane crossings are stopped at the plane
   before iterative contacts. Actual post-contact penetration and the removed
   below-plane free-flight advance are reported separately.
+- Conservative advancement solves first time of impact for a moving fruit
+  sphere against each linearly moving cloth triangle. The independent
+  `--ccd-probe` crosses an entire triangle in one step with both endpoint
+  states separated, yet stops at the sphere-plus-cloth contact height and
+  replays exactly.
+- The grip is a five-node rim patch with finite XPBD compliance, not a pinned
+  cloth vertex. All cloth particles remain dynamic; peak attachment force and
+  impulse are reported and force above `500 N` fails qualification.
 - The authored initial state starts outside the ground plane. Woven-bottom
   extension/compression and a one-cloth-radius plane-correction limit are part
   of the acceptance gate.
@@ -39,10 +47,6 @@ owning mechanics or evidence is absent.
 
 - Cloth self-contact is discrete vertex separation. It is not continuous
   edge/edge or vertex/triangle collision and does not prevent all tunneling.
-- Sphere/triangle contact is discrete at substep endpoints; there is no swept
-  time of impact or continuous collision detection.
-- The one-node grip has infinite kinematic authority. A physical pinch needs a
-  finite-area compliant attachment plus grip force/impulse reporting.
 - The connected-patch contact mass is an explicit approximation, not the full
   coupled deformable response operator targeted for the Metal path.
 - Mass, compliance, damping, fruit friction, and geometry are authored

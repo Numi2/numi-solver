@@ -210,12 +210,22 @@ struct BendConstraint {
     double lambda{};
 };
 
+struct GripConstraint {
+    std::uint32_t particle{};
+    Vec3 targetOffset{};
+    Vec3 lambda{};
+    double compliance{2.0e-3};
+};
+
 struct ClothModel {
     std::vector<Particle> particles;
     std::vector<DistanceConstraint> distances;
     std::vector<Triangle> triangles;
     std::vector<BendConstraint> bends;
+    std::vector<GripConstraint> grips;
     std::uint32_t bottomCenter{};
+    Vec3 gripTarget{};
+    Vec3 gripPrevious{};
 };
 
 struct Metrics {
@@ -236,12 +246,16 @@ struct Metrics {
     double maximumSelfPenetration{};
     double maximumGroundPenetration{};
     double maximumSweptGroundAdvance{};
+    double maximumSweptBallAdvance{};
     double minimumTriangleArea{std::numeric_limits<double>::infinity()};
     double maximumSpeed{};
     double maximumAngularSpeed{};
     double maximumFrictionConeRatio{};
     double accumulatedTangentialImpulse{};
+    double maximumGripForce{};
+    double maximumGripImpulse{};
     std::uint64_t ballTriangleContacts{};
+    std::uint64_t sweptBallTriangleContacts{};
     std::uint64_t selfContacts{};
     std::uint64_t ballClothFrictionContacts{};
     std::uint64_t ballPairFrictionContacts{};
@@ -500,7 +514,21 @@ ClothModel makeCloth(const Scenario scenario) {
         (kBottomGrid - 1u) / 2u
     );
     if (scenario != Scenario::grounded) {
-        model.particles[nodeIndex(kLevels - 1u, 0u)].inverseMass = 0.0;
+        const std::uint32_t centerIndex = nodeIndex(kLevels - 1u, 0u);
+        model.gripTarget = model.particles[centerIndex].rest;
+        model.gripPrevious = model.gripTarget;
+        for (const int offset : {-2, -1, 0, 1, 2}) {
+            const std::uint32_t ring = static_cast<std::uint32_t>(
+                (static_cast<int>(kAround) + offset) %
+                static_cast<int>(kAround)
+            );
+            const std::uint32_t index = nodeIndex(kLevels - 1u, ring);
+            model.grips.push_back({
+                .particle = index,
+                .targetOffset =
+                    model.particles[index].rest - model.gripTarget,
+            });
+        }
     }
 
     const auto addDistance = [&](
@@ -785,10 +813,29 @@ void updateGrip(
     const Scenario scenario,
     const double time
 ) {
-    Particle& grip = cloth.particles[nodeIndex(kLevels - 1u, 0u)];
-    grip.rest = scenario == Scenario::spin
+    cloth.gripPrevious = cloth.gripTarget;
+    cloth.gripTarget = scenario == Scenario::spin
         ? spinGripTarget(time)
         : pickupGripTarget(time);
+}
+
+void solveGrip(
+    std::vector<Particle>& particles,
+    GripConstraint& constraint,
+    const Vec3 target,
+    const double timestep
+) {
+    Particle& particle = particles[constraint.particle];
+    const double alpha = constraint.compliance / (timestep * timestep);
+    const double denominator = particle.inverseMass + alpha;
+    if (denominator <= 0.0) {
+        return;
+    }
+    const Vec3 value = particle.position - target;
+    const Vec3 deltaLambda =
+        (value * -1.0 - constraint.lambda * alpha) / denominator;
+    constraint.lambda += deltaLambda;
+    particle.position += deltaLambda * particle.inverseMass;
 }
 
 void solveDistance(
@@ -929,6 +976,177 @@ ClosestPoint closestPointOnTriangle(
         first + firstSecond * v + firstThird * w,
         {1.0 - v - w, v, w},
     };
+}
+
+struct SweptTriangleSample {
+    Vec3 ballPosition{};
+    std::array<Vec3, 3> trianglePositions{};
+    ClosestPoint closest{};
+    double distance{};
+};
+
+SweptTriangleSample sampleSweptTriangle(
+    const std::vector<Particle>& particles,
+    const std::array<std::uint32_t, 3> indices,
+    const Ball& ball,
+    const double time
+) {
+    SweptTriangleSample sample;
+    sample.ballPosition = ball.previous +
+        (ball.position - ball.previous) * time;
+    for (std::size_t index = 0; index < 3; ++index) {
+        const Particle& particle = particles[indices[index]];
+        sample.trianglePositions[index] = particle.previous +
+            (particle.position - particle.previous) * time;
+    }
+    sample.closest = closestPointOnTriangle(
+        sample.ballPosition,
+        sample.trianglePositions[0],
+        sample.trianglePositions[1],
+        sample.trianglePositions[2]
+    );
+    sample.distance = length(sample.closest.point - sample.ballPosition);
+    return sample;
+}
+
+double solveSweptBallTriangle(
+    std::vector<Particle>& particles,
+    const Triangle triangle,
+    Ball& ball,
+    const double timestep,
+    BallTriangleContactImpulse& contactImpulse,
+    std::uint64_t& contactCount
+) {
+    const std::array<std::uint32_t, 3> indices{{
+        triangle.first,
+        triangle.second,
+        triangle.third,
+    }};
+    const double target = ball.radius + kClothRadius;
+    const Vec3 ballMinimum{
+        std::min(ball.previous.x, ball.position.x) - target,
+        std::min(ball.previous.y, ball.position.y) - target,
+        std::min(ball.previous.z, ball.position.z) - target,
+    };
+    const Vec3 ballMaximum{
+        std::max(ball.previous.x, ball.position.x) + target,
+        std::max(ball.previous.y, ball.position.y) + target,
+        std::max(ball.previous.z, ball.position.z) + target,
+    };
+    Vec3 triangleMinimum{
+        std::numeric_limits<double>::infinity(),
+        std::numeric_limits<double>::infinity(),
+        std::numeric_limits<double>::infinity(),
+    };
+    Vec3 triangleMaximum{
+        -std::numeric_limits<double>::infinity(),
+        -std::numeric_limits<double>::infinity(),
+        -std::numeric_limits<double>::infinity(),
+    };
+    double motionBound = length(ball.position - ball.previous);
+    for (const std::uint32_t index : indices) {
+        const Particle& particle = particles[index];
+        triangleMinimum.x = std::min({
+            triangleMinimum.x, particle.previous.x, particle.position.x,
+        });
+        triangleMinimum.y = std::min({
+            triangleMinimum.y, particle.previous.y, particle.position.y,
+        });
+        triangleMinimum.z = std::min({
+            triangleMinimum.z, particle.previous.z, particle.position.z,
+        });
+        triangleMaximum.x = std::max({
+            triangleMaximum.x, particle.previous.x, particle.position.x,
+        });
+        triangleMaximum.y = std::max({
+            triangleMaximum.y, particle.previous.y, particle.position.y,
+        });
+        triangleMaximum.z = std::max({
+            triangleMaximum.z, particle.previous.z, particle.position.z,
+        });
+        motionBound += length(particle.position - particle.previous);
+    }
+    if (ballMaximum.x < triangleMinimum.x ||
+        ballMinimum.x > triangleMaximum.x ||
+        ballMaximum.y < triangleMinimum.y ||
+        ballMinimum.y > triangleMaximum.y ||
+        ballMaximum.z < triangleMinimum.z ||
+        ballMinimum.z > triangleMaximum.z || motionBound < 1.0e-14) {
+        return 0.0;
+    }
+    constexpr double distanceTolerance = 1.0e-9;
+    const SweptTriangleSample start = sampleSweptTriangle(
+        particles, indices, ball, 0.0
+    );
+    double time = 0.0;
+    SweptTriangleSample impact = start;
+    bool found = start.distance <= target + distanceTolerance;
+    if (!found) {
+        for (std::uint32_t iteration = 0; iteration < 80u; ++iteration) {
+            impact = sampleSweptTriangle(particles, indices, ball, time);
+            const double gap = impact.distance - target;
+            if (gap <= distanceTolerance) {
+                found = true;
+                break;
+            }
+            const double advance = 0.9 * gap / motionBound;
+            if (!std::isfinite(advance) || advance <= 0.0 ||
+                time + advance >= 1.0) {
+                break;
+            }
+            time += std::max(advance, 1.0e-10);
+        }
+    }
+    if (!found || impact.distance < 1.0e-12) {
+        return 0.0;
+    }
+    const Vec3 normal =
+        (impact.closest.point - impact.ballPosition) / impact.distance;
+    Vec3 triangleRemaining{};
+    for (std::size_t index = 0; index < 3; ++index) {
+        triangleRemaining +=
+            (particles[indices[index]].position -
+             impact.trianglePositions[index]) *
+            impact.closest.barycentric[index];
+    }
+    const Vec3 ballRemaining = ball.position - impact.ballPosition;
+    const double removedAdvance = dot(
+        ballRemaining - triangleRemaining,
+        normal
+    );
+    if (removedAdvance <= 0.0) {
+        return 0.0;
+    }
+    std::array<double, 3> clothContactInverseMass{};
+    double denominator = ball.inverseMass;
+    for (std::size_t index = 0; index < 3; ++index) {
+        clothContactInverseMass[index] = std::min(
+            particles[indices[index]].inverseMass,
+            1.0 / kClothContactPatchMass
+        );
+        denominator += clothContactInverseMass[index] *
+            impact.closest.barycentric[index] *
+            impact.closest.barycentric[index];
+    }
+    if (denominator <= 0.0) {
+        return 0.0;
+    }
+    const double lambda = removedAdvance / denominator;
+    ball.position -= normal * (ball.inverseMass * lambda);
+    for (std::size_t index = 0; index < 3; ++index) {
+        particles[indices[index]].position += normal *
+            (clothContactInverseMass[index] *
+             impact.closest.barycentric[index] * lambda);
+    }
+    const double impulseMagnitude = lambda / timestep;
+    contactImpulse.weightedNormalOnBall -= normal * impulseMagnitude;
+    for (std::size_t index = 0; index < 3; ++index) {
+        contactImpulse.weightedBarycentric[index] +=
+            impact.closest.barycentric[index] * impulseMagnitude;
+    }
+    contactImpulse.normalImpulse += impulseMagnitude;
+    ++contactCount;
+    return removedAdvance;
 }
 
 double solveBallTriangle(
@@ -1320,6 +1538,74 @@ bool runRollingProbe() {
     return pass;
 }
 
+struct CCDProbeResult {
+    double finalHeight{};
+    double removedAdvance{};
+    double normalImpulse{};
+    std::uint64_t contacts{};
+};
+
+CCDProbeResult runCCDProbeOnce() {
+    constexpr double timestep = 1.0e-3;
+    std::vector<Particle> particles(3);
+    particles[0].position = {-1.0, -1.0, 0.0};
+    particles[1].position = {1.0, -1.0, 0.0};
+    particles[2].position = {0.0, 1.0, 0.0};
+    for (Particle& particle : particles) {
+        particle.previous = particle.position;
+        particle.inverseMass = 0.0;
+    }
+    Ball ball;
+    ball.radius = 0.02;
+    ball.inverseMass = 1.0;
+    ball.previous = {0.0, 0.0, 0.08};
+    ball.position = {0.0, 0.0, -0.08};
+    ball.velocity = {0.0, 0.0, -160.0};
+    BallTriangleContactImpulse contact;
+    std::uint64_t contacts = 0u;
+    const double removedAdvance = solveSweptBallTriangle(
+        particles,
+        Triangle{0u, 1u, 2u},
+        ball,
+        timestep,
+        contact,
+        contacts
+    );
+    return {
+        .finalHeight = ball.position.z,
+        .removedAdvance = removedAdvance,
+        .normalImpulse = contact.normalImpulse,
+        .contacts = contacts,
+    };
+}
+
+bool runCCDProbe() {
+    const CCDProbeResult first = runCCDProbeOnce();
+    const CCDProbeResult replay = runCCDProbeOnce();
+    const double targetHeight = 0.02 + kClothRadius;
+    const bool deterministic =
+        first.finalHeight == replay.finalHeight &&
+        first.removedAdvance == replay.removedAdvance &&
+        first.normalImpulse == replay.normalImpulse &&
+        first.contacts == replay.contacts;
+    const bool pass = deterministic && first.contacts == 1u &&
+        std::abs(first.finalHeight - targetHeight) < 2.0e-9 &&
+        first.removedAdvance > 0.10 && first.normalImpulse > 100.0;
+    std::cout << std::fixed << std::setprecision(12)
+              << "probe=swept_sphere_triangle"
+              << " start_height=0.080000000000"
+              << " predicted_height=-0.080000000000"
+              << " contact_height=" << first.finalHeight
+              << " expected_height=" << targetHeight
+              << " removed_advance=" << first.removedAdvance
+              << " normal_impulse=" << first.normalImpulse
+              << " contacts=" << first.contacts
+              << " deterministic=" << std::boolalpha << deterministic
+              << '\n'
+              << "result=" << (pass ? "PASS" : "FAIL") << '\n';
+    return pass;
+}
+
 double solveGround(
     std::vector<Particle>& particles,
     std::array<Ball, kFruitCount>& balls,
@@ -1635,6 +1921,32 @@ SimulationResult simulate(
             for (BendConstraint& constraint : result.cloth.bends) {
                 constraint.lambda = 0.0;
             }
+            for (GripConstraint& constraint : result.cloth.grips) {
+                constraint.lambda = {};
+            }
+
+            for (std::size_t ballIndex = 0;
+                 ballIndex < result.balls.size();
+                 ++ballIndex) {
+                for (std::size_t triangleIndex = 0;
+                     triangleIndex < result.cloth.triangles.size();
+                     ++triangleIndex) {
+                    result.metrics.maximumSweptBallAdvance = std::max(
+                        result.metrics.maximumSweptBallAdvance,
+                        solveSweptBallTriangle(
+                            result.cloth.particles,
+                            result.cloth.triangles[triangleIndex],
+                            result.balls[ballIndex],
+                            timestep,
+                            triangleContacts[
+                                ballIndex * result.cloth.triangles.size() +
+                                triangleIndex
+                            ],
+                            result.metrics.sweptBallTriangleContacts
+                        )
+                    );
+                }
+            }
 
             for (std::uint32_t iteration = 0; iteration < iterations; ++iteration) {
                 for (DistanceConstraint& constraint : result.cloth.distances) {
@@ -1644,6 +1956,14 @@ SimulationResult simulate(
                     for (BendConstraint& constraint : result.cloth.bends) {
                         solveBend(result.cloth.particles, constraint, timestep);
                     }
+                }
+                for (GripConstraint& constraint : result.cloth.grips) {
+                    solveGrip(
+                        result.cloth.particles,
+                        constraint,
+                        result.cloth.gripTarget + constraint.targetOffset,
+                        timestep
+                    );
                 }
                 std::size_t pairIndex = 0u;
                 for (std::size_t first = 0; first < result.balls.size(); ++first) {
@@ -1746,6 +2066,21 @@ SimulationResult simulate(
                     std::exp(-0.02 * timestep);
                 integrateOrientation(ball, timestep);
             }
+            double gripForce = 0.0;
+            double gripImpulse = 0.0;
+            for (const GripConstraint& constraint : result.cloth.grips) {
+                gripForce += length(constraint.lambda) /
+                    (timestep * timestep);
+                gripImpulse += length(constraint.lambda) / timestep;
+            }
+            result.metrics.maximumGripForce = std::max(
+                result.metrics.maximumGripForce,
+                gripForce
+            );
+            result.metrics.maximumGripImpulse = std::max(
+                result.metrics.maximumGripImpulse,
+                gripImpulse
+            );
         }
         updateMetrics(result.cloth, result.balls, result.metrics);
         if (scenario != Scenario::grounded) {
@@ -1840,10 +2175,9 @@ void dumpOBJ(const std::string& path, const SimulationResult& result) {
                << triangle.third + 1u << '\n';
     }
     if (result.scenario != Scenario::grounded) {
-        const Particle& grip =
-            result.cloth.particles[nodeIndex(kLevels - 1u, 0u)];
-        output << "# grip center " << grip.position.x << ' '
-               << grip.position.y << ' ' << grip.position.z << '\n';
+        output << "# grip center " << result.cloth.gripTarget.x << ' '
+               << result.cloth.gripTarget.y << ' '
+               << result.cloth.gripTarget.z << '\n';
     }
     for (std::size_t index = 0; index < result.balls.size(); ++index) {
         const Ball& ball = result.balls[index];
@@ -1891,6 +2225,7 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
         result.metrics.maximumSelfPenetration < 2.0 * kClothRadius &&
         result.metrics.maximumSpeed < 30.0 &&
         result.metrics.maximumAngularSpeed < 200.0 &&
+        result.metrics.maximumGripForce < 500.0 &&
         result.metrics.maximumFrictionConeRatio <= 1.0 + 1.0e-12;
 }
 
@@ -1905,6 +2240,7 @@ int main(int argc, char** argv) try {
     std::string framePrefix;
     std::uint32_t frameStride = 0u;
     bool rollingProbe = false;
+    bool ccdProbe = false;
     Scenario scenario = Scenario::grounded;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string value = argv[argument];
@@ -1930,6 +2266,8 @@ int main(int argc, char** argv) try {
             nextUnsigned(frameStride);
         } else if (value == "--rolling-probe") {
             rollingProbe = true;
+        } else if (value == "--ccd-probe") {
+            ccdProbe = true;
         } else if (value == "--scenario" && argument + 1 < argc) {
             const std::string name = argv[++argument];
             if (name == "grounded") {
@@ -1946,7 +2284,7 @@ int main(int argc, char** argv) try {
                          "[--steps N] [--substeps N] [--iterations N] "
                          "[--timestep DT] [--scenario grounded|spin|pickup] "
                          "[--dump-obj PATH] [--dump-frames PREFIX] "
-                         "[--dump-every N] [--rolling-probe]\n";
+                         "[--dump-every N] [--rolling-probe] [--ccd-probe]\n";
             return 0;
         } else {
             throw std::invalid_argument("unknown argument: " + value);
@@ -1954,6 +2292,9 @@ int main(int argc, char** argv) try {
     }
     if (rollingProbe) {
         return runRollingProbe() ? 0 : 1;
+    }
+    if (ccdProbe) {
+        return runCCDProbe() ? 0 : 1;
     }
     if (steps == 0u || substeps == 0u || iterations == 0u ||
         !std::isfinite(timestep) || timestep <= 0.0) {
@@ -2074,8 +2415,12 @@ int main(int argc, char** argv) try {
     std::cout << "max_ground_penetration=" << metrics.maximumGroundPenetration
               << " max_swept_ground_advance="
               << metrics.maximumSweptGroundAdvance
+              << " max_swept_ball_advance="
+              << metrics.maximumSweptBallAdvance
               << " max_speed=" << metrics.maximumSpeed
               << " max_angular_speed=" << metrics.maximumAngularSpeed
+              << " max_grip_force=" << metrics.maximumGripForce
+              << " max_grip_impulse=" << metrics.maximumGripImpulse
               << " max_friction_cone_ratio="
               << metrics.maximumFrictionConeRatio
               << " tangential_impulse="
@@ -2086,6 +2431,8 @@ int main(int argc, char** argv) try {
               << metrics.ballPairFrictionContacts
               << " ground_friction_contacts="
               << metrics.ballGroundFrictionContacts
+              << " swept_ball_triangle_contacts="
+              << metrics.sweptBallTriangleContacts
               << " deterministic=" << std::boolalpha << deterministic
               << " state_hash=0x" << std::hex << firstHash << std::dec << '\n';
     const bool pass = acceptable(first, deterministic);

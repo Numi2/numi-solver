@@ -431,6 +431,16 @@ if(BUILD_TESTING)
         NAME cloth_bag.rolling_friction
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --rolling-probe
     )
+    add_test(
+        NAME cloth_bag.swept_sphere_triangle
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --ccd-probe
+    )
+    set_tests_properties(
+        cloth_bag.swept_sphere_triangle
+        PROPERTIES
+            LABELS "physics;cloth;reference;contact;ccd"
+            TIMEOUT 30
+    )
     set_tests_properties(
         cloth_bag.rolling_friction
         PROPERTIES
