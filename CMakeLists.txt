@@ -448,6 +448,22 @@ if(BUILD_TESTING)
             LABELS "physics;cloth;reference;contact;determinism;spin"
             TIMEOUT 120
     )
+    add_test(
+        NAME cloth_bag.pickup
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
+            --scenario pickup
+            --steps 30
+            --substeps 4
+            --iterations 12
+            --dump-frames ${CMAKE_CURRENT_BINARY_DIR}/cloth-pickup-test
+            --dump-every 10
+    )
+    set_tests_properties(
+        cloth_bag.pickup
+        PROPERTIES
+            LABELS "physics;cloth;reference;contact;determinism;pickup"
+            TIMEOUT 120
+    )
     set_tests_properties(
         temporal_cone.rigid
         PROPERTIES LABELS "metal;physics;rigid;assembly;streamed" TIMEOUT 60

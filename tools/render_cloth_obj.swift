@@ -149,6 +149,7 @@ private func render(
     vertices: [Vec3],
     fruits: [Fruit],
     grip: Grip?,
+    cameraProfile: String,
     output: String
 ) throws {
     let width = grip == nil ? 1200 : 800
@@ -170,7 +171,11 @@ private func render(
     let scale: Double
     let centerX: Double
     let centerY: Double
-    if grip != nil {
+    if cameraProfile == "pickup" {
+        scale = 500.0
+        centerX = 500.0
+        centerY = 160.0
+    } else if grip != nil {
         scale = 650.0
         centerX = Double(width) * 0.5
         centerY = 180.0
@@ -367,8 +372,16 @@ private func render(
     try data.write(to: URL(fileURLWithPath: output))
 }
 
-guard CommandLine.arguments.count == 3 else {
-    fputs("usage: render_cloth_obj.swift INPUT.obj OUTPUT.png\n", stderr)
+guard CommandLine.arguments.count == 3 || CommandLine.arguments.count == 4 else {
+    fputs("usage: render_cloth_obj.swift INPUT.obj OUTPUT.png [pickup]\n", stderr)
+    exit(2)
+}
+
+let cameraProfile = CommandLine.arguments.count == 4
+    ? CommandLine.arguments[3]
+    : "automatic"
+guard cameraProfile == "automatic" || cameraProfile == "pickup" else {
+    fputs("render_cloth_obj.swift: camera profile must be pickup\n", stderr)
     exit(2)
 }
 
@@ -378,9 +391,10 @@ do {
         vertices: vertices,
         fruits: fruits,
         grip: grip,
+        cameraProfile: cameraProfile,
         output: CommandLine.arguments[2]
     )
-    print("rendered vertices=\(vertices.count) fruits=\(fruits.count) grip=\(grip != nil) output=\(CommandLine.arguments[2])")
+    print("rendered vertices=\(vertices.count) fruits=\(fruits.count) grip=\(grip != nil) camera=\(cameraProfile) output=\(CommandLine.arguments[2])")
 } catch {
     fputs("render_cloth_obj.swift: \(error.localizedDescription)\n", stderr)
     exit(1)

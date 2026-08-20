@@ -11,7 +11,7 @@ constraints.
 This reference runs on the CPU. It does **not** prove a Metal cloth path,
 Temporal Cone cloth contact, continuous collision detection, yarn-scale
 friction, or hardware performance. It locks the cloth equations, topology,
-contact geometry, two useful load cases, deterministic replay, and mesh export
+contact geometry, three useful load cases, deterministic replay, and mesh export
 before a GPU implementation is admitted.
 
 ## Cloth discretization
@@ -69,6 +69,29 @@ expected physical outcome for an open bag and is distinct from numerical
 escape. A fruit is classified as released once its center moves more than
 `0.45 m` from the bag's bottom-center particle.
 
+## Grounded pickup and pour
+
+`--scenario pickup` starts from the grounded geometry and retains its collision
+plane. It makes the same one rim particle kinematic, first lifting it and then
+sweeping it sideways so gravity and the open mouth—not an authored fruit
+animation—determine the spill. With
+`s(x)=clamp(x,0,1)^2(3-2clamp(x,0,1))`,
+
+```math
+u(t)=s(t/0.58),\qquad p(t)=s((t-0.48)/0.62),
+```
+
+```math
+g(t)=g_0+
+\begin{bmatrix}
+-0.54p & 0.12\sin(\pi p) &
+0.72u+0.08\sin(\pi p)-0.12p
+\end{bmatrix}.
+```
+
+Every other degree of freedom remains dynamic. Ground contact continues during
+the whole motion, so released fruit falls to and settles on the plane.
+
 ## Contact
 
 Sphere contact is generated against the actual cloth triangles, not a support
@@ -83,8 +106,9 @@ C_c=d-(r_b+r_c)\ge0.
 
 All 66 fruit pairs use nonpenetration constraints. Touching pairs receive a
 deterministic tangential-velocity damping step so a produce pile has friction
-instead of behaving like perfectly smooth marbles. The grounded scenario also
-projects cloth and fruit against the plane. A deterministic spatial hash
+instead of behaving like perfectly smooth marbles. The grounded and pickup
+scenarios also project cloth and fruit against the plane. A deterministic
+spatial hash
 enforces vertex-level cloth self-separation for nonlocal topology pairs while
 excluding the local two-ring neighborhood. Self-contact incidence is execution
 evidence, not evidence of continuous triangle/triangle self-collision.
@@ -105,7 +129,7 @@ large reversible folds are required textile behavior. Stability is instead
 guarded by finite state, positive triangle area, bounded strain, contact
 penetration, self-separation, and deterministic replay.
 
-Run both load cases:
+Run all three load cases:
 
 ```sh
 ./build/numi-solver-cloth-bag \
@@ -115,6 +139,10 @@ Run both load cases:
 ./build/numi-solver-cloth-bag \
   --scenario spin --steps 60 --substeps 4 --iterations 12 \
   --dump-frames spin
+
+./build/numi-solver-cloth-bag \
+  --scenario pickup --steps 144 --substeps 4 --iterations 12 \
+  --dump-frames pickup --dump-every 6
 ```
 
 The measured 1.0-second grounded checkpoint on 2026-08-20 was deterministic
@@ -152,11 +180,22 @@ recorded `34,379` fruit/triangle contacts, and replayed bit-identically with
 and 11 leaving the open mouth; `escaped_mask=0` distinguishes that physical
 release from numerical divergence.
 
+The 1.2-second grounded pickup checkpoint passed with
+`max_warp_extension=0.253701462`, `max_shear_strain=0.073779296`,
+`max_ball_penetration=0.004774634`, `max_self_penetration=0.003547967`, and
+`escaped_mask=0`. Its `released_mask=3584` records fruits 9, 10, and 11
+leaving the bag; two are on the plane at the final checkpoint and one remains
+in flight. The independent replay matched `state_hash=0x2ee3fa9d255230cb`
+bit-for-bit.
+
 `--dump-obj` writes the actual simulated vertices and triangles plus fruit
-center/radius/appearance comments. In the spin scenario it also records the
-exact kinematic grip position. `--dump-frames PREFIX` captures the initial,
+center/radius/appearance comments. The spin and pickup scenarios also record
+the exact kinematic grip position. `--dump-frames PREFIX` captures the initial,
 quarter, half, three-quarter, and final states from the first authoritative
-trajectory while the second trajectory independently verifies the final hash.
-A rendered replay is visual evidence for this FP64 trajectory only; it is not
-evidence for the future Metal path. `tools/render_cloth_obj.swift` rasterizes
-that exported state with AppKit and does not advance or pose the simulation.
+trajectory. Adding `--dump-every N` captures every Nth step plus the final
+state. The second trajectory independently verifies the final hash. A rendered
+replay is visual evidence for this FP64 trajectory only; it is not evidence for
+the future Metal path. `tools/render_cloth_obj.swift` rasterizes exported state
+with AppKit and does not advance or pose the simulation;
+`tools/compose_cloth_gif.swift` combines those PNGs into a looping GIF without
+interpolating new physics states.

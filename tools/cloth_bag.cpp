@@ -25,6 +25,7 @@ constexpr double kAirborneLift = 0.52;
 enum class Scenario : std::uint8_t {
     grounded,
     spin,
+    pickup,
 };
 
 struct Vec3 {
@@ -298,7 +299,7 @@ ClothModel makeCloth(const Scenario scenario) {
         0.012 + (scenario == Scenario::spin ? kAirborneLift : 0.0),
     };
     model.particles.push_back({center, center, {}, center, 1.0 / 0.025});
-    if (scenario == Scenario::spin) {
+    if (scenario != Scenario::grounded) {
         model.particles[nodeIndex(kLevels - 1u, 0u)].inverseMass = 0.0;
     }
 
@@ -480,9 +481,26 @@ Vec3 spinGripTarget(const double time) {
     };
 }
 
-void updateSpinGrip(ClothModel& cloth, const double time) {
+Vec3 pickupGripTarget(const double time) {
+    const Vec3 base = authoredPosition(kLevels - 1u, 0u);
+    const double lift = smoothstep(time / 0.58);
+    const double pour = smoothstep((time - 0.48) / 0.62);
+    return base + Vec3{
+        -0.54 * pour,
+        0.12 * std::sin(std::numbers::pi * pour),
+        0.72 * lift + 0.08 * std::sin(std::numbers::pi * pour) - 0.12 * pour,
+    };
+}
+
+void updateGrip(
+    ClothModel& cloth,
+    const Scenario scenario,
+    const double time
+) {
     Particle& grip = cloth.particles[nodeIndex(kLevels - 1u, 0u)];
-    grip.rest = spinGripTarget(time);
+    grip.rest = scenario == Scenario::spin
+        ? spinGripTarget(time)
+        : pickupGripTarget(time);
 }
 
 void solveDistance(
@@ -943,12 +961,12 @@ SimulationResult simulate(
 
     for (std::uint32_t step = 0; step < steps; ++step) {
         for (std::uint32_t substep = 0; substep < substeps; ++substep) {
-            if (scenario == Scenario::spin) {
+            if (scenario != Scenario::grounded) {
                 const double time = (
                     static_cast<double>(step * substeps + substep + 1u) *
                     timestep
                 );
-                updateSpinGrip(result.cloth, time);
+                updateGrip(result.cloth, scenario, time);
             }
             for (Particle& particle : result.cloth.particles) {
                 particle.previous = particle.position;
@@ -1019,7 +1037,7 @@ SimulationResult simulate(
                         result.metrics.selfContacts
                     )
                 );
-                if (scenario == Scenario::grounded) {
+                if (scenario != Scenario::spin) {
                     result.metrics.maximumGroundPenetration = std::max(
                         result.metrics.maximumGroundPenetration,
                         solveGround(result.cloth.particles, result.balls)
@@ -1065,7 +1083,7 @@ SimulationResult simulate(
             (ball.position.z > 0.45 || radial > 0.48)) {
             result.metrics.spilledMask |= 1u << ballIndex;
         }
-        if (scenario == Scenario::spin && length(
+        if (scenario != Scenario::grounded && length(
             ball.position -
             result.cloth.particles[result.cloth.bottomCenter].position
         ) > 0.45) {
@@ -1121,7 +1139,7 @@ void dumpOBJ(const std::string& path, const SimulationResult& result) {
                << triangle.second + 1u << ' '
                << triangle.third + 1u << '\n';
     }
-    if (result.scenario == Scenario::spin) {
+    if (result.scenario != Scenario::grounded) {
         const Particle& grip =
             result.cloth.particles[nodeIndex(kLevels - 1u, 0u)];
         output << "# grip center " << grip.position.x << ' '
@@ -1168,6 +1186,7 @@ int main(int argc, char** argv) try {
     double timestep = 1.0 / 120.0;
     std::string dumpPath;
     std::string framePrefix;
+    std::uint32_t frameStride = 0u;
     Scenario scenario = Scenario::grounded;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string value = argv[argument];
@@ -1189,20 +1208,25 @@ int main(int argc, char** argv) try {
             dumpPath = argv[++argument];
         } else if (value == "--dump-frames" && argument + 1 < argc) {
             framePrefix = argv[++argument];
+        } else if (value == "--dump-every") {
+            nextUnsigned(frameStride);
         } else if (value == "--scenario" && argument + 1 < argc) {
             const std::string name = argv[++argument];
             if (name == "grounded") {
                 scenario = Scenario::grounded;
             } else if (name == "spin") {
                 scenario = Scenario::spin;
+            } else if (name == "pickup") {
+                scenario = Scenario::pickup;
             } else {
                 throw std::invalid_argument("unknown scenario: " + name);
             }
         } else if (value == "--help") {
             std::cout << "usage: numi-solver-cloth-bag "
                          "[--steps N] [--substeps N] [--iterations N] "
-                         "[--timestep DT] [--scenario grounded|spin] "
-                         "[--dump-obj PATH] [--dump-frames PREFIX]\n";
+                         "[--timestep DT] [--scenario grounded|spin|pickup] "
+                         "[--dump-obj PATH] [--dump-frames PREFIX] "
+                         "[--dump-every N]\n";
             return 0;
         } else {
             throw std::invalid_argument("unknown argument: " + value);
@@ -1212,16 +1236,28 @@ int main(int argc, char** argv) try {
         !std::isfinite(timestep) || timestep <= 0.0) {
         throw std::invalid_argument("simulation controls must be positive");
     }
+    if (frameStride != 0u && framePrefix.empty()) {
+        throw std::invalid_argument("--dump-every requires --dump-frames");
+    }
 
     std::vector<std::uint32_t> captureSteps;
     std::vector<SimulationResult> captures;
     if (!framePrefix.empty()) {
-        for (std::uint32_t quarter = 0u; quarter <= 4u; ++quarter) {
-            const std::uint32_t completed =
-                (steps * quarter + 2u) / 4u;
-            if (captureSteps.empty() || captureSteps.back() != completed) {
+        if (frameStride == 0u) {
+            for (std::uint32_t quarter = 0u; quarter <= 4u; ++quarter) {
+                const std::uint32_t completed =
+                    (steps * quarter + 2u) / 4u;
+                if (captureSteps.empty() || captureSteps.back() != completed) {
+                    captureSteps.push_back(completed);
+                }
+            }
+        } else {
+            for (std::uint32_t completed = 0u;
+                 completed < steps;
+                 completed += frameStride) {
                 captureSteps.push_back(completed);
             }
+            captureSteps.push_back(steps);
         }
     }
     const SimulationResult first = simulate(
@@ -1251,9 +1287,10 @@ int main(int argc, char** argv) try {
 
     const Metrics& metrics = first.metrics;
     std::cout << std::fixed << std::setprecision(9);
+    const char* scenarioName = scenario == Scenario::grounded ? "grounded" :
+        scenario == Scenario::spin ? "spin" : "pickup";
     std::cout << "model=dense_cloth_reference"
-              << " scenario="
-              << (scenario == Scenario::spin ? "spin" : "grounded")
+              << " scenario=" << scenarioName
               << " nodes=" << first.cloth.particles.size()
               << " triangles=" << first.cloth.triangles.size()
               << " stretch_constraints=" << first.cloth.distances.size()

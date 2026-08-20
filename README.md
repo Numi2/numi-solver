@@ -9,7 +9,24 @@ training runtime, tasks, applications, research artifacts, rendering runtime,
 or website. Files under `docs/assets` are generated solver evidence, not an
 application scene.
 
-## Cloth produce-bag replay
+## Pick up the bag and spill the fruit
+
+![A deterministic cloth-solver replay lifting a produce bag from one rim point and spilling fruit onto the ground](docs/assets/cloth-pickup-spill.gif)
+
+This looping GIF contains 25 fixed-camera frames from one 1.2-second solver
+trajectory. The orange ring is the only kinematic cloth vertex: the other 1,344
+cloth particles and all twelve fruits remain dynamic. The bag starts resting on
+the plane, rises under the one-point grip, tips, and releases fruits 9, 10, and
+11. Two have landed by the final frame while the third is still falling.
+
+The replay passed every mechanics gate with `released_mask=3584`,
+`escaped_mask=0`, `0.253701462` maximum warp extension,
+`0.073779296` maximum shear strain, and bit-identical state hash
+`0x2ee3fa9d255230cb`. The GIF is rasterized from those exported states; it is
+CPU FP64 cloth evidence, not Metal-performance or Temporal Cone cloth-contact
+evidence.
+
+## Grounded cloth produce-bag replay
 
 ![A low cotton-net produce bag with a folded cuff, scalloped ground skirt, and twelve fruit spheres after one simulated second](docs/assets/cloth-produce-bag.png)
 
@@ -62,6 +79,23 @@ for step in 0 15 30 45 60; do
   swift tools/render_cloth_obj.swift \
     "build/cloth-spin-${step}.obj" "docs/assets/cloth-spin-${step}.png"
 done
+
+./build/numi-solver-cloth-bag \
+  --scenario pickup --steps 144 --substeps 4 --iterations 12 \
+  --dump-frames build/cloth-pickup --dump-every 6
+
+mkdir -p build/cloth-pickup-png
+for step in $(seq 0 6 144); do
+  swift tools/render_cloth_obj.swift \
+    "build/cloth-pickup-${step}.obj" \
+    "build/cloth-pickup-png/frame-${step}.png" pickup
+done
+
+swift tools/compose_cloth_gif.swift \
+  docs/assets/cloth-pickup-spill.gif 0.05 \
+  $(for step in $(seq 0 6 144); do
+    printf '%s ' "build/cloth-pickup-png/frame-${step}.png"
+  done)
 ```
 
 ## Solver boundary
@@ -160,12 +194,14 @@ preparation, inverse-response assembly and publication, and invalid
 state/frame/material rollback.
 
 The dense cloth reference accepts `--steps N`, `--substeps N`,
-`--iterations N`, `--timestep DT`, `--scenario grounded|spin`, and
+`--iterations N`, `--timestep DT`, `--scenario grounded|spin|pickup`, and
 `--dump-obj PATH`. `--dump-frames PREFIX` exports five evenly spaced states
-from the first authoritative trajectory. `grounded` settles an open produce
-bag on a plane; `spin` pinches one rim vertex and drives it around a smooth
-airborne orbit. Its FP64 mechanics and evidence boundary are separate from the
-Metal harnesses.
+from the first authoritative trajectory; `--dump-every N` instead exports
+every Nth step plus the final state. `grounded` settles an open produce bag on
+a plane, `spin` begins airborne and drives one rim vertex around a smooth
+orbit, and `pickup` lifts that same one-point grip from the grounded state and
+pours fruit onto the plane. Its FP64 mechanics and evidence boundary are
+separate from the Metal harnesses.
 
 An installed or relocated harness can load a specific library with
 `--metallib path/to/NumiTemporalCone.metallib`.
