@@ -191,9 +191,11 @@ Vec3 authoredPosition(const std::uint32_t level, const std::uint32_t ring) {
         static_cast<double>(kLevels - 1);
     const double body = smoothstep(vertical / 0.55);
     const double fold = std::clamp((vertical - 0.72) / 0.28, 0.0, 1.0);
+    const double skirt = 1.0 - smoothstep(vertical / 0.18);
     const double angle0 = 2.0 * std::numbers::pi *
         static_cast<double>(ring) / static_cast<double>(kAround);
-    const double baseRadius = 0.270 + 0.045 * body - 0.045 * fold;
+    const double baseRadius =
+        0.266 + 0.030 * body - 0.116 * fold + 0.045 * skirt;
     const double angle = angle0 + 0.08 * vertical;
     const double wrinkle =
         1.0 +
@@ -207,25 +209,33 @@ Vec3 authoredPosition(const std::uint32_t level, const std::uint32_t ring) {
         0.007 * std::sin(3.0 * angle + 0.35) +
         0.004 * std::sin(7.0 * angle - 0.80)
     );
+    const double looseSkirt = skirt * (
+        0.020 * std::sin(3.0 * angle - 0.40) +
+        0.012 * std::sin(7.0 * angle + 0.70)
+    );
     const double rimSag = fold * (
         0.016 * std::sin(angle + 0.55) +
         0.008 * std::sin(3.0 * angle - 0.30) +
         0.004 * std::sin(6.0 * angle + 0.90)
     );
-    const double radius = baseRadius * wrinkle + looseRim;
+    const double radius = baseRadius * wrinkle + looseRim + looseSkirt;
     const double bodySag = body * (
         0.018 * std::sin(2.0 * angle + 0.30) +
         0.009 * std::sin(5.0 * angle - 0.70)
     );
+    const double skirtSag = skirt * (
+        0.012 * std::sin(4.0 * angle + 0.20) +
+        0.006 * std::sin(9.0 * angle - 0.50)
+    );
     const double bodyHeight =
         0.012 + 0.155 * std::min(vertical / 0.72, 1.0) + bodySag;
     const double foldedHeight = fold < 0.35
-        ? 0.167 + 0.028 * (fold / 0.35)
-        : 0.195 - 0.070 * ((fold - 0.35) / 0.65);
+        ? 0.167 + 0.038 * (fold / 0.35)
+        : 0.205 - 0.025 * ((fold - 0.35) / 0.65);
     return {
         radius * std::cos(angle),
         radius * std::sin(angle),
-        (vertical < 0.72 ? bodyHeight : foldedHeight) + rimSag,
+        (vertical < 0.72 ? bodyHeight : foldedHeight) + rimSag + skirtSag,
     };
 }
 
@@ -413,14 +423,14 @@ ClothModel makeCloth(const Scenario scenario) {
 
 std::array<Ball, kFruitCount> makeBalls(const Scenario scenario) {
     constexpr std::array<Vec3, kFruitCount> groundedPositions{{
-        {0.190, 0.000, 0.080},
-        {0.118, 0.149, 0.075},
-        {-0.042, 0.185, 0.085},
-        {-0.171, 0.082, 0.070},
-        {-0.171, -0.082, 0.078},
-        {-0.042, -0.185, 0.082},
-        {0.118, -0.149, 0.073},
-        {0.000, 0.000, 0.076},
+        {0.190, 0.000, 0.088},
+        {0.118, 0.149, 0.083},
+        {-0.042, 0.185, 0.093},
+        {-0.171, 0.082, 0.078},
+        {-0.171, -0.082, 0.086},
+        {-0.042, -0.185, 0.090},
+        {0.118, -0.149, 0.081},
+        {0.000, 0.000, 0.084},
         {0.105, 0.000, 0.210},
         {0.000, 0.105, 0.210},
         {-0.105, 0.000, 0.215},
@@ -909,7 +919,9 @@ SimulationResult simulate(
     const double frameTimestep,
     const std::uint32_t substeps,
     const std::uint32_t iterations,
-    const Scenario scenario
+    const Scenario scenario,
+    const std::vector<std::uint32_t>* captureSteps = nullptr,
+    std::vector<SimulationResult>* captures = nullptr
 ) {
     SimulationResult result;
     result.scenario = scenario;
@@ -917,6 +929,17 @@ SimulationResult simulate(
     result.balls = makeBalls(scenario);
     const double timestep = frameTimestep / static_cast<double>(substeps);
     const Vec3 gravity{0.0, 0.0, -9.81};
+    const auto capture = [&](const std::uint32_t completedSteps) {
+        if (captureSteps != nullptr && captures != nullptr &&
+            std::find(
+                captureSteps->begin(),
+                captureSteps->end(),
+                completedSteps
+            ) != captureSteps->end()) {
+            captures->push_back(result);
+        }
+    };
+    capture(0u);
 
     for (std::uint32_t step = 0; step < steps; ++step) {
         for (std::uint32_t substep = 0; substep < substeps; ++substep) {
@@ -1026,6 +1049,7 @@ SimulationResult simulate(
             dampBallPairFriction(result.balls);
         }
         updateMetrics(result.cloth, result.balls, result.metrics);
+        capture(step + 1u);
     }
 
     for (std::size_t ballIndex = 0; ballIndex < result.balls.size(); ++ballIndex) {
@@ -1044,7 +1068,7 @@ SimulationResult simulate(
         if (scenario == Scenario::spin && length(
             ball.position -
             result.cloth.particles[result.cloth.bottomCenter].position
-        ) > 0.95) {
+        ) > 0.45) {
             result.metrics.releasedMask |= 1u << ballIndex;
         }
     }
@@ -1097,6 +1121,12 @@ void dumpOBJ(const std::string& path, const SimulationResult& result) {
                << triangle.second + 1u << ' '
                << triangle.third + 1u << '\n';
     }
+    if (result.scenario == Scenario::spin) {
+        const Particle& grip =
+            result.cloth.particles[nodeIndex(kLevels - 1u, 0u)];
+        output << "# grip center " << grip.position.x << ' '
+               << grip.position.y << ' ' << grip.position.z << '\n';
+    }
     for (std::size_t index = 0; index < result.balls.size(); ++index) {
         const Ball& ball = result.balls[index];
         output << "# ball " << index << " center "
@@ -1137,6 +1167,7 @@ int main(int argc, char** argv) try {
     std::uint32_t iterations = 12u;
     double timestep = 1.0 / 120.0;
     std::string dumpPath;
+    std::string framePrefix;
     Scenario scenario = Scenario::grounded;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string value = argv[argument];
@@ -1156,6 +1187,8 @@ int main(int argc, char** argv) try {
             timestep = std::stod(argv[++argument]);
         } else if (value == "--dump-obj" && argument + 1 < argc) {
             dumpPath = argv[++argument];
+        } else if (value == "--dump-frames" && argument + 1 < argc) {
+            framePrefix = argv[++argument];
         } else if (value == "--scenario" && argument + 1 < argc) {
             const std::string name = argv[++argument];
             if (name == "grounded") {
@@ -1169,7 +1202,7 @@ int main(int argc, char** argv) try {
             std::cout << "usage: numi-solver-cloth-bag "
                          "[--steps N] [--substeps N] [--iterations N] "
                          "[--timestep DT] [--scenario grounded|spin] "
-                         "[--dump-obj PATH]\n";
+                         "[--dump-obj PATH] [--dump-frames PREFIX]\n";
             return 0;
         } else {
             throw std::invalid_argument("unknown argument: " + value);
@@ -1180,8 +1213,25 @@ int main(int argc, char** argv) try {
         throw std::invalid_argument("simulation controls must be positive");
     }
 
+    std::vector<std::uint32_t> captureSteps;
+    std::vector<SimulationResult> captures;
+    if (!framePrefix.empty()) {
+        for (std::uint32_t quarter = 0u; quarter <= 4u; ++quarter) {
+            const std::uint32_t completed =
+                (steps * quarter + 2u) / 4u;
+            if (captureSteps.empty() || captureSteps.back() != completed) {
+                captureSteps.push_back(completed);
+            }
+        }
+    }
     const SimulationResult first = simulate(
-        steps, timestep, substeps, iterations, scenario
+        steps,
+        timestep,
+        substeps,
+        iterations,
+        scenario,
+        framePrefix.empty() ? nullptr : &captureSteps,
+        framePrefix.empty() ? nullptr : &captures
     );
     const SimulationResult replay = simulate(
         steps, timestep, substeps, iterations, scenario
@@ -1191,6 +1241,12 @@ int main(int argc, char** argv) try {
     const bool deterministic = firstHash == replayHash;
     if (!dumpPath.empty()) {
         dumpOBJ(dumpPath, first);
+    }
+    for (std::size_t index = 0; index < captures.size(); ++index) {
+        dumpOBJ(
+            framePrefix + "-" + std::to_string(captureSteps[index]) + ".obj",
+            captures[index]
+        );
     }
 
     const Metrics& metrics = first.metrics;
@@ -1207,6 +1263,10 @@ int main(int argc, char** argv) try {
               << " substeps=" << substeps
               << " iterations=" << iterations
               << " simulated_seconds=" << steps * timestep << '\n';
+    if (!captures.empty()) {
+        std::cout << "captured_frames=" << captures.size()
+                  << " frame_prefix=" << framePrefix << '\n';
+    }
     std::cout << "max_warp_strain=" << metrics.maximumWarpStrain
               << " max_weft_strain=" << metrics.maximumWeftStrain
               << " max_shear_strain=" << metrics.maximumShearStrain

@@ -16,10 +16,11 @@ before a GPU implementation is admitted.
 
 ## Cloth discretization
 
-The grounded bag has a broad capped base, a short corrugated body, an inward
-folded irregular cuff, and no anchors. The top two rows carry extra mass and a
-stiffer circumferential hem, but remain free. Warp, weft, and both diagonal
-shear families use XPBD distance constraints. For a pair `(i,j)`,
+The grounded bag has a broad capped base, a scalloped ground skirt, a short
+corrugated body, an inward folded irregular cuff, and no anchors. The top two
+rows carry extra mass and a stiffer circumferential hem, but remain free. Warp,
+weft, and both diagonal shear families use XPBD distance constraints. For a
+pair `(i,j)`,
 
 ```math
 C(x)=\|x_j-x_i\|-\ell_0,
@@ -65,7 +66,8 @@ Every other cloth particle and all twelve fruits remain dynamic. Gravity,
 inertial lag, the soft bend law, cloth contact, and the open mouth therefore
 decide the response. Fruit release is recorded as `released_mask`; it is an
 expected physical outcome for an open bag and is distinct from numerical
-escape.
+escape. A fruit is classified as released once its center moves more than
+`0.45 m` from the bag's bottom-center particle.
 
 ## Contact
 
@@ -111,8 +113,8 @@ Run both load cases:
   --dump-obj grounded-1s.obj
 
 ./build/numi-solver-cloth-bag \
-  --scenario spin --steps 30 --substeps 4 --iterations 12 \
-  --dump-obj spin-025s.obj
+  --scenario spin --steps 60 --substeps 4 --iterations 12 \
+  --dump-frames spin
 ```
 
 The measured 1.0-second grounded checkpoint on 2026-08-20 was deterministic
@@ -124,32 +126,37 @@ triangles=2640
 stretch_constraints=5280
 bend_constraints=3936
 balls=12
-max_warp_strain=0.106840854
-max_warp_extension=0.098259682
-max_warp_compression=0.106840854
-max_weft_strain=0.029464806
-max_shear_strain=0.037335302
-max_bend_error=0.412563172
-min_triangle_area=0.000050047
-max_ball_penetration=0.006000033
-max_self_penetration=0.004564645
-ball_triangle_contacts=76233
-self_contacts=94078
+max_warp_strain=0.181820683
+max_warp_extension=0.067565456
+max_warp_compression=0.181820683
+max_weft_strain=0.016780570
+max_shear_strain=0.026652683
+max_bend_error=0.201407566
+min_triangle_area=0.000061569
+max_ball_penetration=0.004774631
+max_self_penetration=0.002980520
+ball_triangle_contacts=79193
+self_contacts=17280
 escaped_mask=0
 spilled_mask=0
-max_ground_penetration=0.007905552
+max_ground_penetration=0.008685200
 deterministic=true
-state_hash=0xc404b0ad6d16b0db
+state_hash=0xe4e38a3f34b0645f
 result=PASS
 ```
 
-The matching 0.25-second one-point spin checkpoint also passed. It kept all
-twelve fruits contained, reached `0.160134927` maximum warp extension and
-`0.056010842` maximum shear strain, recorded `5,065` fruit/triangle contacts,
-and replayed bit-identically with `state_hash=0xa8b114cc13f79ce6`.
+The matching 0.5-second one-point spin checkpoint also passed. It reached
+`0.115408315` maximum warp extension and `0.053911317` maximum shear strain,
+recorded `34,379` fruit/triangle contacts, and replayed bit-identically with
+`state_hash=0x99db40bd86feb817`. `released_mask=3584` records fruits 9, 10,
+and 11 leaving the open mouth; `escaped_mask=0` distinguishes that physical
+release from numerical divergence.
 
 `--dump-obj` writes the actual simulated vertices and triangles plus fruit
-center/radius/appearance comments. A rendered replay is visual evidence for
-this FP64 trajectory only; it is not evidence for the future Metal path.
-`tools/render_cloth_obj.swift` rasterizes that exported state with AppKit and
-does not advance or pose the simulation.
+center/radius/appearance comments. In the spin scenario it also records the
+exact kinematic grip position. `--dump-frames PREFIX` captures the initial,
+quarter, half, three-quarter, and final states from the first authoritative
+trajectory while the second trajectory independently verifies the final hash.
+A rendered replay is visual evidence for this FP64 trajectory only; it is not
+evidence for the future Metal path. `tools/render_cloth_obj.swift` rasterizes
+that exported state with AppKit and does not advance or pose the simulation.

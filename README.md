@@ -11,7 +11,7 @@ application scene.
 
 ## Cloth produce-bag replay
 
-![A soft cotton produce bag containing twelve fruit spheres after one simulated second](docs/assets/cloth-produce-bag.png)
+![A low cotton-net produce bag with a folded cuff, scalloped ground skirt, and twelve fruit spheres after one simulated second](docs/assets/cloth-produce-bag.png)
 
 This PNG is rasterized directly from the actual deterministic FP64 solver state;
 it is not concept art or a hand-posed scene. The replay advances a free 48 by 28
@@ -20,10 +20,29 @@ AppKit rasterizer adds cotton-fiber strokes between control points but does not
 move the exported state.
 
 The qualified replay passed with no escaped or spilled fruit, no collapsed
-triangles, `0.006000033 m` maximum fruit/cloth penetration,
-`0.004564645 m` maximum vertex self-penetration, and bit-identical replay hash
-`0xc404b0ad6d16b0db`. This is CPU FP64 cloth evidence, not Metal-performance or
+triangles, `0.004774631 m` maximum fruit/cloth penetration,
+`0.002980520 m` maximum vertex self-penetration, and bit-identical replay hash
+`0xe4e38a3f34b0645f`. This is CPU FP64 cloth evidence, not Metal-performance or
 Temporal Cone cloth-contact evidence.
+
+### Grab one rim point and spin
+
+The orange ring marks the one kinematic rim vertex. Every other cloth node and
+all twelve fruits remain dynamic. These five fixed-camera frames come from one
+0.5-second trajectory; they are not separately posed simulations.
+
+| `t=0.000 s` | `t=0.125 s` | `t=0.250 s` |
+|:--:|:--:|:--:|
+| ![Initial airborne cloth bag](docs/assets/cloth-spin-0.png) | ![Cloth bag beginning to lag behind its moving grip](docs/assets/cloth-spin-15.png) | ![Cloth bag twisting around the one-point grip](docs/assets/cloth-spin-30.png) |
+
+| `t=0.375 s` | `t=0.500 s` |
+|:--:|:--:|
+| ![Open cloth bag releasing fruit while spinning](docs/assets/cloth-spin-45.png) | ![Vertically lagging cloth bag after three fruits are released](docs/assets/cloth-spin-60.png) |
+
+The spin replay passed with `0.115408315` maximum warp extension,
+`0.053911317` maximum shear strain, zero numerical escapes, and bit-identical
+hash `0x99db40bd86feb817`. `released_mask=3584` records fruits 9, 10, and 11
+leaving the open mouth; the images and the outcome metric agree.
 
 Reproduce the README image from the executable state:
 
@@ -34,6 +53,15 @@ Reproduce the README image from the executable state:
 
 swift tools/render_cloth_obj.swift \
   build/cloth-produce-bag-1s.obj docs/assets/cloth-produce-bag.png
+
+./build/numi-solver-cloth-bag \
+  --scenario spin --steps 60 --substeps 4 --iterations 12 \
+  --dump-frames build/cloth-spin
+
+for step in 0 15 30 45 60; do
+  swift tools/render_cloth_obj.swift \
+    "build/cloth-spin-${step}.obj" "docs/assets/cloth-spin-${step}.png"
+done
 ```
 
 ## Solver boundary
@@ -133,9 +161,11 @@ state/frame/material rollback.
 
 The dense cloth reference accepts `--steps N`, `--substeps N`,
 `--iterations N`, `--timestep DT`, `--scenario grounded|spin`, and
-`--dump-obj PATH`. `grounded` settles an open produce bag on a plane; `spin`
-pinches one rim vertex and drives it around a smooth airborne orbit. Its FP64
-mechanics and evidence boundary are separate from the Metal harnesses.
+`--dump-obj PATH`. `--dump-frames PREFIX` exports five evenly spaced states
+from the first authoritative trajectory. `grounded` settles an open produce
+bag on a plane; `spin` pinches one rim vertex and drives it around a smooth
+airborne orbit. Its FP64 mechanics and evidence boundary are separate from the
+Metal harnesses.
 
 An installed or relocated harness can load a specific library with
 `--metallib path/to/NumiTemporalCone.metallib`.

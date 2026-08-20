@@ -32,6 +32,10 @@ private struct Fruit {
     var appearance: Int
 }
 
+private struct Grip {
+    var center: Vec3
+}
+
 private enum PrimitiveKind {
     case yarn(CGPoint, CGPoint, Bool)
     case fruit(CGPoint, Fruit)
@@ -46,10 +50,11 @@ private let around = 48
 private let levels = 28
 private let expectedVertices = around * levels + 1
 
-private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit]) {
+private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit], Grip?) {
     let source = try String(contentsOfFile: path, encoding: .utf8)
     var vertices: [Vec3] = []
     var fruits: [Fruit] = []
+    var grip: Grip?
     for line in source.split(separator: "\n") {
         let fields = line.split(separator: " ")
         guard let first = fields.first else { continue }
@@ -74,6 +79,14 @@ private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit]) {
                 radius: radius,
                 appearance: appearance
             ))
+        } else if fields.count >= 6,
+                  fields[0] == "#",
+                  fields[1] == "grip",
+                  fields[2] == "center",
+                  let x = Double(fields[3]),
+                  let y = Double(fields[4]),
+                  let z = Double(fields[5]) {
+            grip = Grip(center: Vec3(x: x, y: y, z: z))
         }
     }
     guard vertices.count == expectedVertices else {
@@ -84,7 +97,7 @@ private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit]) {
                 "expected \(expectedVertices) vertices, found \(vertices.count)"]
         )
     }
-    return (vertices, fruits)
+    return (vertices, fruits, grip)
 }
 
 private func mix(_ first: Vec3, _ second: Vec3, _ t: Double) -> Vec3 {
@@ -132,11 +145,16 @@ private func color(_ red: CGFloat, _ green: CGFloat, _ blue: CGFloat,
             blue: blue / 255.0, alpha: alpha)
 }
 
-private func render(vertices: [Vec3], fruits: [Fruit], output: String) throws {
-    let width = 1600
-    let height = 1000
+private func render(
+    vertices: [Vec3],
+    fruits: [Fruit],
+    grip: Grip?,
+    output: String
+) throws {
+    let width = grip == nil ? 1200 : 800
+    let height = 800
     let yaw = -0.62
-    let pitch = 0.12
+    let pitch = 0.19
     let transformed = vertices.map { camera($0, yaw: yaw, pitch: pitch) }
     var minimumX = transformed.map(\.x).min()!
     var maximumX = transformed.map(\.x).max()!
@@ -149,12 +167,23 @@ private func render(vertices: [Vec3], fruits: [Fruit], output: String) throws {
         minimumY = min(minimumY, center.y - fruit.radius)
         maximumY = max(maximumY, center.y + fruit.radius)
     }
-    let scale = min(
-        Double(width - 150) / (maximumX - minimumX),
-        Double(height - 150) / (maximumY - minimumY)
-    )
-    let centerX = Double(width) * 0.5 - (minimumX + maximumX) * 0.5 * scale
-    let centerY = Double(height) * 0.50 - (minimumY + maximumY) * 0.5 * scale
+    let scale: Double
+    let centerX: Double
+    let centerY: Double
+    if grip != nil {
+        scale = 650.0
+        centerX = Double(width) * 0.5
+        centerY = 180.0
+    } else {
+        scale = min(
+            Double(width - 150) / (maximumX - minimumX),
+            Double(height - 150) / (maximumY - minimumY)
+        )
+        centerX = Double(width) * 0.5 -
+            (minimumX + maximumX) * 0.5 * scale
+        centerY = Double(height) * 0.50 -
+            (minimumY + maximumY) * 0.5 * scale
+    }
     func project(_ point: Vec3) -> Projected {
         let transformed = camera(point, yaw: yaw, pitch: pitch)
         return Projected(
@@ -194,18 +223,19 @@ private func render(vertices: [Vec3], fruits: [Fruit], output: String) throws {
     context.restoreGState()
 
     var primitives: [Primitive] = []
-    primitives.reserveCapacity(4_200)
-    for level in 0..<levels {
-        let rim = level >= levels - 2
+    primitives.reserveCapacity(6_900)
+    for halfLevel in 0...(2 * (levels - 1)) {
+        let level = Double(halfLevel) * 0.5
+        let rim = level >= 0.72 * Double(levels - 1)
         for ring in 0..<around {
             let first = project(surface(
                 vertices,
-                level: Double(level),
+                level: level,
                 ring: Double(ring)
             ))
             let second = project(surface(
                 vertices,
-                level: Double(level),
+                level: level,
                 ring: Double(ring + 1)
             ))
             primitives.append(Primitive(
@@ -229,7 +259,11 @@ private func render(vertices: [Vec3], fruits: [Fruit], output: String) throws {
             ))
             primitives.append(Primitive(
                 depth: 0.5 * (first.depth + second.depth),
-                kind: .yarn(first.point, second.point, level >= levels - 3)
+                kind: .yarn(
+                    first.point,
+                    second.point,
+                    Double(level) >= 0.72 * Double(levels - 1)
+                )
             ))
         }
     }
@@ -242,22 +276,22 @@ private func render(vertices: [Vec3], fruits: [Fruit], output: String) throws {
     }
     primitives.sort { $0.depth < $1.depth }
 
-    let yarnOutline = color(118, 94, 66, 0.30)
-    let yarnBody = color(226, 215, 190, 0.95)
-    let yarnHighlight = color(255, 253, 240, 0.88)
+    let yarnOutline = color(118, 94, 66, 0.23)
+    let yarnBody = color(229, 219, 196, 0.92)
+    let yarnHighlight = color(255, 253, 241, 0.78)
     let fruitColors: [(CGColor, CGColor, CGColor)] = [
-        (color(255, 208, 190), color(166, 39, 55), color(72, 15, 26)),
-        (color(224, 239, 167), color(107, 155, 45), color(43, 77, 25)),
-        (color(255, 238, 165), color(231, 170, 39), color(125, 78, 10)),
-        (color(255, 204, 155), color(218, 75, 42), color(108, 29, 18)),
+        (color(226, 136, 137), color(166, 39, 55), color(72, 15, 26)),
+        (color(172, 204, 91), color(107, 155, 45), color(43, 77, 25)),
+        (color(255, 216, 92), color(231, 170, 39), color(125, 78, 10)),
+        (color(240, 132, 84), color(218, 75, 42), color(108, 29, 18)),
     ]
     context.setLineCap(.round)
     for primitive in primitives {
         switch primitive.kind {
         case let .yarn(first, second, rim):
-            let bodyWidth: CGFloat = rim ? 6.0 : 3.2
+            let bodyWidth: CGFloat = rim ? 3.8 : 2.3
             context.setStrokeColor(yarnOutline)
-            context.setLineWidth(bodyWidth + 1.4)
+            context.setLineWidth(bodyWidth + 1.0)
             context.move(to: first)
             context.addLine(to: second)
             context.strokePath()
@@ -312,6 +346,17 @@ private func render(vertices: [Vec3], fruits: [Fruit], output: String) throws {
         }
     }
 
+    if let grip {
+        let center = project(grip.center).point
+        let marker = CGRect(x: center.x - 9.0, y: center.y - 9.0,
+                            width: 18.0, height: 18.0)
+        context.setFillColor(color(47, 45, 43, 0.92))
+        context.fillEllipse(in: marker)
+        context.setStrokeColor(color(255, 177, 65, 1.0))
+        context.setLineWidth(4.0)
+        context.strokeEllipse(in: marker.insetBy(dx: 2.0, dy: 2.0))
+    }
+
     guard let image = context.makeImage() else {
         throw NSError(domain: "NumiClothRenderer", code: 4)
     }
@@ -328,9 +373,14 @@ guard CommandLine.arguments.count == 3 else {
 }
 
 do {
-    let (vertices, fruits) = try parseOBJ(at: CommandLine.arguments[1])
-    try render(vertices: vertices, fruits: fruits, output: CommandLine.arguments[2])
-    print("rendered vertices=\(vertices.count) fruits=\(fruits.count) output=\(CommandLine.arguments[2])")
+    let (vertices, fruits, grip) = try parseOBJ(at: CommandLine.arguments[1])
+    try render(
+        vertices: vertices,
+        fruits: fruits,
+        grip: grip,
+        output: CommandLine.arguments[2]
+    )
+    print("rendered vertices=\(vertices.count) fruits=\(fruits.count) grip=\(grip != nil) output=\(CommandLine.arguments[2])")
 } catch {
     fputs("render_cloth_obj.swift: \(error.localizedDescription)\n", stderr)
     exit(1)

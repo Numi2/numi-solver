@@ -440,6 +440,7 @@ if(BUILD_TESTING)
             --steps 30
             --substeps 4
             --iterations 12
+            --dump-frames ${CMAKE_CURRENT_BINARY_DIR}/cloth-spin-test
     )
     set_tests_properties(
         cloth_bag.airborne_spin
