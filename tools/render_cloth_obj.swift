@@ -26,10 +26,35 @@ private struct Projected {
     var depth: Double
 }
 
+private func cross(_ first: Vec3, _ second: Vec3) -> Vec3 {
+    Vec3(
+        x: first.y * second.z - first.z * second.y,
+        y: first.z * second.x - first.x * second.z,
+        z: first.x * second.y - first.y * second.x
+    )
+}
+
+private struct Quaternion {
+    var w: Double
+    var x: Double
+    var y: Double
+    var z: Double
+
+    static let identity = Quaternion(w: 1.0, x: 0.0, y: 0.0, z: 0.0)
+
+    func rotate(_ point: Vec3) -> Vec3 {
+        let vector = Vec3(x: x, y: y, z: z)
+        let firstCross = cross(vector, point)
+        return point + firstCross * (2.0 * w) +
+            cross(vector, firstCross) * 2.0
+    }
+}
+
 private struct Fruit {
     var center: Vec3
     var radius: Double
     var appearance: Int
+    var orientation: Quaternion
 }
 
 private struct Grip {
@@ -76,10 +101,22 @@ private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit], Grip?) {
                   let z = Double(fields[6]),
                   let radius = Double(fields[8]),
                   let appearance = Int(fields[10]) {
+            let orientation: Quaternion
+            if fields.count >= 16,
+               fields[11] == "orientation",
+               let w = Double(fields[12]),
+               let qx = Double(fields[13]),
+               let qy = Double(fields[14]),
+               let qz = Double(fields[15]) {
+                orientation = Quaternion(w: w, x: qx, y: qy, z: qz)
+            } else {
+                orientation = .identity
+            }
             fruits.append(Fruit(
                 center: Vec3(x: x, y: y, z: z),
                 radius: radius,
-                appearance: appearance
+                appearance: appearance,
+                orientation: orientation
             ))
         } else if fields.count >= 6,
                   fields[0] == "#",
@@ -442,6 +479,25 @@ private func render(
                 y: center.y - radius,
                 width: 2.0 * radius,
                 height: 2.0 * radius
+            ))
+            var bodyMarker = fruit.orientation.rotate(Vec3(
+                x: 0.68,
+                y: 0.31,
+                z: 0.66
+            ))
+            if camera(bodyMarker, yaw: yaw, pitch: pitch).z < 0.0 {
+                bodyMarker = bodyMarker * -1.0
+            }
+            let markerWorld = fruit.center + bodyMarker *
+                (fruit.radius * 0.82)
+            let markerCenter = project(markerWorld).point
+            let markerRadius = max(2.2, radius * 0.075)
+            context.setFillColor(color(67, 38, 24, 0.82))
+            context.fillEllipse(in: CGRect(
+                x: markerCenter.x - markerRadius,
+                y: markerCenter.y - markerRadius,
+                width: 2.0 * markerRadius,
+                height: 2.0 * markerRadius
             ))
         }
     }

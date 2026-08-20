@@ -32,6 +32,12 @@ constexpr double kClothMass =
     ) * kClothNodeMass +
     static_cast<double>(2u * kAround) * kClothHemNodeMass;
 constexpr double kClothContactPatchMass = kClothMass;
+constexpr double kFruitGroundFriction = 0.42;
+constexpr double kFruitPairFriction = 0.30;
+constexpr double kFruitClothFriction = 0.36;
+constexpr double kFruitRollingResistanceRate = 0.35;
+constexpr std::size_t kBallPairCount =
+    kFruitCount * (kFruitCount - 1u) / 2u;
 
 enum class Scenario : std::uint8_t {
     grounded,
@@ -101,6 +107,46 @@ bool finite(const Vec3 v) {
            std::isfinite(v.z);
 }
 
+struct Quaternion {
+    double w{1.0};
+    double x{};
+    double y{};
+    double z{};
+};
+
+Quaternion operator+(const Quaternion a, const Quaternion b) {
+    return {a.w + b.w, a.x + b.x, a.y + b.y, a.z + b.z};
+}
+
+Quaternion operator*(const Quaternion q, const double s) {
+    return {q.w * s, q.x * s, q.y * s, q.z * s};
+}
+
+Quaternion operator*(const Quaternion a, const Quaternion b) {
+    return {
+        a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
+        a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+        a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+        a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+    };
+}
+
+double quaternionLength(const Quaternion q) {
+    return std::sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
+}
+
+Quaternion normalized(const Quaternion q) {
+    const double magnitude = quaternionLength(q);
+    return magnitude > 1.0e-14
+        ? q * (1.0 / magnitude)
+        : Quaternion{};
+}
+
+bool finite(const Quaternion q) {
+    return std::isfinite(q.w) && std::isfinite(q.x) &&
+        std::isfinite(q.y) && std::isfinite(q.z);
+}
+
 struct Particle {
     Vec3 position{};
     Vec3 previous{};
@@ -114,9 +160,22 @@ struct Ball {
     Vec3 position{};
     Vec3 previous{};
     Vec3 velocity{};
+    Vec3 angularVelocity{};
+    Quaternion orientation{};
     double radius{0.11};
     double inverseMass{1.0};
     std::uint32_t appearance{};
+};
+
+struct BallPairContactImpulse {
+    Vec3 weightedNormal{};
+    double normalImpulse{};
+};
+
+struct BallTriangleContactImpulse {
+    Vec3 weightedNormalOnBall{};
+    std::array<double, 3> weightedBarycentric{};
+    double normalImpulse{};
 };
 
 enum class DistanceKind : std::uint8_t {
@@ -176,10 +235,17 @@ struct Metrics {
     double maximumBallPenetration{};
     double maximumSelfPenetration{};
     double maximumGroundPenetration{};
+    double maximumSweptGroundAdvance{};
     double minimumTriangleArea{std::numeric_limits<double>::infinity()};
     double maximumSpeed{};
+    double maximumAngularSpeed{};
+    double maximumFrictionConeRatio{};
+    double accumulatedTangentialImpulse{};
     std::uint64_t ballTriangleContacts{};
     std::uint64_t selfContacts{};
+    std::uint64_t ballClothFrictionContacts{};
+    std::uint64_t ballPairFrictionContacts{};
+    std::uint64_t ballGroundFrictionContacts{};
     std::uint32_t escapedMask{};
     std::uint32_t spilledMask{};
     std::uint32_t releasedMask{};
@@ -648,6 +714,45 @@ std::array<Ball, kFruitCount> makeBalls(const Scenario scenario) {
     return balls;
 }
 
+double inverseInertia(const Ball& ball) {
+    return 2.5 * ball.inverseMass / (ball.radius * ball.radius);
+}
+
+void integrateOrientation(Ball& ball, const double timestep) {
+    const Quaternion angular{
+        0.0,
+        ball.angularVelocity.x,
+        ball.angularVelocity.y,
+        ball.angularVelocity.z,
+    };
+    ball.orientation = normalized(
+        ball.orientation + (angular * ball.orientation) * (0.5 * timestep)
+    );
+}
+
+void applyBallImpulse(
+    Ball& ball,
+    const Vec3 impulse,
+    const Vec3 contactOffset
+) {
+    ball.velocity += impulse * ball.inverseMass;
+    ball.angularVelocity += cross(contactOffset, impulse) * inverseInertia(ball);
+}
+
+void recordFrictionImpulse(
+    Metrics& metrics,
+    const double tangentialImpulse,
+    const double frictionLimit
+) {
+    metrics.accumulatedTangentialImpulse += tangentialImpulse;
+    if (frictionLimit > 0.0) {
+        metrics.maximumFrictionConeRatio = std::max(
+            metrics.maximumFrictionConeRatio,
+            tangentialImpulse / frictionLimit
+        );
+    }
+}
+
 Vec3 spinGripTarget(const double time) {
     Vec3 base = authoredPosition(kLevels - 1u, 0u);
     base.z += kAirborneLift;
@@ -830,6 +935,8 @@ double solveBallTriangle(
     std::vector<Particle>& particles,
     const Triangle triangle,
     Ball& ball,
+    const double timestep,
+    BallTriangleContactImpulse& contactImpulse,
     std::uint64_t& contactCount
 ) {
     const std::array<std::uint32_t, 3> indices{{
@@ -885,11 +992,23 @@ double solveBallTriangle(
              closest.barycentric[index] * correction);
     }
     ball.position -= normal * (ball.inverseMass * correction);
+    const double impulseMagnitude = correction / timestep;
+    contactImpulse.weightedNormalOnBall -= normal * impulseMagnitude;
+    for (std::size_t index = 0; index < 3; ++index) {
+        contactImpulse.weightedBarycentric[index] +=
+            closest.barycentric[index] * impulseMagnitude;
+    }
+    contactImpulse.normalImpulse += impulseMagnitude;
     ++contactCount;
     return target - distance;
 }
 
-double solveBallPair(Ball& first, Ball& second) {
+double solveBallPair(
+    Ball& first,
+    Ball& second,
+    const double timestep,
+    BallPairContactImpulse& contactImpulse
+) {
     const Vec3 difference = second.position - first.position;
     const double currentLength = length(difference);
     const double target = first.radius + second.radius;
@@ -897,50 +1016,315 @@ double solveBallPair(Ball& first, Ball& second) {
         return 0.0;
     }
     const double denominator = first.inverseMass + second.inverseMass;
-    const Vec3 correction = difference *
-        ((target - currentLength) / (currentLength * denominator));
+    const double lambda = (target - currentLength) / denominator;
+    const Vec3 normal = difference / currentLength;
+    const Vec3 correction = normal * lambda;
     first.position -= correction * first.inverseMass;
     second.position += correction * second.inverseMass;
+    const double impulseMagnitude = lambda / timestep;
+    contactImpulse.weightedNormal += normal * impulseMagnitude;
+    contactImpulse.normalImpulse += impulseMagnitude;
     return target - currentLength;
 }
 
-void dampBallPairFriction(
+void applyBallClothFriction(
+    std::vector<Particle>& particles,
+    const std::vector<Triangle>& triangles,
     std::array<Ball, kFruitCount>& balls,
-    const double timestep
+    const std::vector<BallTriangleContactImpulse>& contacts,
+    Metrics& metrics
 ) {
-    constexpr double dampingRate = 12.0;
-    const double damping = 1.0 - std::exp(-dampingRate * timestep);
-    constexpr double contactSlop = 0.002;
-    for (std::size_t firstIndex = 0; firstIndex < balls.size(); ++firstIndex) {
-        for (std::size_t secondIndex = firstIndex + 1u;
-             secondIndex < balls.size();
-             ++secondIndex) {
-            Ball& first = balls[firstIndex];
-            Ball& second = balls[secondIndex];
-            const Vec3 difference = second.position - first.position;
-            const double distance = length(difference);
-            if (distance < 1.0e-12 ||
-                distance > first.radius + second.radius + contactSlop) {
+    for (std::size_t ballIndex = 0; ballIndex < balls.size(); ++ballIndex) {
+        Ball& ball = balls[ballIndex];
+        for (std::size_t triangleIndex = 0;
+             triangleIndex < triangles.size();
+             ++triangleIndex) {
+            const BallTriangleContactImpulse& contact = contacts[
+                ballIndex * triangles.size() + triangleIndex
+            ];
+            if (contact.normalImpulse <= 0.0 ||
+                lengthSquared(contact.weightedNormalOnBall) < 1.0e-20) {
                 continue;
             }
-            const Vec3 normal = difference / distance;
-            const Vec3 relativeVelocity = second.velocity - first.velocity;
+            const Triangle triangle = triangles[triangleIndex];
+            const std::array<std::uint32_t, 3> indices{{
+                triangle.first,
+                triangle.second,
+                triangle.third,
+            }};
+            const Vec3 normal = normalized(contact.weightedNormalOnBall);
+            std::array<double, 3> barycentric{};
+            Vec3 clothVelocity{};
+            double barycentricSum = 0.0;
+            for (std::size_t index = 0; index < 3; ++index) {
+                barycentric[index] =
+                    contact.weightedBarycentric[index] / contact.normalImpulse;
+                barycentricSum += barycentric[index];
+            }
+            if (barycentricSum <= 1.0e-12) {
+                continue;
+            }
+            for (std::size_t index = 0; index < 3; ++index) {
+                barycentric[index] /= barycentricSum;
+                clothVelocity += particles[indices[index]].velocity *
+                    barycentric[index];
+            }
+            const Vec3 ballOffset = normal * -ball.radius;
+            const Vec3 ballContactVelocity = ball.velocity +
+                cross(ball.angularVelocity, ballOffset);
+            const Vec3 relativeVelocity = ballContactVelocity - clothVelocity;
             const Vec3 tangentVelocity = relativeVelocity -
                 normal * dot(relativeVelocity, normal);
-            const double denominator = first.inverseMass + second.inverseMass;
+            const double slipSpeed = length(tangentVelocity);
+            if (slipSpeed < 1.0e-10) {
+                continue;
+            }
+            const Vec3 tangent = tangentVelocity / slipSpeed;
+            double denominator = ball.inverseMass + inverseInertia(ball) *
+                lengthSquared(cross(ballOffset, tangent));
+            std::array<double, 3> clothInverseMass{};
+            for (std::size_t index = 0; index < 3; ++index) {
+                clothInverseMass[index] = std::min(
+                    particles[indices[index]].inverseMass,
+                    1.0 / kClothContactPatchMass
+                );
+                denominator += clothInverseMass[index] *
+                    barycentric[index] * barycentric[index];
+            }
             if (denominator <= 0.0) {
                 continue;
             }
-            const Vec3 impulse = tangentVelocity * (damping / denominator);
-            first.velocity += impulse * first.inverseMass;
-            second.velocity -= impulse * second.inverseMass;
+            const double frictionLimit =
+                kFruitClothFriction * contact.normalImpulse;
+            const double tangentialImpulse = std::min(
+                slipSpeed / denominator,
+                frictionLimit
+            );
+            if (tangentialImpulse <= 0.0) {
+                continue;
+            }
+            const Vec3 impulse = tangent * -tangentialImpulse;
+            applyBallImpulse(ball, impulse, ballOffset);
+            for (std::size_t index = 0; index < 3; ++index) {
+                particles[indices[index]].velocity -= impulse *
+                    (clothInverseMass[index] * barycentric[index]);
+            }
+            recordFrictionImpulse(
+                metrics,
+                tangentialImpulse,
+                frictionLimit
+            );
+            ++metrics.ballClothFrictionContacts;
         }
     }
 }
 
+void applyBallPairFriction(
+    std::array<Ball, kFruitCount>& balls,
+    const std::array<BallPairContactImpulse, kBallPairCount>& contacts,
+    Metrics& metrics
+) {
+    std::size_t pairIndex = 0u;
+    for (std::size_t firstIndex = 0; firstIndex < balls.size(); ++firstIndex) {
+        for (std::size_t secondIndex = firstIndex + 1u;
+             secondIndex < balls.size();
+             ++secondIndex, ++pairIndex) {
+            const BallPairContactImpulse& contact = contacts[pairIndex];
+            if (contact.normalImpulse <= 0.0 ||
+                lengthSquared(contact.weightedNormal) < 1.0e-20) {
+                continue;
+            }
+            Ball& first = balls[firstIndex];
+            Ball& second = balls[secondIndex];
+            const Vec3 normal = normalized(contact.weightedNormal);
+            const Vec3 firstOffset = normal * first.radius;
+            const Vec3 secondOffset = normal * -second.radius;
+            const Vec3 firstContactVelocity = first.velocity +
+                cross(first.angularVelocity, firstOffset);
+            const Vec3 secondContactVelocity = second.velocity +
+                cross(second.angularVelocity, secondOffset);
+            const Vec3 relativeVelocity =
+                secondContactVelocity - firstContactVelocity;
+            const Vec3 tangentVelocity = relativeVelocity -
+                normal * dot(relativeVelocity, normal);
+            const double slipSpeed = length(tangentVelocity);
+            if (slipSpeed < 1.0e-10) {
+                continue;
+            }
+            const Vec3 tangent = tangentVelocity / slipSpeed;
+            const double denominator =
+                first.inverseMass + second.inverseMass +
+                inverseInertia(first) *
+                    lengthSquared(cross(firstOffset, tangent)) +
+                inverseInertia(second) *
+                    lengthSquared(cross(secondOffset, tangent));
+            if (denominator <= 0.0) {
+                continue;
+            }
+            const double frictionLimit =
+                kFruitPairFriction * contact.normalImpulse;
+            const double tangentialImpulse = std::min(
+                slipSpeed / denominator,
+                frictionLimit
+            );
+            if (tangentialImpulse <= 0.0) {
+                continue;
+            }
+            const Vec3 impulseOnSecond = tangent * -tangentialImpulse;
+            applyBallImpulse(second, impulseOnSecond, secondOffset);
+            applyBallImpulse(first, impulseOnSecond * -1.0, firstOffset);
+            recordFrictionImpulse(
+                metrics,
+                tangentialImpulse,
+                frictionLimit
+            );
+            ++metrics.ballPairFrictionContacts;
+        }
+    }
+}
+
+void applyBallGroundFriction(
+    std::array<Ball, kFruitCount>& balls,
+    const std::array<double, kFruitCount>& normalImpulses,
+    const double timestep,
+    Metrics& metrics,
+    const double rollingResistanceRate
+) {
+    const Vec3 normal{0.0, 0.0, 1.0};
+    for (std::size_t index = 0; index < balls.size(); ++index) {
+        Ball& ball = balls[index];
+        const double normalImpulse = normalImpulses[index];
+        if (normalImpulse <= 0.0) {
+            continue;
+        }
+        const Vec3 contactOffset{0.0, 0.0, -ball.radius};
+        const Vec3 contactVelocity = ball.velocity +
+            cross(ball.angularVelocity, contactOffset);
+        const Vec3 tangentVelocity = contactVelocity -
+            normal * dot(contactVelocity, normal);
+        const double slipSpeed = length(tangentVelocity);
+        if (slipSpeed > 1.0e-10) {
+            const Vec3 tangent = tangentVelocity / slipSpeed;
+            const double denominator = ball.inverseMass +
+                inverseInertia(ball) *
+                    lengthSquared(cross(contactOffset, tangent));
+            const double frictionLimit =
+                kFruitGroundFriction * normalImpulse;
+            const double tangentialImpulse = std::min(
+                slipSpeed / denominator,
+                frictionLimit
+            );
+            if (tangentialImpulse > 0.0) {
+                applyBallImpulse(
+                    ball,
+                    tangent * -tangentialImpulse,
+                    contactOffset
+                );
+                recordFrictionImpulse(
+                    metrics,
+                    tangentialImpulse,
+                    frictionLimit
+                );
+                ++metrics.ballGroundFrictionContacts;
+            }
+        }
+        ball.angularVelocity = ball.angularVelocity *
+            std::exp(-rollingResistanceRate * timestep);
+    }
+}
+
+struct RollingProbeResult {
+    double linearSpeed{};
+    double angularSpeed{};
+    double contactSlipSpeed{};
+    double energyRatio{};
+    Metrics metrics{};
+    Quaternion orientation{};
+};
+
+RollingProbeResult runRollingProbeOnce() {
+    constexpr double timestep = 1.0 / 480.0;
+    constexpr std::uint32_t steps = 240u;
+    constexpr double mass = 0.21;
+    std::array<Ball, kFruitCount> balls{};
+    Ball& ball = balls[0];
+    ball.radius = 0.07;
+    ball.inverseMass = 1.0 / mass;
+    ball.position = {0.0, 0.0, ball.radius};
+    ball.previous = ball.position;
+    ball.velocity = {1.0, 0.0, 0.0};
+    Metrics metrics;
+    const double initialEnergy =
+        0.5 * mass * lengthSquared(ball.velocity);
+    for (std::uint32_t step = 0; step < steps; ++step) {
+        std::array<double, kFruitCount> normalImpulses{};
+        normalImpulses[0] = mass * 9.81 * timestep;
+        applyBallGroundFriction(
+            balls,
+            normalImpulses,
+            timestep,
+            metrics,
+            0.0
+        );
+        integrateOrientation(ball, timestep);
+        ball.position += ball.velocity * timestep;
+    }
+    const Vec3 contactOffset{0.0, 0.0, -ball.radius};
+    const Vec3 contactVelocity = ball.velocity +
+        cross(ball.angularVelocity, contactOffset);
+    const double finalEnergy =
+        0.5 * mass * lengthSquared(ball.velocity) +
+        0.5 * lengthSquared(ball.angularVelocity) / inverseInertia(ball);
+    return {
+        .linearSpeed = length(ball.velocity),
+        .angularSpeed = length(ball.angularVelocity),
+        .contactSlipSpeed = std::hypot(contactVelocity.x, contactVelocity.y),
+        .energyRatio = finalEnergy / initialEnergy,
+        .metrics = metrics,
+        .orientation = ball.orientation,
+    };
+}
+
+bool runRollingProbe() {
+    const RollingProbeResult first = runRollingProbeOnce();
+    const RollingProbeResult replay = runRollingProbeOnce();
+    constexpr double expectedLinearSpeed = 5.0 / 7.0;
+    const bool deterministic =
+        first.linearSpeed == replay.linearSpeed &&
+        first.angularSpeed == replay.angularSpeed &&
+        first.contactSlipSpeed == replay.contactSlipSpeed &&
+        first.energyRatio == replay.energyRatio &&
+        first.orientation.w == replay.orientation.w &&
+        first.orientation.x == replay.orientation.x &&
+        first.orientation.y == replay.orientation.y &&
+        first.orientation.z == replay.orientation.z;
+    const bool pass = deterministic &&
+        std::abs(first.linearSpeed - expectedLinearSpeed) < 1.0e-9 &&
+        std::abs(first.angularSpeed * 0.07 - expectedLinearSpeed) < 1.0e-9 &&
+        first.contactSlipSpeed < 1.0e-9 &&
+        std::abs(first.energyRatio - 5.0 / 7.0) < 1.0e-9 &&
+        first.metrics.maximumFrictionConeRatio <= 1.0 + 1.0e-12;
+    std::cout << std::fixed << std::setprecision(12)
+              << "probe=solid_sphere_slide_to_roll"
+              << " initial_speed=1.000000000000"
+              << " final_speed=" << first.linearSpeed
+              << " expected_speed=" << expectedLinearSpeed
+              << " radius_times_omega=" << first.angularSpeed * 0.07
+              << " contact_slip=" << first.contactSlipSpeed
+              << " energy_ratio=" << first.energyRatio
+              << " friction_cone_ratio="
+              << first.metrics.maximumFrictionConeRatio
+              << " deterministic=" << std::boolalpha << deterministic
+              << '\n'
+              << "result=" << (pass ? "PASS" : "FAIL") << '\n';
+    return pass;
+}
+
 double solveGround(
     std::vector<Particle>& particles,
-    std::array<Ball, kFruitCount>& balls
+    std::array<Ball, kFruitCount>& balls,
+    const double timestep,
+    std::array<double, kFruitCount>& ballNormalImpulses
 ) {
     double maximumPenetration = 0.0;
     for (Particle& particle : particles) {
@@ -950,14 +1334,48 @@ double solveGround(
             particle.position.z = kClothRadius;
         }
     }
-    for (Ball& ball : balls) {
+    for (std::size_t index = 0; index < balls.size(); ++index) {
+        Ball& ball = balls[index];
         const double penetration = ball.radius - ball.position.z;
         if (penetration > 0.0) {
             maximumPenetration = std::max(maximumPenetration, penetration);
+            ballNormalImpulses[index] +=
+                penetration / (ball.inverseMass * timestep);
             ball.position.z = ball.radius;
         }
     }
     return maximumPenetration;
+}
+
+double sweepGroundPrediction(
+    std::vector<Particle>& particles,
+    std::array<Ball, kFruitCount>& balls,
+    const double timestep,
+    std::array<double, kFruitCount>& ballNormalImpulses
+) {
+    double maximumAdvance = 0.0;
+    for (Particle& particle : particles) {
+        if (particle.previous.z >= kClothRadius &&
+            particle.position.z < kClothRadius) {
+            maximumAdvance = std::max(
+                maximumAdvance,
+                kClothRadius - particle.position.z
+            );
+            particle.position.z = kClothRadius;
+        }
+    }
+    for (std::size_t index = 0; index < balls.size(); ++index) {
+        Ball& ball = balls[index];
+        if (ball.previous.z >= ball.radius &&
+            ball.position.z < ball.radius) {
+            const double removedAdvance = ball.radius - ball.position.z;
+            maximumAdvance = std::max(maximumAdvance, removedAdvance);
+            ballNormalImpulses[index] +=
+                removedAdvance / (ball.inverseMass * timestep);
+            ball.position.z = ball.radius;
+        }
+    }
+    return maximumAdvance;
 }
 
 bool localTopologyPair(const std::uint32_t first, const std::uint32_t second) {
@@ -1134,6 +1552,10 @@ void updateMetrics(
     }
     for (const Ball& ball : balls) {
         metrics.maximumSpeed = std::max(metrics.maximumSpeed, length(ball.velocity));
+        metrics.maximumAngularSpeed = std::max(
+            metrics.maximumAngularSpeed,
+            length(ball.angularVelocity)
+        );
     }
 }
 
@@ -1166,6 +1588,11 @@ SimulationResult simulate(
 
     for (std::uint32_t step = 0; step < steps; ++step) {
         for (std::uint32_t substep = 0; substep < substeps; ++substep) {
+            std::array<BallPairContactImpulse, kBallPairCount> pairContacts{};
+            std::vector<BallTriangleContactImpulse> triangleContacts(
+                result.balls.size() * result.cloth.triangles.size()
+            );
+            std::array<double, kFruitCount> groundNormalImpulses{};
             if (scenario != Scenario::grounded) {
                 const double time = (
                     static_cast<double>(step * substeps + substep + 1u) *
@@ -1191,6 +1618,17 @@ SimulationResult simulate(
                 ball.velocity = ball.velocity * std::exp(-0.08 * timestep);
                 ball.position += ball.velocity * timestep;
             }
+            if (scenario != Scenario::spin) {
+                result.metrics.maximumSweptGroundAdvance = std::max(
+                    result.metrics.maximumSweptGroundAdvance,
+                    sweepGroundPrediction(
+                        result.cloth.particles,
+                        result.balls,
+                        timestep,
+                        groundNormalImpulses
+                    )
+                );
+            }
             for (DistanceConstraint& constraint : result.cloth.distances) {
                 constraint.lambda = 0.0;
             }
@@ -1207,22 +1645,37 @@ SimulationResult simulate(
                         solveBend(result.cloth.particles, constraint, timestep);
                     }
                 }
+                std::size_t pairIndex = 0u;
                 for (std::size_t first = 0; first < result.balls.size(); ++first) {
                     for (std::size_t second = first + 1u;
                          second < result.balls.size();
-                         ++second) {
-                        solveBallPair(result.balls[first], result.balls[second]);
+                         ++second, ++pairIndex) {
+                        solveBallPair(
+                            result.balls[first],
+                            result.balls[second],
+                            timestep,
+                            pairContacts[pairIndex]
+                        );
                     }
                 }
                 for (std::size_t ballIndex = 0;
                      ballIndex < result.balls.size();
                      ++ballIndex) {
                     Ball& ball = result.balls[ballIndex];
-                    for (const Triangle triangle : result.cloth.triangles) {
+                    for (std::size_t triangleIndex = 0;
+                         triangleIndex < result.cloth.triangles.size();
+                         ++triangleIndex) {
+                        const Triangle triangle =
+                            result.cloth.triangles[triangleIndex];
                         const double penetration = solveBallTriangle(
                             result.cloth.particles,
                             triangle,
                             ball,
+                            timestep,
+                            triangleContacts[
+                                ballIndex * result.cloth.triangles.size() +
+                                triangleIndex
+                            ],
                             result.metrics.ballTriangleContacts
                         );
                         result.metrics.maximumBallPenetration = std::max(
@@ -1246,7 +1699,12 @@ SimulationResult simulate(
                 if (scenario != Scenario::spin) {
                     result.metrics.maximumGroundPenetration = std::max(
                         result.metrics.maximumGroundPenetration,
-                        solveGround(result.cloth.particles, result.balls)
+                        solveGround(
+                            result.cloth.particles,
+                            result.balls,
+                            timestep,
+                            groundNormalImpulses
+                        )
                     );
                 }
             }
@@ -1267,13 +1725,27 @@ SimulationResult simulate(
             }
             for (Ball& ball : result.balls) {
                 ball.velocity = (ball.position - ball.previous) / timestep;
-                if (ball.position.z <= ball.radius + 1.0e-6) {
-                    const double friction = std::exp(-8.0 * timestep);
-                    ball.velocity.x *= friction;
-                    ball.velocity.y *= friction;
-                }
             }
-            dampBallPairFriction(result.balls, timestep);
+            applyBallClothFriction(
+                result.cloth.particles,
+                result.cloth.triangles,
+                result.balls,
+                triangleContacts,
+                result.metrics
+            );
+            applyBallPairFriction(result.balls, pairContacts, result.metrics);
+            applyBallGroundFriction(
+                result.balls,
+                groundNormalImpulses,
+                timestep,
+                result.metrics,
+                kFruitRollingResistanceRate
+            );
+            for (Ball& ball : result.balls) {
+                ball.angularVelocity = ball.angularVelocity *
+                    std::exp(-0.02 * timestep);
+                integrateOrientation(ball, timestep);
+            }
         }
         updateMetrics(result.cloth, result.balls, result.metrics);
         if (scenario != Scenario::grounded) {
@@ -1338,6 +1810,13 @@ std::uint64_t hashResult(const SimulationResult& result) {
         append(ball.velocity.x);
         append(ball.velocity.y);
         append(ball.velocity.z);
+        append(ball.angularVelocity.x);
+        append(ball.angularVelocity.y);
+        append(ball.angularVelocity.z);
+        append(ball.orientation.w);
+        append(ball.orientation.x);
+        append(ball.orientation.y);
+        append(ball.orientation.z);
     }
     return hash;
 }
@@ -1371,7 +1850,13 @@ void dumpOBJ(const std::string& path, const SimulationResult& result) {
         output << "# ball " << index << " center "
                << ball.position.x << ' ' << ball.position.y << ' '
                << ball.position.z << " radius " << ball.radius
-               << " appearance " << ball.appearance << '\n';
+               << " appearance " << ball.appearance
+               << " orientation " << ball.orientation.w << ' '
+               << ball.orientation.x << ' ' << ball.orientation.y << ' '
+               << ball.orientation.z
+               << " angular_velocity " << ball.angularVelocity.x << ' '
+               << ball.angularVelocity.y << ' '
+               << ball.angularVelocity.z << '\n';
     }
 }
 
@@ -1381,7 +1866,9 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
         allFinite = allFinite && finite(particle.position) && finite(particle.velocity);
     }
     for (const Ball& ball : result.balls) {
-        allFinite = allFinite && finite(ball.position) && finite(ball.velocity);
+        allFinite = allFinite && finite(ball.position) && finite(ball.velocity) &&
+            finite(ball.angularVelocity) && finite(ball.orientation) &&
+            std::abs(quaternionLength(ball.orientation) - 1.0) < 1.0e-9;
     }
     const bool groundValid = result.scenario == Scenario::spin ||
         result.metrics.maximumGroundPenetration < kClothRadius + 1.0e-6;
@@ -1402,7 +1889,9 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
         result.metrics.maximumShearStrain < 0.40 &&
         result.metrics.maximumBallPenetration < 0.010 &&
         result.metrics.maximumSelfPenetration < 2.0 * kClothRadius &&
-        result.metrics.maximumSpeed < 30.0;
+        result.metrics.maximumSpeed < 30.0 &&
+        result.metrics.maximumAngularSpeed < 200.0 &&
+        result.metrics.maximumFrictionConeRatio <= 1.0 + 1.0e-12;
 }
 
 }  // namespace
@@ -1415,6 +1904,7 @@ int main(int argc, char** argv) try {
     std::string dumpPath;
     std::string framePrefix;
     std::uint32_t frameStride = 0u;
+    bool rollingProbe = false;
     Scenario scenario = Scenario::grounded;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string value = argv[argument];
@@ -1438,6 +1928,8 @@ int main(int argc, char** argv) try {
             framePrefix = argv[++argument];
         } else if (value == "--dump-every") {
             nextUnsigned(frameStride);
+        } else if (value == "--rolling-probe") {
+            rollingProbe = true;
         } else if (value == "--scenario" && argument + 1 < argc) {
             const std::string name = argv[++argument];
             if (name == "grounded") {
@@ -1454,11 +1946,14 @@ int main(int argc, char** argv) try {
                          "[--steps N] [--substeps N] [--iterations N] "
                          "[--timestep DT] [--scenario grounded|spin|pickup] "
                          "[--dump-obj PATH] [--dump-frames PREFIX] "
-                         "[--dump-every N]\n";
+                         "[--dump-every N] [--rolling-probe]\n";
             return 0;
         } else {
             throw std::invalid_argument("unknown argument: " + value);
         }
+    }
+    if (rollingProbe) {
+        return runRollingProbe() ? 0 : 1;
     }
     if (steps == 0u || substeps == 0u || iterations == 0u ||
         !std::isfinite(timestep) || timestep <= 0.0) {
@@ -1577,7 +2072,20 @@ int main(int argc, char** argv) try {
     }
     std::cout << '\n';
     std::cout << "max_ground_penetration=" << metrics.maximumGroundPenetration
+              << " max_swept_ground_advance="
+              << metrics.maximumSweptGroundAdvance
               << " max_speed=" << metrics.maximumSpeed
+              << " max_angular_speed=" << metrics.maximumAngularSpeed
+              << " max_friction_cone_ratio="
+              << metrics.maximumFrictionConeRatio
+              << " tangential_impulse="
+              << metrics.accumulatedTangentialImpulse
+              << " cloth_friction_contacts="
+              << metrics.ballClothFrictionContacts
+              << " pair_friction_contacts="
+              << metrics.ballPairFrictionContacts
+              << " ground_friction_contacts="
+              << metrics.ballGroundFrictionContacts
               << " deterministic=" << std::boolalpha << deterministic
               << " state_hash=0x" << std::hex << firstHash << std::dec << '\n';
     const bool pass = acceptable(first, deterministic);

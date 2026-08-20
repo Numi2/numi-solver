@@ -16,13 +16,16 @@ application scene.
 This looping GIF contains 25 fixed-camera frames from one 1.2-second solver
 trajectory. The orange ring is the only kinematic cloth vertex: the other 1,464
 cloth particles and all twelve fruits remain dynamic. The bag starts resting on
-the plane, rises under the one-point grip, tips, and releases fruits 0, 5, 7, 9,
-10, and 11. Four have landed by the final frame while two are still falling.
+the plane, rises under the one-point grip, tips, and releases fruits 0 and 6
+through 11 through the mouth. Four have landed by the final frame while three
+are still falling. The small body-fixed marks are driven by each fruit's
+exported solver quaternion, so their motion exposes physical rolling and spin.
 
-The replay passed every mechanics gate with `released_mask=3745`,
-`escaped_mask=0`, `0.194424871` maximum warp extension, `0.095378970`
-maximum shear strain, `0.007369176` maximum woven-bottom extension, and
-bit-identical state hash `0xbf062725eeee95dc`. The GIF is rasterized from those
+The replay passed every mechanics gate with `released_mask=4033`,
+`escaped_mask=0`, `0.184299570` maximum warp extension, `0.095360710`
+maximum shear strain, `0.006719857` maximum woven-bottom extension,
+`0.001812898 m` maximum post-contact plane penetration, a friction-cone ratio
+never above `1.0`, and bit-identical state hash `0x74fecdc8e429099e`. The GIF is rasterized from those
 exported states; it is
 CPU FP64 cloth evidence, not Metal-performance or Temporal Cone cloth-contact
 evidence.
@@ -41,7 +44,9 @@ move the exported state.
 The qualified replay passed with no escaped or spilled fruit, no collapsed
 triangles, `0.004879665 m` maximum fruit/cloth penetration,
 `0.002980520 m` maximum vertex self-penetration, and bit-identical replay hash
-`0xfe292cef5e3eb5d4`. This is CPU FP64 cloth evidence, not Metal-performance or
+`0x5ebccd032b7312ae`. Fruit reached `11.842500662 rad/s` through resolved
+tangential contact while every impulse remained inside its Coulomb cone. This
+is CPU FP64 cloth evidence, not Metal-performance or
 Temporal Cone cloth-contact evidence.
 
 ### Grab one rim point and spin
@@ -58,9 +63,9 @@ all twelve fruits remain dynamic. These five fixed-camera frames come from one
 |:--:|:--:|
 | ![Open cloth bag releasing fruit while spinning](docs/assets/cloth-spin-45.png) | ![Vertically lagging cloth bag after three fruits are released](docs/assets/cloth-spin-60.png) |
 
-The spin replay passed with `0.098670795` maximum warp extension,
-`0.056124986` maximum shear strain, zero numerical escapes, and bit-identical
-hash `0x3108f4c7e1ce7a76`. `released_mask=3584` records fruits 9, 10, and 11
+The spin replay passed with `0.100050682` maximum warp extension,
+`0.057931607` maximum shear strain, zero numerical escapes, and bit-identical
+hash `0x611fa000f8b7466a`. `released_mask=3584` records fruits 9, 10, and 11
 leaving the open mouth; the images and the outcome metric agree.
 
 Reproduce the README image from the executable state:
@@ -197,7 +202,8 @@ state/frame/material rollback.
 
 The dense cloth reference accepts `--steps N`, `--substeps N`,
 `--iterations N`, `--timestep DT`, `--scenario grounded|spin|pickup`, and
-`--dump-obj PATH`. `--dump-frames PREFIX` exports five evenly spaced states
+`--dump-obj PATH`. `--rolling-probe` executes the analytic solid-sphere
+slide-to-roll oracle. `--dump-frames PREFIX` exports five evenly spaced states
 from the first authoritative trajectory; `--dump-every N` instead exports
 every Nth step plus the final state. `grounded` settles an open produce bag on
 a plane, `spin` begins airborne and drives one rim vertex around a smooth

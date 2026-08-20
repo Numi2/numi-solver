@@ -118,11 +118,17 @@ connected, tensioned patch instead of treating three `0.05 g` vertices as
 isolated masses. It is a bounded CPU-reference approximation, not a substitute
 for the future full coupled cloth response operator.
 
-All 66 fruit pairs use nonpenetration constraints. Touching pairs receive a
-deterministic, timestep-integrated tangential damping rate so a produce pile
-has friction
-instead of behaving like perfectly smooth marbles. The grounded and pickup
-scenarios also project cloth and fruit against the plane. A deterministic
+All 66 fruit pairs use nonpenetration constraints. Fruits carry solid-sphere
+inertia, angular velocity, and a normalized quaternion. At fruit/cloth,
+fruit/fruit, and fruit/plane contacts, the relative contact-point velocity
+includes `omega cross r`; a maximum-dissipation tangential impulse is capped
+by `|j_t| <= mu j_n` and applied with equal and opposite linear and angular
+response. Grounded fruit additionally use timestep-integrated rolling
+resistance.
+
+The grounded and pickup scenarios stop predicted cloth/plane and fruit/plane
+crossings at the plane before iterative contact. The removed free-flight
+advance is reported separately from any actual post-contact penetration. A deterministic
 spatial hash enforces vertex-level cloth self-separation for nonlocal topology
 pairs while
 excluding the local two-ring neighborhood. Self-contact incidence is execution
@@ -132,7 +138,8 @@ evidence, not evidence of continuous triangle/triangle self-collision.
 
 A run fails on nonfinite state, numerical escape, triangle collapse, excessive
 warp/weft/shear/bottom strain, fruit/cloth penetration above `0.01 m`, vertex
-self-penetration at or above the cloth diameter, excessive speed, or a
+self-penetration at or above the cloth diameter, excessive linear/angular
+speed, a friction-cone violation, or a
 non-bit-identical replay. Grounded runs additionally require fruit containment
 with `spilled_mask=0` and plane correction below one cloth radius. Extension
 and compression are reported separately: the gate limits warp/weft/bottom
@@ -159,6 +166,8 @@ Run all three load cases:
 ./build/numi-solver-cloth-bag \
   --scenario pickup --steps 144 --substeps 4 --iterations 12 \
   --dump-frames pickup --dump-every 6
+
+./build/numi-solver-cloth-bag --rolling-probe
 ```
 
 The executed 1.0-second grounded checkpoint on 2026-08-20 was deterministic
@@ -172,44 +181,56 @@ bend_constraints=4296
 balls=12
 cloth_mass_kg=0.078050000
 fruit_mass_kg=2.330000000
-max_warp_strain=0.221845069
-max_warp_extension=0.076170409
-max_warp_compression=0.221845069
-max_weft_strain=0.011401548
-max_shear_strain=0.026139980
-max_bottom_extension=0.006337407
-max_bend_error=0.226902558
+max_warp_strain=0.221880819
+max_warp_extension=0.076248897
+max_warp_compression=0.221880819
+max_weft_strain=0.011912098
+max_shear_strain=0.025302279
+max_bottom_extension=0.006241203
+max_bend_error=0.225660188
 min_triangle_area=0.000056068
 max_ball_penetration=0.004879665
 max_self_penetration=0.002980520
-ball_triangle_contacts=75624
+ball_triangle_contacts=73782
 self_contacts=17280
 escaped_mask=0
 spilled_mask=0
-max_ground_penetration=0.001865301
+max_ground_penetration=0.001848076
+max_swept_ground_advance=0.000765302
+max_angular_speed=11.842500662
+max_friction_cone_ratio=1.000000000
 deterministic=true
-state_hash=0xfe292cef5e3eb5d4
+state_hash=0x5ebccd032b7312ae
 result=PASS
 ```
 
 The matching 0.5-second one-point spin checkpoint also passed. It reached
-`0.098670795` maximum warp extension and `0.056124986` maximum shear strain,
-recorded `29,912` fruit/triangle contacts, and replayed bit-identically with
-`state_hash=0x3108f4c7e1ce7a76`. `released_mask=3584` records fruits 9, 10,
+`0.100050682` maximum warp extension and `0.057931607` maximum shear strain,
+recorded `27,325` fruit/triangle contacts, reached `21.270293009 rad/s`, and
+replayed bit-identically with
+`state_hash=0x611fa000f8b7466a`. `released_mask=3584` records fruits 9, 10,
 and 11 leaving the open mouth; `escaped_mask=0` distinguishes that physical
 release from numerical divergence.
 
 The 1.2-second grounded pickup checkpoint passed with
-`max_warp_extension=0.194424871`, `max_shear_strain=0.095378970`,
-`max_bottom_extension=0.007369176`, `max_ball_penetration=0.004879665`,
-`max_self_penetration=0.004137716`, and `escaped_mask=0`. Its
-`released_mask=3745` records fruits 0, 5, 7, 9, 10, and 11 leaving the bag;
-four are on the plane at the final checkpoint and two remain in flight. The
-independent replay matched `state_hash=0xbf062725eeee95dc`
+`max_warp_extension=0.184299570`, `max_shear_strain=0.095360710`,
+`max_bottom_extension=0.006719857`, `max_ball_penetration=0.004879665`,
+`max_self_penetration=0.003827779`, and `escaped_mask=0`. Its
+`released_mask=4033` records fruits 0 and 6 through 11 leaving the bag;
+four are on the plane at the final checkpoint and three remain in flight. The
+maximum post-contact plane penetration was `0.001812898 m`, the maximum
+discarded swept advance was `0.006178941 m`, and the peak fruit angular speed
+was `23.627168800 rad/s`. The independent replay matched
+`state_hash=0x74fecdc8e429099e`
 bit-for-bit.
 
+The independent `--rolling-probe` begins a solid sphere sliding at `1 m/s` and
+reaches the analytic no-slip state `v = r omega = 5/7 m/s`, with zero reported
+contact slip, the expected `5/7` energy ratio, cone ratio `1.0`, and an exact
+deterministic replay.
+
 `--dump-obj` writes the actual simulated vertices and triangles plus fruit
-center/radius/appearance comments. The spin and pickup scenarios also record
+center/radius/appearance/orientation/angular-velocity comments. The spin and pickup scenarios also record
 the exact kinematic grip position. `--dump-frames PREFIX` captures the initial,
 quarter, half, three-quarter, and final states from the first authoritative
 trajectory. Adding `--dump-every N` captures every Nth step plus the final
@@ -222,7 +243,8 @@ interpolating new physics states.
 
 The rasterizer draws the mapped row and column yarn families across the same
 13 by 13 bottom surface used by contact. The visual bottom is therefore closed
-without inventing the former radial fan.
+without inventing the former radial fan. It also draws a body-fixed fruit mark
+from the exported quaternion so rolling and spin remain tied to solver state.
 
 See [CLOTH_REALISM_AUDIT.md](CLOTH_REALISM_AUDIT.md) for the remaining limits;
 this checkpoint does not claim yarn-scale contact, calibrated textile material,

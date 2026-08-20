@@ -427,6 +427,16 @@ if(BUILD_TESTING)
             --substeps 4
             --iterations 12
     )
+    add_test(
+        NAME cloth_bag.rolling_friction
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --rolling-probe
+    )
+    set_tests_properties(
+        cloth_bag.rolling_friction
+        PROPERTIES
+            LABELS "physics;cloth;reference;friction;rolling"
+            TIMEOUT 30
+    )
     set_tests_properties(
         cloth_bag.reference
         PROPERTIES
