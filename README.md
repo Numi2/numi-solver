@@ -22,11 +22,12 @@ have landed by the final frame while two are still falling. The small body-fixed
 exported solver quaternion, so their motion exposes physical rolling and spin.
 
 The replay passed every mechanics gate with `released_mask=4032`,
-`escaped_mask=0`, `0.127685096` maximum warp extension, `0.077527676`
-maximum shear strain, `0.006222924` maximum woven-bottom extension,
-`0.001742280 m` maximum post-contact plane penetration, `2.854568983 N` peak
-grip force, 2,011 swept sphere/triangle impacts, a friction-cone ratio never
-above `1.0`, and bit-identical state hash `0xd66dcb1fdb25da5a`. The GIF is rasterized from those
+`escaped_mask=0`, `0.285000000` maximum warp extension, `0.077412270`
+maximum shear strain, `0.006225497` maximum woven-bottom extension,
+`0.001741407 m` maximum post-contact plane penetration, `2.855439024 N` peak
+grip force, 2,078 swept sphere/triangle impacts, zero final primitive overlap,
+zero final strain-limit violation, a friction-cone ratio never above `1.0`,
+and bit-identical state hash `0xcf98b9fc01a6c90a`. The GIF is rasterized from those
 exported states; it is
 CPU FP64 cloth evidence, not Metal-performance or Temporal Cone cloth-contact
 evidence.
@@ -45,7 +46,7 @@ move the exported state.
 The qualified replay passed with no escaped or spilled fruit, no collapsed
 triangles, `0.004879665 m` maximum fruit/cloth penetration,
 `0.002980520 m` maximum vertex self-penetration, and bit-identical replay hash
-`0xe681ece65f8b0046`. Fruit reached `11.830598087 rad/s` through resolved
+`0x657436d6056a72b8`. Fruit reached `11.827532489 rad/s` through resolved
 tangential contact while every impulse remained inside its Coulomb cone. This
 is CPU FP64 cloth evidence, not Metal-performance or
 Temporal Cone cloth-contact evidence.
@@ -64,10 +65,10 @@ cloth nodes and all twelve fruits remain dynamic. These five fixed-camera frames
 |:--:|:--:|
 | ![Open cloth bag releasing fruit while spinning](docs/assets/cloth-spin-45.png) | ![Vertically lagging cloth bag after three fruits are released](docs/assets/cloth-spin-60.png) |
 
-The spin replay passed with `0.125558459` maximum warp extension,
-`0.090402133` maximum shear strain, zero numerical escapes, `3.706197351 N`
+The spin replay passed with `0.262473536` maximum warp extension,
+`0.090438378` maximum shear strain, zero numerical escapes, `3.707047521 N`
 peak attachment force, and bit-identical
-hash `0xa586efe35d791d79`. `released_mask=1536` records fruits 9 and 10
+hash `0x5acc3af1fbf386c5`. `released_mask=1536` records fruits 9 and 10
 leaving the open mouth; the images and the outcome metric agree.
 
 Reproduce the README image from the executable state:
@@ -151,7 +152,8 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
   containing six falling balls, with matched dense and streamed trajectories.
 - `build/numi-solver-cloth-bag` for a deterministic FP64 dense-cloth reference
   with a free folded rim, stretch/shear, soft dihedral bending, twelve-fruit
-  contact and friction, ground contact, vertex self-collision, and a compliant
+  contact and friction, ground contact, continuous vertex/triangle and
+  edge/edge self-collision, unilateral strain limits, and a compliant
   five-node
   airborne spin scenario. This is a CPU reference, not Metal-performance
   evidence.
@@ -207,7 +209,9 @@ The dense cloth reference accepts `--steps N`, `--substeps N`,
 `--iterations N`, `--timestep DT`, `--scenario grounded|spin|pickup`, and
 `--dump-obj PATH`. `--rolling-probe` executes the analytic solid-sphere
 slide-to-roll oracle; `--ccd-probe` executes a one-step swept
-sphere/triangle tunneling oracle. `--dump-frames PREFIX` exports five evenly spaced states
+sphere/triangle tunneling oracle; `--self-ccd-probe` does the same for cloth
+vertex/triangle and edge/edge contact; and `--strain-probe` certifies the
+unilateral extension ceiling. `--dump-frames PREFIX` exports five evenly spaced states
 from the first authoritative trajectory; `--dump-every N` instead exports
 every Nth step plus the final state. `grounded` settles an open produce bag on
 a plane, `spin` begins airborne and drives a compliant five-node rim patch

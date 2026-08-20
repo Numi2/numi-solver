@@ -33,6 +33,17 @@ owning mechanics or evidence is absent.
   `--ccd-probe` crosses an entire triangle in one step with both endpoint
   states separated, yet stops at the sphere-plus-cloth contact height and
   replays exactly.
+- Cloth self-contact uses graph-derived two-ring topology exclusions over the
+  wall and structured bottom, swept plus endpoint vertex/triangle and
+  edge/edge constraints, and a final nonlocal primitive-overlap certificate
+  below `2 um`. `--self-ccd-probe` crosses both a vertex and an edge completely
+  through another cloth primitive in one step and requires exact deterministic
+  separation at twice the cloth radius.
+- A unilateral strain limiter caps warp, weft, and bottom extension at `28.5%`
+  and shear at `38%` while leaving compression and ordinary strain unchanged.
+  `--strain-probe` projects a predicted `50%` warp extension to exactly `28.5%`
+  without shifting the pair center. Contact/strain reconciliation reports and
+  gates both final residuals.
 - The grip is a five-node rim patch with finite XPBD compliance, not a pinned
   cloth vertex. All cloth particles remain dynamic; peak attachment force and
   impulse are reported and force above `500 N` fails qualification.
@@ -45,8 +56,8 @@ owning mechanics or evidence is absent.
 
 ## Still open
 
-- Cloth self-contact is discrete vertex separation. It is not continuous
-  edge/edge or vertex/triangle collision and does not prevent all tunneling.
+- Cloth self-contact currently resolves normal separation without a
+  cloth/cloth tangential friction impulse.
 - The connected-patch contact mass is an explicit approximation, not the full
   coupled deformable response operator targeted for the Metal path.
 - Mass, compliance, damping, fruit friction, and geometry are authored

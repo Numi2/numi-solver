@@ -9,8 +9,8 @@ open cotton produce bag containing twelve dynamic spheres. The live state is a
 constraints.
 
 This reference runs on the CPU. It does **not** prove a Metal cloth path,
-Temporal Cone cloth contact, continuous cloth self-collision, yarn-scale
-friction, or hardware performance. It locks the cloth equations, topology,
+Temporal Cone cloth contact, cloth/cloth tangential friction, yarn-scale
+contact, or hardware performance. It locks the cloth equations, topology,
 contact geometry, three useful load cases, deterministic replay, and mesh export
 before a GPU implementation is admitted.
 
@@ -52,6 +52,11 @@ fold, and twist without losing its woven lengths.
 ```math
 C_b(x)=\operatorname{wrap}(\theta(x)-\theta_0).
 ```
+
+After contact, a unilateral strain projection caps warp, weft, and bottom
+extension at `28.5%` and shear at `38%`. It does not resist compression or
+ordinary strain below those limits. Alternating primitive-contact and strain
+passes prevent self-separation from silently turning the textile into rubber.
 
 ## Compliant-patch airborne spin
 
@@ -139,11 +144,16 @@ sphere-plus-cloth height.
 
 The grounded and pickup scenarios stop predicted cloth/plane and fruit/plane
 crossings at the plane before iterative contact. The removed free-flight
-advance is reported separately from any actual post-contact penetration. A deterministic
-spatial hash enforces vertex-level cloth self-separation for nonlocal topology
-pairs while
-excluding the local two-ring neighborhood. Self-contact incidence is execution
-evidence, not evidence of continuous triangle/triangle self-collision.
+advance is reported separately from any actual post-contact penetration.
+
+Cloth self-contact derives two-ring exclusions from the actual constraint
+graph, including the structured bottom. Spatial grids broadphase nonlocal
+vertex/triangle and edge/edge pairs. Conservative advancement prevents both
+primitive classes from tunneling during prediction; endpoint projections and
+strain reconciliation finish each substep. Qualification measures the final
+nonlocal primitive overlap directly and requires less than `2 um`. Normal
+separation is implemented; cloth/cloth tangential friction remains outside
+this checkpoint.
 
 ## Qualification gates
 
@@ -151,7 +161,8 @@ A run fails on nonfinite state, numerical escape, triangle collapse, excessive
 warp/weft/shear/bottom strain, fruit/cloth penetration above `0.01 m`, vertex
 self-penetration at or above the cloth diameter, excessive linear/angular
 speed, grip force above `500 N`, a friction-cone violation, or a
-non-bit-identical replay. Grounded runs additionally require fruit containment
+non-bit-identical replay. Final primitive self-overlap and strain-limit
+violation must each remain below `2 um`. Grounded runs additionally require fruit containment
 with `spilled_mask=0` and plane correction below one cloth radius. Extension
 and compression are reported separately: the gate limits warp/weft/bottom
 extension to `0.30` while
@@ -181,6 +192,10 @@ Run all three load cases:
 ./build/numi-solver-cloth-bag --rolling-probe
 
 ./build/numi-solver-cloth-bag --ccd-probe
+
+./build/numi-solver-cloth-bag --self-ccd-probe
+
+./build/numi-solver-cloth-bag --strain-probe
 ```
 
 The executed 1.0-second grounded checkpoint on 2026-08-20 was deterministic
@@ -194,52 +209,59 @@ bend_constraints=4296
 balls=12
 cloth_mass_kg=0.078050000
 fruit_mass_kg=2.330000000
-max_warp_strain=0.221851949
-max_warp_extension=0.076235568
-max_warp_compression=0.221851949
-max_weft_strain=0.011903887
-max_shear_strain=0.025307194
-max_bottom_extension=0.006238406
-max_bend_error=0.225639858
-min_triangle_area=0.000056068
+max_warp_strain=0.265150491
+max_warp_extension=0.265150491
+max_warp_compression=0.221823022
+max_weft_strain=0.010682636
+max_shear_strain=0.028191510
+max_bottom_extension=0.006237591
+max_bend_error=0.414845908
+min_triangle_area=0.000056064
 max_ball_penetration=0.004879649
 max_self_penetration=0.002980520
-ball_triangle_contacts=72822
-swept_ball_triangle_contacts=3248
-self_contacts=17280
+ball_triangle_contacts=71130
+swept_ball_triangle_contacts=3231
+self_contacts=21702
+vertex_triangle_self_contacts=1441
+edge_edge_self_contacts=2884
+swept_edge_edge_self_contacts=98
+final_primitive_self_penetration=0.000000000
+final_strain_limit_violation=0.000000000
 escaped_mask=0
 spilled_mask=0
-max_ground_penetration=0.001848128
-max_swept_ground_advance=0.000764931
-max_swept_ball_advance=0.003056710
-max_angular_speed=11.830598087
+max_ground_penetration=0.001850024
+max_swept_ground_advance=0.000761389
+max_swept_ball_advance=0.003056590
+max_angular_speed=11.827532489
 max_friction_cone_ratio=1.000000000
 deterministic=true
-state_hash=0xe681ece65f8b0046
+state_hash=0x657436d6056a72b8
 result=PASS
 ```
 
 The matching 0.5-second compliant-patch spin checkpoint also passed. It reached
-`0.125558459` maximum warp extension and `0.090402133` maximum shear strain,
-recorded `27,742` fruit/triangle contacts and 731 swept first-impact contacts,
-reached `18.618713269 rad/s`, measured `3.706197351 N` peak attachment force, and
+`0.262473536` maximum warp extension and `0.090438378` maximum shear strain,
+recorded `27,682` fruit/triangle contacts and 739 swept first-impact contacts,
+reached `18.653576450 rad/s`, measured `3.707047521 N` peak attachment force, and
 replayed bit-identically with
-`state_hash=0xa586efe35d791d79`. `released_mask=1536` records fruits 9 and 10
+`state_hash=0x5acc3af1fbf386c5`. `released_mask=1536` records fruits 9 and 10
 leaving the open mouth; `escaped_mask=0` distinguishes that physical
 release from numerical divergence.
 
 The 1.2-second grounded pickup checkpoint passed with
-`max_warp_extension=0.127685096`, `max_shear_strain=0.077527676`,
-`max_bottom_extension=0.006222924`, `max_ball_penetration=0.004879649`,
-`max_self_penetration=0.003286022`, and `escaped_mask=0`. Its
+`max_warp_extension=0.285000000`, `max_shear_strain=0.077412270`,
+`max_bottom_extension=0.006225497`, `max_ball_penetration=0.004879649`,
+`max_self_penetration=0.003234989`, and `escaped_mask=0`. Its
 `released_mask=4032` records fruits 6 through 11 leaving the bag;
 four are on the plane at the final checkpoint and two remain in flight. The
-maximum post-contact plane penetration was `0.001742280 m`, the maximum
-discarded swept plane advance was `0.007903588 m`, and 2,011 swept
-sphere/triangle contacts prevented up to `0.003056290 m` of relative advance.
-Peak fruit angular speed was `29.998059471 rad/s`, and peak five-node grip force
-was `2.854568983 N`. The independent replay matched
-`state_hash=0xd66dcb1fdb25da5a`
+maximum post-contact plane penetration was `0.001741407 m`, the maximum
+discarded swept plane advance was `0.004898232 m`, and 2,078 swept
+sphere/triangle contacts prevented up to `0.003056407 m` of relative advance.
+The run resolved 1,740 vertex/triangle and 3,461 edge/edge endpoint contacts
+plus 64 swept edge/edge impacts, with zero final primitive overlap and zero
+strain-limit residual. Peak fruit angular speed was `31.035801118 rad/s`, and
+peak five-node grip force was `2.855439024 N`. The independent replay matched
+`state_hash=0xcf98b9fc01a6c90a`
 bit-for-bit.
 
 The independent `--rolling-probe` begins a solid sphere sliding at `1 m/s` and
@@ -251,6 +273,12 @@ The independent `--ccd-probe` moves a `0.02 m` sphere from `+0.08 m` to
 `-0.08 m` through a triangle in one `0.001 s` step. Conservative advancement
 stops it at `0.024000000560 m` against the analytic `0.024 m` target, removes
 `0.104000000560 m` of tunneling advance, and replays exactly.
+
+The independent `--self-ccd-probe` moves a vertex and a crossing edge from
+`+0.02 m` to `-0.02 m` through another cloth primitive in one step. Both stop
+at the `0.008 m` two-sided cloth thickness after removing `0.028 m` of
+tunneling advance, and both replay exactly. `--strain-probe` independently
+projects `50%` warp extension to exactly `28.5%` without center-of-mass drift.
 
 `--dump-obj` writes the actual simulated vertices and triangles plus fruit
 center/radius/appearance/orientation/angular-velocity comments. The spin and pickup scenarios also record
@@ -271,4 +299,4 @@ from the exported quaternion so rolling and spin remain tied to solver state.
 
 See [CLOTH_REALISM_AUDIT.md](CLOTH_REALISM_AUDIT.md) for the remaining limits;
 this checkpoint does not claim yarn-scale contact, calibrated textile material,
-continuous cloth self-collision, or a Metal cloth runtime.
+cloth/cloth tangential friction, or a Metal cloth runtime.

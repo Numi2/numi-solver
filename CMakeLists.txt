@@ -435,6 +435,26 @@ if(BUILD_TESTING)
         NAME cloth_bag.swept_sphere_triangle
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --ccd-probe
     )
+    add_test(
+        NAME cloth_bag.continuous_self_contact
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --self-ccd-probe
+    )
+    add_test(
+        NAME cloth_bag.strain_limit
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --strain-probe
+    )
+    set_tests_properties(
+        cloth_bag.strain_limit
+        PROPERTIES
+            LABELS "physics;cloth;reference;strain;barrier"
+            TIMEOUT 30
+    )
+    set_tests_properties(
+        cloth_bag.continuous_self_contact
+        PROPERTIES
+            LABELS "physics;cloth;reference;contact;ccd;self_contact"
+            TIMEOUT 30
+    )
     set_tests_properties(
         cloth_bag.swept_sphere_triangle
         PROPERTIES
@@ -451,7 +471,8 @@ if(BUILD_TESTING)
         cloth_bag.reference
         PROPERTIES
             LABELS "physics;cloth;reference;contact;determinism"
-            TIMEOUT 120
+            RUN_SERIAL TRUE
+            TIMEOUT 180
     )
     add_test(
         NAME cloth_bag.airborne_spin
@@ -466,7 +487,8 @@ if(BUILD_TESTING)
         cloth_bag.airborne_spin
         PROPERTIES
             LABELS "physics;cloth;reference;contact;determinism;spin"
-            TIMEOUT 120
+            RUN_SERIAL TRUE
+            TIMEOUT 180
     )
     add_test(
         NAME cloth_bag.pickup
@@ -482,7 +504,8 @@ if(BUILD_TESTING)
         cloth_bag.pickup
         PROPERTIES
             LABELS "physics;cloth;reference;contact;determinism;pickup"
-            TIMEOUT 120
+            RUN_SERIAL TRUE
+            TIMEOUT 180
     )
     set_tests_properties(
         temporal_cone.rigid
