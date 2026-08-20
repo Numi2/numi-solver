@@ -5,8 +5,36 @@ solver extracted from Numi Lab's `numisolver` branch.
 
 This repository intentionally contains only the owning Metal solver source and
 its pointer-free GPU ABI headers. It does not contain Numi Lab's robot models,
-training runtime, tasks, applications, assets, research artifacts, rendering,
-or website.
+training runtime, tasks, applications, research artifacts, rendering runtime,
+or website. Files under `docs/assets` are generated solver evidence, not an
+application scene.
+
+## Cloth produce-bag replay
+
+![A soft cotton produce bag containing twelve fruit spheres after one simulated second](docs/assets/cloth-produce-bag.png)
+
+This PNG is rasterized directly from the actual deterministic FP64 solver state;
+it is not concept art or a hand-posed scene. The replay advances a free 48 by 28
+cloth control surface and twelve dynamic fruit spheres for one second. The
+AppKit rasterizer adds cotton-fiber strokes between control points but does not
+move the exported state.
+
+The qualified replay passed with no escaped or spilled fruit, no collapsed
+triangles, `0.006000033 m` maximum fruit/cloth penetration,
+`0.004564645 m` maximum vertex self-penetration, and bit-identical replay hash
+`0xc404b0ad6d16b0db`. This is CPU FP64 cloth evidence, not Metal-performance or
+Temporal Cone cloth-contact evidence.
+
+Reproduce the README image from the executable state:
+
+```sh
+./build/numi-solver-cloth-bag \
+  --scenario grounded --steps 120 --substeps 4 --iterations 12 \
+  --dump-obj build/cloth-produce-bag-1s.obj
+
+swift tools/render_cloth_obj.swift \
+  build/cloth-produce-bag-1s.obj docs/assets/cloth-produce-bag.png
+```
 
 ## Solver boundary
 
@@ -51,10 +79,10 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
 - `build/numi-solver-braided-bag` for an end-to-end deformable braided bag
   containing six falling balls, with matched dense and streamed trajectories.
 - `build/numi-solver-cloth-bag` for a deterministic FP64 dense-cloth reference
-  with a free reinforced rim, stretch/shear, soft dihedral bending,
-  ball-triangle contact, ground contact, vertex self-collision, and a
-  one-point airborne spin scenario. This is a CPU reference, not
-  Metal-performance evidence.
+  with a free folded rim, stretch/shear, soft dihedral bending, twelve-fruit
+  contact and friction, ground contact, vertex self-collision, and a one-point
+  airborne spin scenario. This is a CPU reference, not Metal-performance
+  evidence.
 - `build/numi-solver-articulated` for canonical articulated mass/Jacobian
   factorization, response-column solves, cone contact, and deterministic
   generalized-velocity publication on one command buffer.

@@ -1,0 +1,337 @@
+#!/usr/bin/env swift
+
+import AppKit
+import Foundation
+
+private struct Vec3 {
+    var x: Double
+    var y: Double
+    var z: Double
+
+    static func +(lhs: Vec3, rhs: Vec3) -> Vec3 {
+        Vec3(x: lhs.x + rhs.x, y: lhs.y + rhs.y, z: lhs.z + rhs.z)
+    }
+
+    static func -(lhs: Vec3, rhs: Vec3) -> Vec3 {
+        Vec3(x: lhs.x - rhs.x, y: lhs.y - rhs.y, z: lhs.z - rhs.z)
+    }
+
+    static func *(lhs: Vec3, rhs: Double) -> Vec3 {
+        Vec3(x: lhs.x * rhs, y: lhs.y * rhs, z: lhs.z * rhs)
+    }
+}
+
+private struct Projected {
+    var point: CGPoint
+    var depth: Double
+}
+
+private struct Fruit {
+    var center: Vec3
+    var radius: Double
+    var appearance: Int
+}
+
+private enum PrimitiveKind {
+    case yarn(CGPoint, CGPoint, Bool)
+    case fruit(CGPoint, Fruit)
+}
+
+private struct Primitive {
+    var depth: Double
+    var kind: PrimitiveKind
+}
+
+private let around = 48
+private let levels = 28
+private let expectedVertices = around * levels + 1
+
+private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit]) {
+    let source = try String(contentsOfFile: path, encoding: .utf8)
+    var vertices: [Vec3] = []
+    var fruits: [Fruit] = []
+    for line in source.split(separator: "\n") {
+        let fields = line.split(separator: " ")
+        guard let first = fields.first else { continue }
+        if first == "v", fields.count >= 4,
+           let x = Double(fields[1]),
+           let y = Double(fields[2]),
+           let z = Double(fields[3]) {
+            vertices.append(Vec3(x: x, y: y, z: z))
+        } else if fields.count >= 11,
+                  fields[0] == "#",
+                  fields[1] == "ball",
+                  fields[3] == "center",
+                  fields[7] == "radius",
+                  fields[9] == "appearance",
+                  let x = Double(fields[4]),
+                  let y = Double(fields[5]),
+                  let z = Double(fields[6]),
+                  let radius = Double(fields[8]),
+                  let appearance = Int(fields[10]) {
+            fruits.append(Fruit(
+                center: Vec3(x: x, y: y, z: z),
+                radius: radius,
+                appearance: appearance
+            ))
+        }
+    }
+    guard vertices.count == expectedVertices else {
+        throw NSError(
+            domain: "NumiClothRenderer",
+            code: 2,
+            userInfo: [NSLocalizedDescriptionKey:
+                "expected \(expectedVertices) vertices, found \(vertices.count)"]
+        )
+    }
+    return (vertices, fruits)
+}
+
+private func mix(_ first: Vec3, _ second: Vec3, _ t: Double) -> Vec3 {
+    first + (second - first) * t
+}
+
+private func surface(_ vertices: [Vec3], level: Double, ring: Double) -> Vec3 {
+    let level0 = max(0, min(levels - 1, Int(floor(level))))
+    let level1 = min(levels - 1, level0 + 1)
+    let levelT = level - Double(level0)
+    let ringFloor = Int(floor(ring))
+    let ring0 = (ringFloor % around + around) % around
+    let ring1 = (ring0 + 1) % around
+    let ringT = ring - Double(ringFloor)
+    let first = mix(
+        vertices[level0 * around + ring0],
+        vertices[level0 * around + ring1],
+        ringT
+    )
+    let second = mix(
+        vertices[level1 * around + ring0],
+        vertices[level1 * around + ring1],
+        ringT
+    )
+    return mix(first, second, levelT)
+}
+
+private func camera(_ point: Vec3, yaw: Double, pitch: Double) -> Vec3 {
+    let cosYaw = cos(yaw)
+    let sinYaw = sin(yaw)
+    let cosPitch = cos(pitch)
+    let sinPitch = sin(pitch)
+    let side = cosYaw * point.x - sinYaw * point.y
+    let forward = sinYaw * point.x + cosYaw * point.y
+    return Vec3(
+        x: side,
+        y: cosPitch * point.z - sinPitch * forward,
+        z: sinPitch * point.z + cosPitch * forward
+    )
+}
+
+private func color(_ red: CGFloat, _ green: CGFloat, _ blue: CGFloat,
+                   _ alpha: CGFloat = 1.0) -> CGColor {
+    CGColor(red: red / 255.0, green: green / 255.0,
+            blue: blue / 255.0, alpha: alpha)
+}
+
+private func render(vertices: [Vec3], fruits: [Fruit], output: String) throws {
+    let width = 1600
+    let height = 1000
+    let yaw = -0.62
+    let pitch = 0.12
+    let transformed = vertices.map { camera($0, yaw: yaw, pitch: pitch) }
+    var minimumX = transformed.map(\.x).min()!
+    var maximumX = transformed.map(\.x).max()!
+    var minimumY = transformed.map(\.y).min()!
+    var maximumY = transformed.map(\.y).max()!
+    for fruit in fruits {
+        let center = camera(fruit.center, yaw: yaw, pitch: pitch)
+        minimumX = min(minimumX, center.x - fruit.radius)
+        maximumX = max(maximumX, center.x + fruit.radius)
+        minimumY = min(minimumY, center.y - fruit.radius)
+        maximumY = max(maximumY, center.y + fruit.radius)
+    }
+    let scale = min(
+        Double(width - 150) / (maximumX - minimumX),
+        Double(height - 150) / (maximumY - minimumY)
+    )
+    let centerX = Double(width) * 0.5 - (minimumX + maximumX) * 0.5 * scale
+    let centerY = Double(height) * 0.50 - (minimumY + maximumY) * 0.5 * scale
+    func project(_ point: Vec3) -> Projected {
+        let transformed = camera(point, yaw: yaw, pitch: pitch)
+        return Projected(
+            point: CGPoint(
+                x: centerX + transformed.x * scale,
+                y: centerY + transformed.y * scale
+            ),
+            depth: transformed.z
+        )
+    }
+
+    guard let context = CGContext(
+        data: nil,
+        width: width,
+        height: height,
+        bitsPerComponent: 8,
+        bytesPerRow: 0,
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    ) else {
+        throw NSError(domain: "NumiClothRenderer", code: 3)
+    }
+    context.setAllowsAntialiasing(true)
+    context.setShouldAntialias(true)
+    context.setFillColor(color(250, 249, 246))
+    context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+
+    let ground = project(Vec3(x: 0, y: 0, z: 0)).point
+    context.saveGState()
+    context.setFillColor(color(69, 52, 34, 0.12))
+    context.fillEllipse(in: CGRect(
+        x: ground.x - CGFloat(0.52 * scale),
+        y: ground.y - CGFloat(0.065 * scale),
+        width: CGFloat(1.04 * scale),
+        height: CGFloat(0.13 * scale)
+    ))
+    context.restoreGState()
+
+    var primitives: [Primitive] = []
+    primitives.reserveCapacity(4_200)
+    for level in 0..<levels {
+        let rim = level >= levels - 2
+        for ring in 0..<around {
+            let first = project(surface(
+                vertices,
+                level: Double(level),
+                ring: Double(ring)
+            ))
+            let second = project(surface(
+                vertices,
+                level: Double(level),
+                ring: Double(ring + 1)
+            ))
+            primitives.append(Primitive(
+                depth: 0.5 * (first.depth + second.depth),
+                kind: .yarn(first.point, second.point, rim)
+            ))
+        }
+    }
+    for halfRing in 0..<(2 * around) {
+        let ring = Double(halfRing) * 0.5
+        for level in 0..<(levels - 1) {
+            let first = project(surface(
+                vertices,
+                level: Double(level),
+                ring: ring
+            ))
+            let second = project(surface(
+                vertices,
+                level: Double(level + 1),
+                ring: ring
+            ))
+            primitives.append(Primitive(
+                depth: 0.5 * (first.depth + second.depth),
+                kind: .yarn(first.point, second.point, level >= levels - 3)
+            ))
+        }
+    }
+    for fruit in fruits {
+        let projected = project(fruit.center)
+        primitives.append(Primitive(
+            depth: projected.depth,
+            kind: .fruit(projected.point, fruit)
+        ))
+    }
+    primitives.sort { $0.depth < $1.depth }
+
+    let yarnOutline = color(118, 94, 66, 0.30)
+    let yarnBody = color(226, 215, 190, 0.95)
+    let yarnHighlight = color(255, 253, 240, 0.88)
+    let fruitColors: [(CGColor, CGColor, CGColor)] = [
+        (color(255, 208, 190), color(166, 39, 55), color(72, 15, 26)),
+        (color(224, 239, 167), color(107, 155, 45), color(43, 77, 25)),
+        (color(255, 238, 165), color(231, 170, 39), color(125, 78, 10)),
+        (color(255, 204, 155), color(218, 75, 42), color(108, 29, 18)),
+    ]
+    context.setLineCap(.round)
+    for primitive in primitives {
+        switch primitive.kind {
+        case let .yarn(first, second, rim):
+            let bodyWidth: CGFloat = rim ? 6.0 : 3.2
+            context.setStrokeColor(yarnOutline)
+            context.setLineWidth(bodyWidth + 1.4)
+            context.move(to: first)
+            context.addLine(to: second)
+            context.strokePath()
+            context.setStrokeColor(yarnBody)
+            context.setLineWidth(bodyWidth)
+            context.move(to: first)
+            context.addLine(to: second)
+            context.strokePath()
+            context.setStrokeColor(yarnHighlight)
+            context.setLineWidth(max(0.75, bodyWidth * 0.25))
+            context.move(to: CGPoint(x: first.x, y: first.y + 0.45))
+            context.addLine(to: CGPoint(x: second.x, y: second.y + 0.45))
+            context.strokePath()
+        case let .fruit(center, fruit):
+            let radius = CGFloat(fruit.radius * scale)
+            let palette = fruitColors[fruit.appearance % fruitColors.count]
+            let colors = [palette.0, palette.1, palette.2] as CFArray
+            let locations: [CGFloat] = [0.0, 0.38, 1.0]
+            guard let gradient = CGGradient(
+                colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                colors: colors,
+                locations: locations
+            ) else { continue }
+            context.saveGState()
+            context.addEllipse(in: CGRect(
+                x: center.x - radius,
+                y: center.y - radius,
+                width: 2.0 * radius,
+                height: 2.0 * radius
+            ))
+            context.clip()
+            context.drawRadialGradient(
+                gradient,
+                startCenter: CGPoint(
+                    x: center.x - 0.34 * radius,
+                    y: center.y + 0.38 * radius
+                ),
+                startRadius: 0.06 * radius,
+                endCenter: center,
+                endRadius: radius,
+                options: []
+            )
+            context.restoreGState()
+            context.setStrokeColor(color(72, 38, 20, 0.30))
+            context.setLineWidth(1.5)
+            context.strokeEllipse(in: CGRect(
+                x: center.x - radius,
+                y: center.y - radius,
+                width: 2.0 * radius,
+                height: 2.0 * radius
+            ))
+        }
+    }
+
+    guard let image = context.makeImage() else {
+        throw NSError(domain: "NumiClothRenderer", code: 4)
+    }
+    let representation = NSBitmapImageRep(cgImage: image)
+    guard let data = representation.representation(using: .png, properties: [:]) else {
+        throw NSError(domain: "NumiClothRenderer", code: 5)
+    }
+    try data.write(to: URL(fileURLWithPath: output))
+}
+
+guard CommandLine.arguments.count == 3 else {
+    fputs("usage: render_cloth_obj.swift INPUT.obj OUTPUT.png\n", stderr)
+    exit(2)
+}
+
+do {
+    let (vertices, fruits) = try parseOBJ(at: CommandLine.arguments[1])
+    try render(vertices: vertices, fruits: fruits, output: CommandLine.arguments[2])
+    print("rendered vertices=\(vertices.count) fruits=\(fruits.count) output=\(CommandLine.arguments[2])")
+} catch {
+    fputs("render_cloth_obj.swift: \(error.localizedDescription)\n", stderr)
+    exit(1)
+}

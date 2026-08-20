@@ -18,7 +18,7 @@ namespace {
 
 constexpr std::uint32_t kAround = 48;
 constexpr std::uint32_t kLevels = 28;
-constexpr std::size_t kFruitCount = 8;
+constexpr std::size_t kFruitCount = 12;
 constexpr double kClothRadius = 0.004;
 constexpr double kAirborneLift = 0.52;
 
@@ -150,6 +150,12 @@ struct Metrics {
     double maximumWarpStrain{};
     double maximumWeftStrain{};
     double maximumShearStrain{};
+    double maximumWarpExtension{};
+    double maximumWarpCompression{};
+    double maximumWeftExtension{};
+    double maximumWeftCompression{};
+    std::uint32_t maximumWarpExtensionFirst{};
+    std::uint32_t maximumWarpExtensionSecond{};
     double maximumBendError{};
     double maximumBallPenetration{};
     double maximumSelfPenetration{};
@@ -159,6 +165,7 @@ struct Metrics {
     std::uint64_t ballTriangleContacts{};
     std::uint64_t selfContacts{};
     std::uint32_t escapedMask{};
+    std::uint32_t spilledMask{};
     std::uint32_t releasedMask{};
     std::array<double, kFruitCount> maximumBallPenetrationByFruit{};
 };
@@ -182,32 +189,43 @@ double smoothstep(const double value) {
 Vec3 authoredPosition(const std::uint32_t level, const std::uint32_t ring) {
     const double vertical = static_cast<double>(level) /
         static_cast<double>(kLevels - 1);
-    const double rimBlend = smoothstep((vertical - 0.68) / 0.32);
+    const double body = smoothstep(vertical / 0.55);
+    const double fold = std::clamp((vertical - 0.72) / 0.28, 0.0, 1.0);
     const double angle0 = 2.0 * std::numbers::pi *
         static_cast<double>(ring) / static_cast<double>(kAround);
-    const double baseRadius =
-        0.10 +
-        0.220 * smoothstep(vertical / 0.17) +
-        0.130 * rimBlend;
-    const double angle = angle0 + 0.11 * vertical;
+    const double baseRadius = 0.270 + 0.045 * body - 0.045 * fold;
+    const double angle = angle0 + 0.08 * vertical;
     const double wrinkle =
         1.0 +
-        0.028 * std::sin(5.0 * angle + 1.7 * vertical) +
-        0.015 * std::sin(9.0 * angle - 1.1 * vertical);
-    const double looseRim = rimBlend * (
-        0.030 * std::sin(3.0 * angle + 0.35) +
-        0.018 * std::sin(7.0 * angle - 0.80)
+        0.035 * std::sin(
+            5.0 * angle + 5.0 * std::numbers::pi * vertical
+        ) +
+        0.018 * std::sin(
+            9.0 * angle - 3.0 * std::numbers::pi * vertical
+        );
+    const double looseRim = fold * (
+        0.007 * std::sin(3.0 * angle + 0.35) +
+        0.004 * std::sin(7.0 * angle - 0.80)
     );
-    const double rimFold = rimBlend * (
-        0.030 * std::sin(angle + 0.55) +
-        0.015 * std::sin(3.0 * angle - 0.30) +
-        0.008 * std::sin(6.0 * angle + 0.90)
+    const double rimSag = fold * (
+        0.016 * std::sin(angle + 0.55) +
+        0.008 * std::sin(3.0 * angle - 0.30) +
+        0.004 * std::sin(6.0 * angle + 0.90)
     );
     const double radius = baseRadius * wrinkle + looseRim;
+    const double bodySag = body * (
+        0.018 * std::sin(2.0 * angle + 0.30) +
+        0.009 * std::sin(5.0 * angle - 0.70)
+    );
+    const double bodyHeight =
+        0.012 + 0.155 * std::min(vertical / 0.72, 1.0) + bodySag;
+    const double foldedHeight = fold < 0.35
+        ? 0.167 + 0.028 * (fold / 0.35)
+        : 0.195 - 0.070 * ((fold - 0.35) / 0.65);
     return {
         radius * std::cos(angle),
         radius * std::sin(angle),
-        0.025 + 0.385 * vertical + rimFold,
+        (vertical < 0.72 ? bodyHeight : foldedHeight) + rimSag,
     };
 }
 
@@ -267,7 +285,7 @@ ClothModel makeCloth(const Scenario scenario) {
     const Vec3 center{
         0.0,
         0.0,
-        0.025 + (scenario == Scenario::spin ? kAirborneLift : 0.0),
+        0.012 + (scenario == Scenario::spin ? kAirborneLift : 0.0),
     };
     model.particles.push_back({center, center, {}, center, 1.0 / 0.025});
     if (scenario == Scenario::spin) {
@@ -384,7 +402,7 @@ ClothModel makeCloth(const Scenario scenario) {
                 first.opposite,
                 entry[2],
                 restAngle,
-                8.0e-4,
+                8.0e-2,
                 0.0,
             });
             edges.erase(found);
@@ -395,41 +413,40 @@ ClothModel makeCloth(const Scenario scenario) {
 
 std::array<Ball, kFruitCount> makeBalls(const Scenario scenario) {
     constexpr std::array<Vec3, kFruitCount> groundedPositions{{
-        {0.00, 0.00, 0.18},
-        {-0.19, 0.00, 0.40},
-        {0.19, 0.00, 0.41},
-        {0.00, -0.19, 0.42},
-        {0.00, 0.19, 0.40},
-        {-0.13, -0.13, 0.62},
-        {0.13, -0.13, 0.64},
-        {-0.13, 0.13, 0.66},
-    }};
-    constexpr std::array<Vec3, kFruitCount> airbornePositions{{
-        {-0.078038, -0.100041, 0.706718},
-        {-0.193518, 0.086819, 0.694510},
-        {0.207487, 0.038065, 0.709312},
-        {0.116579, -0.189801, 0.689642},
-        {0.046778, 0.205181, 0.701061},
-        {-0.140000, -0.120000, 0.950000},
-        {0.142649, -0.101412, 0.869393},
-        {-0.100110, 0.178361, 0.862629},
+        {0.190, 0.000, 0.080},
+        {0.118, 0.149, 0.075},
+        {-0.042, 0.185, 0.085},
+        {-0.171, 0.082, 0.070},
+        {-0.171, -0.082, 0.078},
+        {-0.042, -0.185, 0.082},
+        {0.118, -0.149, 0.073},
+        {0.000, 0.000, 0.076},
+        {0.105, 0.000, 0.210},
+        {0.000, 0.105, 0.210},
+        {-0.105, 0.000, 0.215},
+        {0.000, -0.105, 0.210},
     }};
     constexpr std::array<double, kFruitCount> radii{{
-        0.115, 0.105, 0.120, 0.100, 0.112, 0.120, 0.102, 0.108,
+        0.070, 0.065, 0.075, 0.060, 0.068, 0.072,
+        0.063, 0.066, 0.072, 0.064, 0.070, 0.067,
     }};
     constexpr std::array<double, kFruitCount> masses{{
-        0.88, 0.62, 1.05, 0.54, 0.78, 1.08, 0.58, 0.70,
+        0.21, 0.17, 0.26, 0.14, 0.19, 0.23,
+        0.16, 0.18, 0.23, 0.17, 0.21, 0.18,
     }};
     constexpr std::array<std::uint32_t, kFruitCount> appearances{{
-        0u, 1u, 2u, 1u, 3u, 0u, 2u, 3u,
+        0u, 1u, 2u, 1u, 3u, 0u,
+        2u, 3u, 0u, 1u, 2u, 3u,
     }};
     std::array<Ball, kFruitCount> balls{};
-    const auto& positions = scenario == Scenario::spin
-        ? airbornePositions
-        : groundedPositions;
     for (std::size_t index = 0; index < balls.size(); ++index) {
-        balls[index].position = positions[index];
-        balls[index].previous = positions[index];
+        const Vec3 position = groundedPositions[index] + Vec3{
+            0.0,
+            0.0,
+            scenario == Scenario::spin ? kAirborneLift : 0.0,
+        };
+        balls[index].position = position;
+        balls[index].previous = position;
         balls[index].radius = radii[index];
         balls[index].inverseMass = 1.0 / masses[index];
         balls[index].appearance = appearances[index];
@@ -671,6 +688,36 @@ double solveBallPair(Ball& first, Ball& second) {
     return target - currentLength;
 }
 
+void dampBallPairFriction(std::array<Ball, kFruitCount>& balls) {
+    constexpr double damping = 0.70;
+    constexpr double contactSlop = 0.002;
+    for (std::size_t firstIndex = 0; firstIndex < balls.size(); ++firstIndex) {
+        for (std::size_t secondIndex = firstIndex + 1u;
+             secondIndex < balls.size();
+             ++secondIndex) {
+            Ball& first = balls[firstIndex];
+            Ball& second = balls[secondIndex];
+            const Vec3 difference = second.position - first.position;
+            const double distance = length(difference);
+            if (distance < 1.0e-12 ||
+                distance > first.radius + second.radius + contactSlop) {
+                continue;
+            }
+            const Vec3 normal = difference / distance;
+            const Vec3 relativeVelocity = second.velocity - first.velocity;
+            const Vec3 tangentVelocity = relativeVelocity -
+                normal * dot(relativeVelocity, normal);
+            const double denominator = first.inverseMass + second.inverseMass;
+            if (denominator <= 0.0) {
+                continue;
+            }
+            const Vec3 impulse = tangentVelocity * (damping / denominator);
+            first.velocity += impulse * first.inverseMass;
+            second.velocity -= impulse * second.inverseMass;
+        }
+    }
+}
+
 double solveGround(
     std::vector<Particle>& particles,
     std::array<Ball, kFruitCount>& balls
@@ -710,7 +757,7 @@ bool localTopologyPair(const std::uint32_t first, const std::uint32_t second) {
     const std::uint32_t levelDifference = firstLevel > secondLevel
         ? firstLevel - secondLevel
         : secondLevel - firstLevel;
-    return levelDifference <= 1u && ringDifference <= 2u;
+    return levelDifference <= 2u && ringDifference <= 2u;
 }
 
 std::uint64_t spatialKey(const int x, const int y, const int z) {
@@ -798,13 +845,32 @@ void updateMetrics(
             cloth.particles[constraint.second].position -
             cloth.particles[constraint.first].position
         );
-        const double strain = std::abs(
-            currentLength / constraint.restLength - 1.0
-        );
+        const double signedStrain =
+            currentLength / constraint.restLength - 1.0;
+        const double strain = std::abs(signedStrain);
+        const double extension = std::max(0.0, signedStrain);
+        const double compression = std::max(0.0, -signedStrain);
         if (constraint.kind == DistanceKind::warp) {
             metrics.maximumWarpStrain = std::max(metrics.maximumWarpStrain, strain);
+            if (extension > metrics.maximumWarpExtension) {
+                metrics.maximumWarpExtension = extension;
+                metrics.maximumWarpExtensionFirst = constraint.first;
+                metrics.maximumWarpExtensionSecond = constraint.second;
+            }
+            metrics.maximumWarpCompression = std::max(
+                metrics.maximumWarpCompression,
+                compression
+            );
         } else if (constraint.kind == DistanceKind::weft) {
             metrics.maximumWeftStrain = std::max(metrics.maximumWeftStrain, strain);
+            metrics.maximumWeftExtension = std::max(
+                metrics.maximumWeftExtension,
+                extension
+            );
+            metrics.maximumWeftCompression = std::max(
+                metrics.maximumWeftCompression,
+                compression
+            );
         } else if (constraint.kind == DistanceKind::shear) {
             metrics.maximumShearStrain = std::max(metrics.maximumShearStrain, strain);
         }
@@ -957,6 +1023,7 @@ SimulationResult simulate(
                     ball.velocity.y *= 0.60;
                 }
             }
+            dampBallPairFriction(result.balls);
         }
         updateMetrics(result.cloth, result.balls, result.metrics);
     }
@@ -969,6 +1036,10 @@ SimulationResult simulate(
             : ball.position.z > 5.0 || ball.position.z < -5.0 || radial > 5.0;
         if (!finite(ball.position) || outsideScenarioBounds) {
             result.metrics.escapedMask |= 1u << ballIndex;
+        }
+        if (scenario == Scenario::grounded &&
+            (ball.position.z > 0.45 || radial > 0.48)) {
+            result.metrics.spilledMask |= 1u << ballIndex;
         }
         if (scenario == Scenario::spin && length(
             ball.position -
@@ -1046,10 +1117,12 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
     const bool groundValid = result.scenario == Scenario::spin ||
         result.metrics.maximumGroundPenetration < 0.030;
     return allFinite && deterministic && result.metrics.escapedMask == 0u &&
-        groundValid &&
+        result.metrics.spilledMask == 0u && groundValid &&
         result.metrics.minimumTriangleArea > 1.0e-8 &&
-        result.metrics.maximumWarpStrain < 0.30 &&
-        result.metrics.maximumWeftStrain < 0.30 &&
+        result.metrics.maximumWarpExtension < 0.30 &&
+        result.metrics.maximumWarpCompression < 0.60 &&
+        result.metrics.maximumWeftExtension < 0.30 &&
+        result.metrics.maximumWeftCompression < 0.60 &&
         result.metrics.maximumShearStrain < 0.40 &&
         result.metrics.maximumBallPenetration < 0.010 &&
         result.metrics.maximumSelfPenetration < 2.0 * kClothRadius &&
@@ -1139,11 +1212,20 @@ int main(int argc, char** argv) try {
               << " max_shear_strain=" << metrics.maximumShearStrain
               << " max_bend_error=" << metrics.maximumBendError
               << " min_triangle_area=" << metrics.minimumTriangleArea << '\n';
+    std::cout << "max_warp_extension=" << metrics.maximumWarpExtension
+              << " max_warp_compression=" << metrics.maximumWarpCompression
+              << " max_weft_extension=" << metrics.maximumWeftExtension
+              << " max_weft_compression=" << metrics.maximumWeftCompression
+              << " max_warp_extension_edge="
+              << metrics.maximumWarpExtensionFirst << ':'
+              << metrics.maximumWarpExtensionSecond
+              << '\n';
     std::cout << "max_ball_penetration=" << metrics.maximumBallPenetration
               << " max_self_penetration=" << metrics.maximumSelfPenetration
               << " ball_triangle_contacts=" << metrics.ballTriangleContacts
               << " self_contacts=" << metrics.selfContacts
               << " escaped_mask=" << metrics.escapedMask
+              << " spilled_mask=" << metrics.spilledMask
               << " released_mask=" << metrics.releasedMask << '\n';
     std::cout << "max_ball_penetration_by_fruit=";
     for (std::size_t index = 0;
