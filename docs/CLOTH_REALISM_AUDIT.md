@@ -11,9 +11,15 @@ owning mechanics or evidence is absent.
   surface instead of leaving the physical cap visually open.
 - Authored cloth mass is `0.07805 kg` against `2.33 kg` of fruit. The former
   model was `6.244 kg` and unrealistically heavier than its contents.
-- Sphere/cloth position contact uses a bounded connected-patch effective mass,
-  preventing three isolated light vertices from producing an explosive local
-  response under the realistic load ratio.
+- Sphere/cloth contact uses every node's authored inverse mass directly. A
+  piecewise active-set solve lands a patch on unilateral plane support before
+  transferring remaining separation to the fruit or other free degrees of
+  freedom. Ground-aware bending and adaptive contact/strain reconciliation
+  prevent later constraints from reopening resolved contacts; no artificial
+  contact-patch mass cap remains.
+- `--deformable-response-probe` certifies free-patch center-of-mass
+  conservation, full transfer against plane support, first-plane-hit transfer,
+  exact separation, zero ground violation, and deterministic replay.
 - The moving virtual grip target follows an explicit trajectory. Release masks
   latch across the trajectory instead of inspecting only the final frame.
 - Fruit carry solid-sphere inertia, angular velocity, and normalized
@@ -59,16 +65,19 @@ owning mechanics or evidence is absent.
 - Exported fruit quaternions drive body-fixed surface marks in the README
   renderer, making solver-generated rolling and spin visible without moving
   fruit in presentation code.
+- The rasterizer derives yarn diameter from the same `0.004 m` cloth radius
+  used by contact, adds cylindrical fiber/twist cues, and exposes all five
+  compliant top-seam attachment nodes and their connector lag. This aligns the
+  visible envelope with the solver thickness without changing exported state.
 
 ## Still open
 
-- The connected-patch contact mass is an explicit approximation, not the full
-  coupled deformable response operator targeted for the Metal path.
 - Mass, compliance, damping, fruit friction, and geometry are authored
   estimates. Calibration needs a physical specimen, measured load-extension,
   bend, friction, drop, pickup, and spill observations, and held-out replay.
-- Rendered yarn interpolation is presentation of the control surface. Contact
-  still occurs against cloth triangles, not individual yarn cylinders.
+- Rendered yarn interpolation remains presentation of a homogenized control
+  surface. Fruit contact uses that surface envelope at the matching thickness,
+  not independently articulated yarn cylinders with explicit knot mechanics.
 
 Completion requires owning implementations and executable evidence for every
 open item above. Visual plausibility, a GIF, or the current passing gates are

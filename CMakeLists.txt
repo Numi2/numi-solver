@@ -7,6 +7,13 @@ project(
     LANGUAGES CXX
 )
 
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+    set(
+        CMAKE_BUILD_TYPE Release
+        CACHE STRING "Build type for single-configuration generators" FORCE
+    )
+endif()
+
 if(NOT APPLE)
     message(FATAL_ERROR "Numi Solver requires macOS and the Apple Metal toolchain.")
 endif()
@@ -424,8 +431,8 @@ if(BUILD_TESTING)
         NAME cloth_bag.reference
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
             --steps 30
-            --substeps 4
-            --iterations 12
+            --substeps 12
+            --iterations 24
     )
     add_test(
         NAME cloth_bag.rolling_friction
@@ -446,6 +453,17 @@ if(BUILD_TESTING)
     add_test(
         NAME cloth_bag.self_friction
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --self-friction-probe
+    )
+    add_test(
+        NAME cloth_bag.deformable_response
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
+            --deformable-response-probe
+    )
+    set_tests_properties(
+        cloth_bag.deformable_response
+        PROPERTIES
+            LABELS "physics;cloth;reference;contact;deformable;coupled"
+            TIMEOUT 30
     )
     set_tests_properties(
         cloth_bag.self_friction
@@ -488,9 +506,9 @@ if(BUILD_TESTING)
         NAME cloth_bag.airborne_spin
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
             --scenario spin
-            --steps 30
-            --substeps 4
-            --iterations 12
+            --steps 60
+            --substeps 12
+            --iterations 24
             --dump-frames ${CMAKE_CURRENT_BINARY_DIR}/cloth-spin-test
     )
     set_tests_properties(
@@ -504,9 +522,9 @@ if(BUILD_TESTING)
         NAME cloth_bag.pickup
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
             --scenario pickup
-            --steps 30
-            --substeps 4
-            --iterations 12
+            --steps 144
+            --substeps 12
+            --iterations 24
             --dump-frames ${CMAKE_CURRENT_BINARY_DIR}/cloth-pickup-test
             --dump-every 10
     )
@@ -515,7 +533,7 @@ if(BUILD_TESTING)
         PROPERTIES
             LABELS "physics;cloth;reference;contact;determinism;pickup"
             RUN_SERIAL TRUE
-            TIMEOUT 180
+            TIMEOUT 360
     )
     set_tests_properties(
         temporal_cone.rigid

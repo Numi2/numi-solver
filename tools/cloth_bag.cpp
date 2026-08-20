@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <fstream>
@@ -31,7 +32,6 @@ constexpr double kClothMass =
         kAround * (kLevels - 2u) + kBottomInterior * kBottomInterior
     ) * kClothNodeMass +
     static_cast<double>(2u * kAround) * kClothHemNodeMass;
-constexpr double kClothContactPatchMass = kClothMass;
 constexpr double kFruitGroundFriction = 0.42;
 constexpr double kFruitPairFriction = 0.30;
 constexpr double kFruitClothFriction = 0.36;
@@ -274,8 +274,16 @@ struct Metrics {
     std::uint32_t maximumWarpExtensionSecond{};
     double maximumBendError{};
     double maximumBallPenetration{};
+    double maximumPublishedBallPenetration{};
+    double maximumPublishedPrimitiveSelfPenetration{};
+    double maximumPublishedStrainLimitViolation{};
     double maximumSelfPenetration{};
     double maximumGroundPenetration{};
+    double maximumClothGroundCorrection{};
+    double maximumBallGroundCorrection{};
+    double maximumPublishedGroundPenetration{};
+    std::uint32_t maximumContactReconciliationPasses{};
+    std::uint32_t maximumPrimitiveCertificatePasses{};
     double maximumSweptGroundAdvance{};
     double maximumSweptBallAdvance{};
     double minimumTriangleArea{std::numeric_limits<double>::infinity()};
@@ -292,6 +300,9 @@ struct Metrics {
     std::uint64_t edgeEdgeSelfContacts{};
     std::uint64_t sweptVertexTriangleSelfContacts{};
     std::uint64_t sweptEdgeEdgeSelfContacts{};
+    std::uint64_t vertexTriangleCandidatePairs{};
+    std::uint64_t edgeEdgeCandidatePairs{};
+    std::uint64_t edgeEdgeSphereCandidatePairs{};
     std::uint64_t clothSelfFrictionContacts{};
     double maximumSweptSelfAdvance{};
     double finalPrimitiveSelfPenetration{};
@@ -304,7 +315,22 @@ struct Metrics {
     std::uint32_t spilledMask{};
     std::uint32_t releasedMask{};
     std::array<double, kFruitCount> maximumBallPenetrationByFruit{};
+    double ballClothSolveSeconds{};
+    double primitiveSelfSolveSeconds{};
+    double pointSelfSolveSeconds{};
+    double strainLimitSolveSeconds{};
+    double primitiveCertificateSeconds{};
 };
+
+template <typename Function>
+auto accumulateSeconds(double& total, Function&& function) {
+    const auto start = std::chrono::steady_clock::now();
+    auto result = function();
+    total += std::chrono::duration<double>(
+        std::chrono::steady_clock::now() - start
+    ).count();
+    return result;
+}
 
 struct SimulationResult {
     ClothModel cloth;
@@ -1002,7 +1028,8 @@ double bendAngle(const std::array<Vec3, 4>& positions) {
 void solveBend(
     std::vector<Particle>& particles,
     BendConstraint& constraint,
-    const double timestep
+    const double timestep,
+    const bool groundEnabled
 ) {
     const std::array<std::uint32_t, 4> indices{{
         constraint.edgeFirst,
@@ -1036,20 +1063,66 @@ void solveBend(
         }
     }
     const double alpha = constraint.compliance / (timestep * timestep);
+    double freeDenominator = alpha;
+    for (std::size_t index = 0; index < 4; ++index) {
+        freeDenominator += particles[indices[index]].inverseMass *
+            lengthSquared(gradients[index]);
+    }
+    if (freeDenominator < 1.0e-16) {
+        return;
+    }
+    const double numerator = -value - alpha * constraint.lambda;
+    const double freeDeltaLambda = numerator / freeDenominator;
+    std::array<bool, 4> groundActive{};
     double denominator = alpha;
     for (std::size_t index = 0; index < 4; ++index) {
-        denominator += particles[indices[index]].inverseMass *
-            lengthSquared(gradients[index]);
+        const Particle& particle = particles[indices[index]];
+        groundActive[index] = groundEnabled &&
+            particle.position.z <= kClothRadius + 1.0e-9 &&
+            gradients[index].z * freeDeltaLambda < 0.0;
+        denominator += particle.inverseMass * (
+            lengthSquared(gradients[index]) -
+            (groundActive[index]
+                ? gradients[index].z * gradients[index].z
+                : 0.0)
+        );
     }
     if (denominator < 1.0e-16) {
         return;
     }
-    const double deltaLambda =
-        (-value - alpha * constraint.lambda) / denominator;
-    constraint.lambda += deltaLambda;
+    const double deltaLambda = numerator / denominator;
+    double fraction = 1.0;
+    if (groundEnabled) {
+        for (std::size_t index = 0; index < 4; ++index) {
+            if (groundActive[index]) {
+                continue;
+            }
+            const Particle& particle = particles[indices[index]];
+            const double verticalCorrection = gradients[index].z *
+                particle.inverseMass * deltaLambda;
+            if (verticalCorrection >= 0.0) {
+                continue;
+            }
+            fraction = std::min(
+                fraction,
+                std::max(0.0, particle.position.z - kClothRadius) /
+                    -verticalCorrection
+            );
+        }
+    }
+    const double appliedLambda = deltaLambda * fraction;
+    constraint.lambda += appliedLambda;
     for (std::size_t index = 0; index < 4; ++index) {
-        particles[indices[index]].position += gradients[index] *
-            (particles[indices[index]].inverseMass * deltaLambda);
+        Vec3 correction = gradients[index] *
+            (particles[indices[index]].inverseMass * appliedLambda);
+        if (groundActive[index]) {
+            correction.z = 0.0;
+        }
+        particles[indices[index]].position += correction;
+        if (groundEnabled && particles[indices[index]].position.z <
+            kClothRadius) {
+            particles[indices[index]].position.z = kClothRadius;
+        }
     }
 }
 
@@ -1057,6 +1130,109 @@ struct ClosestPoint {
     Vec3 point{};
     std::array<double, 3> barycentric{};
 };
+
+Vec3 deformableParticleResponse(
+    const Particle& particle,
+    const Vec3 load,
+    const bool groundEnabled
+) {
+    Vec3 response = load * particle.inverseMass;
+    if (groundEnabled &&
+        particle.position.z <= kClothRadius + 1.0e-6 &&
+        response.z < 0.0) {
+        response.z = 0.0;
+    }
+    return response;
+}
+
+double applyBallTriangleCorrection(
+    std::vector<Particle>& particles,
+    const std::array<std::uint32_t, 3> indices,
+    const std::array<double, 3> barycentric,
+    Ball& ball,
+    const Vec3 normal,
+    const double correctionDistance,
+    const bool groundEnabled
+) {
+    std::array<bool, 3> groundActive{};
+    if (groundEnabled && normal.z < 0.0) {
+        for (std::size_t index = 0; index < 3; ++index) {
+            groundActive[index] = barycentric[index] > 0.0 &&
+                particles[indices[index]].position.z <=
+                    kClothRadius + 1.0e-9;
+            if (groundActive[index]) {
+                particles[indices[index]].position.z = kClothRadius;
+            }
+        }
+    }
+
+    double remaining = correctionDistance;
+    double accumulatedLambda = 0.0;
+    for (std::size_t activeSetIteration = 0;
+         activeSetIteration < 4u && remaining > 1.0e-14;
+         ++activeSetIteration) {
+        std::array<Vec3, 3> response{};
+        double denominator = ball.inverseMass;
+        for (std::size_t index = 0; index < 3; ++index) {
+            response[index] = normal *
+                particles[indices[index]].inverseMass;
+            if (groundActive[index]) {
+                response[index].z = 0.0;
+            }
+            denominator += dot(normal, response[index]) *
+                barycentric[index] * barycentric[index];
+        }
+        if (denominator <= 0.0) {
+            break;
+        }
+
+        const double unconstrainedLambda = remaining / denominator;
+        double stepLambda = unconstrainedLambda;
+        if (groundEnabled && normal.z < 0.0) {
+            for (std::size_t index = 0; index < 3; ++index) {
+                const double verticalResponse = response[index].z *
+                    barycentric[index];
+                if (groundActive[index] || verticalResponse >= 0.0) {
+                    continue;
+                }
+                const double distanceToGround = std::max(
+                    0.0,
+                    particles[indices[index]].position.z - kClothRadius
+                );
+                stepLambda = std::min(
+                    stepLambda,
+                    distanceToGround / -verticalResponse
+                );
+            }
+        }
+
+        ball.position -= normal * (ball.inverseMass * stepLambda);
+        for (std::size_t index = 0; index < 3; ++index) {
+            particles[indices[index]].position += response[index] *
+                (barycentric[index] * stepLambda);
+        }
+        accumulatedLambda += stepLambda;
+        remaining = std::max(0.0, remaining - denominator * stepLambda);
+        if (stepLambda >= unconstrainedLambda - 1.0e-14) {
+            break;
+        }
+
+        bool activated = false;
+        for (std::size_t index = 0; index < 3; ++index) {
+            if (!groundActive[index] && barycentric[index] > 0.0 &&
+                particles[indices[index]].position.z <=
+                    kClothRadius + 1.0e-9) {
+                particles[indices[index]].position.z = kClothRadius;
+                groundActive[index] = true;
+                activated = true;
+            }
+        }
+        if (!activated) {
+            break;
+        }
+    }
+    return accumulatedLambda;
+}
 
 ClosestPoint closestPointOnTriangle(
     const Vec3 point,
@@ -1145,6 +1321,7 @@ double solveSweptBallTriangle(
     const Triangle triangle,
     Ball& ball,
     const double timestep,
+    const bool groundEnabled,
     BallTriangleContactImpulse& contactImpulse,
     std::uint64_t& contactCount
 ) {
@@ -1248,26 +1425,17 @@ double solveSweptBallTriangle(
     if (removedAdvance <= 0.0) {
         return 0.0;
     }
-    std::array<double, 3> clothContactInverseMass{};
-    double denominator = ball.inverseMass;
-    for (std::size_t index = 0; index < 3; ++index) {
-        clothContactInverseMass[index] = std::min(
-            particles[indices[index]].inverseMass,
-            1.0 / kClothContactPatchMass
-        );
-        denominator += clothContactInverseMass[index] *
-            impact.closest.barycentric[index] *
-            impact.closest.barycentric[index];
-    }
-    if (denominator <= 0.0) {
+    const double lambda = applyBallTriangleCorrection(
+        particles,
+        indices,
+        impact.closest.barycentric,
+        ball,
+        normal,
+        removedAdvance,
+        groundEnabled
+    );
+    if (lambda <= 0.0) {
         return 0.0;
-    }
-    const double lambda = removedAdvance / denominator;
-    ball.position -= normal * (ball.inverseMass * lambda);
-    for (std::size_t index = 0; index < 3; ++index) {
-        particles[indices[index]].position += normal *
-            (clothContactInverseMass[index] *
-             impact.closest.barycentric[index] * lambda);
     }
     const double impulseMagnitude = lambda / timestep;
     contactImpulse.weightedNormalOnBall -= normal * impulseMagnitude;
@@ -1285,6 +1453,7 @@ double solveBallTriangle(
     const Triangle triangle,
     Ball& ball,
     const double timestep,
+    const bool groundEnabled,
     BallTriangleContactImpulse& contactImpulse,
     std::uint64_t& contactCount
 ) {
@@ -1321,27 +1490,20 @@ double solveBallTriangle(
         distance = 0.0;
     }
     const Vec3 normal = normalized(separation);
-    std::array<double, 3> clothContactInverseMass{};
-    double denominator = ball.inverseMass;
-    for (std::size_t index = 0; index < 3; ++index) {
-        clothContactInverseMass[index] = std::min(
-            particles[indices[index]].inverseMass,
-            1.0 / kClothContactPatchMass
-        );
-        denominator += clothContactInverseMass[index] *
-            closest.barycentric[index] * closest.barycentric[index];
-    }
-    if (denominator <= 0.0) {
+    const double correction = target - distance;
+    const double lambda = applyBallTriangleCorrection(
+        particles,
+        indices,
+        closest.barycentric,
+        ball,
+        normal,
+        correction,
+        groundEnabled
+    );
+    if (lambda <= 0.0) {
         return target - distance;
     }
-    const double correction = (target - distance) / denominator;
-    for (std::size_t index = 0; index < 3; ++index) {
-        particles[indices[index]].position += normal *
-            (clothContactInverseMass[index] *
-             closest.barycentric[index] * correction);
-    }
-    ball.position -= normal * (ball.inverseMass * correction);
-    const double impulseMagnitude = correction / timestep;
+    const double impulseMagnitude = lambda / timestep;
     contactImpulse.weightedNormalOnBall -= normal * impulseMagnitude;
     for (std::size_t index = 0; index < 3; ++index) {
         contactImpulse.weightedBarycentric[index] +=
@@ -1350,6 +1512,91 @@ double solveBallTriangle(
     contactImpulse.normalImpulse += impulseMagnitude;
     ++contactCount;
     return target - distance;
+}
+
+double measureBallClothPenetration(
+    const std::vector<Particle>& particles,
+    const std::vector<Triangle>& triangles,
+    const std::array<Ball, kFruitCount>& balls
+) {
+    double maximum = 0.0;
+    for (const Ball& ball : balls) {
+        const double target = ball.radius + kClothRadius;
+        for (const Triangle triangle : triangles) {
+            const Vec3 first = particles[triangle.first].position;
+            const Vec3 second = particles[triangle.second].position;
+            const Vec3 third = particles[triangle.third].position;
+            if (ball.position.x < std::min({first.x, second.x, third.x}) - target ||
+                ball.position.x > std::max({first.x, second.x, third.x}) + target ||
+                ball.position.y < std::min({first.y, second.y, third.y}) - target ||
+                ball.position.y > std::max({first.y, second.y, third.y}) + target ||
+                ball.position.z < std::min({first.z, second.z, third.z}) - target ||
+                ball.position.z > std::max({first.z, second.z, third.z}) + target) {
+                continue;
+            }
+            const ClosestPoint closest = closestPointOnTriangle(
+                ball.position, first, second, third
+            );
+            maximum = std::max(
+                maximum,
+                target - length(closest.point - ball.position)
+            );
+        }
+    }
+    return maximum;
+}
+
+double measureGroundPenetration(
+    const std::vector<Particle>& particles,
+    const std::array<Ball, kFruitCount>& balls
+) {
+    double maximum = 0.0;
+    for (const Particle& particle : particles) {
+        maximum = std::max(
+            maximum,
+            kClothRadius - particle.position.z
+        );
+    }
+    for (const Ball& ball : balls) {
+        maximum = std::max(maximum, ball.radius - ball.position.z);
+    }
+    return maximum;
+}
+
+void solveBallClothContactSweep(
+    ClothModel& cloth,
+    std::array<Ball, kFruitCount>& balls,
+    const double timestep,
+    const bool groundEnabled,
+    std::vector<BallTriangleContactImpulse>& contacts,
+    Metrics& metrics
+) {
+    for (std::size_t ballIndex = 0;
+         ballIndex < balls.size();
+         ++ballIndex) {
+        Ball& ball = balls[ballIndex];
+        for (std::size_t triangleIndex = 0;
+             triangleIndex < cloth.triangles.size();
+             ++triangleIndex) {
+            const double penetration = solveBallTriangle(
+                cloth.particles,
+                cloth.triangles[triangleIndex],
+                ball,
+                timestep,
+                groundEnabled,
+                contacts[ballIndex * cloth.triangles.size() + triangleIndex],
+                metrics.ballTriangleContacts
+            );
+            metrics.maximumBallPenetration = std::max(
+                metrics.maximumBallPenetration,
+                penetration
+            );
+            metrics.maximumBallPenetrationByFruit[ballIndex] = std::max(
+                metrics.maximumBallPenetrationByFruit[ballIndex],
+                penetration
+            );
+        }
+    }
 }
 
 double solveBallPair(
@@ -1381,7 +1628,8 @@ void applyBallClothFriction(
     const std::vector<Triangle>& triangles,
     std::array<Ball, kFruitCount>& balls,
     const std::vector<BallTriangleContactImpulse>& contacts,
-    Metrics& metrics
+    Metrics& metrics,
+    const bool groundEnabled
 ) {
     for (std::size_t ballIndex = 0; ballIndex < balls.size(); ++ballIndex) {
         Ball& ball = balls[ballIndex];
@@ -1431,13 +1679,12 @@ void applyBallClothFriction(
             const Vec3 tangent = tangentVelocity / slipSpeed;
             double denominator = ball.inverseMass + inverseInertia(ball) *
                 lengthSquared(cross(ballOffset, tangent));
-            std::array<double, 3> clothInverseMass{};
+            std::array<Vec3, 3> clothResponse{};
             for (std::size_t index = 0; index < 3; ++index) {
-                clothInverseMass[index] = std::min(
-                    particles[indices[index]].inverseMass,
-                    1.0 / kClothContactPatchMass
+                clothResponse[index] = deformableParticleResponse(
+                    particles[indices[index]], tangent, groundEnabled
                 );
-                denominator += clothInverseMass[index] *
+                denominator += dot(tangent, clothResponse[index]) *
                     barycentric[index] * barycentric[index];
             }
             if (denominator <= 0.0) {
@@ -1455,8 +1702,8 @@ void applyBallClothFriction(
             const Vec3 impulse = tangent * -tangentialImpulse;
             applyBallImpulse(ball, impulse, ballOffset);
             for (std::size_t index = 0; index < 3; ++index) {
-                particles[indices[index]].velocity -= impulse *
-                    (clothInverseMass[index] * barycentric[index]);
+                particles[indices[index]].velocity += clothResponse[index] *
+                    (tangentialImpulse * barycentric[index]);
             }
             recordFrictionImpulse(
                 metrics,
@@ -1699,6 +1946,7 @@ CCDProbeResult runCCDProbeOnce() {
         Triangle{0u, 1u, 2u},
         ball,
         timestep,
+        false,
         contact,
         contacts
     );
@@ -1731,6 +1979,177 @@ bool runCCDProbe() {
               << " removed_advance=" << first.removedAdvance
               << " normal_impulse=" << first.normalImpulse
               << " contacts=" << first.contacts
+              << " deterministic=" << std::boolalpha << deterministic
+              << '\n'
+              << "result=" << (pass ? "PASS" : "FAIL") << '\n';
+    return pass;
+}
+
+struct DeformableResponseProbeCase {
+    double separationError{};
+    double ballAdvance{};
+    double clothAdvance{};
+    double centerShift{};
+    double groundViolation{};
+    std::uint64_t contacts{};
+};
+
+DeformableResponseProbeCase runDeformableResponseProbeCase(
+    const bool groundEnabled,
+    const double clearance
+) {
+    constexpr double penetration = 0.008;
+    constexpr double ballMass = 0.20;
+    constexpr double ballRadius = 0.10;
+    const double triangleHeight = groundEnabled
+        ? kClothRadius + clearance
+        : 0.0;
+    std::vector<Particle> particles(3);
+    const std::array<Vec3, 3> positions{{
+        {-1.0, -1.0, triangleHeight},
+        {1.0, -1.0, triangleHeight},
+        {0.0, 2.0, triangleHeight},
+    }};
+    for (std::size_t index = 0; index < particles.size(); ++index) {
+        particles[index].position = positions[index];
+        particles[index].previous = positions[index];
+        particles[index].inverseMass = 1.0 / kClothNodeMass;
+        particles[index].mass = kClothNodeMass;
+    }
+    Ball ball;
+    ball.radius = ballRadius;
+    ball.inverseMass = 1.0 / ballMass;
+    ball.position = {
+        0.0,
+        0.0,
+        triangleHeight + ballRadius + kClothRadius - penetration,
+    };
+    ball.previous = ball.position;
+    const double ballStart = ball.position.z;
+    const double clothStart = triangleHeight;
+    const double totalMass = ballMass + 3.0 * kClothNodeMass;
+    const double centerBefore = (
+        ballMass * ball.position.z +
+        kClothNodeMass * (
+            particles[0].position.z +
+            particles[1].position.z +
+            particles[2].position.z
+        )
+    ) / totalMass;
+    BallTriangleContactImpulse contact;
+    std::uint64_t contacts = 0u;
+    solveBallTriangle(
+        particles,
+        Triangle{0u, 1u, 2u},
+        ball,
+        1.0 / 480.0,
+        groundEnabled,
+        contact,
+        contacts
+    );
+    const ClosestPoint closest = closestPointOnTriangle(
+        ball.position,
+        particles[0].position,
+        particles[1].position,
+        particles[2].position
+    );
+    const double clothHeight = (
+        particles[0].position.z +
+        particles[1].position.z +
+        particles[2].position.z
+    ) / 3.0;
+    const double centerAfter = (
+        ballMass * ball.position.z +
+        kClothNodeMass * (
+            particles[0].position.z +
+            particles[1].position.z +
+            particles[2].position.z
+        )
+    ) / totalMass;
+    double groundViolation = 0.0;
+    if (groundEnabled) {
+        for (const Particle& particle : particles) {
+            groundViolation = std::max(
+                groundViolation,
+                kClothRadius - particle.position.z
+            );
+        }
+    }
+    return {
+        .separationError = std::abs(
+            length(closest.point - ball.position) -
+            (ballRadius + kClothRadius)
+        ),
+        .ballAdvance = ball.position.z - ballStart,
+        .clothAdvance = clothStart - clothHeight,
+        .centerShift = centerAfter - centerBefore,
+        .groundViolation = groundViolation,
+        .contacts = contacts,
+    };
+}
+
+bool runDeformableResponseProbe() {
+    constexpr double penetration = 0.008;
+    constexpr double crossingClearance = 0.001;
+    constexpr double ballInverseMass = 1.0 / 0.20;
+    constexpr double clothPointInverseMass =
+        1.0 / (3.0 * kClothNodeMass);
+    constexpr double freeBallAdvance = penetration * ballInverseMass /
+        (ballInverseMass + clothPointInverseMass);
+    const DeformableResponseProbeCase free =
+        runDeformableResponseProbeCase(false, 0.0);
+    const DeformableResponseProbeCase supported =
+        runDeformableResponseProbeCase(true, 0.0);
+    const DeformableResponseProbeCase crossing =
+        runDeformableResponseProbeCase(true, crossingClearance);
+    const DeformableResponseProbeCase freeReplay =
+        runDeformableResponseProbeCase(false, 0.0);
+    const DeformableResponseProbeCase supportedReplay =
+        runDeformableResponseProbeCase(true, 0.0);
+    const DeformableResponseProbeCase crossingReplay =
+        runDeformableResponseProbeCase(true, crossingClearance);
+    const bool deterministic =
+        free.ballAdvance == freeReplay.ballAdvance &&
+        free.clothAdvance == freeReplay.clothAdvance &&
+        free.centerShift == freeReplay.centerShift &&
+        supported.ballAdvance == supportedReplay.ballAdvance &&
+        supported.clothAdvance == supportedReplay.clothAdvance &&
+        crossing.ballAdvance == crossingReplay.ballAdvance &&
+        crossing.clothAdvance == crossingReplay.clothAdvance;
+    const bool pass = deterministic &&
+        free.contacts == 1u && supported.contacts == 1u &&
+        crossing.contacts == 1u &&
+        free.separationError < 1.0e-12 &&
+        supported.separationError < 1.0e-12 &&
+        crossing.separationError < 1.0e-12 &&
+        std::abs(free.ballAdvance - freeBallAdvance) < 1.0e-12 &&
+        std::abs(free.centerShift) < 1.0e-12 &&
+        std::abs(supported.ballAdvance - penetration) < 1.0e-12 &&
+        std::abs(supported.clothAdvance) < 1.0e-12 &&
+        supported.groundViolation < 1.0e-12 &&
+        std::abs(crossing.ballAdvance -
+            (penetration - crossingClearance)) < 1.0e-12 &&
+        std::abs(crossing.clothAdvance - crossingClearance) < 1.0e-12 &&
+        crossing.groundViolation < 1.0e-12;
+    std::cout << std::fixed << std::setprecision(12)
+              << "probe=coupled_deformable_contact_response"
+              << " node_mass_kg=" << kClothNodeMass
+              << " free_ball_advance=" << free.ballAdvance
+              << " free_cloth_advance=" << free.clothAdvance
+              << " free_center_shift=" << free.centerShift
+              << " supported_ball_advance=" << supported.ballAdvance
+              << " supported_cloth_advance=" << supported.clothAdvance
+              << " crossing_ball_advance=" << crossing.ballAdvance
+              << " crossing_cloth_advance=" << crossing.clothAdvance
+              << " maximum_separation_error=" << std::max({
+                    free.separationError,
+                    supported.separationError,
+                    crossing.separationError,
+                 })
+              << " maximum_ground_violation=" << std::max(
+                    supported.groundViolation,
+                    crossing.groundViolation
+                 )
               << " deterministic=" << std::boolalpha << deterministic
               << '\n'
               << "result=" << (pass ? "PASS" : "FAIL") << '\n';
@@ -1909,13 +2328,19 @@ double solveGround(
     std::vector<Particle>& particles,
     std::array<Ball, kFruitCount>& balls,
     const double timestep,
-    std::array<double, kFruitCount>& ballNormalImpulses
+    std::array<double, kFruitCount>& ballNormalImpulses,
+    double& maximumClothCorrection,
+    double& maximumBallCorrection
 ) {
     double maximumPenetration = 0.0;
     for (Particle& particle : particles) {
         const double penetration = kClothRadius - particle.position.z;
         if (penetration > 0.0) {
             maximumPenetration = std::max(maximumPenetration, penetration);
+            maximumClothCorrection = std::max(
+                maximumClothCorrection,
+                penetration
+            );
             particle.position.z = kClothRadius;
         }
     }
@@ -1924,6 +2349,10 @@ double solveGround(
         const double penetration = ball.radius - ball.position.z;
         if (penetration > 0.0) {
             maximumPenetration = std::max(maximumPenetration, penetration);
+            maximumBallCorrection = std::max(
+                maximumBallCorrection,
+                penetration
+            );
             ballNormalImpulses[index] +=
                 penetration / (ball.inverseMass * timestep);
             ball.position.z = ball.radius;
@@ -2611,87 +3040,191 @@ CollisionBounds edgeBounds(
     return bounds;
 }
 
-using CollisionGrid = std::unordered_map<
-    std::uint64_t,
-    std::vector<std::uint32_t>
->;
+struct CollisionSphere {
+    Vec3 center{};
+    double radius{};
+};
 
-void insertCollisionBounds(
-    CollisionGrid& grid,
-    const CollisionBounds& bounds,
-    const double inverseCell,
-    const std::uint32_t primitive
+CollisionSphere edgeCollisionSphere(
+    const ClothModel& cloth,
+    const Edge edge,
+    const bool swept,
+    const double expansion
 ) {
-    const int minimumX = static_cast<int>(
-        std::floor(bounds.minimum.x * inverseCell)
-    );
-    const int minimumY = static_cast<int>(
-        std::floor(bounds.minimum.y * inverseCell)
-    );
-    const int minimumZ = static_cast<int>(
-        std::floor(bounds.minimum.z * inverseCell)
-    );
-    const int maximumX = static_cast<int>(
-        std::floor(bounds.maximum.x * inverseCell)
-    );
-    const int maximumY = static_cast<int>(
-        std::floor(bounds.maximum.y * inverseCell)
-    );
-    const int maximumZ = static_cast<int>(
-        std::floor(bounds.maximum.z * inverseCell)
-    );
-    for (int z = minimumZ; z <= maximumZ; ++z) {
-        for (int y = minimumY; y <= maximumY; ++y) {
-            for (int x = minimumX; x <= maximumX; ++x) {
-                grid[spatialKey(x, y, z)].push_back(primitive);
-            }
-        }
+    std::array<Vec3, 4> points{{
+        cloth.particles[edge.first].position,
+        cloth.particles[edge.second].position,
+        cloth.particles[edge.first].previous,
+        cloth.particles[edge.second].previous,
+    }};
+    const std::size_t pointCount = swept ? 4u : 2u;
+    Vec3 center{};
+    for (std::size_t index = 0u; index < pointCount; ++index) {
+        center += points[index];
     }
+    center = center / static_cast<double>(pointCount);
+    double radius = 0.0;
+    for (std::size_t index = 0u; index < pointCount; ++index) {
+        radius = std::max(radius, length(points[index] - center));
+    }
+    return {center, radius + expansion};
+}
+
+bool overlapSpheres(
+    const CollisionSphere& first,
+    const CollisionSphere& second
+) {
+    const double radius = first.radius + second.radius;
+    return lengthSquared(first.center - second.center) <= radius * radius;
+}
+
+struct CollisionPrimitiveBounds {
+    CollisionBounds bounds;
+    std::uint32_t primitive{};
+};
+
+struct CollisionBVHNode {
+    CollisionBounds bounds;
+    std::uint32_t begin{};
+    std::uint32_t end{};
+    std::uint32_t left{std::numeric_limits<std::uint32_t>::max()};
+    std::uint32_t right{std::numeric_limits<std::uint32_t>::max()};
+};
+
+struct CollisionBVH {
+    std::vector<CollisionPrimitiveBounds> primitives;
+    std::vector<CollisionBVHNode> nodes;
+};
+
+void includeBounds(
+    CollisionBounds& destination,
+    const CollisionBounds& source
+) {
+    includePoint(destination, source.minimum);
+    includePoint(destination, source.maximum);
+}
+
+bool overlapBounds(
+    const CollisionBounds& first,
+    const CollisionBounds& second
+) {
+    return first.minimum.x <= second.maximum.x &&
+        first.maximum.x >= second.minimum.x &&
+        first.minimum.y <= second.maximum.y &&
+        first.maximum.y >= second.minimum.y &&
+        first.minimum.z <= second.maximum.z &&
+        first.maximum.z >= second.minimum.z;
+}
+
+double boundsCenterAxis(
+    const CollisionBounds& bounds,
+    const std::uint32_t axis
+) {
+    if (axis == 0u) {
+        return 0.5 * (bounds.minimum.x + bounds.maximum.x);
+    }
+    if (axis == 1u) {
+        return 0.5 * (bounds.minimum.y + bounds.maximum.y);
+    }
+    return 0.5 * (bounds.minimum.z + bounds.maximum.z);
+}
+
+std::uint32_t buildCollisionBVHNode(
+    CollisionBVH& tree,
+    const std::uint32_t begin,
+    const std::uint32_t end
+) {
+    constexpr std::uint32_t leafCapacity = 8u;
+    const std::uint32_t nodeIndex =
+        static_cast<std::uint32_t>(tree.nodes.size());
+    tree.nodes.push_back({});
+    CollisionBounds bounds;
+    CollisionBounds centerBounds;
+    for (std::uint32_t index = begin; index < end; ++index) {
+        includeBounds(bounds, tree.primitives[index].bounds);
+        const Vec3 center{
+            boundsCenterAxis(tree.primitives[index].bounds, 0u),
+            boundsCenterAxis(tree.primitives[index].bounds, 1u),
+            boundsCenterAxis(tree.primitives[index].bounds, 2u),
+        };
+        includePoint(centerBounds, center);
+    }
+    tree.nodes[nodeIndex].bounds = bounds;
+    tree.nodes[nodeIndex].begin = begin;
+    tree.nodes[nodeIndex].end = end;
+    if (end - begin <= leafCapacity) {
+        return nodeIndex;
+    }
+    const Vec3 extent = centerBounds.maximum - centerBounds.minimum;
+    const std::uint32_t axis = extent.y > extent.x
+        ? (extent.z > extent.y ? 2u : 1u)
+        : (extent.z > extent.x ? 2u : 0u);
+    std::stable_sort(
+        tree.primitives.begin() + begin,
+        tree.primitives.begin() + end,
+        [axis](
+            const CollisionPrimitiveBounds& first,
+            const CollisionPrimitiveBounds& second
+        ) {
+            const double firstCenter = boundsCenterAxis(first.bounds, axis);
+            const double secondCenter = boundsCenterAxis(second.bounds, axis);
+            return firstCenter < secondCenter ||
+                (firstCenter == secondCenter &&
+                 first.primitive < second.primitive);
+        }
+    );
+    const std::uint32_t middle = begin + (end - begin) / 2u;
+    tree.nodes[nodeIndex].left = buildCollisionBVHNode(tree, begin, middle);
+    tree.nodes[nodeIndex].right = buildCollisionBVHNode(tree, middle, end);
+    return nodeIndex;
+}
+
+template <typename BoundsFunction>
+CollisionBVH makeCollisionBVH(
+    const std::uint32_t primitiveCount,
+    BoundsFunction&& boundsFunction
+) {
+    CollisionBVH tree;
+    tree.primitives.reserve(primitiveCount);
+    tree.nodes.reserve(2u * primitiveCount);
+    for (std::uint32_t index = 0u; index < primitiveCount; ++index) {
+        tree.primitives.push_back({boundsFunction(index), index});
+    }
+    if (primitiveCount != 0u) {
+        buildCollisionBVHNode(tree, 0u, primitiveCount);
+    }
+    return tree;
 }
 
 void gatherCollisionCandidates(
-    const CollisionGrid& grid,
+    const CollisionBVH& tree,
     const CollisionBounds& bounds,
-    const double inverseCell,
-    std::vector<std::uint32_t>& stamps,
-    const std::uint32_t stamp,
     std::vector<std::uint32_t>& candidates
 ) {
     candidates.clear();
-    const int minimumX = static_cast<int>(
-        std::floor(bounds.minimum.x * inverseCell)
-    );
-    const int minimumY = static_cast<int>(
-        std::floor(bounds.minimum.y * inverseCell)
-    );
-    const int minimumZ = static_cast<int>(
-        std::floor(bounds.minimum.z * inverseCell)
-    );
-    const int maximumX = static_cast<int>(
-        std::floor(bounds.maximum.x * inverseCell)
-    );
-    const int maximumY = static_cast<int>(
-        std::floor(bounds.maximum.y * inverseCell)
-    );
-    const int maximumZ = static_cast<int>(
-        std::floor(bounds.maximum.z * inverseCell)
-    );
-    for (int z = minimumZ; z <= maximumZ; ++z) {
-        for (int y = minimumY; y <= maximumY; ++y) {
-            for (int x = minimumX; x <= maximumX; ++x) {
-                const auto found = grid.find(spatialKey(x, y, z));
-                if (found == grid.end()) {
-                    continue;
-                }
-                for (const std::uint32_t primitive : found->second) {
-                    if (stamps[primitive] == stamp) {
-                        continue;
-                    }
-                    stamps[primitive] = stamp;
-                    candidates.push_back(primitive);
+    if (tree.nodes.empty()) {
+        return;
+    }
+    std::vector<std::uint32_t> stack{0u};
+    while (!stack.empty()) {
+        const std::uint32_t nodeIndex = stack.back();
+        stack.pop_back();
+        const CollisionBVHNode& node = tree.nodes[nodeIndex];
+        if (!overlapBounds(node.bounds, bounds)) {
+            continue;
+        }
+        if (node.left == std::numeric_limits<std::uint32_t>::max()) {
+            for (std::uint32_t index = node.begin; index < node.end; ++index) {
+                const CollisionPrimitiveBounds& primitive =
+                    tree.primitives[index];
+                if (overlapBounds(primitive.bounds, bounds)) {
+                    candidates.push_back(primitive.primitive);
                 }
             }
+            continue;
         }
+        stack.push_back(node.right);
+        stack.push_back(node.left);
     }
 }
 
@@ -2703,39 +3236,64 @@ double solvePrimitiveSelfCollision(
     SelfContactImpulses* contactImpulses
 ) {
     constexpr double target = 2.0 * kClothRadius;
-    constexpr double cellSize = 5.0 * target;
-    constexpr double inverseCell = 1.0 / cellSize;
-    CollisionGrid triangleGrid;
-    triangleGrid.reserve(cloth.triangles.size() * 3u);
-    for (std::uint32_t index = 0; index < cloth.triangles.size(); ++index) {
-        insertCollisionBounds(
-            triangleGrid,
-            triangleBounds(cloth, cloth.triangles[index], swept, target),
-            inverseCell,
-            index
-        );
-    }
+    constexpr double broadphaseExpansion = 0.5 * target;
+    const CollisionBVH triangleTree = makeCollisionBVH(
+        static_cast<std::uint32_t>(cloth.triangles.size()),
+        [&](const std::uint32_t index) {
+            return triangleBounds(
+                cloth,
+                cloth.triangles[index],
+                swept,
+                broadphaseExpansion
+            );
+        }
+    );
     double maximum = 0.0;
     std::uint64_t vertexContacts = 0u;
-    std::vector<std::uint32_t> triangleStamps(cloth.triangles.size(), 0u);
     std::vector<std::uint32_t> candidates;
     candidates.reserve(64u);
     for (std::uint32_t vertex = 0; vertex < cloth.particles.size(); ++vertex) {
         gatherCollisionCandidates(
-            triangleGrid,
-            vertexBounds(cloth.particles[vertex], swept, target),
-            inverseCell,
-            triangleStamps,
-            vertex + 1u,
+            triangleTree,
+            vertexBounds(
+                cloth.particles[vertex],
+                swept,
+                broadphaseExpansion
+            ),
             candidates
         );
+        metrics.vertexTriangleCandidatePairs += candidates.size();
         for (const std::uint32_t triangleIndex : candidates) {
             const Triangle triangle = cloth.triangles[triangleIndex];
             if (vertexTriangleLocal(cloth, vertex, triangle)) {
                 continue;
             }
-            SelfVertexTriangleContactImpulse* contactImpulse = nullptr;
-            if (contactImpulses != nullptr) {
+            SelfVertexTriangleContactImpulse localImpulse{
+                .vertex = vertex,
+                .triangle = triangle,
+            };
+            SelfVertexTriangleContactImpulse* contactImpulse =
+                contactImpulses != nullptr ? &localImpulse : nullptr;
+            const double correction = swept
+                ? solveSweptVertexTriangle(
+                    cloth,
+                    vertex,
+                    triangle,
+                    vertexContacts,
+                    contactImpulse,
+                    timestep
+                )
+                : solveVertexTriangle(
+                    cloth,
+                    vertex,
+                    triangle,
+                    vertexContacts,
+                    contactImpulse,
+                    timestep
+                );
+            maximum = std::max(maximum, correction);
+            if (contactImpulses != nullptr &&
+                localImpulse.normalImpulse > 0.0) {
                 const std::uint64_t key =
                     (static_cast<std::uint64_t>(vertex) << 32u) |
                     triangleIndex;
@@ -2745,28 +3303,14 @@ double solvePrimitiveSelfCollision(
                     found->second.vertex = vertex;
                     found->second.triangle = triangle;
                 }
-                contactImpulse = &found->second;
+                found->second.weightedNormalOnVertex +=
+                    localImpulse.weightedNormalOnVertex;
+                for (std::size_t index = 0u; index < 3u; ++index) {
+                    found->second.weightedBarycentric[index] +=
+                        localImpulse.weightedBarycentric[index];
+                }
+                found->second.normalImpulse += localImpulse.normalImpulse;
             }
-            maximum = std::max(
-                maximum,
-                swept
-                    ? solveSweptVertexTriangle(
-                        cloth,
-                        vertex,
-                        triangle,
-                        vertexContacts,
-                        contactImpulse,
-                        timestep
-                    )
-                    : solveVertexTriangle(
-                        cloth,
-                        vertex,
-                        triangle,
-                        vertexContacts,
-                        contactImpulse,
-                        timestep
-                    )
-            );
         }
     }
     if (swept) {
@@ -2776,42 +3320,79 @@ double solvePrimitiveSelfCollision(
     }
     metrics.selfContacts += vertexContacts;
 
-    CollisionGrid edgeGrid;
-    edgeGrid.reserve(cloth.collisionEdges.size() * 3u);
-    for (std::uint32_t index = 0;
-         index < cloth.collisionEdges.size();
-         ++index) {
-        insertCollisionBounds(
-            edgeGrid,
-            edgeBounds(cloth, cloth.collisionEdges[index], swept, target),
-            inverseCell,
-            index
-        );
+    const CollisionBVH edgeTree = makeCollisionBVH(
+        static_cast<std::uint32_t>(cloth.collisionEdges.size()),
+        [&](const std::uint32_t index) {
+            return edgeBounds(
+                cloth,
+                cloth.collisionEdges[index],
+                swept,
+                broadphaseExpansion
+            );
+        }
+    );
+    std::vector<CollisionSphere> edgeSpheres;
+    edgeSpheres.reserve(cloth.collisionEdges.size());
+    for (const Edge edge : cloth.collisionEdges) {
+        edgeSpheres.push_back(edgeCollisionSphere(
+            cloth,
+            edge,
+            swept,
+            broadphaseExpansion
+        ));
     }
     std::uint64_t edgeContacts = 0u;
-    std::vector<std::uint32_t> edgeStamps(cloth.collisionEdges.size(), 0u);
     for (std::uint32_t firstIndex = 0;
          firstIndex < cloth.collisionEdges.size();
          ++firstIndex) {
         const Edge first = cloth.collisionEdges[firstIndex];
         gatherCollisionCandidates(
-            edgeGrid,
-            edgeBounds(cloth, first, swept, target),
-            inverseCell,
-            edgeStamps,
-            firstIndex + 1u,
+            edgeTree,
+            edgeBounds(cloth, first, swept, broadphaseExpansion),
             candidates
         );
+        metrics.edgeEdgeCandidatePairs += candidates.size();
         for (const std::uint32_t secondIndex : candidates) {
             if (secondIndex <= firstIndex) {
                 continue;
             }
+            if (!overlapSpheres(
+                edgeSpheres[firstIndex],
+                edgeSpheres[secondIndex]
+            )) {
+                continue;
+            }
+            ++metrics.edgeEdgeSphereCandidatePairs;
             const Edge second = cloth.collisionEdges[secondIndex];
             if (edgePairLocal(cloth, first, second)) {
                 continue;
             }
-            SelfEdgeEdgeContactImpulse* contactImpulse = nullptr;
-            if (contactImpulses != nullptr) {
+            SelfEdgeEdgeContactImpulse localImpulse{
+                .first = first,
+                .second = second,
+            };
+            SelfEdgeEdgeContactImpulse* contactImpulse =
+                contactImpulses != nullptr ? &localImpulse : nullptr;
+            const double correction = swept
+                ? solveSweptEdgeEdge(
+                    cloth,
+                    first,
+                    second,
+                    edgeContacts,
+                    contactImpulse,
+                    timestep
+                )
+                : solveEdgeEdge(
+                    cloth,
+                    first,
+                    second,
+                    edgeContacts,
+                    contactImpulse,
+                    timestep
+                );
+            maximum = std::max(maximum, correction);
+            if (contactImpulses != nullptr &&
+                localImpulse.normalImpulse > 0.0) {
                 const std::uint64_t key =
                     (static_cast<std::uint64_t>(firstIndex) << 32u) |
                     secondIndex;
@@ -2821,28 +3402,16 @@ double solvePrimitiveSelfCollision(
                     found->second.first = first;
                     found->second.second = second;
                 }
-                contactImpulse = &found->second;
+                found->second.weightedNormalOnFirst +=
+                    localImpulse.weightedNormalOnFirst;
+                for (std::size_t index = 0u; index < 2u; ++index) {
+                    found->second.weightedFirst[index] +=
+                        localImpulse.weightedFirst[index];
+                    found->second.weightedSecond[index] +=
+                        localImpulse.weightedSecond[index];
+                }
+                found->second.normalImpulse += localImpulse.normalImpulse;
             }
-            maximum = std::max(
-                maximum,
-                swept
-                    ? solveSweptEdgeEdge(
-                        cloth,
-                        first,
-                        second,
-                        edgeContacts,
-                        contactImpulse,
-                        timestep
-                    )
-                    : solveEdgeEdge(
-                        cloth,
-                        first,
-                        second,
-                        edgeContacts,
-                        contactImpulse,
-                        timestep
-                    )
-            );
         }
     }
     if (swept) {
@@ -3116,29 +3685,29 @@ bool runSelfFrictionProbe() {
 
 double measurePrimitiveSelfPenetration(const ClothModel& cloth) {
     constexpr double target = 2.0 * kClothRadius;
-    constexpr double cellSize = 5.0 * target;
-    constexpr double inverseCell = 1.0 / cellSize;
-    CollisionGrid triangleGrid;
-    triangleGrid.reserve(cloth.triangles.size() * 3u);
-    for (std::uint32_t index = 0; index < cloth.triangles.size(); ++index) {
-        insertCollisionBounds(
-            triangleGrid,
-            triangleBounds(cloth, cloth.triangles[index], false, target),
-            inverseCell,
-            index
-        );
-    }
+    constexpr double broadphaseExpansion = 0.5 * target;
+    const CollisionBVH triangleTree = makeCollisionBVH(
+        static_cast<std::uint32_t>(cloth.triangles.size()),
+        [&](const std::uint32_t index) {
+            return triangleBounds(
+                cloth,
+                cloth.triangles[index],
+                false,
+                broadphaseExpansion
+            );
+        }
+    );
     double maximumPenetration = 0.0;
-    std::vector<std::uint32_t> stamps(cloth.triangles.size(), 0u);
     std::vector<std::uint32_t> candidates;
     candidates.reserve(64u);
     for (std::uint32_t vertex = 0; vertex < cloth.particles.size(); ++vertex) {
         gatherCollisionCandidates(
-            triangleGrid,
-            vertexBounds(cloth.particles[vertex], false, target),
-            inverseCell,
-            stamps,
-            vertex + 1u,
+            triangleTree,
+            vertexBounds(
+                cloth.particles[vertex],
+                false,
+                broadphaseExpansion
+            ),
             candidates
         );
         for (const std::uint32_t triangleIndex : candidates) {
@@ -3160,33 +3729,44 @@ double measurePrimitiveSelfPenetration(const ClothModel& cloth) {
             );
         }
     }
-    CollisionGrid edgeGrid;
-    edgeGrid.reserve(cloth.collisionEdges.size() * 3u);
-    for (std::uint32_t index = 0;
-         index < cloth.collisionEdges.size();
-         ++index) {
-        insertCollisionBounds(
-            edgeGrid,
-            edgeBounds(cloth, cloth.collisionEdges[index], false, target),
-            inverseCell,
-            index
-        );
+    const CollisionBVH edgeTree = makeCollisionBVH(
+        static_cast<std::uint32_t>(cloth.collisionEdges.size()),
+        [&](const std::uint32_t index) {
+            return edgeBounds(
+                cloth,
+                cloth.collisionEdges[index],
+                false,
+                broadphaseExpansion
+            );
+        }
+    );
+    std::vector<CollisionSphere> edgeSpheres;
+    edgeSpheres.reserve(cloth.collisionEdges.size());
+    for (const Edge edge : cloth.collisionEdges) {
+        edgeSpheres.push_back(edgeCollisionSphere(
+            cloth,
+            edge,
+            false,
+            broadphaseExpansion
+        ));
     }
-    stamps.assign(cloth.collisionEdges.size(), 0u);
     for (std::uint32_t firstIndex = 0;
          firstIndex < cloth.collisionEdges.size();
          ++firstIndex) {
         const Edge first = cloth.collisionEdges[firstIndex];
         gatherCollisionCandidates(
-            edgeGrid,
-            edgeBounds(cloth, first, false, target),
-            inverseCell,
-            stamps,
-            firstIndex + 1u,
+            edgeTree,
+            edgeBounds(cloth, first, false, broadphaseExpansion),
             candidates
         );
         for (const std::uint32_t secondIndex : candidates) {
             if (secondIndex <= firstIndex) {
+                continue;
+            }
+            if (!overlapSpheres(
+                edgeSpheres[firstIndex],
+                edgeSpheres[secondIndex]
+            )) {
                 continue;
             }
             const Edge second = cloth.collisionEdges[secondIndex];
@@ -3392,6 +3972,8 @@ SimulationResult simulate(
     capture(0u);
 
     for (std::uint32_t step = 0; step < steps; ++step) {
+        double publishedPrimitiveResidual =
+            std::numeric_limits<double>::infinity();
         for (std::uint32_t substep = 0; substep < substeps; ++substep) {
             std::array<BallPairContactImpulse, kBallPairCount> pairContacts{};
             std::vector<BallTriangleContactImpulse> triangleContacts(
@@ -3449,12 +4031,17 @@ SimulationResult simulate(
 
             result.metrics.maximumSweptSelfAdvance = std::max(
                 result.metrics.maximumSweptSelfAdvance,
-                solvePrimitiveSelfCollision(
-                    result.cloth,
-                    true,
-                    result.metrics,
-                    timestep,
-                    &selfContactImpulses
+                accumulateSeconds(
+                    result.metrics.primitiveSelfSolveSeconds,
+                    [&] {
+                        return solvePrimitiveSelfCollision(
+                            result.cloth,
+                            true,
+                            result.metrics,
+                            timestep,
+                            &selfContactImpulses
+                        );
+                    }
                 )
             );
 
@@ -3471,6 +4058,7 @@ SimulationResult simulate(
                             result.cloth.triangles[triangleIndex],
                             result.balls[ballIndex],
                             timestep,
+                            scenario != Scenario::spin,
                             triangleContacts[
                                 ballIndex * result.cloth.triangles.size() +
                                 triangleIndex
@@ -3487,7 +4075,12 @@ SimulationResult simulate(
                 }
                 if (iteration % 2u == 0u) {
                     for (BendConstraint& constraint : result.cloth.bends) {
-                        solveBend(result.cloth.particles, constraint, timestep);
+                        solveBend(
+                            result.cloth.particles,
+                            constraint,
+                            timestep,
+                            scenario != Scenario::spin
+                        );
                     }
                 }
                 for (GripConstraint& constraint : result.cloth.grips) {
@@ -3511,71 +4104,95 @@ SimulationResult simulate(
                         );
                     }
                 }
-                for (std::size_t ballIndex = 0;
-                     ballIndex < result.balls.size();
-                     ++ballIndex) {
-                    Ball& ball = result.balls[ballIndex];
-                    for (std::size_t triangleIndex = 0;
-                         triangleIndex < result.cloth.triangles.size();
-                         ++triangleIndex) {
-                        const Triangle triangle =
-                            result.cloth.triangles[triangleIndex];
-                        const double penetration = solveBallTriangle(
-                            result.cloth.particles,
-                            triangle,
-                            ball,
+                accumulateSeconds(
+                    result.metrics.ballClothSolveSeconds,
+                    [&] {
+                        solveBallClothContactSweep(
+                            result.cloth,
+                            result.balls,
                             timestep,
-                            triangleContacts[
-                                ballIndex * result.cloth.triangles.size() +
-                                triangleIndex
-                            ],
-                            result.metrics.ballTriangleContacts
+                            scenario != Scenario::spin,
+                            triangleContacts,
+                            result.metrics
                         );
-                        result.metrics.maximumBallPenetration = std::max(
-                            result.metrics.maximumBallPenetration,
-                            penetration
-                        );
-                        result.metrics.maximumBallPenetrationByFruit[ballIndex] =
-                            std::max(
-                                result.metrics.maximumBallPenetrationByFruit[ballIndex],
-                                penetration
-                            );
+                        return 0;
                     }
-                }
+                );
                 result.metrics.maximumSelfPenetration = std::max(
                     result.metrics.maximumSelfPenetration,
-                    solveSelfCollision(
-                        result.cloth,
-                        result.metrics.selfContacts
+                    accumulateSeconds(
+                        result.metrics.pointSelfSolveSeconds,
+                        [&] {
+                            return solveSelfCollision(
+                                result.cloth,
+                                result.metrics.selfContacts
+                            );
+                        }
                     )
                 );
-                if (iteration + 1u == iterations) {
-                    const bool endpointCertificate =
-                        (step == 0u && substep == 0u) ||
-                        (step + 1u == steps && substep + 1u == substeps);
-                    const std::uint32_t couplingCycles =
-                        endpointCertificate ? 3u : 2u;
-                    for (std::uint32_t pass = 0;
-                         pass < couplingCycles;
-                         ++pass) {
-                        result.metrics.maximumSelfPenetration = std::max(
-                            result.metrics.maximumSelfPenetration,
-                            solvePrimitiveSelfCollision(
-                                result.cloth,
-                                false,
-                                result.metrics,
-                                timestep,
-                                &selfContactImpulses
-                            )
-                        );
-                        result.metrics.maximumStrainLimitCorrection = std::max(
-                            result.metrics.maximumStrainLimitCorrection,
-                            solveStrainLimits(
-                                result.cloth.particles,
-                                result.cloth.distances
-                            )
+                if (scenario != Scenario::spin) {
+                    result.metrics.maximumGroundPenetration = std::max(
+                        result.metrics.maximumGroundPenetration,
+                        solveGround(
+                            result.cloth.particles,
+                            result.balls,
+                            timestep,
+                            groundNormalImpulses,
+                            result.metrics.maximumClothGroundCorrection,
+                            result.metrics.maximumBallGroundCorrection
+                        )
+                    );
+                }
+            }
+            constexpr std::uint32_t maximumContactReconciliationPasses = 8u;
+            std::uint32_t reconciliationPasses = 0u;
+            for (std::uint32_t pass = 0;
+                 pass < maximumContactReconciliationPasses;
+                 ++pass) {
+                std::size_t pairIndex = 0u;
+                for (std::size_t first = 0;
+                     first < result.balls.size();
+                     ++first) {
+                    for (std::size_t second = first + 1u;
+                         second < result.balls.size();
+                         ++second, ++pairIndex) {
+                        solveBallPair(
+                            result.balls[first],
+                            result.balls[second],
+                            timestep,
+                            pairContacts[pairIndex]
                         );
                     }
+                }
+                accumulateSeconds(
+                    result.metrics.ballClothSolveSeconds,
+                    [&] {
+                        solveBallClothContactSweep(
+                            result.cloth,
+                            result.balls,
+                            timestep,
+                            scenario != Scenario::spin,
+                            triangleContacts,
+                            result.metrics
+                        );
+                        return 0;
+                    }
+                );
+                for (std::uint32_t strainSweep = 0u;
+                     strainSweep < 3u;
+                     ++strainSweep) {
+                    result.metrics.maximumStrainLimitCorrection = std::max(
+                        result.metrics.maximumStrainLimitCorrection,
+                        accumulateSeconds(
+                            result.metrics.strainLimitSolveSeconds,
+                            [&] {
+                                return solveStrainLimits(
+                                    result.cloth.particles,
+                                    result.cloth.distances
+                                );
+                            }
+                        )
+                    );
                 }
                 if (scenario != Scenario::spin) {
                     result.metrics.maximumGroundPenetration = std::max(
@@ -3584,10 +4201,161 @@ SimulationResult simulate(
                             result.cloth.particles,
                             result.balls,
                             timestep,
-                            groundNormalImpulses
+                            groundNormalImpulses,
+                            result.metrics.maximumClothGroundCorrection,
+                            result.metrics.maximumBallGroundCorrection
                         )
                     );
                 }
+                reconciliationPasses = pass + 1u;
+                const double ballResidual = measureBallClothPenetration(
+                    result.cloth.particles,
+                    result.cloth.triangles,
+                    result.balls
+                );
+                const double groundResidual = scenario == Scenario::spin
+                    ? 0.0
+                    : measureGroundPenetration(
+                        result.cloth.particles,
+                        result.balls
+                    );
+                if (ballResidual < 1.0e-6 &&
+                    groundResidual < 1.0e-9 &&
+                    measureStrainLimitViolation(result.cloth) < 1.0e-6) {
+                    break;
+                }
+            }
+            result.metrics.maximumContactReconciliationPasses = std::max(
+                result.metrics.maximumContactReconciliationPasses,
+                reconciliationPasses
+            );
+            const auto solveEndpointPrimitive = [&] {
+                result.metrics.maximumSelfPenetration = std::max(
+                    result.metrics.maximumSelfPenetration,
+                    accumulateSeconds(
+                        result.metrics.primitiveSelfSolveSeconds,
+                        [&] {
+                            return solvePrimitiveSelfCollision(
+                                result.cloth,
+                                false,
+                                result.metrics,
+                                timestep,
+                                &selfContactImpulses
+                            );
+                        }
+                    )
+                );
+                for (std::uint32_t strainSweep = 0u;
+                     strainSweep < 3u;
+                     ++strainSweep) {
+                    result.metrics.maximumStrainLimitCorrection = std::max(
+                        result.metrics.maximumStrainLimitCorrection,
+                        accumulateSeconds(
+                            result.metrics.strainLimitSolveSeconds,
+                            [&] {
+                                return solveStrainLimits(
+                                    result.cloth.particles,
+                                    result.cloth.distances
+                                );
+                            }
+                        )
+                    );
+                }
+            };
+            const auto solveFinalContacts = [&] {
+                constexpr std::uint32_t finalContactPasses = 2u;
+                for (std::uint32_t pass = 0u;
+                     pass < finalContactPasses;
+                     ++pass) {
+                    std::size_t pairIndex = 0u;
+                    for (std::size_t first = 0u;
+                         first < result.balls.size();
+                         ++first) {
+                        for (std::size_t second = first + 1u;
+                             second < result.balls.size();
+                             ++second, ++pairIndex) {
+                            solveBallPair(
+                                result.balls[first],
+                                result.balls[second],
+                                timestep,
+                                pairContacts[pairIndex]
+                            );
+                        }
+                    }
+                    accumulateSeconds(
+                        result.metrics.ballClothSolveSeconds,
+                        [&] {
+                            solveBallClothContactSweep(
+                                result.cloth,
+                                result.balls,
+                                timestep,
+                                scenario != Scenario::spin,
+                                triangleContacts,
+                                result.metrics
+                            );
+                            return 0;
+                        }
+                    );
+                    if (scenario != Scenario::spin) {
+                        result.metrics.maximumGroundPenetration = std::max(
+                            result.metrics.maximumGroundPenetration,
+                            solveGround(
+                                result.cloth.particles,
+                                result.balls,
+                                timestep,
+                                groundNormalImpulses,
+                                result.metrics.maximumClothGroundCorrection,
+                                result.metrics.maximumBallGroundCorrection
+                            )
+                        );
+                    }
+                }
+            };
+            solveEndpointPrimitive();
+            solveFinalContacts();
+            if (substep + 1u == substeps) {
+                constexpr std::uint32_t maximumCertificatePasses = 6u;
+                std::uint32_t certificatePasses = 0u;
+                for (std::uint32_t pass = 0u;
+                     pass < maximumCertificatePasses;
+                     ++pass) {
+                    solveEndpointPrimitive();
+                    solveFinalContacts();
+                    certificatePasses = pass + 1u;
+                    publishedPrimitiveResidual = accumulateSeconds(
+                        result.metrics.primitiveCertificateSeconds,
+                        [&] {
+                            return measurePrimitiveSelfPenetration(
+                                result.cloth
+                            );
+                        }
+                    );
+                    const double publishedBallResidual =
+                        measureBallClothPenetration(
+                            result.cloth.particles,
+                            result.cloth.triangles,
+                            result.balls
+                        );
+                    const double publishedGroundResidual =
+                        scenario == Scenario::spin
+                            ? 0.0
+                            : measureGroundPenetration(
+                                result.cloth.particles,
+                                result.balls
+                            );
+                    const double publishedStrainResidual =
+                        measureStrainLimitViolation(result.cloth);
+                    if (publishedPrimitiveResidual < 1.0e-6 &&
+                        publishedBallResidual < 1.0e-6 &&
+                        publishedGroundResidual < 1.0e-9 &&
+                        publishedStrainResidual < 1.0e-6) {
+                        break;
+                    }
+                }
+                result.metrics.maximumPrimitiveCertificatePasses = std::max(
+                    result.metrics.maximumPrimitiveCertificatePasses,
+                    certificatePasses
+                );
             }
             for (Particle& particle : result.cloth.particles) {
                 if (particle.inverseMass == 0.0) {
@@ -3617,7 +4385,8 @@ SimulationResult simulate(
                 result.cloth.triangles,
                 result.balls,
                 triangleContacts,
-                result.metrics
+                result.metrics,
+                scenario != Scenario::spin
             );
             applyBallPairFriction(result.balls, pairContacts, result.metrics);
             applyBallGroundFriction(
@@ -3648,6 +4417,29 @@ SimulationResult simulate(
                 gripImpulse
             );
         }
+        result.metrics.maximumPublishedPrimitiveSelfPenetration = std::max(
+            result.metrics.maximumPublishedPrimitiveSelfPenetration,
+            publishedPrimitiveResidual
+        );
+        result.metrics.maximumPublishedBallPenetration = std::max(
+            result.metrics.maximumPublishedBallPenetration,
+            measureBallClothPenetration(
+                result.cloth.particles,
+                result.cloth.triangles,
+                result.balls
+            )
+        );
+        result.metrics.maximumPublishedGroundPenetration = std::max(
+            result.metrics.maximumPublishedGroundPenetration,
+            scenario == Scenario::spin ? 0.0 : measureGroundPenetration(
+                result.cloth.particles,
+                result.balls
+            )
+        );
+        result.metrics.maximumPublishedStrainLimitViolation = std::max(
+            result.metrics.maximumPublishedStrainLimitViolation,
+            measureStrainLimitViolation(result.cloth)
+        );
         updateMetrics(result.cloth, result.balls, result.metrics);
         if (scenario != Scenario::grounded) {
             for (std::size_t ballIndex = 0;
@@ -3684,8 +4476,10 @@ SimulationResult simulate(
             result.metrics.releasedMask |= 1u << ballIndex;
         }
     }
-    result.metrics.finalPrimitiveSelfPenetration =
-        measurePrimitiveSelfPenetration(result.cloth);
+    result.metrics.finalPrimitiveSelfPenetration = accumulateSeconds(
+        result.metrics.primitiveCertificateSeconds,
+        [&] { return measurePrimitiveSelfPenetration(result.cloth); }
+    );
     result.metrics.finalStrainLimitViolation =
         measureStrainLimitViolation(result.cloth);
     return result;
@@ -3792,6 +4586,10 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
         result.metrics.maximumBottomCompression < 0.60 &&
         result.metrics.maximumShearStrain < 0.40 &&
         result.metrics.maximumBallPenetration < 0.010 &&
+        result.metrics.maximumPublishedBallPenetration < 2.0e-6 &&
+        result.metrics.maximumPublishedGroundPenetration < 2.0e-6 &&
+        result.metrics.maximumPublishedPrimitiveSelfPenetration < 2.0e-6 &&
+        result.metrics.maximumPublishedStrainLimitViolation < 2.0e-6 &&
         result.metrics.maximumSelfPenetration < 2.0 * kClothRadius &&
         result.metrics.finalPrimitiveSelfPenetration < 2.0e-6 &&
         result.metrics.finalStrainLimitViolation < 2.0e-6 &&
@@ -3805,8 +4603,8 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
 
 int main(int argc, char** argv) try {
     std::uint32_t steps = 120u;
-    std::uint32_t substeps = 4u;
-    std::uint32_t iterations = 12u;
+    std::uint32_t substeps = 12u;
+    std::uint32_t iterations = 24u;
     double timestep = 1.0 / 120.0;
     std::string dumpPath;
     std::string framePrefix;
@@ -3816,6 +4614,7 @@ int main(int argc, char** argv) try {
     bool selfCCDProbe = false;
     bool strainProbe = false;
     bool selfFrictionProbe = false;
+    bool deformableResponseProbe = false;
     Scenario scenario = Scenario::grounded;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string value = argv[argument];
@@ -3849,6 +4648,8 @@ int main(int argc, char** argv) try {
             strainProbe = true;
         } else if (value == "--self-friction-probe") {
             selfFrictionProbe = true;
+        } else if (value == "--deformable-response-probe") {
+            deformableResponseProbe = true;
         } else if (value == "--scenario" && argument + 1 < argc) {
             const std::string name = argv[++argument];
             if (name == "grounded") {
@@ -3867,7 +4668,8 @@ int main(int argc, char** argv) try {
                          "[--dump-obj PATH] [--dump-frames PREFIX] "
                          "[--dump-every N] [--rolling-probe] [--ccd-probe] "
                          "[--self-ccd-probe] [--strain-probe] "
-                         "[--self-friction-probe]\n";
+                         "[--self-friction-probe] "
+                         "[--deformable-response-probe]\n";
             return 0;
         } else {
             throw std::invalid_argument("unknown argument: " + value);
@@ -3887,6 +4689,9 @@ int main(int argc, char** argv) try {
     }
     if (selfFrictionProbe) {
         return runSelfFrictionProbe() ? 0 : 1;
+    }
+    if (deformableResponseProbe) {
+        return runDeformableResponseProbe() ? 0 : 1;
     }
     if (steps == 0u || substeps == 0u || iterations == 0u ||
         !std::isfinite(timestep) || timestep <= 0.0) {
@@ -3987,14 +4792,21 @@ int main(int argc, char** argv) try {
               << " max_bottom_extension=" << metrics.maximumBottomExtension
               << " max_bottom_compression=" << metrics.maximumBottomCompression
               << '\n';
-    std::cout << "max_ball_penetration=" << metrics.maximumBallPenetration
+    std::cout << "max_ball_contact_correction="
+              << metrics.maximumBallPenetration
+              << " max_published_ball_penetration="
+              << metrics.maximumPublishedBallPenetration
+              << " max_published_primitive_self_penetration="
+              << metrics.maximumPublishedPrimitiveSelfPenetration
+              << " max_published_strain_limit_violation="
+              << metrics.maximumPublishedStrainLimitViolation
               << " max_self_penetration=" << metrics.maximumSelfPenetration
               << " ball_triangle_contacts=" << metrics.ballTriangleContacts
               << " self_contacts=" << metrics.selfContacts
               << " escaped_mask=" << metrics.escapedMask
               << " spilled_mask=" << metrics.spilledMask
               << " released_mask=" << metrics.releasedMask << '\n';
-    std::cout << "max_ball_penetration_by_fruit=";
+    std::cout << "max_ball_contact_correction_by_fruit=";
     for (std::size_t index = 0;
          index < metrics.maximumBallPenetrationByFruit.size();
          ++index) {
@@ -4004,7 +4816,18 @@ int main(int argc, char** argv) try {
         std::cout << metrics.maximumBallPenetrationByFruit[index];
     }
     std::cout << '\n';
-    std::cout << "max_ground_penetration=" << metrics.maximumGroundPenetration
+    std::cout << "max_ground_contact_correction="
+              << metrics.maximumGroundPenetration
+              << " max_cloth_ground_correction="
+              << metrics.maximumClothGroundCorrection
+              << " max_ball_ground_correction="
+              << metrics.maximumBallGroundCorrection
+              << " max_published_ground_penetration="
+              << metrics.maximumPublishedGroundPenetration
+              << " max_contact_reconciliation_passes="
+              << metrics.maximumContactReconciliationPasses
+              << " max_primitive_certificate_passes="
+              << metrics.maximumPrimitiveCertificatePasses
               << " max_swept_ground_advance="
               << metrics.maximumSweptGroundAdvance
               << " max_swept_ball_advance="
@@ -4041,10 +4864,25 @@ int main(int argc, char** argv) try {
               << metrics.sweptVertexTriangleSelfContacts
               << " swept_edge_edge_self_contacts="
               << metrics.sweptEdgeEdgeSelfContacts
+              << " vertex_triangle_candidate_pairs="
+              << metrics.vertexTriangleCandidatePairs
+              << " edge_edge_candidate_pairs="
+              << metrics.edgeEdgeCandidatePairs
+              << " edge_edge_sphere_candidate_pairs="
+              << metrics.edgeEdgeSphereCandidatePairs
               << " cloth_self_friction_contacts="
               << metrics.clothSelfFrictionContacts
               << " deterministic=" << std::boolalpha << deterministic
               << " state_hash=0x" << std::hex << firstHash << std::dec << '\n';
+    std::cout << "ball_cloth_solve_seconds=" << metrics.ballClothSolveSeconds
+              << " primitive_self_solve_seconds="
+              << metrics.primitiveSelfSolveSeconds
+              << " point_self_solve_seconds="
+              << metrics.pointSelfSolveSeconds
+              << " strain_limit_solve_seconds="
+              << metrics.strainLimitSolveSeconds
+              << " primitive_certificate_seconds="
+              << metrics.primitiveCertificateSeconds << '\n';
     const bool pass = acceptable(first, deterministic);
     std::cout << "result=" << (pass ? "PASS" : "FAIL") << '\n';
     return pass ? 0 : 1;

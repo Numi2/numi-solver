@@ -76,6 +76,7 @@ private let levels = 28
 private let bottomGrid = 13
 private let bottomInterior = bottomGrid - 2
 private let expectedVertices = around * levels + bottomInterior * bottomInterior
+private let clothRadiusMeters = 0.004
 
 private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit], Grip?) {
     let source = try String(contentsOfFile: path, encoding: .utf8)
@@ -426,9 +427,20 @@ private func render(
     for primitive in primitives {
         switch primitive.kind {
         case let .yarn(first, second, rim):
-            let bodyWidth: CGFloat = rim ? 3.8 : 2.3
+            let physicalDiameter = CGFloat(
+                2.0 * clothRadiusMeters * scale
+            )
+            let bodyWidth = max(
+                2.4,
+                physicalDiameter * (rim ? 1.35 : 1.0)
+            )
+            let deltaX = second.x - first.x
+            let deltaY = second.y - first.y
+            let segmentLength = max(0.001, hypot(deltaX, deltaY))
+            let normalX = -deltaY / segmentLength
+            let normalY = deltaX / segmentLength
             context.setStrokeColor(yarnOutline)
-            context.setLineWidth(bodyWidth + 1.0)
+            context.setLineWidth(bodyWidth + max(0.9, bodyWidth * 0.22))
             context.move(to: first)
             context.addLine(to: second)
             context.strokePath()
@@ -437,11 +449,48 @@ private func render(
             context.move(to: first)
             context.addLine(to: second)
             context.strokePath()
-            context.setStrokeColor(yarnHighlight)
-            context.setLineWidth(max(0.75, bodyWidth * 0.25))
-            context.move(to: CGPoint(x: first.x, y: first.y + 0.45))
-            context.addLine(to: CGPoint(x: second.x, y: second.y + 0.45))
+            let shadowOffset = bodyWidth * 0.17
+            context.setStrokeColor(color(133, 108, 76, 0.32))
+            context.setLineWidth(max(0.55, bodyWidth * 0.18))
+            context.move(to: CGPoint(
+                x: first.x - normalX * shadowOffset,
+                y: first.y - normalY * shadowOffset
+            ))
+            context.addLine(to: CGPoint(
+                x: second.x - normalX * shadowOffset,
+                y: second.y - normalY * shadowOffset
+            ))
             context.strokePath()
+            context.setStrokeColor(yarnHighlight)
+            context.setLineWidth(max(0.7, bodyWidth * 0.18))
+            context.move(to: CGPoint(
+                x: first.x + normalX * shadowOffset,
+                y: first.y + normalY * shadowOffset
+            ))
+            context.addLine(to: CGPoint(
+                x: second.x + normalX * shadowOffset,
+                y: second.y + normalY * shadowOffset
+            ))
+            context.strokePath()
+            context.setStrokeColor(color(255, 252, 234, 0.82))
+            context.setLineWidth(max(0.65, bodyWidth * 0.14))
+            context.setLineDash(
+                phase: rim ? 1.1 : 0.0,
+                lengths: [
+                    max(1.4, bodyWidth * 0.58),
+                    max(1.2, bodyWidth * 0.46),
+                ]
+            )
+            context.move(to: CGPoint(
+                x: first.x + normalX * bodyWidth * 0.04,
+                y: first.y + normalY * bodyWidth * 0.04
+            ))
+            context.addLine(to: CGPoint(
+                x: second.x + normalX * bodyWidth * 0.04,
+                y: second.y + normalY * bodyWidth * 0.04
+            ))
+            context.strokePath()
+            context.setLineDash(phase: 0.0, lengths: [])
         case let .fruit(center, fruit):
             let radius = CGFloat(fruit.radius * scale)
             let palette = fruitColors[fruit.appearance % fruitColors.count]
@@ -504,6 +553,28 @@ private func render(
 
     if let grip {
         let center = project(grip.center).point
+        context.saveGState()
+        context.setLineCap(.round)
+        context.setStrokeColor(color(242, 145, 38, 0.72))
+        context.setLineWidth(1.8)
+        for offset in -2...2 {
+            let ring = (around + offset) % around
+            let seamPoint = project(
+                vertices[(levels - 1) * around + ring]
+            ).point
+            context.move(to: center)
+            context.addLine(to: seamPoint)
+            context.strokePath()
+            let nodeRadius: CGFloat = offset == 0 ? 3.2 : 2.5
+            context.setFillColor(color(255, 181, 64, 0.94))
+            context.fillEllipse(in: CGRect(
+                x: seamPoint.x - nodeRadius,
+                y: seamPoint.y - nodeRadius,
+                width: 2.0 * nodeRadius,
+                height: 2.0 * nodeRadius
+            ))
+        }
+        context.restoreGState()
         let marker = CGRect(x: center.x - 9.0, y: center.y - 9.0,
                             width: 18.0, height: 18.0)
         context.setFillColor(color(47, 45, 43, 0.92))

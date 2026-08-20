@@ -15,20 +15,21 @@ application scene.
 
 This looping GIF contains 25 fixed-camera frames from one 1.2-second solver
 trajectory. The orange ring is a virtual handle attached through finite
-compliance to five neighboring rim nodes: all 1,465 cloth particles and all
-twelve fruits remain dynamic. The bag starts resting on the plane, rises under
-the grip patch, tips, and releases fruits 6 through 11 through the mouth. Four
-have landed by the final frame while two are still falling. The small body-fixed marks are driven by each fruit's
+compliance to five neighboring nodes on the top opening seam. Orange connector
+lines expose that five-node pinch patch and its physical lag: all 1,465 cloth
+particles and all twelve fruits remain dynamic. The bag starts resting on the
+plane, rises under the seam grip, tips, and releases fruits 7, 8, 9, and 11
+through the mouth. The small body-fixed marks are driven by each fruit's
 exported solver quaternion, so their motion exposes physical rolling and spin.
 
-The replay passed every mechanics gate with `released_mask=4032`,
-`escaped_mask=0`, `0.285000000` maximum warp extension, `0.077170435`
-maximum shear strain, `0.006224258` maximum woven-bottom extension,
-`0.001741121 m` maximum post-contact plane penetration, `2.854247330 N` peak
-grip force, 2,093 swept sphere/triangle impacts, 4,037 cloth/cloth friction
-contacts, zero final primitive overlap, zero final strain-limit violation, a
-friction-cone ratio never above `1.0`, and bit-identical state hash
-`0x5a594c9ceb5c2274`. The GIF is rasterized from those
+The replay passed every mechanics gate with `released_mask=2944`,
+`escaped_mask=0`, `0.285000000` maximum warp extension, `0.072317910`
+maximum shear strain, `0.055308260` maximum woven-bottom extension,
+`0.001295702 m` maximum cloth/plane correction, `51.421811870 N` peak
+grip force, 8,699 swept sphere/triangle impacts, 12,952 cloth/cloth friction
+contacts, zero final primitive overlap, zero final strain-limit violation,
+maximum published primitive overlap `0.386 um`, a friction-cone ratio never above
+`1.0`, and bit-identical state hash `0xd6fd63117c5e32ab`. The GIF is rasterized from those
 exported states; it is
 CPU FP64 cloth evidence, not Metal-performance or Temporal Cone cloth-contact
 evidence.
@@ -45,11 +46,12 @@ AppKit rasterizer adds cotton-fiber strokes between control points but does not
 move the exported state.
 
 The qualified replay passed with no escaped or spilled fruit, no collapsed
-triangles, `0.004879649 m` maximum fruit/cloth penetration,
+triangles, `0.004879633 m` maximum fruit/cloth contact correction,
 `0.002980520 m` maximum vertex self-penetration, and bit-identical replay hash
-`0x79fbecc8ebe29975`. Fruit reached `11.827459398 rad/s` through resolved
+`0xb1f688566313c172`. Fruit reached `11.978276920 rad/s` through resolved
 tangential contact while every impulse remained inside its Coulomb cone. The
-cloth also resolved 3,360 self-friction contacts. This
+cloth also resolved 10,291 self-friction contacts. Completed-frame fruit,
+ground, primitive-self, and strain residuals were all zero. This
 is CPU FP64 cloth evidence, not Metal-performance or
 Temporal Cone cloth-contact evidence.
 
@@ -67,25 +69,25 @@ cloth nodes and all twelve fruits remain dynamic. These five fixed-camera frames
 |:--:|:--:|
 | ![Open cloth bag releasing fruit while spinning](docs/assets/cloth-spin-45.png) | ![Vertically lagging cloth bag after two fruits are released](docs/assets/cloth-spin-60.png) |
 
-The spin replay passed with `0.262522008` maximum warp extension,
-`0.090439125` maximum shear strain, zero numerical escapes, `3.707021661 N`
+The spin replay passed with `0.264638143` maximum warp extension,
+`0.085221605` maximum shear strain, zero numerical escapes, `60.964692696 N`
 peak attachment force, and bit-identical
-hash `0xef42007af4b70634`. It resolved 1,680 cloth/cloth friction contacts;
-`released_mask=1536` records fruits 9 and 10
+hash `0x30112d334f22a277`. It resolved 4,725 cloth/cloth friction contacts;
+`released_mask=3072` records fruits 10 and 11
 leaving the open mouth; the images and the outcome metric agree.
 
 Reproduce the README image from the executable state:
 
 ```sh
 ./build/numi-solver-cloth-bag \
-  --scenario grounded --steps 120 --substeps 4 --iterations 12 \
+  --scenario grounded --steps 120 --substeps 12 --iterations 24 \
   --dump-obj build/cloth-produce-bag-1s.obj
 
 swift tools/render_cloth_obj.swift \
   build/cloth-produce-bag-1s.obj docs/assets/cloth-produce-bag.png
 
 ./build/numi-solver-cloth-bag \
-  --scenario spin --steps 60 --substeps 4 --iterations 12 \
+  --scenario spin --steps 60 --substeps 12 --iterations 24 \
   --dump-frames build/cloth-spin
 
 for step in 0 15 30 45 60; do
@@ -94,7 +96,7 @@ for step in 0 15 30 45 60; do
 done
 
 ./build/numi-solver-cloth-bag \
-  --scenario pickup --steps 144 --substeps 4 --iterations 12 \
+  --scenario pickup --steps 144 --substeps 12 --iterations 24 \
   --dump-frames build/cloth-pickup --dump-every 6
 
 mkdir -p build/cloth-pickup-png
@@ -137,9 +139,14 @@ Requirements:
 - Xcode/Command Line Tools with Metal 4 support
 
 ```sh
-cmake -S . -B build -G Ninja
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
+
+Release is also selected automatically when a single-configuration generator
+is used without an explicit build type. The dense FP64 cloth oracle is much
+slower without compiler optimization; timing from an unoptimized build is not
+qualification evidence.
 
 The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
 `-fno-fast-math`, plus ten native harnesses:
