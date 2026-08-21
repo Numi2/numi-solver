@@ -211,8 +211,10 @@ The local harness accepts `--cases N --replays N --iterations N` and
 `--islands N` and `--replays N`. The bag accepts `--environments N`,
 `--steps N`, `--replays N`, `--timestep DT`, optional `--refinement`,
 `--preset baseline|stiff-braid|low-cfm|high-friction`, and optional
-`--dump-obj PATH`. Together they
-check separating, impact, sticking, sliding,
+`--dump-obj PATH`. `--require-speedup` optionally makes the within-run
+streamed-over-dense timing comparison an exit gate; normal physics
+qualification reports timing without conflating it with correctness. Together
+they check separating, impact, sticking, sliding,
 anisotropic friction, near-rank-deficient response, capped impulse, polar
 boundary, exact one-axis friction, extreme scale, sparse topology, full block
 capacity,

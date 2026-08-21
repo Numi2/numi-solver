@@ -1536,6 +1536,7 @@ int run(const int argc, const char* const* argv) {
     float timestep = 1.0f / 480.0f;
     BagPreset preset = BagPreset::baseline;
     bool refinement = false;
+    bool requireSpeedup = false;
     std::string metallibPath = NUMI_TEMPORAL_CONE_METALLIB;
     std::string objPath;
     for (int argument = 1; argument < argc; ++argument) {
@@ -1556,6 +1557,8 @@ int run(const int argc, const char* const* argv) {
             preset = parsePreset(argv[++argument]);
         } else if (value == "--refinement") {
             refinement = true;
+        } else if (value == "--require-speedup") {
+            requireSpeedup = true;
         } else if (value == "--metallib" && argument + 1 < argc) {
             metallibPath = argv[++argument];
         } else if (value == "--dump-obj" && argument + 1 < argc) {
@@ -1566,6 +1569,7 @@ int run(const int argc, const char* const* argv) {
                    "[--environments N] [--steps N] [--replays N] "
                    "[--timestep DT] [--preset baseline|stiff-braid|"
                    "low-cfm|high-friction] [--refinement] "
+                   "[--require-speedup] "
                    "[--metallib PATH] [--dump-obj PATH]\n";
             return 0;
         } else {
@@ -1909,6 +1913,8 @@ int run(const int argc, const char* const* argv) {
         (impulseBearingContacts > 0u && stickingContacts > 0u &&
          slidingContacts > 0u &&
          impulseBearingContacts == stickingContacts + slidingContacts);
+    const bool speedupAccepted =
+        environmentCount < 4u || speedup > 1.0;
     const bool passed =
         completed && failedSteps == 0u && escapedMask == 0u &&
         maximumPenetration <= 0.06 && maximumStretch <= 0.50 &&
@@ -1944,7 +1950,7 @@ int run(const int argc, const char* const* argv) {
         maximumActiveContacts <= NUMI_BRAIDED_BAG_CONTACT_COUNT &&
         maximumActiveBlocks <= NUMI_BRAIDED_BAG_STREAM_BLOCK_COUNT &&
         denseDeterministic && streamedDeterministic && denseStreamBitwise &&
-        (environmentCount < 4u || speedup > 1.0) && refinementAccepted;
+        (!requireSpeedup || speedupAccepted) && refinementAccepted;
 
     if (!objPath.empty()) {
         dumpOBJ(objPath, initial, streamedReplays[0]);
@@ -2046,6 +2052,10 @@ int run(const int argc, const char* const* argv) {
               << "dense_gpu_seconds=" << denseSeconds
               << " streamed_gpu_seconds=" << streamedSeconds
               << " dense_to_stream_speedup=" << speedup
+              << " speedup_required="
+              << (requireSpeedup ? "true" : "false")
+              << " speedup_gate="
+              << (speedupAccepted ? "PASS" : "FAIL")
               << " dense_environment_microsteps_per_second="
               << environmentMicrosteps / denseSeconds
               << " streamed_environment_microsteps_per_second="

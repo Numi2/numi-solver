@@ -242,6 +242,13 @@ An environment-microstep means one completed physics step for one bag; it is
 not an RL transition. These command-buffer GPU times include the full bag
 microstep loop, not CPU oracle work.
 
+Wall-clock speedup is reported separately from physical correctness because it
+depends on current GPU contention, power, and thermal state. Normal runs and
+CTest gate state, contacts, conservation, independent reconstruction, and
+replay; they do not turn a transient timing inversion into a physics failure.
+Use `--require-speedup` for an isolated benchmark invocation that must also
+exit nonzero unless streamed execution beats dense execution.
+
 Against the immediately preceding qualified revision `66188dc`, the same
 256-environment streamed workload moved from `0.940558750 s` to
 `0.387633181 s`, a `2.43x` end-to-end improvement; dense moved from
