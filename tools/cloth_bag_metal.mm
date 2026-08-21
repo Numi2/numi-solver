@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -218,6 +219,18 @@ DVec3 authoredPosition(
         radius * std::sin(angle),
         (vertical < 0.72 ? bodyHeight : foldedHeight) +
             rimSag + skirtSag + 0.009,
+    };
+}
+
+DVec3 pickupGripTarget(const double time) {
+    const DVec3 base = authoredPosition(kLevels - 1u, 0u);
+    const double lift = smoothstep(time / 0.80);
+    const double firstSnap = smoothstep((time - 1.00) / 0.23);
+    const double firstRecovery = smoothstep((time - 1.45) / 0.50);
+    return base + DVec3{
+        -0.10 * firstSnap,
+        0.04 * std::sin(std::numbers::pi * firstSnap),
+        1.25 * lift - 0.85 * firstSnap + 0.75 * firstRecovery,
     };
 }
 
@@ -4636,6 +4649,177 @@ std::uint64_t hashGPUResult(const GPUResult& result) {
     return hash;
 }
 
+void dumpGPUOBJ(
+    const std::string& path,
+    const std::vector<NumiClothBagGPUParticle>& particles,
+    const std::vector<NumiClothBagGPUFruit>& fruits,
+    const NumiClothBagGPUConfig& config
+) {
+    std::ofstream output(path);
+    if (!output) {
+        throw std::runtime_error("failed to open Metal cloth OBJ: " + path);
+    }
+    output << std::setprecision(9);
+    output << "# Numi Solver explicit-yarn Metal cloth bag\n";
+    output << "# vertices " << particles.size()
+           << " render_triangles "
+           << (2u * kAround * (kLevels - 1u) +
+               2u * (kBottomGrid - 1u) * (kBottomGrid - 1u))
+           << '\n';
+    for (const NumiClothBagGPUParticle& particle : particles) {
+        output << "v " << particle.positionAndInverseMass.x << ' '
+               << particle.positionAndInverseMass.y << ' '
+               << particle.positionAndInverseMass.z << '\n';
+    }
+    for (std::uint32_t level = 0u; level + 1u < kLevels; ++level) {
+        for (std::uint32_t ring = 0u; ring < kAround; ++ring) {
+            const std::uint32_t next = (ring + 1u) % kAround;
+            const std::uint32_t a = nodeIndex(level, ring) + 1u;
+            const std::uint32_t b = nodeIndex(level, next) + 1u;
+            const std::uint32_t c = nodeIndex(level + 1u, ring) + 1u;
+            const std::uint32_t d = nodeIndex(level + 1u, next) + 1u;
+            output << "f " << a << ' ' << b << ' ' << c << '\n';
+            output << "f " << b << ' ' << d << ' ' << c << '\n';
+        }
+    }
+    for (std::uint32_t row = 0u; row + 1u < kBottomGrid; ++row) {
+        for (std::uint32_t column = 0u;
+             column + 1u < kBottomGrid;
+             ++column) {
+            const std::uint32_t a = bottomGridIndex(row, column) + 1u;
+            const std::uint32_t b = bottomGridIndex(row, column + 1u) + 1u;
+            const std::uint32_t c = bottomGridIndex(row + 1u, column) + 1u;
+            const std::uint32_t d =
+                bottomGridIndex(row + 1u, column + 1u) + 1u;
+            if ((row + column) % 2u == 0u) {
+                output << "f " << a << ' ' << c << ' ' << b << '\n';
+                output << "f " << b << ' ' << c << ' ' << d << '\n';
+            } else {
+                output << "f " << a << ' ' << d << ' ' << b << '\n';
+                output << "f " << a << ' ' << c << ' ' << d << '\n';
+            }
+        }
+    }
+    output << "# grip center " << config.gripTargetAndActive.x << ' '
+           << config.gripTargetAndActive.y << ' '
+           << config.gripTargetAndActive.z << " active "
+           << (config.gripTargetAndActive.w > 0.0f ? 1 : 0) << '\n';
+    for (std::size_t index = 0u; index < fruits.size(); ++index) {
+        const NumiClothBagGPUFruit& fruit = fruits[index];
+        output << "# ball " << index << " center "
+               << fruit.positionAndInverseMass.x << ' '
+               << fruit.positionAndInverseMass.y << ' '
+               << fruit.positionAndInverseMass.z << " radius "
+               << fruit.previousAndRadius.w << " appearance "
+               << fruit.identity.x << " orientation "
+               << fruit.orientation.w << ' ' << fruit.orientation.x << ' '
+               << fruit.orientation.y << ' ' << fruit.orientation.z
+               << " angular_velocity " << fruit.angularVelocity.x << ' '
+               << fruit.angularVelocity.y << ' '
+               << fruit.angularVelocity.z << '\n';
+    }
+}
+
+struct PickupReplay {
+    GPUResult final;
+    std::vector<std::uint64_t> frameHashes;
+    bool failureFree{true};
+    double gpuSeconds{};
+};
+
+PickupReplay runPickupReplay(
+    id<MTLDevice> device,
+    id<MTLCommandQueue> queue,
+    const Pipelines& pipelines,
+    const InitialState& initial,
+    const std::uint32_t iterations,
+    const std::uint32_t strainSweeps,
+    const std::uint32_t steps,
+    const std::uint32_t dumpEvery,
+    const std::uint32_t replayIndex,
+    const std::string& dumpPrefix
+) {
+    constexpr std::uint32_t substepsPerFrame = 48u;
+    InitialState state = initial;
+    state.config.constraintCounts.z = 1u;
+    const DVec3 initialGripTarget = pickupGripTarget(0.0);
+    state.config.gripTargetAndActive = f4(
+        static_cast<float>(initialGripTarget.x),
+        static_cast<float>(initialGripTarget.y),
+        static_cast<float>(initialGripTarget.z),
+        1.0f
+    );
+    PickupReplay replay;
+    replay.frameHashes.reserve(steps);
+    if (!dumpPrefix.empty()) {
+        dumpGPUOBJ(
+            dumpPrefix + "-0.obj",
+            state.particles,
+            state.fruits,
+            state.config
+        );
+    }
+    for (std::uint32_t step = 0u; step < steps; ++step) {
+        std::vector<NumiClothBagGPUConfig> configs(
+            substepsPerFrame, state.config
+        );
+        for (std::uint32_t substep = 0u;
+             substep < substepsPerFrame;
+             ++substep) {
+            const std::uint64_t completedSubsteps =
+                static_cast<std::uint64_t>(step) * substepsPerFrame +
+                substep + 1u;
+            const DVec3 target = pickupGripTarget(
+                static_cast<double>(completedSubsteps) * kTimestep
+            );
+            configs[substep].gripTargetAndActive = f4(
+                static_cast<float>(target.x),
+                static_cast<float>(target.y),
+                static_cast<float>(target.z),
+                1.0f
+            );
+        }
+        replay.final = runGPU(
+            device,
+            queue,
+            pipelines,
+            state,
+            iterations,
+            strainSweeps,
+            configs
+        );
+        replay.failureFree = replay.failureFree &&
+            replay.final.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE;
+        replay.gpuSeconds += replay.final.seconds;
+        replay.frameHashes.push_back(hashGPUResult(replay.final));
+        state = continuedInitialState(
+            state, replay.final, configs.back()
+        );
+        const std::uint32_t completedSteps = step + 1u;
+        if (!dumpPrefix.empty() &&
+            (completedSteps % dumpEvery == 0u ||
+             completedSteps == steps)) {
+            dumpGPUOBJ(
+                dumpPrefix + "-" + std::to_string(completedSteps) + ".obj",
+                replay.final.particles,
+                replay.final.fruits,
+                configs.back()
+            );
+        }
+        if (completedSteps % dumpEvery == 0u || completedSteps == steps) {
+            std::cout << "pickup_progress replay=" << replayIndex
+                      << " step=" << completedSteps << '/' << steps
+                      << " released_mask="
+                      << replay.final.releaseStatus.masks.y
+                      << " gpu_seconds=" << replay.gpuSeconds << std::endl;
+        }
+        if (!replay.failureFree) {
+            break;
+        }
+    }
+    return replay;
+}
+
 double maximumStrainViolation(
     const std::vector<NumiClothBagGPUParticle>& particles,
     const std::vector<NumiClothBagGPUDistance>& distances
@@ -4742,6 +4926,9 @@ int run(const int argc, const char* const* argv) {
     std::uint32_t replays = 2u;
     std::uint32_t iterations = 32u;
     std::uint32_t strainSweeps = 3u;
+    std::uint32_t pickupSteps = 240u;
+    std::uint32_t pickupDumpEvery = 10u;
+    std::string pickupPrefix;
     std::string metallibPath = NUMI_TEMPORAL_CONE_METALLIB;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string_view value(argv[argument]);
@@ -4759,11 +4946,23 @@ int run(const int argc, const char* const* argv) {
             );
         } else if (value == "--metallib" && argument + 1 < argc) {
             metallibPath = argv[++argument];
+        } else if (value == "--pickup-prefix" && argument + 1 < argc) {
+            pickupPrefix = argv[++argument];
+        } else if (value == "--pickup-steps" && argument + 1 < argc) {
+            pickupSteps = static_cast<std::uint32_t>(
+                std::stoul(argv[++argument])
+            );
+        } else if (value == "--pickup-dump-every" &&
+                   argument + 1 < argc) {
+            pickupDumpEvery = static_cast<std::uint32_t>(
+                std::stoul(argv[++argument])
+            );
         } else if (value == "--help") {
             std::cout
                 << "usage: numi-solver-cloth-metal [--replays N] "
                    "[--iterations N] [--strain-sweeps N] "
-                   "[--metallib PATH]\n";
+                   "[--metallib PATH] [--pickup-prefix PATH] "
+                   "[--pickup-steps N] [--pickup-dump-every N]\n";
             return 0;
         } else {
             throw std::runtime_error(
@@ -4774,6 +4973,13 @@ int run(const int argc, const char* const* argv) {
     replays = std::max(replays, 2u);
     if (iterations == 0u || strainSweeps == 0u) {
         throw std::runtime_error("iterations and strain sweeps must be positive");
+    }
+    if (!pickupPrefix.empty() &&
+        (pickupSteps == 0u || pickupSteps > 240u ||
+         pickupDumpEvery == 0u)) {
+        throw std::runtime_error(
+            "Metal pickup requires 1..240 steps and positive dump cadence"
+        );
     }
 
     const InitialState initial = makeInitialState();
@@ -5111,6 +5317,70 @@ int run(const int argc, const char* const* argv) {
         );
     }
     seamAverageLift /= static_cast<double>(initial.grips.size());
+    const bool pickupRequested = !pickupPrefix.empty();
+    PickupReplay pickupFirst;
+    PickupReplay pickupSecond;
+    bool pickupReplayExact = true;
+    bool pickupComplete = false;
+    double pickupStrainViolation = 0.0;
+    double pickupGroundPenetration = 0.0;
+    double pickupSelfPenetration = 0.0;
+    std::uint32_t pickupReleasedMask = 0u;
+    if (pickupRequested) {
+        pickupFirst = runPickupReplay(
+            device,
+            queue,
+            pipelines,
+            initial,
+            iterations,
+            strainSweeps,
+            pickupSteps,
+            pickupDumpEvery,
+            1u,
+            pickupPrefix
+        );
+        pickupSecond = runPickupReplay(
+            device,
+            queue,
+            pipelines,
+            initial,
+            iterations,
+            strainSweeps,
+            pickupSteps,
+            pickupDumpEvery,
+            2u,
+            {}
+        );
+        pickupReplayExact = pickupFirst.frameHashes ==
+                pickupSecond.frameHashes &&
+            bitwiseEqualPhysicalState(
+                pickupFirst.final, pickupSecond.final
+            );
+        pickupComplete = pickupSteps == 240u;
+        pickupReleasedMask = pickupFirst.final.releaseStatus.masks.y;
+        pickupStrainViolation = maximumStrainViolation(
+            pickupFirst.final.particles,
+            pickupFirst.final.distances
+        );
+        pickupGroundPenetration = maximumGroundPenetration(
+            pickupFirst.final.particles,
+            pickupFirst.final.fruits,
+            initial.config.clothMaterial.x
+        );
+        pickupSelfPenetration = maximumSelfPenetration(
+            pickupFirst.final.particles,
+            pickupFirst.final.distances,
+            initial.selfPairs,
+            initial.config.clothMaterial.x
+        );
+    }
+    const bool pickupQualified = !pickupRequested ||
+        (pickupComplete && pickupFirst.failureFree &&
+         pickupSecond.failureFree && pickupReplayExact &&
+         std::popcount(pickupReleasedMask) >= 2 &&
+         pickupStrainViolation <= 2.0e-6 &&
+         pickupGroundPenetration <= 1.0e-6 &&
+         pickupSelfPenetration <= 2.0e-6);
     const GPUResult& gpu = gpuResults.front();
     bool deterministic = true;
     for (std::size_t replay = 1u; replay < gpuResults.size(); ++replay) {
@@ -6523,7 +6793,8 @@ int run(const int argc, const char* const* argv) {
         std::abs(mouthRotatedClearance - 0.026) <= 2.0e-6 &&
         seamTrajectoryGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
         seamTrajectoryReplayExact && seamTrajectorySplitExact &&
-        seamAverageLift > 0.0 && seamMaximumHandleLag < 0.02;
+        seamAverageLift > 0.0 && seamMaximumHandleLag < 0.02 &&
+        pickupQualified;
 
     std::cout << std::fixed << std::setprecision(12)
               << "device=" << device.name.UTF8String << '\n'
@@ -6819,6 +7090,18 @@ int run(const int argc, const char* const* argv) {
               << " failure_flags=" << seamTrajectoryGPU.failure
               << " state_hash=0x" << std::hex
               << hashGPUResult(seamTrajectoryGPU) << std::dec << '\n'
+              << "pickup_requested=" << pickupRequested
+              << " complete=" << pickupComplete
+              << " steps=" << (pickupRequested ? pickupSteps : 0u)
+              << " replay_exact=" << pickupReplayExact
+              << " released_mask=" << pickupReleasedMask
+              << " released_count=" << std::popcount(pickupReleasedMask)
+              << " strain_violation=" << pickupStrainViolation
+              << " ground_penetration=" << pickupGroundPenetration
+              << " self_penetration=" << pickupSelfPenetration
+              << " first_gpu_seconds=" << pickupFirst.gpuSeconds
+              << " second_gpu_seconds=" << pickupSecond.gpuSeconds
+              << " qualified=" << pickupQualified << '\n'
               << "average_gpu_seconds=" << averageSeconds
               << " state_hash=0x" << std::hex << hashGPUResult(gpu)
               << std::dec << '\n'
