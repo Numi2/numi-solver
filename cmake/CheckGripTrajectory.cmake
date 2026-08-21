@@ -1,8 +1,9 @@
 if(NOT DEFINED CPU_EXECUTABLE OR NOT DEFINED METAL_EXECUTABLE OR
-   NOT DEFINED IDENTITY_TRAJECTORY OR NOT DEFINED ROTATION_TRAJECTORY)
+   NOT DEFINED IDENTITY_TRAJECTORY OR NOT DEFINED ROTATION_TRAJECTORY OR
+   NOT DEFINED REGRAB_TRAJECTORY)
     message(FATAL_ERROR
-        "CPU_EXECUTABLE, METAL_EXECUTABLE, IDENTITY_TRAJECTORY, and "
-        "ROTATION_TRAJECTORY are required"
+        "CPU_EXECUTABLE, METAL_EXECUTABLE, IDENTITY_TRAJECTORY, "
+        "ROTATION_TRAJECTORY, and REGRAB_TRAJECTORY are required"
     )
 endif()
 
@@ -13,6 +14,26 @@ set(cpu_arguments
     --iterations 32
     --replays 2
 )
+execute_process(
+    COMMAND "${CPU_EXECUTABLE}" ${cpu_arguments}
+        --grip-trajectory "${REGRAB_TRAJECTORY}"
+    RESULT_VARIABLE regrab_result
+    OUTPUT_VARIABLE regrab_output
+    ERROR_VARIABLE regrab_error
+)
+if(NOT regrab_result EQUAL 0 OR
+   NOT regrab_output MATCHES
+       "grip_trajectory_schema=numi.grip.trajectory.v2" OR
+   NOT regrab_output MATCHES "attachment_generations=3" OR
+   NOT regrab_output MATCHES "regrab_count=2" OR
+   NOT regrab_output MATCHES "inactive_grip_substeps=[1-9][0-9]*" OR
+   NOT regrab_output MATCHES "deterministic=true" OR
+   NOT regrab_output MATCHES "result=PASS")
+    message(FATAL_ERROR
+        "CPU seam re-grab trajectory failed (${regrab_result})\n"
+        "${regrab_output}${regrab_error}"
+    )
+endif()
 execute_process(
     COMMAND "${CPU_EXECUTABLE}" ${cpu_arguments}
         --grip-trajectory "${IDENTITY_TRAJECTORY}"
@@ -63,7 +84,7 @@ execute_process(
         --replays 2
         --iterations 32
         --strain-sweeps 3
-        --grip-trajectory "${ROTATION_TRAJECTORY}"
+        --grip-trajectory "${REGRAB_TRAJECTORY}"
         --recorded-steps 1
         --recorded-dump-every 1
     RESULT_VARIABLE metal_result
@@ -75,6 +96,10 @@ if(NOT metal_result EQUAL 0 OR
        "grip_rotation_angle_radians=.*replay_exact=true failure_flags=0" OR
    NOT metal_output MATCHES
        "recorded_requested=true steps=1 replay_exact=true" OR
+   NOT metal_output MATCHES
+       "regrab_count=2 inactive_grip_substeps=[1-9][0-9]*" OR
+   NOT metal_output MATCHES
+       "attachment_generations_exact=true" OR
    NOT metal_output MATCHES "qualified=true state_hash=0x[0-9a-f]+" OR
    NOT metal_output MATCHES "result=PASS")
     message(FATAL_ERROR
@@ -84,13 +109,14 @@ if(NOT metal_result EQUAL 0 OR
 endif()
 
 string(REGEX MATCH "content_fingerprint=0x[0-9a-f]+" cpu_fingerprint
-    "${rotation_output}")
+    "${regrab_output}")
 if(cpu_fingerprint STREQUAL "" OR
    NOT metal_output MATCHES "${cpu_fingerprint}")
     message(FATAL_ERROR "grip trajectory provenance did not reach both paths")
 endif()
 
 message(STATUS
-    "6-DoF seam trajectory changed CPU state and passed Metal replay: "
+    "6-DoF seam trajectory changed CPU state, re-grabbed continuously, and "
+    "passed Metal replay: "
     "${cpu_fingerprint}"
 )

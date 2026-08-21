@@ -46,7 +46,9 @@ Recorded hand motion is also an explicit solver input. Both cloth paths accept
 the same timestamped relative translation and quaternion orientation through
 the [six-degree-of-freedom seam-grip contract](docs/GRIP_TRAJECTORY.md). The
 rotation acts on all ten compliant cuff attachments; it does not rotate or pose
-the bag directly. This is recorded replay support, not a live cursor UI.
+the bag directly. Version 2 can release and re-grab the moving cuff by
+recapturing its live local offsets, and rejects distant teleport grabs. This is
+recorded replay support, not a live cursor UI.
 
 | Grounded start | Top-seam lift | Mouth exit | Released descent | Two grounded |
 |:--:|:--:|:--:|:--:|:--:|

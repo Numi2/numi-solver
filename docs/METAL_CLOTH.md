@@ -262,13 +262,37 @@ zero release/escape, bounded residuals, and exact 60-frame replay:
   --spin-dump-every 5
 ```
 
-ABI 11 adds a unit `gripOrientation` quaternion to the per-substep config. The
-grip kernel rotates each local cuff offset before its finite-compliance XPBD
-solve. A strict recorded-pose file can drive that field for every substep; see
-[GRIP_TRAJECTORY.md](GRIP_TRAJECTORY.md). The focused rotation probe compares
-Metal against the independent FP64 equation, and the recorded trajectory gate
-runs two exact full-topology replays. The committed input is synthetic, not a
-measured hand path.
+ABI 12 retains the ABI-11 unit `gripOrientation` quaternion and adds an
+attachment generation plus a finite capture radius. A device-side transition
+kernel runs before integration: when an active generation changes, it captures
+the live cuff positions in the inverse handle frame, clears the grip
+multipliers, and records capture distance and reconstruction error. The grip
+kernel then rotates those local offsets before its finite-compliance XPBD
+solve. A strict recorded-pose file can drive those fields for every substep;
+see [GRIP_TRAJECTORY.md](GRIP_TRAJECTORY.md). The focused rotation probe
+compares Metal against the independent FP64 equation, the rejection probe
+requires an out-of-radius grab to fail, and the recorded trajectory gate runs
+two exact full-topology release/re-grab replays. The committed input is
+synthetic, not a measured hand path.
+
+The Apple M4 Pro ABI-12 re-grab certificate measured on 2026-08-21 was:
+
+```text
+grip_trajectory_loaded=true schema=numi.grip.trajectory.v2
+attachment_generations=3
+distant_regrab_rejected=true failure_flags=16
+recorded_requested=true steps=1 replay_exact=true
+regrab_count=2 inactive_grip_substeps=12
+attachment_generations_exact=true
+maximum_regrab_capture_distance=0.055554337800
+maximum_regrab_capture_error=0.000000000931
+strain_violation=0.000000000000 ground_penetration=0.000000000000
+self_penetration=0.000000007517 escape_mask=0 qualified=true
+result=PASS
+```
+
+The complete serial M4 Pro suite passed `40/40` in `611.38 s`, including the
+`103.20 s` airborne spin and `427.50 s` pickup/pour trajectories.
 
 The following Apple M4 result measured on 2026-08-21 is retained as the ABI-10
 release-classification baseline:

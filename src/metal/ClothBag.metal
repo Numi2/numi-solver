@@ -27,7 +27,11 @@ inline bool validConfig(
         !all(isfinite(config.gripTargetAndActive.xyz)) ||
         !all(isfinite(config.gripOrientation)) ||
         (config.gripTargetAndActive.w > 0.0f &&
-         abs(length(config.gripOrientation) - 1.0f) > 1.0e-4f) ||
+         (abs(length(config.gripOrientation) - 1.0f) > 1.0e-4f ||
+          config.gripControl.x == 0u ||
+          !(config.gripMaterial.x > 0.0f))) ||
+        !all(isfinite(config.gripMaterial)) ||
+        config.gripMaterial.x < 0.0f ||
         !all(isfinite(config.clothMaterial)) || config.clothMaterial.x < 0.0f ||
         !all(isfinite(config.fruitMaterial)) ||
         !all(isfinite(config.airVelocityAndDensity)) ||
@@ -521,7 +525,7 @@ kernel void numi_cloth_bag_begin_substep(
         distances[index].material.z = 0.0f;
     }
     if (index < config.control.w) {
-        grips[index].lambda = float4(0.0f);
+        grips[index].lambda.xyz = float3(0.0f);
     }
     if (index < config.constraintCounts.x) {
         knots[index].material.z = 0.0f;
@@ -562,6 +566,71 @@ kernel void numi_cloth_bag_begin_substep(
         contact.segmentImpulse = float4(0.0f);
         yarnContacts[index] = contact;
     }
+}
+
+kernel void numi_cloth_bag_update_grip_attachment(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device const NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device NumiClothBagGPUGrip* grips [[buffer(2)]],
+    device atomic_uint* failure [[buffer(3)]],
+    const uint index [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) || index >= config.control.w ||
+        !(config.gripTargetAndActive.w > 0.0f)) {
+        return;
+    }
+    NumiClothBagGPUGrip grip = grips[index];
+    if (grip.particle.y == config.gripControl.x) {
+        return;
+    }
+    if (grip.particle.y == 0xffffffffu ||
+        grip.particle.y + 1u != config.gripControl.x) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_GRIP_CAPTURE);
+        return;
+    }
+    const uint particleIndex = grip.particle.x;
+    if (particleIndex >= config.control.y) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        return;
+    }
+    const float3 position =
+        particles[particleIndex].positionAndInverseMass.xyz;
+    const float3 separation =
+        position - config.gripTargetAndActive.xyz;
+    const float captureDistance = length(separation);
+    if (!all(isfinite(position)) || !isfinite(captureDistance)) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    if (captureDistance > config.gripMaterial.x) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_GRIP_CAPTURE);
+        return;
+    }
+    const float4 inverseOrientation = float4(
+        -config.gripOrientation.xyz,
+        config.gripOrientation.w
+    );
+    const float3 localOffset = rotateByQuaternion(
+        inverseOrientation,
+        separation
+    );
+    const float3 reconstructed = config.gripTargetAndActive.xyz +
+        rotateByQuaternion(config.gripOrientation, localOffset);
+    const float captureError = length(position - reconstructed);
+    grip.targetOffsetAndCompliance.xyz = localOffset;
+    grip.particle.y = config.gripControl.x;
+    grip.particle.z = as_type<uint>(max(
+        as_type<float>(grip.particle.z),
+        captureDistance
+    ));
+    grip.lambda.xyz = float3(0.0f);
+    grip.lambda.w = max(grip.lambda.w, captureError);
+    if (!all(isfinite(grip.targetOffsetAndCompliance)) ||
+        !all(isfinite(grip.lambda))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    grips[index] = grip;
 }
 
 kernel void numi_cloth_bag_clear_yarn_aerodynamic_forces(
@@ -1350,6 +1419,9 @@ kernel void numi_cloth_bag_solve_grip(
         return;
     }
     NumiClothBagGPUGrip grip = grips[index];
+    if (grip.particle.y != config.gripControl.x) {
+        return;
+    }
     const uint particleIndex = grip.particle.x;
     if (particleIndex >= config.control.y) {
         recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);

@@ -11,10 +11,10 @@ six-axis seam load, specimen geometry, and held-out outcome measurements.
 
 ## File contract
 
-`numi.grip.trajectory.v1` is a relative-pose CSV:
+`numi.grip.trajectory.v2` is a relative-pose CSV:
 
 ```text
-schema=numi.grip.trajectory.v1
+schema=numi.grip.trajectory.v2
 time_s,translation_x_m,translation_y_m,translation_z_m,quaternion_x,quaternion_y,quaternion_z,quaternion_w,active
 0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,1
 ```
@@ -25,9 +25,19 @@ time_s,translation_x_m,translation_y_m,translation_z_m,quaternion_x,quaternion_y
 - Orientation is a right-handed relative unit quaternion in `xyzw` order.
 - The first pose must be at `t=0` with zero translation, identity orientation,
   and an active grip. This prevents an unmeasured attachment impulse.
-- Version 1 may release once by changing `active` from `1` to `0`; it rejects
-  later reactivation because recapturing local offsets from a moving loose cuff
-  is not implemented yet.
+- Version 2 may change `active` between attached and released states multiple
+  times. Every `0` to `1` transition increments an attachment generation. At
+  that transition, the runtime samples the ten live cuff-knot positions before
+  gravity integration, transforms them into the new handle frame, resets the
+  grip multipliers, and then resumes the finite-compliance solve. This makes
+  the new constraints satisfied up to arithmetic roundoff at capture instead
+  of snapping the seam back to its original offsets.
+- Re-grab is rejected if any of the fixed ten cuff knots is more than `0.12 m`
+  from the handle. This authored interaction radius prevents a distant handle
+  from pulling the bag through space; it is not a measured hand or specimen
+  parameter.
+- Version 1 remains readable for reproducibility and still rejects reactivation
+  after release.
 - The pose stream must cover the requested simulation duration. The runtime
   does not extrapolate beyond measured data.
 
@@ -44,7 +54,7 @@ The CPU reference uses the `recorded` scenario:
 ```sh
 ./build/numi-solver-cloth-bag \
   --scenario recorded \
-  --grip-trajectory calibration/trajectories/synthetic-rotation.csv \
+  --grip-trajectory calibration/trajectories/synthetic-regrab.csv \
   --steps 1 --substeps 24 --iterations 32 --replays 2
 ```
 
@@ -53,14 +63,15 @@ device substeps:
 
 ```sh
 ./build/numi-solver-cloth-metal \
-  --grip-trajectory calibration/trajectories/synthetic-rotation.csv \
+  --grip-trajectory calibration/trajectories/synthetic-regrab.csv \
   --recorded-steps 1 --recorded-dump-every 1 \
   --replays 2 --iterations 32 --strain-sweeps 3
 ```
 
 Add `--recorded-prefix build/recorded-grab` to export the first replay's OBJ
 states. Both executables print the schema, content fingerprint, pose count,
-duration, and maximum authored rotation.
+duration, maximum authored rotation, attachment-generation count, inactive
+substeps, capture distance, and capture reconstruction error.
 
 ## Executable gates
 
@@ -68,13 +79,19 @@ Synthetic coverage requires:
 
 - exact CPU replay for translation-only and translating-plus-rotating inputs;
 - different CPU physical-state hashes when only seam orientation changes;
-- strict rejection of release followed by unsupported reactivation;
-- an ABI-11 Metal grip-rotation probe that matches the independent FP64
+- backward-compatible v1 rejection of reactivation and v2 rejection of a
+  distant re-grab;
+- two v2 release/re-grab cycles with continuous local-offset recapture, a
+  nonzero inactive-substep count, bounded capture distance, zero or
+  roundoff-scale reconstruction error, and exact CPU replay;
+- an ABI-12 Metal grip-rotation probe that matches the independent FP64
   equation, produces nonzero seam displacement, and replays exactly; and
-- two exact full-topology Metal replays of the rotating recorded trajectory,
-  with zero numerical escape and bounded strain, ground, and self-contact
-  residuals.
+- two exact full-topology Metal replays of the release/re-grab trajectory, with
+  every grip reaching the expected attachment generation, a GPU-side distant
+  re-grab rejection, zero numerical escape, and bounded strain, ground,
+  self-contact, and capture residuals.
 
 These gates prove that a recorded six-degree-of-freedom pose reaches the live
-cloth equations. The committed trajectories are synthetic and do not prove
-that the pose or material matches a physical produce bag.
+cloth equations, including a discontinuous attachment state without a
+positional teleport. The committed trajectories are synthetic and do not prove
+that the pose, capture radius, or material matches a physical produce bag.

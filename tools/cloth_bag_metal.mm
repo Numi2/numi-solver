@@ -129,6 +129,7 @@ float kBendCuffCompliance = static_cast<float>(
 float kGripCompliance = static_cast<float>(
     gClothMaterial.values.gripComplianceMPerN
 );
+constexpr float kGripCaptureRadius = 0.12f;
 constexpr float kStrainLimit = 0.285f;
 constexpr float kTimestep = 1.0f / 5760.0f;
 
@@ -193,6 +194,7 @@ struct TrajectoryGripPose {
     DVec3 target{};
     numi::GripTrajectoryQuaternion orientation{};
     bool active{};
+    std::uint32_t attachmentGeneration{1u};
 };
 
 DVec3 operator+(const DVec3 a, const DVec3 b) {
@@ -909,6 +911,8 @@ InitialState makeInitialState() {
         1.0f
     );
     result.config.gripOrientation = f4(0.0f, 0.0f, 0.0f, 1.0f);
+    result.config.gripControl = u4(1u, 0u, 0u, 0u);
+    result.config.gripMaterial = f4(kGripCaptureRadius, 0.0f, 0.0f, 0.0f);
     float maximumLimitedYarnLength = 0.0f;
     for (const NumiClothBagGPUDistance& distance : result.distances) {
         maximumLimitedYarnLength = std::max(
@@ -960,7 +964,7 @@ InitialState makeInitialState() {
                 result.particles[particleIndex].positionAndInverseMass
             );
             NumiClothBagGPUGrip grip{};
-            grip.particle = u4(particleIndex, 0u, 0u, 0u);
+            grip.particle = u4(particleIndex, 1u, 0u, 0u);
             grip.targetOffsetAndCompliance = f4(
                 static_cast<float>(rest.x - base.x),
                 static_cast<float>(rest.y - base.y),
@@ -3956,6 +3960,7 @@ struct GPUResult {
 struct Pipelines {
     id<MTLComputePipelineState> prepareTrajectorySubstep;
     id<MTLComputePipelineState> begin;
+    id<MTLComputePipelineState> updateGripAttachment;
     id<MTLComputePipelineState> yarnAerodynamicsClear;
     id<MTLComputePipelineState> yarnAerodynamicsAccumulate;
     id<MTLComputePipelineState> yarnAerodynamicsReduce;
@@ -4213,6 +4218,16 @@ GPUResult runGPU(
             initial.fruits.size(),
             initial.fruitPairs.size(),
         })
+    );
+    [encoder setComputePipelineState:pipelines.updateGripAttachment];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+    [encoder setBuffer:gripBuffer offset:0 atIndex:2];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:3];
+    dispatch(
+        encoder,
+        pipelines.updateGripAttachment,
+        initial.grips.size()
     );
     [encoder setComputePipelineState:pipelines.yarnAerodynamicsClear];
     [encoder setBuffer:configBuffer offset:0 atIndex:0];
@@ -4953,6 +4968,7 @@ TrajectoryGripPose trajectoryGripPose(
                 },
                 .orientation = pose.orientation,
                 .active = pose.active,
+                .attachmentGeneration = pose.attachmentGeneration,
             };
         }
     }
@@ -4991,6 +5007,7 @@ InitialState makeTrajectoryInitialState(
         pose.active ? 1.0f : 0.0f
     );
     state.config.gripOrientation = gripQuaternion4(pose.orientation);
+    state.config.gripControl.x = pose.attachmentGeneration;
     return state;
 }
 
@@ -5046,6 +5063,7 @@ TrajectoryReplay runTrajectoryReplay(
             configs[substep].gripOrientation = gripQuaternion4(
                 pose.orientation
             );
+            configs[substep].gripControl.x = pose.attachmentGeneration;
         }
         @autoreleasepool {
             replay.final = runGPU(
@@ -5532,6 +5550,11 @@ int run(const int argc, const char* const* argv) {
         makePipeline(
             device,
             library,
+            @"numi_cloth_bag_update_grip_attachment"
+        ),
+        makePipeline(
+            device,
+            library,
             @"numi_cloth_bag_clear_yarn_aerodynamic_forces"
         ),
         makePipeline(
@@ -5890,6 +5913,21 @@ int run(const int argc, const char* const* argv) {
     const bool gripRotationReplayExact =
         hashGPUResult(gripRotationGPU) ==
         hashGPUResult(gripRotationReplayGPU);
+    InitialState distantRegrabInitial = initial;
+    distantRegrabInitial.config.gripControl.x = 2u;
+    distantRegrabInitial.config.gripTargetAndActive.x +=
+        2.0f * kGripCaptureRadius;
+    const GPUResult distantRegrabGPU = runGPU(
+        device,
+        queue,
+        pipelines,
+        distantRegrabInitial,
+        iterations,
+        strainSweeps
+    );
+    const bool distantRegrabRejected =
+        (distantRegrabGPU.failure &
+         NUMI_CLOTH_BAG_GPU_FAILURE_GRIP_CAPTURE) != 0u;
     const bool groundedRequested = !groundedPrefix.empty();
     TrajectoryReplay groundedFirst;
     TrajectoryReplay groundedSecond;
@@ -6168,7 +6206,25 @@ int run(const int argc, const char* const* argv) {
     double recordedGroundPenetration = 0.0;
     double recordedSelfPenetration = 0.0;
     double recordedShapeChange = 0.0;
+    std::uint32_t recordedAttachmentGenerations = 0u;
+    std::uint64_t recordedInactiveSubsteps = 0u;
+    bool recordedAttachmentGenerationsExact = true;
+    double recordedMaximumCaptureDistance = 0.0;
+    double recordedMaximumCaptureError = 0.0;
     if (recordedRequested) {
+        recordedAttachmentGenerations =
+            numi::gripTrajectoryAttachmentGenerations(gripTrajectory);
+        for (std::uint64_t completedSubstep = 1u;
+             completedSubstep <= static_cast<std::uint64_t>(recordedSteps) *
+                 kPickupSubstepsPerFrame;
+             ++completedSubstep) {
+            if (!numi::sampleGripTrajectory(
+                    gripTrajectory,
+                    static_cast<double>(completedSubstep) * kTimestep
+                ).active) {
+                ++recordedInactiveSubsteps;
+            }
+        }
         recordedFirst = runTrajectoryReplay(
             device,
             queue,
@@ -6229,13 +6285,32 @@ int run(const int argc, const char* const* argv) {
             ),
             recordedFirst.final
         );
+        for (const NumiClothBagGPUGrip& grip : recordedFirst.final.grips) {
+            recordedAttachmentGenerationsExact =
+                recordedAttachmentGenerationsExact &&
+                grip.particle.y == recordedAttachmentGenerations;
+            recordedMaximumCaptureDistance = std::max(
+                recordedMaximumCaptureDistance,
+                static_cast<double>(std::bit_cast<float>(grip.particle.z))
+            );
+            recordedMaximumCaptureError = std::max(
+                recordedMaximumCaptureError,
+                static_cast<double>(grip.lambda.w)
+            );
+        }
     }
     const bool recordedQualified = !recordedRequested ||
         (recordedFirst.failureFree && recordedSecond.failureFree &&
          recordedReplayExact && recordedEscapeMask == 0u &&
          recordedStrainViolation <= 2.0e-6 &&
          recordedGroundPenetration <= 1.0e-6 &&
-         recordedSelfPenetration <= 2.0e-6);
+         recordedSelfPenetration <= 2.0e-6 &&
+         recordedAttachmentGenerationsExact &&
+         recordedMaximumCaptureDistance <=
+             initial.config.gripMaterial.x + 1.0e-6 &&
+         recordedMaximumCaptureError <= 2.0e-6 &&
+         (recordedAttachmentGenerations <= 1u ||
+          recordedInactiveSubsteps > 0u));
     const GPUResult& gpu = gpuResults.front();
     bool deterministic = true;
     for (std::size_t replay = 1u; replay < gpuResults.size(); ++replay) {
@@ -7651,7 +7726,7 @@ int run(const int argc, const char* const* argv) {
         seamAverageLift > 0.0 && seamMaximumHandleLag < 0.02 &&
         gripRotationGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
         gripRotationReplayExact && gripRotationPositionError <= 2.0e-6 &&
-        gripRotationDisplacement > 1.0e-4 &&
+        gripRotationDisplacement > 1.0e-4 && distantRegrabRejected &&
         groundedQualified && spinQualified && pickupQualified &&
         recordedQualified;
 
@@ -7666,7 +7741,7 @@ int run(const int argc, const char* const* argv) {
               << "grip_trajectory_loaded=" << recordedRequested
               << " schema="
               << (recordedRequested
-                      ? std::string(numi::kGripTrajectorySchema)
+                      ? gripTrajectory.schema
                       : "none")
               << " content_fingerprint="
               << (recordedRequested
@@ -7682,6 +7757,10 @@ int run(const int argc, const char* const* argv) {
               << (recordedRequested
                       ? numi::maximumGripTrajectoryRotation(gripTrajectory)
                       : 0.0)
+              << " attachment_generations="
+              << (recordedRequested
+                      ? recordedAttachmentGenerations
+                      : 0u)
               << '\n'
               << "abi=" << NUMI_CLOTH_BAG_GPU_ABI_VERSION
               << " particles=" << initial.particles.size()
@@ -7983,6 +8062,8 @@ int run(const int argc, const char* const* argv) {
               << " failure_flags=" << gripRotationGPU.failure
               << " state_hash=0x" << std::hex
               << hashGPUResult(gripRotationGPU) << std::dec << '\n'
+              << "distant_regrab_rejected=" << distantRegrabRejected
+              << " failure_flags=" << distantRegrabGPU.failure << '\n'
               << "grounded_requested=" << groundedRequested
               << " complete=" << groundedComplete
               << " steps=" << (groundedRequested ? groundedSteps : 0u)
@@ -8051,6 +8132,18 @@ int run(const int argc, const char* const* argv) {
               << " self_penetration=" << recordedSelfPenetration
               << " maximum_handle_lag="
               << recordedFirst.maximumHandleLag
+              << " regrab_count="
+              << (recordedAttachmentGenerations > 0u
+                      ? recordedAttachmentGenerations - 1u
+                      : 0u)
+              << " inactive_grip_substeps="
+              << recordedInactiveSubsteps
+              << " attachment_generations_exact="
+              << recordedAttachmentGenerationsExact
+              << " maximum_regrab_capture_distance="
+              << recordedMaximumCaptureDistance
+              << " maximum_regrab_capture_error="
+              << recordedMaximumCaptureError
               << " shape_change=" << recordedShapeChange
               << " first_gpu_seconds=" << recordedFirst.gpuSeconds
               << " second_gpu_seconds=" << recordedSecond.gpuSeconds

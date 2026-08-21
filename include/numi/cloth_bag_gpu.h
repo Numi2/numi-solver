@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 11u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 12u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
 #define NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY 4096u
 #define NUMI_CLOTH_BAG_GPU_MOUTH_RIM_CAPACITY 64u
@@ -13,6 +13,7 @@ enum NumiClothBagGPUFailure : mr_u32 {
     NUMI_CLOTH_BAG_GPU_FAILURE_RANGE = 1u << 1u,
     NUMI_CLOTH_BAG_GPU_FAILURE_BATCH = 1u << 2u,
     NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE = 1u << 3u,
+    NUMI_CLOTH_BAG_GPU_FAILURE_GRIP_CAPTURE = 1u << 4u,
 };
 
 typedef struct MR_ALIGN16 NumiClothBagGPUConfig {
@@ -30,6 +31,10 @@ typedef struct MR_ALIGN16 NumiClothBagGPUConfig {
     mr_float4 gripTargetAndActive;
     // Relative virtual-handle orientation as a unit quaternion xyzw.
     mr_float4 gripOrientation;
+    // x attachment generation, yzw reserved. Increment on every re-grab.
+    mr_uint4 gripControl;
+    // x maximum handle-to-cuff capture radius in meters, yzw reserved.
+    mr_float4 gripMaterial;
     // x yarn radius, y guarded self-contact cell size,
     // z cloth/ground friction, w cloth/self friction.
     mr_float4 clothMaterial;
@@ -66,11 +71,12 @@ typedef struct MR_ALIGN16 NumiClothBagGPUDistance {
 } NumiClothBagGPUDistance;
 
 typedef struct MR_ALIGN16 NumiClothBagGPUGrip {
-    // x particle, yzw reserved.
+    // x particle, y attachment generation, z maximum capture distance as
+    // positive-float bits, w reserved.
     mr_uint4 particle;
     // xyz target offset from the virtual handle, w XPBD compliance.
     mr_float4 targetOffsetAndCompliance;
-    // xyz accumulated vector lambda, w reserved.
+    // xyz accumulated vector lambda, w maximum re-grab reconstruction error.
     mr_float4 lambda;
 } NumiClothBagGPUGrip;
 
@@ -183,7 +189,7 @@ typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
 } NumiClothBagGPUBatch;
 
 #ifndef __METAL_VERSION__
-static_assert(sizeof(NumiClothBagGPUConfig) == 192);
+static_assert(sizeof(NumiClothBagGPUConfig) == 224);
 static_assert(sizeof(NumiClothBagGPUParticle) == 48);
 static_assert(sizeof(NumiClothBagGPUDistance) == 32);
 static_assert(sizeof(NumiClothBagGPUGrip) == 48);

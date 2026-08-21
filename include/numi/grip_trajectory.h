@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -14,8 +15,12 @@
 
 namespace numi {
 
-inline constexpr std::string_view kGripTrajectorySchema =
+inline constexpr std::string_view kGripTrajectorySchemaV1 =
     "numi.grip.trajectory.v1";
+inline constexpr std::string_view kGripTrajectorySchemaV2 =
+    "numi.grip.trajectory.v2";
+inline constexpr std::string_view kGripTrajectorySchema =
+    kGripTrajectorySchemaV2;
 
 struct GripTrajectoryVector3 {
   double x{};
@@ -35,10 +40,12 @@ struct GripTrajectoryPose {
   GripTrajectoryVector3 translationMeters{};
   GripTrajectoryQuaternion orientation{};
   bool active{true};
+  std::uint32_t attachmentGeneration{1u};
 };
 
 struct GripTrajectory {
   std::vector<GripTrajectoryPose> poses;
+  std::string schema;
   std::string contentFingerprint;
 };
 
@@ -192,6 +199,7 @@ inline GripTrajectory loadGripTrajectory(const std::string &path) {
   std::size_t lineNumber = 0u;
   bool sawSchema = false;
   bool sawHeader = false;
+  bool permitsReactivation = false;
   GripTrajectory result;
   result.contentFingerprint = gripTrajectoryFingerprint(source);
   const std::vector<std::string> expectedHeader{
@@ -199,7 +207,8 @@ inline GripTrajectory loadGripTrajectory(const std::string &path) {
       "translation_z_m", "quaternion_x",    "quaternion_y",
       "quaternion_z",    "quaternion_w",    "active",
   };
-  bool released = false;
+  bool previousActive = true;
+  std::uint32_t attachmentGeneration = 1u;
   while (std::getline(lines, line)) {
     ++lineNumber;
     line = trimGripTrajectory(std::move(line));
@@ -207,9 +216,15 @@ inline GripTrajectory loadGripTrajectory(const std::string &path) {
       continue;
     }
     if (!sawSchema) {
-      if (line != "schema=" + std::string(kGripTrajectorySchema)) {
+      const std::string schemaV1 =
+          "schema=" + std::string(kGripTrajectorySchemaV1);
+      const std::string schemaV2 =
+          "schema=" + std::string(kGripTrajectorySchemaV2);
+      if (line != schemaV1 && line != schemaV2) {
         throw std::runtime_error("grip trajectory schema mismatch");
       }
+      result.schema = line.substr(std::string("schema=").size());
+      permitsReactivation = line == schemaV2;
       sawSchema = true;
       continue;
     }
@@ -260,11 +275,20 @@ inline GripTrajectory loadGripTrajectory(const std::string &path) {
             0.0) {
       pose.orientation = scaledGripQuaternion(pose.orientation, -1.0);
     }
-    if (released && pose.active) {
-      throw std::runtime_error(
-          "grip trajectory v1 cannot reactivate after release");
+    if (!previousActive && pose.active) {
+      if (!permitsReactivation) {
+        throw std::runtime_error(
+            "grip trajectory v1 cannot reactivate after release");
+      }
+      if (attachmentGeneration ==
+          std::numeric_limits<std::uint32_t>::max()) {
+        throw std::runtime_error(
+            "grip trajectory has too many attachment generations");
+      }
+      ++attachmentGeneration;
     }
-    released = released || !pose.active;
+    pose.attachmentGeneration = attachmentGeneration;
+    previousActive = pose.active;
     result.poses.push_back(pose);
   }
   if (!sawSchema || !sawHeader || result.poses.size() < 2u) {
@@ -325,6 +349,9 @@ inline GripTrajectoryPose sampleGripTrajectory(const GripTrajectory &trajectory,
       .orientation = interpolateGripQuaternion(first.orientation,
                                                second.orientation, fraction),
       .active = fraction >= 1.0 ? second.active : first.active,
+      .attachmentGeneration = fraction >= 1.0
+          ? second.attachmentGeneration
+          : first.attachmentGeneration,
   };
 }
 
@@ -341,6 +368,15 @@ inline double maximumGripTrajectoryRotation(const GripTrajectory &trajectory) {
     maximum = std::max(
         maximum,
         2.0 * std::acos(std::clamp(std::abs(pose.orientation.w), 0.0, 1.0)));
+  }
+  return maximum;
+}
+
+inline std::uint32_t
+gripTrajectoryAttachmentGenerations(const GripTrajectory &trajectory) {
+  std::uint32_t maximum = 0u;
+  for (const GripTrajectoryPose &pose : trajectory.poses) {
+    maximum = std::max(maximum, pose.attachmentGeneration);
   }
   return maximum;
 }

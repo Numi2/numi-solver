@@ -61,6 +61,7 @@ double kBendBodyCompliance =
 double kBendCuffCompliance =
     gClothMaterial.values.bendCuffComplianceMPerN;
 double kGripCompliance = gClothMaterial.values.gripComplianceMPerN;
+constexpr double kGripCaptureRadius = 0.12;
 constexpr double kMouthReleaseHysteresis = 0.025;
 constexpr std::size_t kBallPairCount =
     kFruitCount * (kFruitCount - 1u) / 2u;
@@ -206,6 +207,10 @@ Vec3 rotateVector(const Quaternion q, const Vec3 value) {
     const Vec3 vectorPart{q.x, q.y, q.z};
     const Vec3 twiceCross = cross(vectorPart, value) * 2.0;
     return value + twiceCross * q.w + cross(vectorPart, twiceCross);
+}
+
+Vec3 inverseRotateVector(const Quaternion q, const Vec3 value) {
+    return rotateVector({q.w, -q.x, -q.y, -q.z}, value);
 }
 
 Quaternion gripQuaternion(
@@ -354,6 +359,7 @@ struct ClothModel {
     Vec3 gripPrevious{};
     Quaternion gripOrientation{};
     bool gripActive{};
+    std::uint32_t gripAttachmentGeneration{1u};
 };
 
 struct Metrics {
@@ -395,6 +401,10 @@ struct Metrics {
     double accumulatedTangentialImpulse{};
     double maximumGripForce{};
     double maximumGripImpulse{};
+    double maximumRegrabCaptureDistance{};
+    double maximumRegrabCaptureError{};
+    std::uint32_t regrabCount{};
+    std::uint64_t inactiveGripSubsteps{};
     std::uint64_t ballYarnContacts{};
     std::uint64_t sweptBallYarnContacts{};
     std::uint64_t selfContacts{};
@@ -1482,6 +1492,7 @@ Vec3 pickupGripTarget(const double time) {
 
 void updateGrip(
     ClothModel& cloth,
+    Metrics& metrics,
     const Scenario scenario,
     const double time,
     const numi::GripTrajectory* trajectory
@@ -1497,7 +1508,64 @@ void updateGrip(
             pose.translationMeters.z,
         };
         cloth.gripOrientation = gripQuaternion(pose.orientation);
+        if (pose.active && pose.attachmentGeneration !=
+                cloth.gripAttachmentGeneration) {
+            if (cloth.gripAttachmentGeneration ==
+                    std::numeric_limits<std::uint32_t>::max() ||
+                pose.attachmentGeneration !=
+                    cloth.gripAttachmentGeneration + 1u) {
+                throw std::runtime_error(
+                    "grip reattachment generation is not sequential"
+                );
+            }
+            double maximumCaptureDistance = 0.0;
+            for (const GripConstraint& constraint : cloth.grips) {
+                maximumCaptureDistance = std::max(
+                    maximumCaptureDistance,
+                    length(
+                        cloth.particles[constraint.particle].position -
+                        cloth.gripTarget
+                    )
+                );
+            }
+            if (maximumCaptureDistance > kGripCaptureRadius) {
+                throw std::runtime_error(
+                    "grip reattachment exceeds capture radius"
+                );
+            }
+            double maximumCaptureError = 0.0;
+            for (GripConstraint& constraint : cloth.grips) {
+                const Vec3 position =
+                    cloth.particles[constraint.particle].position;
+                constraint.targetOffset = inverseRotateVector(
+                    cloth.gripOrientation,
+                    position - cloth.gripTarget
+                );
+                constraint.lambda = {};
+                const Vec3 reconstructed = cloth.gripTarget + rotateVector(
+                    cloth.gripOrientation,
+                    constraint.targetOffset
+                );
+                maximumCaptureError = std::max(
+                    maximumCaptureError,
+                    length(position - reconstructed)
+                );
+            }
+            cloth.gripAttachmentGeneration = pose.attachmentGeneration;
+            metrics.maximumRegrabCaptureDistance = std::max(
+                metrics.maximumRegrabCaptureDistance,
+                maximumCaptureDistance
+            );
+            metrics.maximumRegrabCaptureError = std::max(
+                metrics.maximumRegrabCaptureError,
+                maximumCaptureError
+            );
+            ++metrics.regrabCount;
+        }
         cloth.gripActive = pose.active;
+        if (!pose.active) {
+            ++metrics.inactiveGripSubsteps;
+        }
     } else {
         cloth.gripTarget = scenario == Scenario::spin
             ? spinGripTarget(time)
@@ -4659,6 +4727,7 @@ SimulationResult simulate(
                 );
                 updateGrip(
                     result.cloth,
+                    result.metrics,
                     scenario,
                     time,
                     gripTrajectory
@@ -5224,6 +5293,14 @@ std::uint64_t hashResult(const SimulationResult& result) {
     append(result.cloth.gripTarget.y);
     append(result.cloth.gripTarget.z);
     append(result.cloth.gripActive ? 1.0 : 0.0);
+    if (result.cloth.gripAttachmentGeneration > 1u) {
+        append(static_cast<double>(result.cloth.gripAttachmentGeneration));
+        for (const GripConstraint& grip : result.cloth.grips) {
+            append(grip.targetOffset.x);
+            append(grip.targetOffset.y);
+            append(grip.targetOffset.z);
+        }
+    }
     return hash;
 }
 
@@ -5297,6 +5374,9 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
         result.metrics.escapedMask == 0u &&
         result.metrics.spilledMask == 0u && groundValid &&
         std::abs(clothMass - kClothMass) < 1.0e-12 &&
+        result.metrics.maximumRegrabCaptureDistance <=
+            kGripCaptureRadius + 1.0e-12 &&
+        result.metrics.maximumRegrabCaptureError <= 1.0e-9 &&
         result.metrics.minimumTriangleArea > 1.0e-8 &&
         result.metrics.maximumWarpExtension < 0.30 &&
         result.metrics.maximumWarpCompression < 0.60 &&
@@ -5557,7 +5637,7 @@ int main(int argc, char** argv) try {
               << '\n';
     if (gripTrajectoryPointer != nullptr) {
         std::cout << "grip_trajectory_schema="
-                  << numi::kGripTrajectorySchema
+                  << gripTrajectory.schema
                   << " content_fingerprint="
                   << gripTrajectory.contentFingerprint
                   << " poses=" << gripTrajectory.poses.size()
@@ -5565,6 +5645,10 @@ int main(int argc, char** argv) try {
                   << gripTrajectory.poses.back().timeSeconds
                   << " maximum_rotation_radians="
                   << numi::maximumGripTrajectoryRotation(gripTrajectory)
+                  << " attachment_generations="
+                  << numi::gripTrajectoryAttachmentGenerations(
+                         gripTrajectory
+                     )
                   << '\n';
     }
     std::cout << "model=explicit_yarn_cloth_reference"
@@ -5679,6 +5763,13 @@ int main(int argc, char** argv) try {
               << metrics.aerodynamicDissipation
               << " max_grip_force=" << metrics.maximumGripForce
               << " max_grip_impulse=" << metrics.maximumGripImpulse
+              << " regrab_count=" << metrics.regrabCount
+              << " max_regrab_capture_distance="
+              << metrics.maximumRegrabCaptureDistance
+              << " max_regrab_capture_error="
+              << metrics.maximumRegrabCaptureError
+              << " inactive_grip_substeps="
+              << metrics.inactiveGripSubsteps
               << " max_friction_cone_ratio="
               << metrics.maximumFrictionConeRatio
               << " max_rolling_resistance_ratio="

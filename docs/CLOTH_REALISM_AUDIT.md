@@ -47,14 +47,21 @@ to a real produce bag.
   handle. All 1,465 knots and twelve fruits stay dynamic; attachment force and
   impulse are measured and gated. The two cuff rows have authored local bend
   reinforcement while the body yarn remains soft.
-- A strict timestamped `numi.grip.trajectory.v1` input now drives relative
+- A strict timestamped `numi.grip.trajectory.v2` input now drives relative
   hand translation and quaternion rotation through that same patch in both
   CPU and Metal. Local seam offsets rotate in the live XPBD target equation;
   the cloth is not posed. The loader enforces a zero/identity attached start,
-  unit quaternions, increasing timestamps, measured-duration coverage, and no
-  unsupported re-grab after release. Synthetic translation-only and rotating
-  paths produce distinct exact CPU states; ABI-11 Metal matches a focused FP64
-  rotation oracle and exactly replays the full-topology recorded path.
+  unit quaternions, increasing timestamps, and measured-duration coverage.
+  Version 2 supports release and later re-grab: both runtimes recapture the ten
+  live cuff offsets before integration, clear grip history, record the
+  reconstruction error, and reject any selected cuff knot beyond the authored
+  `0.12 m` capture radius. Synthetic translation-only and rotating paths
+  produce distinct exact CPU states; ABI-12 Metal matches a focused FP64
+  rotation oracle and exactly replays a full-topology path with two separate
+  release/re-grab cycles. The M4 Pro path spends 12 substeps released, reaches
+  attachment generation 3 on all ten grips, captures within `55.56 mm` with
+  `0.931 nm` maximum reconstruction error, retains `7.517 nm` maximum final
+  nonlocal self-overlap, and exactly replays without failure or escape.
 - Release masks latch across the trajectory and are distinct from numerical
   escape. Classification uses all 48 top-rim knots, an outward-oriented mouth
   frame, the projected opening polygon, and full-sphere clearance through the
@@ -118,6 +125,9 @@ but not the physical-calibration boundary.
   The model does not resolve multi-filament twist, fiber migration, knot
   tightening or sliding, plastic set, creep, damage, moisture, or rate- and
   load-dependent textile behavior.
+- Recorded re-grab still targets the fixed authored ten-knot cuff patch. There
+  is no live hand/cuff collision query, arbitrary seam-patch selection, finger
+  contact area, or measured grip-pressure distribution.
 - Calibration requires a physical specimen and recorded load-extension, bend,
   friction, drop, seam-pickup, swing, and spill trials. Parameters must be fit
   on calibration trials and then judged on held-out trajectories using measured

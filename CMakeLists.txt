@@ -607,6 +607,7 @@ if(BUILD_TESTING)
             -DMETAL_EXECUTABLE=$<TARGET_FILE:numi-solver-cloth-metal>
             -DIDENTITY_TRAJECTORY=${CMAKE_CURRENT_SOURCE_DIR}/calibration/trajectories/synthetic-identity.csv
             -DROTATION_TRAJECTORY=${CMAKE_CURRENT_SOURCE_DIR}/calibration/trajectories/synthetic-rotation.csv
+            -DREGRAB_TRAJECTORY=${CMAKE_CURRENT_SOURCE_DIR}/calibration/trajectories/synthetic-regrab.csv
             -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckGripTrajectory.cmake
     )
     set_tests_properties(
@@ -626,6 +627,20 @@ if(BUILD_TESTING)
     )
     set_tests_properties(
         cloth_grip_trajectory.reject_reactivation
+        PROPERTIES
+            LABELS "physics;cloth;grip;trajectory;6dof;rejection"
+            TIMEOUT 30
+    )
+    add_test(
+        NAME cloth_grip_trajectory.reject_distant_regrab
+        COMMAND ${CMAKE_COMMAND}
+            -DEXECUTABLE=$<TARGET_FILE:numi-solver-cloth-bag>
+            -DTRAJECTORY=${CMAKE_CURRENT_SOURCE_DIR}/calibration/trajectories/invalid-distant-regrab.csv
+            -DEXPECT=reattachment.exceeds.capture.radius
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ExpectGripTrajectoryFailure.cmake
+    )
+    set_tests_properties(
+        cloth_grip_trajectory.reject_distant_regrab
         PROPERTIES
             LABELS "physics;cloth;grip;trajectory;6dof;rejection"
             TIMEOUT 30
