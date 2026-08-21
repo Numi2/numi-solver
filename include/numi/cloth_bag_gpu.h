@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 1u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 2u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
 
 enum NumiClothBagGPUFailure : mr_u32 {
@@ -16,10 +16,15 @@ enum NumiClothBagGPUFailure : mr_u32 {
 typedef struct MR_ALIGN16 NumiClothBagGPUConfig {
     // x ABI, y particle count, z distance count, w grip count.
     mr_uint4 control;
+    // x crossing-angle knot count, y yarn-bend count,
+    // z 1 when the ground-aware bend response is active, w reserved.
+    mr_uint4 constraintCounts;
     // xyz gravitational acceleration, w substep timestep.
     mr_float4 gravityAndTimestep;
     // xyz virtual-handle position, w 1 when the grip is active.
     mr_float4 gripTargetAndActive;
+    // x yarn radius used by ground-aware bend projection, yzw reserved.
+    mr_float4 clothMaterial;
 } NumiClothBagGPUConfig;
 
 typedef struct MR_ALIGN16 NumiClothBagGPUParticle {
@@ -48,6 +53,22 @@ typedef struct MR_ALIGN16 NumiClothBagGPUGrip {
     mr_float4 lambda;
 } NumiClothBagGPUGrip;
 
+typedef struct MR_ALIGN16 NumiClothBagGPUKnot {
+    // xy warp endpoints, zw weft endpoints.
+    mr_uint4 particles;
+    // x graph color, yzw reserved.
+    mr_uint4 control;
+    // x rest cosine, y XPBD compliance, z accumulated lambda, w reserved.
+    mr_float4 material;
+} NumiClothBagGPUKnot;
+
+typedef struct MR_ALIGN16 NumiClothBagGPUBend {
+    // x first particle, y middle particle, z third particle, w graph color.
+    mr_uint4 particlesAndColor;
+    // x rest chord, y rest arc, z XPBD compliance, w accumulated lambda.
+    mr_float4 material;
+} NumiClothBagGPUBend;
+
 typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
     // x first constraint, y constraint count, z expected graph color,
     // w reserved.
@@ -55,9 +76,11 @@ typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
 } NumiClothBagGPUBatch;
 
 #ifndef __METAL_VERSION__
-static_assert(sizeof(NumiClothBagGPUConfig) == 48);
+static_assert(sizeof(NumiClothBagGPUConfig) == 80);
 static_assert(sizeof(NumiClothBagGPUParticle) == 48);
 static_assert(sizeof(NumiClothBagGPUDistance) == 32);
 static_assert(sizeof(NumiClothBagGPUGrip) == 48);
+static_assert(sizeof(NumiClothBagGPUKnot) == 48);
+static_assert(sizeof(NumiClothBagGPUBend) == 32);
 static_assert(sizeof(NumiClothBagGPUBatch) == 16);
 #endif

@@ -34,6 +34,8 @@ constexpr std::uint32_t kParticleCount =
     kAround * kLevels + kBottomInterior * kBottomInterior;
 constexpr std::uint32_t kDistanceCount = 2904u;
 constexpr std::uint32_t kGripCount = 10u;
+constexpr std::uint32_t kKnotCount = 1369u;
+constexpr std::uint32_t kBendCount = 2834u;
 constexpr float kOrdinaryMass = 0.000050f;
 constexpr float kHemMass = 0.000100f;
 constexpr float kGripCompliance = 2.0e-4f;
@@ -258,7 +260,11 @@ struct InitialState {
     std::vector<NumiClothBagGPUParticle> particles;
     std::vector<NumiClothBagGPUDistance> distances;
     std::vector<NumiClothBagGPUGrip> grips;
-    std::vector<NumiClothBagGPUBatch> batches;
+    std::vector<NumiClothBagGPUKnot> knots;
+    std::vector<NumiClothBagGPUBend> bends;
+    std::vector<NumiClothBagGPUBatch> distanceBatches;
+    std::vector<NumiClothBagGPUBatch> knotBatches;
+    std::vector<NumiClothBagGPUBatch> bendBatches;
 };
 
 struct EdgeSpec {
@@ -266,6 +272,19 @@ struct EdgeSpec {
     std::uint32_t second{};
     float compliance{};
     std::uint32_t kind{};
+    std::uint32_t color{};
+};
+
+struct KnotSpec {
+    std::array<std::uint32_t, 4> particles{};
+    std::uint32_t color{};
+};
+
+struct BendSpec {
+    std::uint32_t first{};
+    std::uint32_t middle{};
+    std::uint32_t third{};
+    float compliance{};
     std::uint32_t color{};
 };
 
@@ -416,7 +435,223 @@ InitialState makeInitialState() {
             result.distances.push_back(distance);
             ++batchStart;
         }
-        result.batches.push_back({u4(first, batchStart - first, color, 0u)});
+        result.distanceBatches.push_back({
+            u4(first, batchStart - first, color, 0u)
+        });
+    }
+
+    std::vector<KnotSpec> knotSpecs;
+    knotSpecs.reserve(kKnotCount);
+    const auto addKnot = [&knotSpecs](
+        const std::uint32_t warpFirst,
+        const std::uint32_t warpSecond,
+        const std::uint32_t weftFirst,
+        const std::uint32_t weftSecond
+    ) {
+        knotSpecs.push_back({
+            {{warpFirst, warpSecond, weftFirst, weftSecond}}, 0u
+        });
+    };
+    for (std::uint32_t level = 1u; level + 1u < kLevels; ++level) {
+        for (std::uint32_t ring = 0u; ring < kAround; ++ring) {
+            addKnot(
+                nodeIndex(level - 1u, ring),
+                nodeIndex(level + 1u, ring),
+                nodeIndex(level, ring + kAround - 1u),
+                nodeIndex(level, ring + 1u)
+            );
+        }
+    }
+    for (std::uint32_t row = 1u; row + 1u < kBottomGrid; ++row) {
+        for (std::uint32_t column = 1u;
+             column + 1u < kBottomGrid;
+             ++column) {
+            addKnot(
+                bottomGridIndex(row - 1u, column),
+                bottomGridIndex(row + 1u, column),
+                bottomGridIndex(row, column - 1u),
+                bottomGridIndex(row, column + 1u)
+            );
+        }
+    }
+    if (knotSpecs.size() != kKnotCount) {
+        throw std::logic_error("cloth knot topology count changed");
+    }
+    particleColors.assign(kParticleCount, 0u);
+    std::uint32_t knotColorCount = 0u;
+    for (KnotSpec& knot : knotSpecs) {
+        std::uint64_t unavailable = 0u;
+        for (const std::uint32_t particleIndex : knot.particles) {
+            unavailable |= particleColors[particleIndex];
+        }
+        const std::uint64_t available = ~unavailable;
+        if (available == 0u) {
+            throw std::logic_error("cloth knot coloring exceeds 64 colors");
+        }
+        knot.color = static_cast<std::uint32_t>(
+            std::countr_zero(available)
+        );
+        knotColorCount = std::max(knotColorCount, knot.color + 1u);
+        const std::uint64_t bit = std::uint64_t{1u} << knot.color;
+        for (const std::uint32_t particleIndex : knot.particles) {
+            particleColors[particleIndex] |= bit;
+        }
+    }
+    std::stable_sort(
+        knotSpecs.begin(),
+        knotSpecs.end(),
+        [](const KnotSpec& first, const KnotSpec& second) {
+            return first.color < second.color;
+        }
+    );
+    result.knots.reserve(knotSpecs.size());
+    batchStart = 0u;
+    for (std::uint32_t color = 0u; color < knotColorCount; ++color) {
+        const std::uint32_t first = batchStart;
+        while (batchStart < knotSpecs.size() &&
+               knotSpecs[batchStart].color == color) {
+            const KnotSpec& source = knotSpecs[batchStart];
+            const DVec3 warpVector =
+                d3(result.particles[source.particles[1]].positionAndInverseMass) -
+                d3(result.particles[source.particles[0]].positionAndInverseMass);
+            const DVec3 weftVector =
+                d3(result.particles[source.particles[3]].positionAndInverseMass) -
+                d3(result.particles[source.particles[2]].positionAndInverseMass);
+            NumiClothBagGPUKnot knot{};
+            knot.particles = u4(
+                source.particles[0],
+                source.particles[1],
+                source.particles[2],
+                source.particles[3]
+            );
+            knot.control = u4(source.color, 0u, 0u, 0u);
+            knot.material = f4(
+                static_cast<float>(dot(
+                    warpVector / length(warpVector),
+                    weftVector / length(weftVector)
+                )),
+                2.0e-6f,
+                0.0f,
+                0.0f
+            );
+            result.knots.push_back(knot);
+            ++batchStart;
+        }
+        result.knotBatches.push_back({
+            u4(first, batchStart - first, color, 0u)
+        });
+    }
+
+    std::vector<BendSpec> bendSpecs;
+    bendSpecs.reserve(kBendCount);
+    const auto addBend = [&bendSpecs](
+        const std::uint32_t first,
+        const std::uint32_t middle,
+        const std::uint32_t third,
+        const float compliance
+    ) {
+        bendSpecs.push_back({first, middle, third, compliance, 0u});
+    };
+    for (std::uint32_t level = 0u; level < kLevels; ++level) {
+        for (std::uint32_t ring = 0u; ring < kAround; ++ring) {
+            addBend(
+                nodeIndex(level, ring + kAround - 1u),
+                nodeIndex(level, ring),
+                nodeIndex(level, ring + 1u),
+                level + 2u >= kLevels ? 1.0e-8f : 8.0e-2f
+            );
+        }
+    }
+    for (std::uint32_t level = 1u; level + 1u < kLevels; ++level) {
+        for (std::uint32_t ring = 0u; ring < kAround; ++ring) {
+            addBend(
+                nodeIndex(level - 1u, ring),
+                nodeIndex(level, ring),
+                nodeIndex(level + 1u, ring),
+                8.0e-2f
+            );
+        }
+    }
+    for (std::uint32_t row = 1u; row + 1u < kBottomGrid; ++row) {
+        for (std::uint32_t column = 1u;
+             column + 1u < kBottomGrid;
+             ++column) {
+            addBend(
+                bottomGridIndex(row, column - 1u),
+                bottomGridIndex(row, column),
+                bottomGridIndex(row, column + 1u),
+                8.0e-2f
+            );
+            addBend(
+                bottomGridIndex(column - 1u, row),
+                bottomGridIndex(column, row),
+                bottomGridIndex(column + 1u, row),
+                8.0e-2f
+            );
+        }
+    }
+    if (bendSpecs.size() != kBendCount) {
+        throw std::logic_error("cloth bend topology count changed");
+    }
+    particleColors.assign(kParticleCount, 0u);
+    std::uint32_t bendColorCount = 0u;
+    for (BendSpec& bend : bendSpecs) {
+        const std::uint64_t unavailable =
+            particleColors[bend.first] | particleColors[bend.third];
+        const std::uint64_t available = ~unavailable;
+        if (available == 0u) {
+            throw std::logic_error("cloth bend coloring exceeds 64 colors");
+        }
+        bend.color = static_cast<std::uint32_t>(
+            std::countr_zero(available)
+        );
+        bendColorCount = std::max(bendColorCount, bend.color + 1u);
+        const std::uint64_t bit = std::uint64_t{1u} << bend.color;
+        particleColors[bend.first] |= bit;
+        particleColors[bend.third] |= bit;
+    }
+    std::stable_sort(
+        bendSpecs.begin(),
+        bendSpecs.end(),
+        [](const BendSpec& first, const BendSpec& second) {
+            return first.color < second.color;
+        }
+    );
+    result.bends.reserve(bendSpecs.size());
+    batchStart = 0u;
+    for (std::uint32_t color = 0u; color < bendColorCount; ++color) {
+        const std::uint32_t first = batchStart;
+        while (batchStart < bendSpecs.size() &&
+               bendSpecs[batchStart].color == color) {
+            const BendSpec& source = bendSpecs[batchStart];
+            const DVec3 firstPosition = d3(
+                result.particles[source.first].positionAndInverseMass
+            );
+            const DVec3 middlePosition = d3(
+                result.particles[source.middle].positionAndInverseMass
+            );
+            const DVec3 thirdPosition = d3(
+                result.particles[source.third].positionAndInverseMass
+            );
+            NumiClothBagGPUBend bend{};
+            bend.particlesAndColor = u4(
+                source.first, source.middle, source.third, source.color
+            );
+            bend.material = f4(
+                static_cast<float>(length(thirdPosition - firstPosition)),
+                static_cast<float>(
+                    length(middlePosition - firstPosition) +
+                    length(thirdPosition - middlePosition)
+                ),
+                source.compliance,
+                0.0f
+            );
+            result.bends.push_back(bend);
+            ++batchStart;
+        }
+        result.bendBatches.push_back({
+            u4(first, batchStart - first, color, 0u)
+        });
     }
 
     const DVec3 base = authoredPosition(kLevels - 1u, 0u);
@@ -426,6 +661,9 @@ InitialState makeInitialState() {
         kDistanceCount,
         kGripCount
     );
+    result.config.constraintCounts = u4(
+        kKnotCount, kBendCount, 0u, 0u
+    );
     result.config.gravityAndTimestep = f4(0.0f, 0.0f, -9.81f, kTimestep);
     result.config.gripTargetAndActive = f4(
         static_cast<float>(base.x + 0.002),
@@ -433,6 +671,7 @@ InitialState makeInitialState() {
         static_cast<float>(base.z + 0.006),
         1.0f
     );
+    result.config.clothMaterial = f4(0.004f, 0.0f, 0.0f, 0.0f);
     result.grips.reserve(kGripCount);
     for (std::uint32_t level = kLevels - 2u; level < kLevels; ++level) {
         for (const int offset : {-2, -1, 0, 1, 2}) {
@@ -464,8 +703,10 @@ InitialState makeStrainProbeState() {
     result.config.control = u4(
         NUMI_CLOTH_BAG_GPU_ABI_VERSION, 4u, 2u, 0u
     );
+    result.config.constraintCounts = u4(0u, 0u, 0u, 0u);
     result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
     result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    result.config.clothMaterial = f4(0.004f, 0.0f, 0.0f, 0.0f);
     const auto particle = [](const float x, const float inverseMass) {
         NumiClothBagGPUParticle value{};
         value.positionAndInverseMass = f4(x, 0.0f, 0.0f, inverseMass);
@@ -488,12 +729,51 @@ InitialState makeStrainProbeState() {
     compression.particlesAndColor = u4(2u, 3u, 0u, 0u);
     compression.material = f4(1.0f, 0.0f, 0.0f, kStrainLimit);
     result.distances = {extension, compression};
-    result.batches = {{u4(0u, 2u, 0u, 0u)}};
+    result.distanceBatches = {{u4(0u, 2u, 0u, 0u)}};
+    return result;
+}
+
+InitialState makeGroundBendProbeState() {
+    InitialState result;
+    result.config.control = u4(
+        NUMI_CLOTH_BAG_GPU_ABI_VERSION, 3u, 0u, 0u
+    );
+    result.config.constraintCounts = u4(0u, 1u, 1u, 0u);
+    result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
+    result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    result.config.clothMaterial = f4(0.004f, 0.0f, 0.0f, 0.0f);
+    const auto particle = [](const DVec3 position) {
+        NumiClothBagGPUParticle value{};
+        value.positionAndInverseMass = f4(
+            static_cast<float>(position.x),
+            static_cast<float>(position.y),
+            static_cast<float>(position.z),
+            1.0f
+        );
+        value.previousAndMass = f4(
+            static_cast<float>(position.x),
+            static_cast<float>(position.y),
+            static_cast<float>(position.z),
+            1.0f
+        );
+        value.velocity = f4(0.0f, 0.0f, 0.0f);
+        return value;
+    };
+    result.particles = {
+        particle({0.0, 0.0, 0.004}),
+        particle({0.5, 0.0, 0.054}),
+        particle({1.0, 0.0, 0.104}),
+    };
+    NumiClothBagGPUBend bend{};
+    bend.particlesAndColor = u4(0u, 1u, 2u, 0u);
+    bend.material = f4(1.2f, 1.2f, 0.0f, 0.0f);
+    result.bends = {bend};
+    result.bendBatches = {{u4(0u, 1u, 0u, 0u)}};
     return result;
 }
 
 bool verifyColoring(const InitialState& state) {
-    for (const NumiClothBagGPUBatch& batch : state.batches) {
+    for (const NumiClothBagGPUBatch& batch : state.distanceBatches) {
         std::vector<bool> used(state.particles.size(), false);
         for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
             const auto& constraint = state.distances[
@@ -506,6 +786,42 @@ bool verifyColoring(const InitialState& state) {
             }
             used[constraint.particlesAndColor.x] = true;
             used[constraint.particlesAndColor.y] = true;
+        }
+    }
+    for (const NumiClothBagGPUBatch& batch : state.knotBatches) {
+        std::vector<bool> used(state.particles.size(), false);
+        for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
+            const auto& constraint = state.knots[batch.control.x + local];
+            if (constraint.control.x != batch.control.z) {
+                return false;
+            }
+            const std::array<std::uint32_t, 4> participants{{
+                constraint.particles.x,
+                constraint.particles.y,
+                constraint.particles.z,
+                constraint.particles.w,
+            }};
+            for (const std::uint32_t particleIndex : participants) {
+                if (particleIndex >= used.size() || used[particleIndex]) {
+                    return false;
+                }
+                used[particleIndex] = true;
+            }
+        }
+    }
+    for (const NumiClothBagGPUBatch& batch : state.bendBatches) {
+        std::vector<bool> used(state.particles.size(), false);
+        for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
+            const auto& constraint = state.bends[batch.control.x + local];
+            if (constraint.particlesAndColor.w != batch.control.z ||
+                constraint.particlesAndColor.x >= used.size() ||
+                constraint.particlesAndColor.z >= used.size() ||
+                used[constraint.particlesAndColor.x] ||
+                used[constraint.particlesAndColor.z]) {
+                return false;
+            }
+            used[constraint.particlesAndColor.x] = true;
+            used[constraint.particlesAndColor.z] = true;
         }
     }
     std::vector<bool> gripUsed(state.particles.size(), false);
@@ -541,10 +857,29 @@ struct OracleGrip {
     double compliance{};
 };
 
+struct OracleKnot {
+    std::array<std::uint32_t, 4> particles{};
+    double restCosine{};
+    double compliance{};
+    double lambda{};
+};
+
+struct OracleBend {
+    std::uint32_t first{};
+    std::uint32_t middle{};
+    std::uint32_t third{};
+    double restChord{};
+    double restArc{};
+    double compliance{};
+    double lambda{};
+};
+
 struct OracleResult {
     std::vector<OracleParticle> particles;
     std::vector<OracleDistance> distances;
     std::vector<OracleGrip> grips;
+    std::vector<OracleKnot> knots;
+    std::vector<OracleBend> bends;
 };
 
 OracleResult runOracle(
@@ -582,6 +917,32 @@ OracleResult runOracle(
             static_cast<double>(source.targetOffsetAndCompliance.w),
         });
     }
+    result.knots.reserve(initial.knots.size());
+    for (const auto& source : initial.knots) {
+        result.knots.push_back({
+            {{
+                source.particles.x,
+                source.particles.y,
+                source.particles.z,
+                source.particles.w,
+            }},
+            static_cast<double>(source.material.x),
+            static_cast<double>(source.material.y),
+            0.0,
+        });
+    }
+    result.bends.reserve(initial.bends.size());
+    for (const auto& source : initial.bends) {
+        result.bends.push_back({
+            source.particlesAndColor.x,
+            source.particlesAndColor.y,
+            source.particlesAndColor.z,
+            static_cast<double>(source.material.x),
+            static_cast<double>(source.material.y),
+            static_cast<double>(source.material.z),
+            0.0,
+        });
+    }
     const double timestep = initial.config.gravityAndTimestep.w;
     const DVec3 gravity = d3(initial.config.gravityAndTimestep);
     const DVec3 gripTarget = d3(initial.config.gripTargetAndActive);
@@ -593,7 +954,7 @@ OracleResult runOracle(
         }
     }
     for (std::uint32_t iteration = 0u; iteration < iterations; ++iteration) {
-        for (const NumiClothBagGPUBatch& batch : initial.batches) {
+        for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
             for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
                 OracleDistance& constraint =
                     result.distances[batch.control.x + local];
@@ -618,6 +979,195 @@ OracleResult runOracle(
                 second.position += correction * second.inverseMass;
             }
         }
+        for (const NumiClothBagGPUBatch& batch : initial.knotBatches) {
+            for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
+                OracleKnot& constraint =
+                    result.knots[batch.control.x + local];
+                OracleParticle& warpFirst =
+                    result.particles[constraint.particles[0]];
+                OracleParticle& warpSecond =
+                    result.particles[constraint.particles[1]];
+                OracleParticle& weftFirst =
+                    result.particles[constraint.particles[2]];
+                OracleParticle& weftSecond =
+                    result.particles[constraint.particles[3]];
+                const DVec3 warpVector =
+                    warpSecond.position - warpFirst.position;
+                const DVec3 weftVector =
+                    weftSecond.position - weftFirst.position;
+                const double warpLength = length(warpVector);
+                const double weftLength = length(weftVector);
+                if (!(warpLength > 1.0e-12) ||
+                    !(weftLength > 1.0e-12)) {
+                    continue;
+                }
+                const DVec3 warp = warpVector / warpLength;
+                const DVec3 weft = weftVector / weftLength;
+                const double cosine = std::clamp(dot(warp, weft), -1.0, 1.0);
+                const double value = cosine - constraint.restCosine;
+                const DVec3 warpGradient =
+                    (weft - warp * cosine) / warpLength;
+                const DVec3 weftGradient =
+                    (warp - weft * cosine) / weftLength;
+                const std::array<DVec3, 4> gradients{{
+                    warpGradient * -1.0,
+                    warpGradient,
+                    weftGradient * -1.0,
+                    weftGradient,
+                }};
+                const std::array<double, 4> inverseMasses{{
+                    warpFirst.inverseMass,
+                    warpSecond.inverseMass,
+                    weftFirst.inverseMass,
+                    weftSecond.inverseMass,
+                }};
+                const double alpha = constraint.compliance /
+                    (timestep * timestep);
+                double denominator = alpha;
+                for (std::size_t participant = 0u;
+                     participant < gradients.size();
+                     ++participant) {
+                    denominator += inverseMasses[participant] *
+                        dot(gradients[participant], gradients[participant]);
+                }
+                if (!(denominator > 0.0)) {
+                    continue;
+                }
+                const double deltaLambda =
+                    (-value - alpha * constraint.lambda) / denominator;
+                constraint.lambda += deltaLambda;
+                warpFirst.position += gradients[0] *
+                    (inverseMasses[0] * deltaLambda);
+                warpSecond.position += gradients[1] *
+                    (inverseMasses[1] * deltaLambda);
+                weftFirst.position += gradients[2] *
+                    (inverseMasses[2] * deltaLambda);
+                weftSecond.position += gradients[3] *
+                    (inverseMasses[3] * deltaLambda);
+            }
+        }
+        if (iteration % 2u == 0u) {
+            for (const NumiClothBagGPUBatch& batch : initial.bendBatches) {
+                for (std::uint32_t local = 0u;
+                     local < batch.control.y;
+                     ++local) {
+                    OracleBend& constraint =
+                        result.bends[batch.control.x + local];
+                    OracleParticle& first =
+                        result.particles[constraint.first];
+                    OracleParticle& third =
+                        result.particles[constraint.third];
+                    const DVec3 difference = third.position - first.position;
+                    const double currentChord = length(difference);
+                    if (!(currentChord > 1.0e-12)) {
+                        continue;
+                    }
+                    const double value =
+                        currentChord - constraint.restChord;
+                    const DVec3 direction = difference / currentChord;
+                    const std::array<DVec3, 2> gradients{{
+                        direction * -1.0, direction
+                    }};
+                    const std::array<double, 2> inverseMasses{{
+                        first.inverseMass, third.inverseMass
+                    }};
+                    const double alpha = constraint.compliance /
+                        (timestep * timestep);
+                    double freeDenominator = alpha;
+                    for (std::size_t participant = 0u;
+                         participant < gradients.size();
+                         ++participant) {
+                        freeDenominator += inverseMasses[participant] *
+                            dot(
+                                gradients[participant],
+                                gradients[participant]
+                            );
+                    }
+                    if (!(freeDenominator >= 1.0e-16)) {
+                        continue;
+                    }
+                    const double numerator =
+                        -value - alpha * constraint.lambda;
+                    const double freeDeltaLambda =
+                        numerator / freeDenominator;
+                    const bool groundEnabled =
+                        initial.config.constraintCounts.z != 0u;
+                    const double groundHeight =
+                        initial.config.clothMaterial.x;
+                    const std::array<DVec3, 2> positions{{
+                        first.position, third.position
+                    }};
+                    std::array<bool, 2> groundActive{};
+                    double denominator = alpha;
+                    for (std::size_t participant = 0u;
+                         participant < gradients.size();
+                         ++participant) {
+                        groundActive[participant] = groundEnabled &&
+                            positions[participant].z <=
+                                groundHeight + 1.0e-9 &&
+                            gradients[participant].z * freeDeltaLambda < 0.0;
+                        denominator += inverseMasses[participant] * (
+                            dot(
+                                gradients[participant],
+                                gradients[participant]
+                            ) -
+                            (groundActive[participant]
+                                ? gradients[participant].z *
+                                    gradients[participant].z
+                                : 0.0)
+                        );
+                    }
+                    if (!(denominator >= 1.0e-16)) {
+                        continue;
+                    }
+                    const double deltaLambda = numerator / denominator;
+                    double fraction = 1.0;
+                    if (groundEnabled) {
+                        for (std::size_t participant = 0u;
+                             participant < gradients.size();
+                             ++participant) {
+                            if (groundActive[participant]) {
+                                continue;
+                            }
+                            const double verticalCorrection =
+                                gradients[participant].z *
+                                inverseMasses[participant] * deltaLambda;
+                            if (verticalCorrection < 0.0) {
+                                fraction = std::min(
+                                    fraction,
+                                    std::max(
+                                        0.0,
+                                        positions[participant].z - groundHeight
+                                    ) / -verticalCorrection
+                                );
+                            }
+                        }
+                    }
+                    const double appliedLambda = deltaLambda * fraction;
+                    constraint.lambda += appliedLambda;
+                    DVec3 firstCorrection = gradients[0] *
+                        (inverseMasses[0] * appliedLambda);
+                    DVec3 thirdCorrection = gradients[1] *
+                        (inverseMasses[1] * appliedLambda);
+                    if (groundActive[0]) {
+                        firstCorrection.z = 0.0;
+                    }
+                    if (groundActive[1]) {
+                        thirdCorrection.z = 0.0;
+                    }
+                    first.position += firstCorrection;
+                    third.position += thirdCorrection;
+                    if (groundEnabled) {
+                        first.position.z = std::max(
+                            first.position.z, groundHeight
+                        );
+                        third.position.z = std::max(
+                            third.position.z, groundHeight
+                        );
+                    }
+                }
+            }
+        }
         for (OracleGrip& grip : result.grips) {
             OracleParticle& particle = result.particles[grip.particle];
             const double alpha = grip.compliance / (timestep * timestep);
@@ -633,7 +1183,7 @@ OracleResult runOracle(
         }
     }
     for (std::uint32_t sweep = 0u; sweep < strainSweeps; ++sweep) {
-        for (const NumiClothBagGPUBatch& batch : initial.batches) {
+        for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
             for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
                 const OracleDistance& constraint =
                     result.distances[batch.control.x + local];
@@ -720,6 +1270,8 @@ struct GPUResult {
     std::vector<NumiClothBagGPUParticle> particles;
     std::vector<NumiClothBagGPUDistance> distances;
     std::vector<NumiClothBagGPUGrip> grips;
+    std::vector<NumiClothBagGPUKnot> knots;
+    std::vector<NumiClothBagGPUBend> bends;
     std::uint32_t failure{};
     double seconds{};
 };
@@ -727,6 +1279,8 @@ struct GPUResult {
 struct Pipelines {
     id<MTLComputePipelineState> begin;
     id<MTLComputePipelineState> distance;
+    id<MTLComputePipelineState> knot;
+    id<MTLComputePipelineState> bend;
     id<MTLComputePipelineState> grip;
     id<MTLComputePipelineState> strain;
     id<MTLComputePipelineState> finalize;
@@ -758,6 +1312,8 @@ GPUResult runGPU(
     id<MTLBuffer> particleBuffer = makeBytes(initial.particles);
     id<MTLBuffer> distanceBuffer = makeBytes(initial.distances);
     id<MTLBuffer> gripBuffer = makeBytes(initial.grips);
+    id<MTLBuffer> knotBuffer = makeBytes(initial.knots);
+    id<MTLBuffer> bendBuffer = makeBytes(initial.bends);
     std::uint32_t zero = 0u;
     id<MTLBuffer> failureBuffer = [device
         newBufferWithBytes:&zero
@@ -765,6 +1321,7 @@ GPUResult runGPU(
                   options:MTLResourceStorageModeShared];
     if (configBuffer == nil || particleBuffer == nil ||
         distanceBuffer == nil || gripBuffer == nil ||
+        knotBuffer == nil || bendBuffer == nil ||
         failureBuffer == nil) {
         throw std::runtime_error("failed to allocate Metal cloth buffers");
     }
@@ -779,7 +1336,9 @@ GPUResult runGPU(
     [encoder setBuffer:particleBuffer offset:0 atIndex:1];
     [encoder setBuffer:distanceBuffer offset:0 atIndex:2];
     [encoder setBuffer:gripBuffer offset:0 atIndex:3];
-    [encoder setBuffer:failureBuffer offset:0 atIndex:4];
+    [encoder setBuffer:knotBuffer offset:0 atIndex:4];
+    [encoder setBuffer:bendBuffer offset:0 atIndex:5];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:6];
     dispatch(
         encoder,
         pipelines.begin,
@@ -787,11 +1346,13 @@ GPUResult runGPU(
             initial.particles.size(),
             initial.distances.size(),
             initial.grips.size(),
+            initial.knots.size(),
+            initial.bends.size(),
         })
     );
 
     for (std::uint32_t iteration = 0u; iteration < iterations; ++iteration) {
-        for (const NumiClothBagGPUBatch& batch : initial.batches) {
+        for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
             [encoder setComputePipelineState:pipelines.distance];
             [encoder setBuffer:configBuffer offset:0 atIndex:0];
             [encoder setBuffer:particleBuffer offset:0 atIndex:1];
@@ -799,6 +1360,26 @@ GPUResult runGPU(
             [encoder setBytes:&batch length:sizeof(batch) atIndex:3];
             [encoder setBuffer:failureBuffer offset:0 atIndex:4];
             dispatch(encoder, pipelines.distance, batch.control.y);
+        }
+        for (const NumiClothBagGPUBatch& batch : initial.knotBatches) {
+            [encoder setComputePipelineState:pipelines.knot];
+            [encoder setBuffer:configBuffer offset:0 atIndex:0];
+            [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+            [encoder setBuffer:knotBuffer offset:0 atIndex:2];
+            [encoder setBytes:&batch length:sizeof(batch) atIndex:3];
+            [encoder setBuffer:failureBuffer offset:0 atIndex:4];
+            dispatch(encoder, pipelines.knot, batch.control.y);
+        }
+        if (iteration % 2u == 0u) {
+            for (const NumiClothBagGPUBatch& batch : initial.bendBatches) {
+                [encoder setComputePipelineState:pipelines.bend];
+                [encoder setBuffer:configBuffer offset:0 atIndex:0];
+                [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+                [encoder setBuffer:bendBuffer offset:0 atIndex:2];
+                [encoder setBytes:&batch length:sizeof(batch) atIndex:3];
+                [encoder setBuffer:failureBuffer offset:0 atIndex:4];
+                dispatch(encoder, pipelines.bend, batch.control.y);
+            }
         }
         [encoder setComputePipelineState:pipelines.grip];
         [encoder setBuffer:configBuffer offset:0 atIndex:0];
@@ -808,7 +1389,7 @@ GPUResult runGPU(
         dispatch(encoder, pipelines.grip, initial.grips.size());
     }
     for (std::uint32_t sweep = 0u; sweep < strainSweeps; ++sweep) {
-        for (const NumiClothBagGPUBatch& batch : initial.batches) {
+        for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
             [encoder setComputePipelineState:pipelines.strain];
             [encoder setBuffer:configBuffer offset:0 atIndex:0];
             [encoder setBuffer:particleBuffer offset:0 atIndex:1];
@@ -842,6 +1423,8 @@ GPUResult runGPU(
     assign(result.particles, particleBuffer, initial.particles);
     assign(result.distances, distanceBuffer, initial.distances);
     assign(result.grips, gripBuffer, initial.grips);
+    assign(result.knots, knotBuffer, initial.knots);
+    assign(result.bends, bendBuffer, initial.bends);
     result.failure = *static_cast<const std::uint32_t*>(failureBuffer.contents);
     if (commandBuffer.GPUEndTime >= commandBuffer.GPUStartTime) {
         result.seconds = commandBuffer.GPUEndTime - commandBuffer.GPUStartTime;
@@ -877,6 +1460,8 @@ std::uint64_t hashGPUResult(const GPUResult& result) {
     append(result.particles);
     append(result.distances);
     append(result.grips);
+    append(result.knots);
+    append(result.bends);
     hash ^= result.failure;
     hash *= 1099511628211ull;
     return hash;
@@ -962,6 +1547,8 @@ int run(const int argc, const char* const* argv) {
     const Pipelines pipelines{
         makePipeline(device, library, @"numi_cloth_bag_begin_substep"),
         makePipeline(device, library, @"numi_cloth_bag_solve_distance"),
+        makePipeline(device, library, @"numi_cloth_bag_solve_knot"),
+        makePipeline(device, library, @"numi_cloth_bag_solve_bend"),
         makePipeline(device, library, @"numi_cloth_bag_solve_grip"),
         makePipeline(device, library, @"numi_cloth_bag_limit_strain"),
         makePipeline(device, library, @"numi_cloth_bag_finalize_substep"),
@@ -989,6 +1576,18 @@ int run(const int argc, const char* const* argv) {
         0u,
         1u
     );
+    const InitialState groundBendInitial = makeGroundBendProbeState();
+    const OracleResult groundBendOracle = runOracle(
+        groundBendInitial, 1u, 0u
+    );
+    const GPUResult groundBendGPU = runGPU(
+        device,
+        queue,
+        pipelines,
+        groundBendInitial,
+        1u,
+        0u
+    );
     const GPUResult& gpu = gpuResults.front();
     bool deterministic = true;
     for (std::size_t replay = 1u; replay < gpuResults.size(); ++replay) {
@@ -996,13 +1595,19 @@ int run(const int argc, const char* const* argv) {
             gpu.failure == gpuResults[replay].failure &&
             bitwiseEqual(gpu.particles, gpuResults[replay].particles) &&
             bitwiseEqual(gpu.distances, gpuResults[replay].distances) &&
-            bitwiseEqual(gpu.grips, gpuResults[replay].grips);
+            bitwiseEqual(gpu.grips, gpuResults[replay].grips) &&
+            bitwiseEqual(gpu.knots, gpuResults[replay].knots) &&
+            bitwiseEqual(gpu.bends, gpuResults[replay].bends);
     }
 
     double maximumPositionError = 0.0;
     double maximumVelocityError = 0.0;
     double maximumDistanceLambdaError = 0.0;
     double maximumGripLambdaError = 0.0;
+    double maximumKnotLambdaError = 0.0;
+    double maximumBendLambdaError = 0.0;
+    double maximumKnotLambda = 0.0;
+    double maximumBendLambda = 0.0;
     double maximumDisplacement = 0.0;
     for (std::size_t index = 0u; index < gpu.particles.size(); ++index) {
         const DVec3 gpuPosition = d3(
@@ -1042,6 +1647,22 @@ int run(const int argc, const char* const* argv) {
                 oracle.distances[index].lambda
             )
         );
+    }
+    for (std::size_t index = 0u; index < gpu.knots.size(); ++index) {
+        const double gpuLambda = gpu.knots[index].material.z;
+        maximumKnotLambdaError = std::max(
+            maximumKnotLambdaError,
+            std::abs(gpuLambda - oracle.knots[index].lambda)
+        );
+        maximumKnotLambda = std::max(maximumKnotLambda, std::abs(gpuLambda));
+    }
+    for (std::size_t index = 0u; index < gpu.bends.size(); ++index) {
+        const double gpuLambda = gpu.bends[index].material.w;
+        maximumBendLambdaError = std::max(
+            maximumBendLambdaError,
+            std::abs(gpuLambda - oracle.bends[index].lambda)
+        );
+        maximumBendLambda = std::max(maximumBendLambda, std::abs(gpuLambda));
     }
     double gripForce = 0.0;
     for (std::size_t index = 0u; index < gpu.grips.size(); ++index) {
@@ -1104,6 +1725,23 @@ int run(const int argc, const char* const* argv) {
         pairCenterOfMass(strainGPU.particles) -
         pairCenterOfMass(strainInitial.particles)
     );
+    double groundBendPositionError = 0.0;
+    for (std::size_t index = 0u;
+         index < groundBendGPU.particles.size();
+         ++index) {
+        const DVec3 delta =
+            d3(groundBendGPU.particles[index].positionAndInverseMass) -
+            groundBendOracle.particles[index].position;
+        groundBendPositionError = std::max(
+            groundBendPositionError,
+            std::max({std::abs(delta.x), std::abs(delta.y), std::abs(delta.z)})
+        );
+    }
+    const double supportedHeight =
+        groundBendGPU.particles[0].positionAndInverseMass.z;
+    const double freeEndpointRise =
+        groundBendGPU.particles[2].positionAndInverseMass.z -
+        groundBendInitial.particles[2].positionAndInverseMass.z;
     double averageSeconds = 0.0;
     for (const GPUResult& replay : gpuResults) {
         averageSeconds += replay.seconds;
@@ -1114,18 +1752,26 @@ int run(const int argc, const char* const* argv) {
         initial.particles.size() == kParticleCount &&
         initial.distances.size() == kDistanceCount &&
         initial.grips.size() == kGripCount &&
+        initial.knots.size() == kKnotCount &&
+        initial.bends.size() == kBendCount &&
         coloringExact && gpu.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
         deterministic && maximumPositionError <= 2.0e-5 &&
         maximumVelocityError <= 0.12 &&
         maximumDistanceLambdaError <= 2.0e-8 &&
         maximumGripLambdaError <= 2.0e-8 &&
+        maximumKnotLambdaError <= 2.0e-8 &&
+        maximumBendLambdaError <= 2.0e-8 &&
+        maximumKnotLambda > 1.0e-12 && maximumBendLambda > 1.0e-12 &&
         strainViolation <= 2.0e-6 &&
         maximumDisplacement > 1.0e-4 && gripForce > 1.0 &&
         strainGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
         probeInitialViolation > 0.20 && probeFinalViolation <= 2.0e-7 &&
         probePositionError <= 2.0e-7 &&
         std::abs(compressedFinalLength - compressedInitialLength) <= 1.0e-7 &&
-        probeCenterOfMassError <= 1.0e-7;
+        probeCenterOfMassError <= 1.0e-7 &&
+        groundBendGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
+        groundBendPositionError <= 2.0e-7 &&
+        supportedHeight >= 0.004 - 1.0e-8 && freeEndpointRise > 0.0;
 
     std::cout << std::fixed << std::setprecision(12)
               << "device=" << device.name.UTF8String << '\n'
@@ -1133,7 +1779,11 @@ int run(const int argc, const char* const* argv) {
               << " particles=" << initial.particles.size()
               << " distances=" << initial.distances.size()
               << " grips=" << initial.grips.size()
-              << " colors=" << initial.batches.size() << '\n'
+              << " knots=" << initial.knots.size()
+              << " bends=" << initial.bends.size() << '\n'
+              << "distance_colors=" << initial.distanceBatches.size()
+              << " knot_colors=" << initial.knotBatches.size()
+              << " bend_colors=" << initial.bendBatches.size() << '\n'
               << "iterations=" << iterations
               << " strain_sweeps=" << strainSweeps
               << " replays=" << replays << '\n'
@@ -1145,6 +1795,10 @@ int run(const int argc, const char* const* argv) {
               << "max_distance_lambda_error="
               << maximumDistanceLambdaError
               << " max_grip_lambda_error=" << maximumGripLambdaError << '\n'
+              << "max_knot_lambda_error=" << maximumKnotLambdaError
+              << " max_bend_lambda_error=" << maximumBendLambdaError
+              << " max_knot_lambda=" << maximumKnotLambda
+              << " max_bend_lambda=" << maximumBendLambda << '\n'
               << "max_strain_violation=" << strainViolation
               << " max_displacement=" << maximumDisplacement
               << " grip_force=" << gripForce << '\n'
@@ -1155,6 +1809,11 @@ int run(const int argc, const char* const* argv) {
               << compressedFinalLength - compressedInitialLength
               << " strain_probe_com_error=" << probeCenterOfMassError
               << " strain_probe_failure_flags=" << strainGPU.failure << '\n'
+              << "ground_bend_position_error=" << groundBendPositionError
+              << " supported_height=" << supportedHeight
+              << " free_endpoint_rise=" << freeEndpointRise
+              << " ground_bend_failure_flags=" << groundBendGPU.failure
+              << '\n'
               << "average_gpu_seconds=" << averageSeconds
               << " state_hash=0x" << std::hex << hashGPUResult(gpu)
               << std::dec << '\n'

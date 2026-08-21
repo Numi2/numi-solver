@@ -18,11 +18,12 @@ or self-contact primitives.
 
 This is the complete CPU reference. It does **not** prove complete Metal cloth
 contact, hardware performance, or calibration to a particular physical bag.
-The initial Metal path independently matches gravity, axial XPBD, unilateral
-strain limiting, and the ten-knot seam grip on the full topology; see
-[METAL_CLOTH.md](METAL_CLOTH.md). This reference locks the remaining topology,
-equations, collision geometry, three load cases, deterministic replay, and
-exported states for the device implementation to match.
+The initial Metal path independently matches gravity, axial XPBD,
+crossing-angle knots, ground-aware yarn bending, unilateral strain limiting,
+and the ten-knot seam grip on the full topology; see
+[METAL_CLOTH.md](METAL_CLOTH.md). This reference locks the remaining collision
+geometry, loads, three load cases, deterministic replay, and exported states
+for the device implementation to match.
 
 ## Topology and mass
 
