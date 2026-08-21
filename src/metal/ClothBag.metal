@@ -54,6 +54,40 @@ inline float3 safeNormalized(const float3 value) {
         : float3(1.0f, 0.0f, 0.0f);
 }
 
+inline float fruitInverseInertia(const NumiClothBagGPUFruit fruit) {
+    const float radius = fruit.previousAndRadius.w;
+    return 2.5f * fruit.positionAndInverseMass.w / (radius * radius);
+}
+
+inline void applyFruitImpulse(
+    thread NumiClothBagGPUFruit& fruit,
+    const float3 impulse,
+    const float3 contactOffset
+) {
+    fruit.velocityAndGroundImpulse.xyz +=
+        impulse * fruit.positionAndInverseMass.w;
+    fruit.angularVelocity.xyz +=
+        cross(contactOffset, impulse) * fruitInverseInertia(fruit);
+}
+
+inline void recordFrictionStatus(
+    device atomic_uint* status,
+    const uint counterIndex,
+    const float tangentialImpulse,
+    const float frictionLimit
+) {
+    atomic_fetch_add_explicit(
+        status + counterIndex, 1u, memory_order_relaxed
+    );
+    if (frictionLimit > 0.0f) {
+        atomic_fetch_max_explicit(
+            status + 4u,
+            as_type<uint>(tangentialImpulse / frictionLimit),
+            memory_order_relaxed
+        );
+    }
+}
+
 inline PointSegmentSample samplePointSegment(
     const float3 point,
     const float3 first,
@@ -426,6 +460,7 @@ kernel void numi_cloth_bag_begin_substep(
             return;
         }
         particle.previousAndMass.xyz = position;
+        particle.velocity.w = 0.0f;
         if (inverseMass > 0.0f) {
             const float timestep = config.gravityAndTimestep.w;
             particle.velocity.xyz = fma(
@@ -438,6 +473,7 @@ kernel void numi_cloth_bag_begin_substep(
                 float3(timestep),
                 position
             );
+            particle.velocity.w = particle.velocity.z;
         }
         particles[index] = particle;
     }
@@ -1899,9 +1935,21 @@ kernel void numi_cloth_bag_finalize_substep(
     }
     NumiClothBagGPUParticle particle = particles[index];
     const float inverseTimestep = 1.0f / config.gravityAndTimestep.w;
+    const float predictedVerticalVelocity = particle.velocity.w;
     particle.velocity.xyz =
         (particle.positionAndInverseMass.xyz - particle.previousAndMass.xyz) *
         inverseTimestep;
+    particle.velocity.w = 0.0f;
+    if (config.constraintCounts.z != 0u &&
+        particle.positionAndInverseMass.w > 0.0f &&
+        particle.positionAndInverseMass.z <=
+            config.clothMaterial.x + 1.0e-6f) {
+        particle.velocity.w = max(
+            0.0f,
+            (particle.velocity.z - predictedVerticalVelocity) /
+                particle.positionAndInverseMass.w
+        );
+    }
     if (!all(isfinite(particle.velocity.xyz))) {
         recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
         return;
@@ -1924,6 +1972,367 @@ kernel void numi_cloth_bag_finalize_fruit(
         (fruit.positionAndInverseMass.xyz - fruit.previousAndRadius.xyz) /
         config.gravityAndTimestep.w;
     if (!all(isfinite(fruit.velocityAndGroundImpulse))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    fruits[index] = fruit;
+}
+
+kernel void numi_cloth_bag_apply_cloth_ground_friction(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device atomic_uint* status [[buffer(2)]],
+    device atomic_uint* failure [[buffer(3)]],
+    const uint index [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) || index >= config.control.y ||
+        config.constraintCounts.z == 0u) {
+        return;
+    }
+    NumiClothBagGPUParticle particle = particles[index];
+    const float inverseMass = particle.positionAndInverseMass.w;
+    const float normalImpulse = particle.velocity.w;
+    const float friction = config.clothMaterial.z;
+    if (!(friction >= 0.0f) || !isfinite(friction)) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    if (!(normalImpulse > 0.0f) || !(inverseMass > 0.0f)) {
+        return;
+    }
+    const float3 tangentVelocity = float3(
+        particle.velocity.x, particle.velocity.y, 0.0f
+    );
+    const float slipSpeed = length(tangentVelocity);
+    if (!(slipSpeed > 1.0e-10f)) {
+        return;
+    }
+    const float frictionLimit = friction * normalImpulse;
+    const float tangentialImpulse = min(
+        slipSpeed / inverseMass, frictionLimit
+    );
+    if (!(tangentialImpulse > 0.0f)) {
+        return;
+    }
+    particle.velocity.xyz -= tangentVelocity *
+        (tangentialImpulse * inverseMass / slipSpeed);
+    if (!all(isfinite(particle.velocity))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    particles[index] = particle;
+    recordFrictionStatus(
+        status, 2u, tangentialImpulse, frictionLimit
+    );
+}
+
+kernel void numi_cloth_bag_apply_yarn_friction(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device const NumiClothBagGPUDistance* distances [[buffer(2)]],
+    device NumiClothBagGPUFruit* fruits [[buffer(3)]],
+    device const NumiClothBagGPUYarnContact* contacts [[buffer(4)]],
+    constant NumiClothBagGPUBatch& batch [[buffer(5)]],
+    device atomic_uint* status [[buffer(6)]],
+    device atomic_uint* failure [[buffer(7)]],
+    const uint fruitIndex [[thread_position_in_threadgroup]]
+) {
+    if (!validConfig(config, failure) ||
+        config.contactCounts.y !=
+            config.control.z * config.constraintCounts.w ||
+        batch.control.x + batch.control.y > config.control.z ||
+        batch.control.y == 0u ||
+        fruitIndex >= config.constraintCounts.w) {
+        if (fruitIndex < config.constraintCounts.w) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        }
+        return;
+    }
+    const float friction = config.fruitMaterial.w;
+    if (!(friction >= 0.0f) || !isfinite(friction)) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    NumiClothBagGPUFruit fruit = fruits[fruitIndex];
+    for (uint phase = 0u; phase < batch.control.y; ++phase) {
+        const uint localSegment =
+            (phase + fruitIndex) % batch.control.y;
+        const uint segmentIndex = batch.control.x + localSegment;
+        const NumiClothBagGPUDistance segment = distances[segmentIndex];
+        const uint firstIndex = segment.particlesAndColor.x;
+        const uint secondIndex = segment.particlesAndColor.y;
+        const uint contactIndex =
+            fruitIndex * config.control.z + segmentIndex;
+        if (segment.particlesAndColor.z != batch.control.z ||
+            firstIndex >= config.control.y ||
+            secondIndex >= config.control.y || firstIndex == secondIndex ||
+            contactIndex >= config.contactCounts.y) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+            threadgroup_barrier(mem_flags::mem_device);
+            continue;
+        }
+        const NumiClothBagGPUYarnContact contact = contacts[contactIndex];
+        const float normalImpulse = contact.fruitNormalAndImpulse.w;
+        const float normalLength = length(
+            contact.fruitNormalAndImpulse.xyz
+        );
+        if (normalImpulse > 0.0f && normalLength > 1.0e-10f) {
+            const float3 normal =
+                contact.fruitNormalAndImpulse.xyz / normalLength;
+            float2 weights = contact.segmentImpulse.xy / normalImpulse;
+            const float weightSum = weights.x + weights.y;
+            if (weightSum > 1.0e-12f) {
+                weights /= weightSum;
+                NumiClothBagGPUParticle first = particles[firstIndex];
+                NumiClothBagGPUParticle second = particles[secondIndex];
+                const float3 yarnVelocity =
+                    first.velocity.xyz * weights.x +
+                    second.velocity.xyz * weights.y;
+                const float3 ballOffset =
+                    normal * -fruit.previousAndRadius.w;
+                const float3 ballContactVelocity =
+                    fruit.velocityAndGroundImpulse.xyz +
+                    cross(fruit.angularVelocity.xyz, ballOffset);
+                const float3 relativeVelocity =
+                    ballContactVelocity - yarnVelocity;
+                const float3 tangentVelocity = relativeVelocity -
+                    normal * dot(relativeVelocity, normal);
+                const float slipSpeed = length(tangentVelocity);
+                if (slipSpeed > 1.0e-10f) {
+                    const float3 tangent = tangentVelocity / slipSpeed;
+                    const float3 ballLever = cross(ballOffset, tangent);
+                    float denominator = fruit.positionAndInverseMass.w +
+                        fruitInverseInertia(fruit) *
+                            dot(ballLever, ballLever);
+                    float3 firstResponse =
+                        tangent * first.positionAndInverseMass.w;
+                    float3 secondResponse =
+                        tangent * second.positionAndInverseMass.w;
+                    if (config.constraintCounts.z != 0u) {
+                        if (first.positionAndInverseMass.z <=
+                                config.clothMaterial.x + 1.0e-6f &&
+                            firstResponse.z < 0.0f) {
+                            firstResponse.z = 0.0f;
+                        }
+                        if (second.positionAndInverseMass.z <=
+                                config.clothMaterial.x + 1.0e-6f &&
+                            secondResponse.z < 0.0f) {
+                            secondResponse.z = 0.0f;
+                        }
+                    }
+                    denominator +=
+                        dot(tangent, firstResponse) * weights.x * weights.x +
+                        dot(tangent, secondResponse) * weights.y * weights.y;
+                    if (denominator > 0.0f && isfinite(denominator)) {
+                        const float frictionLimit =
+                            friction * normalImpulse;
+                        const float tangentialImpulse = min(
+                            slipSpeed / denominator, frictionLimit
+                        );
+                        if (tangentialImpulse > 0.0f) {
+                            applyFruitImpulse(
+                                fruit,
+                                tangent * -tangentialImpulse,
+                                ballOffset
+                            );
+                            first.velocity.xyz += firstResponse *
+                                (tangentialImpulse * weights.x);
+                            second.velocity.xyz += secondResponse *
+                                (tangentialImpulse * weights.y);
+                            particles[firstIndex] = first;
+                            particles[secondIndex] = second;
+                            recordFrictionStatus(
+                                status,
+                                1u,
+                                tangentialImpulse,
+                                frictionLimit
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        threadgroup_barrier(mem_flags::mem_device);
+    }
+    if (!all(isfinite(fruit.velocityAndGroundImpulse)) ||
+        !all(isfinite(fruit.angularVelocity))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    fruits[fruitIndex] = fruit;
+}
+
+kernel void numi_cloth_bag_apply_fruit_pair_friction(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUFruit* fruits [[buffer(1)]],
+    device const NumiClothBagGPUFruitPair* pairs [[buffer(2)]],
+    constant NumiClothBagGPUBatch& batch [[buffer(3)]],
+    device atomic_uint* status [[buffer(4)]],
+    device atomic_uint* failure [[buffer(5)]],
+    const uint localIndex [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) || localIndex >= batch.control.y) {
+        return;
+    }
+    const uint pairIndex = batch.control.x + localIndex;
+    if (pairIndex >= config.contactCounts.x) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        return;
+    }
+    const NumiClothBagGPUFruitPair pair = pairs[pairIndex];
+    if (pair.fruitsAndColor.z != batch.control.z ||
+        pair.fruitsAndColor.x >= config.constraintCounts.w ||
+        pair.fruitsAndColor.y >= config.constraintCounts.w ||
+        pair.fruitsAndColor.x == pair.fruitsAndColor.y) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_BATCH);
+        return;
+    }
+    const float friction = config.fruitMaterial.x;
+    const float normalImpulse = pair.contact.w;
+    const float normalLength = length(pair.contact.xyz);
+    if (!(friction >= 0.0f) || !isfinite(friction)) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    if (!(normalImpulse > 0.0f) || !(normalLength > 1.0e-10f)) {
+        return;
+    }
+    NumiClothBagGPUFruit first = fruits[pair.fruitsAndColor.x];
+    NumiClothBagGPUFruit second = fruits[pair.fruitsAndColor.y];
+    const float3 normal = pair.contact.xyz / normalLength;
+    const float3 firstOffset = normal * first.previousAndRadius.w;
+    const float3 secondOffset = normal * -second.previousAndRadius.w;
+    const float3 firstContactVelocity =
+        first.velocityAndGroundImpulse.xyz +
+        cross(first.angularVelocity.xyz, firstOffset);
+    const float3 secondContactVelocity =
+        second.velocityAndGroundImpulse.xyz +
+        cross(second.angularVelocity.xyz, secondOffset);
+    const float3 relativeVelocity =
+        secondContactVelocity - firstContactVelocity;
+    const float3 tangentVelocity = relativeVelocity -
+        normal * dot(relativeVelocity, normal);
+    const float slipSpeed = length(tangentVelocity);
+    if (!(slipSpeed > 1.0e-10f)) {
+        return;
+    }
+    const float3 tangent = tangentVelocity / slipSpeed;
+    const float3 firstLever = cross(firstOffset, tangent);
+    const float3 secondLever = cross(secondOffset, tangent);
+    const float denominator =
+        first.positionAndInverseMass.w + second.positionAndInverseMass.w +
+        fruitInverseInertia(first) *
+            dot(firstLever, firstLever) +
+        fruitInverseInertia(second) *
+            dot(secondLever, secondLever);
+    if (!(denominator > 0.0f) || !isfinite(denominator)) {
+        return;
+    }
+    const float frictionLimit = friction * normalImpulse;
+    const float tangentialImpulse = min(
+        slipSpeed / denominator, frictionLimit
+    );
+    if (!(tangentialImpulse > 0.0f)) {
+        return;
+    }
+    const float3 impulseOnSecond = tangent * -tangentialImpulse;
+    applyFruitImpulse(second, impulseOnSecond, secondOffset);
+    applyFruitImpulse(first, -impulseOnSecond, firstOffset);
+    if (!all(isfinite(first.velocityAndGroundImpulse)) ||
+        !all(isfinite(second.velocityAndGroundImpulse)) ||
+        !all(isfinite(first.angularVelocity)) ||
+        !all(isfinite(second.angularVelocity))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    fruits[pair.fruitsAndColor.x] = first;
+    fruits[pair.fruitsAndColor.y] = second;
+    recordFrictionStatus(
+        status, 0u, tangentialImpulse, frictionLimit
+    );
+}
+
+kernel void numi_cloth_bag_apply_fruit_ground_friction(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUFruit* fruits [[buffer(1)]],
+    device atomic_uint* status [[buffer(2)]],
+    device atomic_uint* failure [[buffer(3)]],
+    const uint index [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) ||
+        index >= config.constraintCounts.w ||
+        config.constraintCounts.z == 0u) {
+        return;
+    }
+    NumiClothBagGPUFruit fruit = fruits[index];
+    const float normalImpulse = fruit.velocityAndGroundImpulse.w;
+    const float friction = config.fruitMaterial.y;
+    const float rollingResistance = config.fruitMaterial.z;
+    if (!(friction >= 0.0f) || !(rollingResistance >= 0.0f) ||
+        !isfinite(friction) || !isfinite(rollingResistance)) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    if (!(normalImpulse > 0.0f)) {
+        return;
+    }
+    const float3 normal = float3(0.0f, 0.0f, 1.0f);
+    const float3 contactOffset =
+        float3(0.0f, 0.0f, -fruit.previousAndRadius.w);
+    const float3 contactVelocity = fruit.velocityAndGroundImpulse.xyz +
+        cross(fruit.angularVelocity.xyz, contactOffset);
+    const float3 tangentVelocity = contactVelocity -
+        normal * dot(contactVelocity, normal);
+    const float slipSpeed = length(tangentVelocity);
+    if (slipSpeed > 1.0e-10f) {
+        const float3 tangent = tangentVelocity / slipSpeed;
+        const float3 lever = cross(contactOffset, tangent);
+        const float denominator = fruit.positionAndInverseMass.w +
+            fruitInverseInertia(fruit) *
+                dot(lever, lever);
+        const float frictionLimit = friction * normalImpulse;
+        const float tangentialImpulse = min(
+            slipSpeed / denominator, frictionLimit
+        );
+        if (tangentialImpulse > 0.0f) {
+            applyFruitImpulse(
+                fruit,
+                tangent * -tangentialImpulse,
+                contactOffset
+            );
+            recordFrictionStatus(
+                status, 3u, tangentialImpulse, frictionLimit
+            );
+        }
+    }
+    const float3 rollingAngularVelocity = float3(
+        fruit.angularVelocity.x, fruit.angularVelocity.y, 0.0f
+    );
+    const float rollingSpeed = length(rollingAngularVelocity);
+    if (rollingSpeed > 1.0e-12f && rollingResistance > 0.0f) {
+        const float inverseInertia = fruitInverseInertia(fruit);
+        const float requiredAngularImpulse =
+            rollingSpeed / inverseInertia;
+        const float rollingImpulseLimit = rollingResistance *
+            fruit.previousAndRadius.w * normalImpulse;
+        const float angularImpulse = min(
+            requiredAngularImpulse, rollingImpulseLimit
+        );
+        fruit.angularVelocity.xyz -= rollingAngularVelocity *
+            (angularImpulse * inverseInertia / rollingSpeed);
+        atomic_fetch_add_explicit(
+            status + 6u, 1u, memory_order_relaxed
+        );
+        if (rollingImpulseLimit > 0.0f) {
+            atomic_fetch_max_explicit(
+                status + 5u,
+                as_type<uint>(angularImpulse / rollingImpulseLimit),
+                memory_order_relaxed
+            );
+        }
+    }
+    if (!all(isfinite(fruit.velocityAndGroundImpulse)) ||
+        !all(isfinite(fruit.angularVelocity))) {
         recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
         return;
     }

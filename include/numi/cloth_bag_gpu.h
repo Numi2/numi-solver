@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 6u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 7u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
 
 enum NumiClothBagGPUFailure : mr_u32 {
@@ -26,10 +26,11 @@ typedef struct MR_ALIGN16 NumiClothBagGPUConfig {
     mr_float4 gravityAndTimestep;
     // xyz virtual-handle position, w 1 when the grip is active.
     mr_float4 gripTargetAndActive;
-    // x yarn radius used by ground-aware bend projection, yzw reserved.
+    // x yarn radius, y guarded self-contact cell size,
+    // z cloth/ground friction, w cloth/self friction.
     mr_float4 clothMaterial;
     // x fruit-pair friction, y fruit/ground friction,
-    // z fruit rolling resistance, w reserved.
+    // z fruit rolling resistance, w fruit/yarn friction.
     mr_float4 fruitMaterial;
 } NumiClothBagGPUConfig;
 
@@ -38,7 +39,7 @@ typedef struct MR_ALIGN16 NumiClothBagGPUParticle {
     mr_float4 positionAndInverseMass;
     // xyz position at the beginning of the substep, w authored mass.
     mr_float4 previousAndMass;
-    // xyz velocity, w reserved.
+    // xyz velocity, w accumulated cloth/ground normal impulse after finalize.
     mr_float4 velocity;
 } NumiClothBagGPUParticle;
 
@@ -131,6 +132,15 @@ typedef struct MR_ALIGN16 NumiClothBagGPUSelfStatus {
     mr_uint4 counters;
 } NumiClothBagGPUSelfStatus;
 
+typedef struct MR_ALIGN16 NumiClothBagGPUFrictionStatus {
+    // x fruit-pair, y fruit/yarn, z cloth/ground, w fruit/ground contacts.
+    mr_uint4 counters;
+    // x maximum Coulomb-cone ratio as positive-float bits,
+    // y maximum rolling-resistance ratio as positive-float bits,
+    // z rolling-resistance contact count, w reserved.
+    mr_uint4 metrics;
+} NumiClothBagGPUFrictionStatus;
+
 typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
     // x first constraint, y constraint count, z expected graph color,
     // w reserved.
@@ -149,5 +159,6 @@ static_assert(sizeof(NumiClothBagGPUFruitPair) == 32);
 static_assert(sizeof(NumiClothBagGPUYarnContact) == 112);
 static_assert(sizeof(NumiClothBagGPUSelfPair) == 8);
 static_assert(sizeof(NumiClothBagGPUSelfStatus) == 16);
+static_assert(sizeof(NumiClothBagGPUFrictionStatus) == 32);
 static_assert(sizeof(NumiClothBagGPUBatch) == 16);
 #endif
