@@ -19,7 +19,8 @@ versioned ABI in `include/numi/cloth_bag_gpu.h` owns:
 - all 4,149,792 nonlocal yarn/yarn capsule candidates after graph-derived
   two-ring exclusion, with swept CCD and present-time normal response;
 - unilateral cloth/ground and fruit/ground projection;
-- the ten finite-compliance top-seam grips;
+- the ten finite-compliance top-seam grips, including quaternion-rotated local
+  offsets for a recorded six-degree-of-freedom hand pose;
 - gravity prediction and symplectic position advance;
 - XPBD axial-yarn projection;
 - the unilateral 28.5% extension ceiling;
@@ -261,7 +262,16 @@ zero release/escape, bounded residuals, and exact 60-frame replay:
   --spin-dump-every 5
 ```
 
-The Apple M4 result measured on 2026-08-21 was:
+ABI 11 adds a unit `gripOrientation` quaternion to the per-substep config. The
+grip kernel rotates each local cuff offset before its finite-compliance XPBD
+solve. A strict recorded-pose file can drive that field for every substep; see
+[GRIP_TRAJECTORY.md](GRIP_TRAJECTORY.md). The focused rotation probe compares
+Metal against the independent FP64 equation, and the recorded trajectory gate
+runs two exact full-topology replays. The committed input is synthetic, not a
+measured hand path.
+
+The following Apple M4 result measured on 2026-08-21 is retained as the ABI-10
+release-classification baseline:
 
 ```text
 abi=10 particles=1465 distances=2904 grips=10 knots=1369 bends=2834

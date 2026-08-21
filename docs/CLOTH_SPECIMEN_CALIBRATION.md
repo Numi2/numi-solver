@@ -144,6 +144,8 @@ cloth runtimes can consume; the smaller synthetic recovery system intentionally
 does not. No real fitted artifact is committed yet. Unloaded geometry and grip
 motion remain trajectory inputs, not material-fit parameters, and must be
 replaced by the measured scan and recorded six-degree-of-freedom seam pose.
+The latter now has a strict executable format documented in
+[GRIP_TRAJECTORY.md](GRIP_TRAJECTORY.md).
 
 For example, after a real fit qualifies:
 

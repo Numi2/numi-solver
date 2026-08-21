@@ -60,6 +60,7 @@ private struct Fruit {
 private struct Grip {
     var center: Vec3
     var active: Bool
+    var orientation: Quaternion
 }
 
 private enum PrimitiveKind {
@@ -129,7 +130,21 @@ private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit], Grip?) {
                   let z = Double(fields[5]) {
             let active = fields.count < 8 ||
                 fields[6] != "active" || fields[7] == "1"
-            grip = Grip(center: Vec3(x: x, y: y, z: z), active: active)
+            let orientation: Quaternion
+            if fields.count >= 13, fields[8] == "orientation",
+               let w = Double(fields[9]),
+               let qx = Double(fields[10]),
+               let qy = Double(fields[11]),
+               let qz = Double(fields[12]) {
+                orientation = Quaternion(w: w, x: qx, y: qy, z: qz)
+            } else {
+                orientation = .identity
+            }
+            grip = Grip(
+                center: Vec3(x: x, y: y, z: z),
+                active: active,
+                orientation: orientation
+            )
         }
     }
     guard vertices.count == expectedVertices else {
@@ -572,6 +587,16 @@ private func render(
 
     if let grip, grip.active {
         let center = project(grip.center).point
+        let xAxis = project(
+            grip.center + grip.orientation.rotate(
+                Vec3(x: 0.045, y: 0.0, z: 0.0)
+            )
+        ).point
+        let yAxis = project(
+            grip.center + grip.orientation.rotate(
+                Vec3(x: 0.0, y: 0.045, z: 0.0)
+            )
+        ).point
         context.saveGState()
         context.setLineCap(.round)
         context.setStrokeColor(color(242, 145, 38, 0.72))
@@ -596,6 +621,15 @@ private func render(
                 ))
             }
         }
+        context.setLineWidth(3.0)
+        context.setStrokeColor(color(242, 91, 64, 0.95))
+        context.move(to: center)
+        context.addLine(to: xAxis)
+        context.strokePath()
+        context.setStrokeColor(color(76, 177, 218, 0.95))
+        context.move(to: center)
+        context.addLine(to: yAxis)
+        context.strokePath()
         context.restoreGState()
         let marker = CGRect(x: center.x - 9.0, y: center.y - 9.0,
                             width: 18.0, height: 18.0)

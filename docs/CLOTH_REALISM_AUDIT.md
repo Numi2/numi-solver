@@ -47,6 +47,14 @@ to a real produce bag.
   handle. All 1,465 knots and twelve fruits stay dynamic; attachment force and
   impulse are measured and gated. The two cuff rows have authored local bend
   reinforcement while the body yarn remains soft.
+- A strict timestamped `numi.grip.trajectory.v1` input now drives relative
+  hand translation and quaternion rotation through that same patch in both
+  CPU and Metal. Local seam offsets rotate in the live XPBD target equation;
+  the cloth is not posed. The loader enforces a zero/identity attached start,
+  unit quaternions, increasing timestamps, measured-duration coverage, and no
+  unsupported re-grab after release. Synthetic translation-only and rotating
+  paths produce distinct exact CPU states; ABI-11 Metal matches a focused FP64
+  rotation oracle and exactly replays the full-topology recorded path.
 - Release masks latch across the trajectory and are distinct from numerical
   escape. Classification uses all 48 top-rim knots, an outward-oriented mouth
   frame, the projected opening polygon, and full-sphere clearance through the
@@ -103,8 +111,9 @@ but not the physical-calibration boundary.
 
 - Mass distribution, axial and knot compliance, bend compliance,
   aerodynamic coefficients, contact friction, rolling resistance, yarn
-  diameter, bag geometry, and grip motion are authored estimates. They are not
-  measurements of the pictured bag.
+  diameter and bag geometry are authored estimates. The built-in pickup/spin
+  grip motions are also authored; the new recorded-input path is executable,
+  but no measured trajectory of the pictured bag is committed.
 - Each simulated yarn is one control-scale capsule between lumped knot masses.
   The model does not resolve multi-filament twist, fiber migration, knot
   tightening or sliding, plastic set, creep, damage, moisture, or rate- and

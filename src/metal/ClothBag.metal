@@ -25,6 +25,9 @@ inline bool validConfig(
         !isfinite(config.gravityAndTimestep.w) ||
         !all(isfinite(config.gravityAndTimestep.xyz)) ||
         !all(isfinite(config.gripTargetAndActive.xyz)) ||
+        !all(isfinite(config.gripOrientation)) ||
+        (config.gripTargetAndActive.w > 0.0f &&
+         abs(length(config.gripOrientation) - 1.0f) > 1.0e-4f) ||
         !all(isfinite(config.clothMaterial)) || config.clothMaterial.x < 0.0f ||
         !all(isfinite(config.fruitMaterial)) ||
         !all(isfinite(config.airVelocityAndDensity)) ||
@@ -60,6 +63,15 @@ inline float3 safeNormalized(const float3 value) {
     return magnitude > 1.0e-14f
         ? value / magnitude
         : float3(1.0f, 0.0f, 0.0f);
+}
+
+inline float3 rotateByQuaternion(
+    const float4 quaternion,
+    const float3 value
+) {
+    const float3 twiceCross = 2.0f * cross(quaternion.xyz, value);
+    return value + quaternion.w * twiceCross +
+        cross(quaternion.xyz, twiceCross);
 }
 
 inline float fruitInverseInertia(const NumiClothBagGPUFruit fruit) {
@@ -1358,7 +1370,10 @@ kernel void numi_cloth_bag_solve_grip(
         return;
     }
     const float3 target = config.gripTargetAndActive.xyz +
-        grip.targetOffsetAndCompliance.xyz;
+        rotateByQuaternion(
+            config.gripOrientation,
+            grip.targetOffsetAndCompliance.xyz
+        );
     const float3 value = particle.positionAndInverseMass.xyz - target;
     const float3 deltaLambda =
         (-value - alpha * grip.lambda.xyz) / denominator;

@@ -601,6 +601,36 @@ if(BUILD_TESTING)
             TIMEOUT 30
     )
     add_test(
+        NAME cloth_grip_trajectory.cpu_metal
+        COMMAND ${CMAKE_COMMAND}
+            -DCPU_EXECUTABLE=$<TARGET_FILE:numi-solver-cloth-bag>
+            -DMETAL_EXECUTABLE=$<TARGET_FILE:numi-solver-cloth-metal>
+            -DIDENTITY_TRAJECTORY=${CMAKE_CURRENT_SOURCE_DIR}/calibration/trajectories/synthetic-identity.csv
+            -DROTATION_TRAJECTORY=${CMAKE_CURRENT_SOURCE_DIR}/calibration/trajectories/synthetic-rotation.csv
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckGripTrajectory.cmake
+    )
+    set_tests_properties(
+        cloth_grip_trajectory.cpu_metal
+        PROPERTIES
+            LABELS "metal;physics;cloth;grip;trajectory;6dof;runtime;replay"
+            RUN_SERIAL TRUE
+            TIMEOUT 240
+    )
+    add_test(
+        NAME cloth_grip_trajectory.reject_reactivation
+        COMMAND ${CMAKE_COMMAND}
+            -DEXECUTABLE=$<TARGET_FILE:numi-solver-cloth-bag>
+            -DTRAJECTORY=${CMAKE_CURRENT_SOURCE_DIR}/calibration/trajectories/invalid-reactivation.csv
+            -DEXPECT=cannot.reactivate.after.release
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ExpectGripTrajectoryFailure.cmake
+    )
+    set_tests_properties(
+        cloth_grip_trajectory.reject_reactivation
+        PROPERTIES
+            LABELS "physics;cloth;grip;trajectory;6dof;rejection"
+            TIMEOUT 30
+    )
+    add_test(
         NAME cloth_bag.metal_internal_contact
         COMMAND $<TARGET_FILE:numi-solver-cloth-metal>
             --replays 2

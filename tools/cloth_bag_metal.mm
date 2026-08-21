@@ -3,6 +3,7 @@
 
 #include "numi/cloth_bag_gpu.h"
 #include "numi/cloth_material.h"
+#include "numi/grip_trajectory.h"
 
 #include <algorithm>
 #include <array>
@@ -88,6 +89,7 @@ enum class TrajectoryScenario : std::uint8_t {
     grounded,
     spin,
     pickup,
+    recorded,
 };
 
 std::size_t packedSelfPairIndex(
@@ -187,6 +189,12 @@ struct DVec3 {
     double z{};
 };
 
+struct TrajectoryGripPose {
+    DVec3 target{};
+    numi::GripTrajectoryQuaternion orientation{};
+    bool active{};
+};
+
 DVec3 operator+(const DVec3 a, const DVec3 b) {
     return {a.x + b.x, a.y + b.y, a.z + b.z};
 }
@@ -243,6 +251,28 @@ mr_float4 f4(
     const float w = 0.0f
 ) {
     return {x, y, z, w};
+}
+
+mr_float4 gripQuaternion4(
+    const numi::GripTrajectoryQuaternion quaternion
+) {
+    return f4(
+        static_cast<float>(quaternion.x),
+        static_cast<float>(quaternion.y),
+        static_cast<float>(quaternion.z),
+        static_cast<float>(quaternion.w)
+    );
+}
+
+DVec3 rotateGripOffset(
+    const mr_float4 quaternion,
+    const DVec3 offset
+) {
+    const numi::GripTrajectoryVector3 rotated = numi::rotateGripVector(
+        {quaternion.x, quaternion.y, quaternion.z, quaternion.w},
+        {offset.x, offset.y, offset.z}
+    );
+    return {rotated.x, rotated.y, rotated.z};
 }
 
 mr_uint4 u4(
@@ -878,6 +908,7 @@ InitialState makeInitialState() {
         static_cast<float>(base.z + 0.006),
         1.0f
     );
+    result.config.gripOrientation = f4(0.0f, 0.0f, 0.0f, 1.0f);
     float maximumLimitedYarnLength = 0.0f;
     for (const NumiClothBagGPUDistance& distance : result.distances) {
         maximumLimitedYarnLength = std::max(
@@ -3723,18 +3754,25 @@ OracleResult runOracle(
                 }
             }
         }
-        for (OracleGrip& grip : result.grips) {
-            OracleParticle& particle = result.particles[grip.particle];
-            const double alpha = grip.compliance / (timestep * timestep);
-            const double denominator = particle.inverseMass + alpha;
-            if (!(denominator > 0.0)) {
-                continue;
+        if (initial.config.gripTargetAndActive.w > 0.0f) {
+            for (OracleGrip& grip : result.grips) {
+                OracleParticle& particle = result.particles[grip.particle];
+                const double alpha = grip.compliance / (timestep * timestep);
+                const double denominator = particle.inverseMass + alpha;
+                if (!(denominator > 0.0)) {
+                    continue;
+                }
+                const DVec3 value = particle.position - (
+                    gripTarget + rotateGripOffset(
+                        initial.config.gripOrientation,
+                        grip.offset
+                    )
+                );
+                const DVec3 deltaLambda =
+                    (value * -1.0 - grip.lambda * alpha) / denominator;
+                grip.lambda += deltaLambda;
+                particle.position += deltaLambda * particle.inverseMass;
             }
-            const DVec3 value = particle.position - (gripTarget + grip.offset);
-            const DVec3 deltaLambda =
-                (value * -1.0 - grip.lambda * alpha) / denominator;
-            grip.lambda += deltaLambda;
-            particle.position += deltaLambda * particle.inverseMass;
         }
         for (const NumiClothBagGPUBatch& batch : initial.fruitPairBatches) {
             for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
@@ -4830,7 +4868,12 @@ void dumpGPUOBJ(
     output << "# grip center " << config.gripTargetAndActive.x << ' '
            << config.gripTargetAndActive.y << ' '
            << config.gripTargetAndActive.z << " active "
-           << (config.gripTargetAndActive.w > 0.0f ? 1 : 0) << '\n';
+           << (config.gripTargetAndActive.w > 0.0f ? 1 : 0)
+           << " orientation "
+           << config.gripOrientation.w << ' '
+           << config.gripOrientation.x << ' '
+           << config.gripOrientation.y << ' '
+           << config.gripOrientation.z << '\n';
     for (std::size_t index = 0u; index < fruits.size(); ++index) {
         const NumiClothBagGPUFruit& fruit = fruits[index];
         output << "# ball " << index << " center "
@@ -4863,28 +4906,63 @@ const char* trajectoryName(const TrajectoryScenario scenario) {
             return "spin";
         case TrajectoryScenario::pickup:
             return "pickup";
+        case TrajectoryScenario::recorded:
+            return "recorded";
     }
     throw std::logic_error("unknown cloth trajectory scenario");
 }
 
-DVec3 trajectoryGripTarget(
+TrajectoryGripPose trajectoryGripPose(
     const TrajectoryScenario scenario,
-    const double time
+    const double time,
+    const numi::GripTrajectory* trajectory
 ) {
     switch (scenario) {
         case TrajectoryScenario::grounded:
-            return authoredPosition(kLevels - 1u, 0u);
+            return {
+                .target = authoredPosition(kLevels - 1u, 0u),
+                .orientation = {},
+                .active = false,
+            };
         case TrajectoryScenario::spin:
-            return spinGripTarget(time);
+            return {
+                .target = spinGripTarget(time),
+                .orientation = {},
+                .active = true,
+            };
         case TrajectoryScenario::pickup:
-            return pickupGripTarget(time);
+            return {
+                .target = pickupGripTarget(time),
+                .orientation = {},
+                .active = true,
+            };
+        case TrajectoryScenario::recorded: {
+            if (trajectory == nullptr) {
+                throw std::logic_error(
+                    "recorded Metal trajectory is missing its pose data"
+                );
+            }
+            const numi::GripTrajectoryPose pose =
+                numi::sampleGripTrajectory(*trajectory, time);
+            const DVec3 base = authoredPosition(kLevels - 1u, 0u);
+            return {
+                .target = base + DVec3{
+                    pose.translationMeters.x,
+                    pose.translationMeters.y,
+                    pose.translationMeters.z,
+                },
+                .orientation = pose.orientation,
+                .active = pose.active,
+            };
+        }
     }
     throw std::logic_error("unknown cloth trajectory scenario");
 }
 
 InitialState makeTrajectoryInitialState(
     const InitialState& initial,
-    const TrajectoryScenario scenario
+    const TrajectoryScenario scenario,
+    const numi::GripTrajectory* trajectory = nullptr
 ) {
     InitialState state = initial;
     if (scenario == TrajectoryScenario::spin) {
@@ -4903,13 +4981,16 @@ InitialState makeTrajectoryInitialState(
     }
     state.config.constraintCounts.z =
         scenario == TrajectoryScenario::spin ? 0u : 1u;
-    const DVec3 target = trajectoryGripTarget(scenario, 0.0);
-    state.config.gripTargetAndActive = f4(
-        static_cast<float>(target.x),
-        static_cast<float>(target.y),
-        static_cast<float>(target.z),
-        scenario == TrajectoryScenario::grounded ? 0.0f : 1.0f
+    const TrajectoryGripPose pose = trajectoryGripPose(
+        scenario, 0.0, trajectory
     );
+    state.config.gripTargetAndActive = f4(
+        static_cast<float>(pose.target.x),
+        static_cast<float>(pose.target.y),
+        static_cast<float>(pose.target.z),
+        pose.active ? 1.0f : 0.0f
+    );
+    state.config.gripOrientation = gripQuaternion4(pose.orientation);
     return state;
 }
 
@@ -4924,9 +5005,12 @@ TrajectoryReplay runTrajectoryReplay(
     const std::uint32_t steps,
     const std::uint32_t dumpEvery,
     const std::uint32_t replayIndex,
-    const std::string& dumpPrefix
+    const std::string& dumpPrefix,
+    const numi::GripTrajectory* trajectory = nullptr
 ) {
-    InitialState state = makeTrajectoryInitialState(initial, scenario);
+    InitialState state = makeTrajectoryInitialState(
+        initial, scenario, trajectory
+    );
     TrajectoryReplay replay;
     replay.frameHashes.reserve(steps);
     if (!dumpPrefix.empty()) {
@@ -4948,15 +5032,19 @@ TrajectoryReplay runTrajectoryReplay(
                 static_cast<std::uint64_t>(step) *
                     kPickupSubstepsPerFrame +
                 substep + 1u;
-            const DVec3 target = trajectoryGripTarget(
+            const TrajectoryGripPose pose = trajectoryGripPose(
                 scenario,
-                static_cast<double>(completedSubsteps) * kTimestep
+                static_cast<double>(completedSubsteps) * kTimestep,
+                trajectory
             );
             configs[substep].gripTargetAndActive = f4(
-                static_cast<float>(target.x),
-                static_cast<float>(target.y),
-                static_cast<float>(target.z),
-                scenario == TrajectoryScenario::grounded ? 0.0f : 1.0f
+                static_cast<float>(pose.target.x),
+                static_cast<float>(pose.target.y),
+                static_cast<float>(pose.target.z),
+                pose.active ? 1.0f : 0.0f
+            );
+            configs[substep].gripOrientation = gripQuaternion4(
+                pose.orientation
             );
         }
         @autoreleasepool {
@@ -4974,7 +5062,8 @@ TrajectoryReplay runTrajectoryReplay(
             replay.final.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE;
         replay.gpuSeconds += replay.final.seconds;
         replay.frameHashes.push_back(hashGPUResult(replay.final));
-        if (scenario != TrajectoryScenario::grounded) {
+        if (scenario != TrajectoryScenario::grounded &&
+            configs.back().gripTargetAndActive.w > 0.0f) {
             for (const NumiClothBagGPUGrip& grip : replay.final.grips) {
                 const DVec3 position = d3(
                     replay.final.particles[grip.particle.x]
@@ -4982,7 +5071,10 @@ TrajectoryReplay runTrajectoryReplay(
                 );
                 const DVec3 target =
                     d3(configs.back().gripTargetAndActive) +
-                    d3(grip.targetOffsetAndCompliance);
+                    rotateGripOffset(
+                        configs.back().gripOrientation,
+                        d3(grip.targetOffsetAndCompliance)
+                    );
                 replay.maximumHandleLag = std::max(
                     replay.maximumHandleLag,
                     length(position - target)
@@ -5264,6 +5356,10 @@ int run(const int argc, const char* const* argv) {
     std::uint32_t pickupSteps = kPickupQualificationFrames;
     std::uint32_t pickupDumpEvery = 10u;
     std::string pickupPrefix;
+    std::uint32_t recordedSteps = 0u;
+    std::uint32_t recordedDumpEvery = 1u;
+    std::string recordedPrefix;
+    std::string gripTrajectoryPath;
     std::string materialPath;
     std::string metallibPath = NUMI_TEMPORAL_CONE_METALLIB;
     for (int argument = 1; argument < argc; ++argument) {
@@ -5284,6 +5380,8 @@ int run(const int argc, const char* const* argv) {
             metallibPath = argv[++argument];
         } else if (value == "--material" && argument + 1 < argc) {
             materialPath = argv[++argument];
+        } else if (value == "--grip-trajectory" && argument + 1 < argc) {
+            gripTrajectoryPath = argv[++argument];
         } else if (value == "--grounded-prefix" && argument + 1 < argc) {
             groundedPrefix = argv[++argument];
         } else if (value == "--grounded-steps" && argument + 1 < argc) {
@@ -5317,11 +5415,25 @@ int run(const int argc, const char* const* argv) {
             pickupDumpEvery = static_cast<std::uint32_t>(
                 std::stoul(argv[++argument])
             );
+        } else if (value == "--recorded-prefix" && argument + 1 < argc) {
+            recordedPrefix = argv[++argument];
+        } else if (value == "--recorded-steps" && argument + 1 < argc) {
+            recordedSteps = static_cast<std::uint32_t>(
+                std::stoul(argv[++argument])
+            );
+        } else if (value == "--recorded-dump-every" &&
+                   argument + 1 < argc) {
+            recordedDumpEvery = static_cast<std::uint32_t>(
+                std::stoul(argv[++argument])
+            );
         } else if (value == "--help") {
             std::cout
                 << "usage: numi-solver-cloth-metal [--replays N] "
                    "[--iterations N] [--strain-sweeps N] "
                    "[--metallib PATH] [--material FILE] "
+                   "[--grip-trajectory FILE] [--recorded-steps N] "
+                   "[--recorded-prefix PATH] "
+                   "[--recorded-dump-every N] "
                    "[--grounded-prefix PATH] "
                    "[--grounded-steps N] [--grounded-dump-every N] "
                    "[--spin-prefix PATH] [--spin-steps N] "
@@ -5336,6 +5448,12 @@ int run(const int argc, const char* const* argv) {
     }
     if (!materialPath.empty()) {
         applyClothMaterial(numi::loadClothMaterialArtifact(materialPath));
+    }
+    numi::GripTrajectory gripTrajectory;
+    const numi::GripTrajectory* gripTrajectoryPointer = nullptr;
+    if (!gripTrajectoryPath.empty()) {
+        gripTrajectory = numi::loadGripTrajectory(gripTrajectoryPath);
+        gripTrajectoryPointer = &gripTrajectory;
     }
     replays = std::max(replays, 2u);
     if (iterations == 0u || strainSweeps == 0u) {
@@ -5361,6 +5479,24 @@ int run(const int argc, const char* const* argv) {
          pickupDumpEvery == 0u)) {
         throw std::runtime_error(
             "Metal pickup requires 1..480 steps and positive dump cadence"
+        );
+    }
+    if (gripTrajectoryPointer == nullptr &&
+        (recordedSteps != 0u || !recordedPrefix.empty())) {
+        throw std::runtime_error(
+            "Metal recorded replay requires --grip-trajectory"
+        );
+    }
+    if (gripTrajectoryPointer != nullptr &&
+        (recordedSteps == 0u || recordedDumpEvery == 0u ||
+         !numi::gripTrajectoryCovers(
+             gripTrajectory,
+             static_cast<double>(recordedSteps) *
+                 kPickupSubstepsPerFrame * kTimestep
+         ))) {
+        throw std::runtime_error(
+            "Metal recorded replay requires positive covered steps and dump "
+            "cadence"
         );
     }
 
@@ -5692,13 +5828,68 @@ int run(const int argc, const char* const* argv) {
         );
         const DVec3 target =
             d3(seamTrajectoryConfigs.back().gripTargetAndActive) +
-            d3(grip.targetOffsetAndCompliance);
+            rotateGripOffset(
+                seamTrajectoryConfigs.back().gripOrientation,
+                d3(grip.targetOffsetAndCompliance)
+            );
         seamAverageLift += finalPosition.z - initialPosition.z;
         seamMaximumHandleLag = std::max(
             seamMaximumHandleLag, length(finalPosition - target)
         );
     }
     seamAverageLift /= static_cast<double>(initial.grips.size());
+
+    InitialState gripRotationInitial = initial;
+    constexpr double gripProbeHalfAngle = std::numbers::pi / 180.0;
+    gripRotationInitial.config.gripOrientation = f4(
+        0.0f,
+        static_cast<float>(std::sin(gripProbeHalfAngle)),
+        0.0f,
+        static_cast<float>(std::cos(gripProbeHalfAngle))
+    );
+    const OracleResult gripRotationOracle = runOracle(
+        gripRotationInitial, iterations, strainSweeps
+    );
+    const GPUResult gripRotationGPU = runGPU(
+        device,
+        queue,
+        pipelines,
+        gripRotationInitial,
+        iterations,
+        strainSweeps
+    );
+    const GPUResult gripRotationReplayGPU = runGPU(
+        device,
+        queue,
+        pipelines,
+        gripRotationInitial,
+        iterations,
+        strainSweeps
+    );
+    double gripRotationPositionError = 0.0;
+    double gripRotationDisplacement = 0.0;
+    for (const NumiClothBagGPUGrip& grip : initial.grips) {
+        const std::uint32_t particle = grip.particle.x;
+        gripRotationPositionError = std::max(
+            gripRotationPositionError,
+            length(
+                d3(gripRotationGPU.particles[particle]
+                    .positionAndInverseMass) -
+                gripRotationOracle.particles[particle].position
+            )
+        );
+        gripRotationDisplacement = std::max(
+            gripRotationDisplacement,
+            length(
+                d3(gripRotationGPU.particles[particle]
+                    .positionAndInverseMass) -
+                d3(initial.particles[particle].positionAndInverseMass)
+            )
+        );
+    }
+    const bool gripRotationReplayExact =
+        hashGPUResult(gripRotationGPU) ==
+        hashGPUResult(gripRotationReplayGPU);
     const bool groundedRequested = !groundedPrefix.empty();
     TrajectoryReplay groundedFirst;
     TrajectoryReplay groundedSecond;
@@ -5966,6 +6157,85 @@ int run(const int argc, const char* const* argv) {
          pickupStrainViolation <= 2.0e-6 &&
          pickupGroundPenetration <= 1.0e-6 &&
          pickupSelfPenetration <= 2.0e-6);
+
+    const bool recordedRequested = gripTrajectoryPointer != nullptr;
+    TrajectoryReplay recordedFirst;
+    TrajectoryReplay recordedSecond;
+    bool recordedReplayExact = true;
+    std::uint32_t recordedReleasedMask = 0u;
+    std::uint32_t recordedEscapeMask = 0u;
+    double recordedStrainViolation = 0.0;
+    double recordedGroundPenetration = 0.0;
+    double recordedSelfPenetration = 0.0;
+    double recordedShapeChange = 0.0;
+    if (recordedRequested) {
+        recordedFirst = runTrajectoryReplay(
+            device,
+            queue,
+            pipelines,
+            initial,
+            TrajectoryScenario::recorded,
+            iterations,
+            strainSweeps,
+            recordedSteps,
+            recordedDumpEvery,
+            1u,
+            recordedPrefix,
+            gripTrajectoryPointer
+        );
+        recordedSecond = runTrajectoryReplay(
+            device,
+            queue,
+            pipelines,
+            initial,
+            TrajectoryScenario::recorded,
+            iterations,
+            strainSweeps,
+            recordedSteps,
+            recordedDumpEvery,
+            2u,
+            {},
+            gripTrajectoryPointer
+        );
+        recordedReplayExact = recordedFirst.frameHashes ==
+                recordedSecond.frameHashes &&
+            bitwiseEqualPhysicalState(
+                recordedFirst.final, recordedSecond.final
+            );
+        recordedReleasedMask = recordedFirst.final.releaseStatus.masks.y;
+        recordedEscapeMask = trajectoryEscapeMask(
+            recordedFirst.final, TrajectoryScenario::recorded
+        );
+        recordedStrainViolation = maximumStrainViolation(
+            recordedFirst.final.particles,
+            recordedFirst.final.distances
+        );
+        recordedGroundPenetration = maximumGroundPenetration(
+            recordedFirst.final.particles,
+            recordedFirst.final.fruits,
+            initial.config.clothMaterial.x
+        );
+        recordedSelfPenetration = maximumSelfPenetration(
+            recordedFirst.final.particles,
+            recordedFirst.final.distances,
+            initial.selfPairs,
+            initial.config.clothMaterial.x
+        );
+        recordedShapeChange = maximumShapeDistanceChange(
+            makeTrajectoryInitialState(
+                initial,
+                TrajectoryScenario::recorded,
+                gripTrajectoryPointer
+            ),
+            recordedFirst.final
+        );
+    }
+    const bool recordedQualified = !recordedRequested ||
+        (recordedFirst.failureFree && recordedSecond.failureFree &&
+         recordedReplayExact && recordedEscapeMask == 0u &&
+         recordedStrainViolation <= 2.0e-6 &&
+         recordedGroundPenetration <= 1.0e-6 &&
+         recordedSelfPenetration <= 2.0e-6);
     const GPUResult& gpu = gpuResults.front();
     bool deterministic = true;
     for (std::size_t replay = 1u; replay < gpuResults.size(); ++replay) {
@@ -7379,7 +7649,11 @@ int run(const int argc, const char* const* argv) {
         seamTrajectoryGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
         seamTrajectoryReplayExact && seamTrajectorySplitExact &&
         seamAverageLift > 0.0 && seamMaximumHandleLag < 0.02 &&
-        groundedQualified && spinQualified && pickupQualified;
+        gripRotationGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
+        gripRotationReplayExact && gripRotationPositionError <= 2.0e-6 &&
+        gripRotationDisplacement > 1.0e-4 &&
+        groundedQualified && spinQualified && pickupQualified &&
+        recordedQualified;
 
     std::cout << std::fixed << std::setprecision(12)
               << "device=" << device.name.UTF8String << '\n'
@@ -7388,6 +7662,26 @@ int run(const int argc, const char* const* argv) {
               << gClothMaterial.loaded
               << " parameters_hash=" << gClothMaterial.parametersHash
               << " observations_hash=" << gClothMaterial.observationsHash
+              << '\n'
+              << "grip_trajectory_loaded=" << recordedRequested
+              << " schema="
+              << (recordedRequested
+                      ? std::string(numi::kGripTrajectorySchema)
+                      : "none")
+              << " content_fingerprint="
+              << (recordedRequested
+                      ? gripTrajectory.contentFingerprint
+                      : "none")
+              << " poses="
+              << (recordedRequested ? gripTrajectory.poses.size() : 0u)
+              << " duration_seconds="
+              << (recordedRequested
+                      ? gripTrajectory.poses.back().timeSeconds
+                      : 0.0)
+              << " maximum_rotation_radians="
+              << (recordedRequested
+                      ? numi::maximumGripTrajectoryRotation(gripTrajectory)
+                      : 0.0)
               << '\n'
               << "abi=" << NUMI_CLOTH_BAG_GPU_ABI_VERSION
               << " particles=" << initial.particles.size()
@@ -7681,6 +7975,14 @@ int run(const int argc, const char* const* argv) {
               << " failure_flags=" << seamTrajectoryGPU.failure
               << " state_hash=0x" << std::hex
               << hashGPUResult(seamTrajectoryGPU) << std::dec << '\n'
+              << "grip_rotation_angle_radians="
+              << 2.0 * gripProbeHalfAngle
+              << " position_error=" << gripRotationPositionError
+              << " seam_displacement=" << gripRotationDisplacement
+              << " replay_exact=" << gripRotationReplayExact
+              << " failure_flags=" << gripRotationGPU.failure
+              << " state_hash=0x" << std::hex
+              << hashGPUResult(gripRotationGPU) << std::dec << '\n'
               << "grounded_requested=" << groundedRequested
               << " complete=" << groundedComplete
               << " steps=" << (groundedRequested ? groundedSteps : 0u)
@@ -7737,6 +8039,27 @@ int run(const int argc, const char* const* argv) {
               << " first_gpu_seconds=" << pickupFirst.gpuSeconds
               << " second_gpu_seconds=" << pickupSecond.gpuSeconds
               << " qualified=" << pickupQualified << '\n'
+              << "recorded_requested=" << recordedRequested
+              << " steps=" << (recordedRequested ? recordedSteps : 0u)
+              << " replay_exact=" << recordedReplayExact
+              << " released_mask=" << recordedReleasedMask
+              << " released_count="
+              << std::popcount(recordedReleasedMask)
+              << " escape_mask=" << recordedEscapeMask
+              << " strain_violation=" << recordedStrainViolation
+              << " ground_penetration=" << recordedGroundPenetration
+              << " self_penetration=" << recordedSelfPenetration
+              << " maximum_handle_lag="
+              << recordedFirst.maximumHandleLag
+              << " shape_change=" << recordedShapeChange
+              << " first_gpu_seconds=" << recordedFirst.gpuSeconds
+              << " second_gpu_seconds=" << recordedSecond.gpuSeconds
+              << " qualified=" << recordedQualified
+              << " state_hash=0x" << std::hex
+              << (recordedRequested
+                      ? hashGPUResult(recordedFirst.final)
+                      : 0u)
+              << std::dec << '\n'
               << "average_gpu_seconds=" << averageSeconds
               << " state_hash=0x" << std::hex << hashGPUResult(gpu)
               << std::dec << '\n'

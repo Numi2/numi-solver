@@ -1,4 +1,5 @@
 #include "numi/cloth_material.h"
+#include "numi/grip_trajectory.h"
 
 #include <algorithm>
 #include <array>
@@ -68,6 +69,7 @@ enum class Scenario : std::uint8_t {
     grounded,
     spin,
     pickup,
+    recorded,
 };
 
 void applyClothMaterial(const numi::ClothMaterialArtifact& artifact) {
@@ -198,6 +200,23 @@ Quaternion normalized(const Quaternion q) {
 bool finite(const Quaternion q) {
     return std::isfinite(q.w) && std::isfinite(q.x) &&
         std::isfinite(q.y) && std::isfinite(q.z);
+}
+
+Vec3 rotateVector(const Quaternion q, const Vec3 value) {
+    const Vec3 vectorPart{q.x, q.y, q.z};
+    const Vec3 twiceCross = cross(vectorPart, value) * 2.0;
+    return value + twiceCross * q.w + cross(vectorPart, twiceCross);
+}
+
+Quaternion gripQuaternion(
+    const numi::GripTrajectoryQuaternion quaternion
+) {
+    return {
+        quaternion.w,
+        quaternion.x,
+        quaternion.y,
+        quaternion.z,
+    };
 }
 
 struct Particle {
@@ -333,6 +352,7 @@ struct ClothModel {
     std::uint32_t bottomCenter{};
     Vec3 gripTarget{};
     Vec3 gripPrevious{};
+    Quaternion gripOrientation{};
     bool gripActive{};
 };
 
@@ -1463,13 +1483,28 @@ Vec3 pickupGripTarget(const double time) {
 void updateGrip(
     ClothModel& cloth,
     const Scenario scenario,
-    const double time
+    const double time,
+    const numi::GripTrajectory* trajectory
 ) {
     cloth.gripPrevious = cloth.gripTarget;
-    cloth.gripTarget = scenario == Scenario::spin
-        ? spinGripTarget(time)
-        : pickupGripTarget(time);
-    cloth.gripActive = true;
+    if (trajectory != nullptr) {
+        const numi::GripTrajectoryPose pose =
+            numi::sampleGripTrajectory(*trajectory, time);
+        const Vec3 base = authoredPosition(kLevels - 1u, 0u);
+        cloth.gripTarget = base + Vec3{
+            pose.translationMeters.x,
+            pose.translationMeters.y,
+            pose.translationMeters.z,
+        };
+        cloth.gripOrientation = gripQuaternion(pose.orientation);
+        cloth.gripActive = pose.active;
+    } else {
+        cloth.gripTarget = scenario == Scenario::spin
+            ? spinGripTarget(time)
+            : pickupGripTarget(time);
+        cloth.gripOrientation = {};
+        cloth.gripActive = true;
+    }
 }
 
 void solveGrip(
@@ -4561,8 +4596,22 @@ SimulationResult simulate(
     const std::uint32_t iterations,
     const Scenario scenario,
     const std::vector<std::uint32_t>* captureSteps = nullptr,
-    std::vector<SimulationResult>* captures = nullptr
+    std::vector<SimulationResult>* captures = nullptr,
+    const numi::GripTrajectory* gripTrajectory = nullptr
 ) {
+    if ((scenario == Scenario::recorded) != (gripTrajectory != nullptr)) {
+        throw std::runtime_error(
+            "recorded scenario requires exactly one grip trajectory"
+        );
+    }
+    if (gripTrajectory != nullptr && !numi::gripTrajectoryCovers(
+        *gripTrajectory,
+        static_cast<double>(steps) * frameTimestep
+    )) {
+        throw std::runtime_error(
+            "grip trajectory does not cover the requested simulation"
+        );
+    }
     SimulationResult result;
     result.scenario = scenario;
     result.cloth = makeCloth(scenario);
@@ -4608,7 +4657,12 @@ SimulationResult simulate(
                     static_cast<double>(step * substeps + substep + 1u) *
                     timestep
                 );
-                updateGrip(result.cloth, scenario, time);
+                updateGrip(
+                    result.cloth,
+                    scenario,
+                    time,
+                    gripTrajectory
+                );
             }
             for (Particle& particle : result.cloth.particles) {
                 particle.previous = particle.position;
@@ -4736,7 +4790,10 @@ SimulationResult simulate(
                             result.cloth.particles,
                             constraint,
                             result.cloth.gripTarget +
-                                constraint.targetOffset,
+                                rotateVector(
+                                    result.cloth.gripOrientation,
+                                    constraint.targetOffset
+                                ),
                             timestep
                         );
                     }
@@ -5193,7 +5250,12 @@ void dumpOBJ(const std::string& path, const SimulationResult& result) {
         output << "# grip center " << result.cloth.gripTarget.x << ' '
                << result.cloth.gripTarget.y << ' '
                << result.cloth.gripTarget.z << " active "
-               << (result.cloth.gripActive ? 1 : 0) << '\n';
+               << (result.cloth.gripActive ? 1 : 0)
+               << " orientation "
+               << result.cloth.gripOrientation.w << ' '
+               << result.cloth.gripOrientation.x << ' '
+               << result.cloth.gripOrientation.y << ' '
+               << result.cloth.gripOrientation.z << '\n';
     }
     for (std::size_t index = 0; index < result.balls.size(); ++index) {
         const Ball& ball = result.balls[index];
@@ -5211,7 +5273,10 @@ void dumpOBJ(const std::string& path, const SimulationResult& result) {
 }
 
 bool acceptable(const SimulationResult& result, const bool deterministic) {
-    bool allFinite = true;
+    bool allFinite = finite(result.cloth.gripOrientation) &&
+        std::abs(
+            quaternionLength(result.cloth.gripOrientation) - 1.0
+        ) < 1.0e-9;
     for (const Particle& particle : result.cloth.particles) {
         allFinite = allFinite && finite(particle.position) && finite(particle.velocity);
     }
@@ -5266,6 +5331,7 @@ int main(int argc, char** argv) try {
     std::string dumpPath;
     std::string framePrefix;
     std::string materialPath;
+    std::string gripTrajectoryPath;
     std::uint32_t frameStride = 0u;
     bool rollingProbe = false;
     bool selfCCDProbe = false;
@@ -5304,6 +5370,8 @@ int main(int argc, char** argv) try {
             nextUnsigned(frameStride);
         } else if (value == "--material" && argument + 1 < argc) {
             materialPath = argv[++argument];
+        } else if (value == "--grip-trajectory" && argument + 1 < argc) {
+            gripTrajectoryPath = argv[++argument];
         } else if (value == "--rolling-probe") {
             rollingProbe = true;
         } else if (value == "--self-ccd-probe") {
@@ -5332,6 +5400,8 @@ int main(int argc, char** argv) try {
                 scenario = Scenario::spin;
             } else if (name == "pickup") {
                 scenario = Scenario::pickup;
+            } else if (name == "recorded") {
+                scenario = Scenario::recorded;
             } else {
                 throw std::invalid_argument("unknown scenario: " + name);
             }
@@ -5339,8 +5409,9 @@ int main(int argc, char** argv) try {
             std::cout << "usage: numi-solver-cloth-bag "
                          "[--steps N] [--substeps N] [--iterations N] "
                          "[--replays 1|2] "
-                         "[--timestep DT] [--scenario grounded|spin|pickup] "
-                         "[--material FILE] "
+                         "[--timestep DT] "
+                         "[--scenario grounded|spin|pickup|recorded] "
+                         "[--material FILE] [--grip-trajectory FILE] "
                          "[--dump-obj PATH] [--dump-frames PREFIX] "
                          "[--dump-every N] [--rolling-probe] "
                          "[--self-ccd-probe] [--strain-probe] "
@@ -5358,6 +5429,18 @@ int main(int argc, char** argv) try {
     }
     if (!materialPath.empty()) {
         applyClothMaterial(numi::loadClothMaterialArtifact(materialPath));
+    }
+    numi::GripTrajectory gripTrajectory;
+    const numi::GripTrajectory* gripTrajectoryPointer = nullptr;
+    if (!gripTrajectoryPath.empty()) {
+        gripTrajectory = numi::loadGripTrajectory(gripTrajectoryPath);
+        gripTrajectoryPointer = &gripTrajectory;
+    }
+    if ((scenario == Scenario::recorded) !=
+        (gripTrajectoryPointer != nullptr)) {
+        throw std::invalid_argument(
+            "--scenario recorded and --grip-trajectory must be used together"
+        );
     }
     if (rollingProbe) {
         return runRollingProbe() ? 0 : 1;
@@ -5425,13 +5508,21 @@ int main(int argc, char** argv) try {
         iterations,
         scenario,
         framePrefix.empty() ? nullptr : &captureSteps,
-        framePrefix.empty() ? nullptr : &captures
+        framePrefix.empty() ? nullptr : &captures,
+        gripTrajectoryPointer
     );
     const std::uint64_t firstHash = hashResult(first);
     std::uint64_t replayHash = 0u;
     if (replays == 2u) {
         replayHash = hashResult(simulate(
-            steps, timestep, substeps, iterations, scenario
+            steps,
+            timestep,
+            substeps,
+            iterations,
+            scenario,
+            nullptr,
+            nullptr,
+            gripTrajectoryPointer
         ));
     }
     const bool deterministic = replays == 2u && firstHash == replayHash;
@@ -5456,13 +5547,26 @@ int main(int argc, char** argv) try {
     }
     std::cout << std::fixed << std::setprecision(9);
     const char* scenarioName = scenario == Scenario::grounded ? "grounded" :
-        scenario == Scenario::spin ? "spin" : "pickup";
+        scenario == Scenario::spin ? "spin" :
+        scenario == Scenario::pickup ? "pickup" : "recorded";
     std::cout << "material_schema=" << numi::kClothMaterialSchema
               << " material_artifact_loaded=" << std::boolalpha
               << gClothMaterial.loaded
               << " parameters_hash=" << gClothMaterial.parametersHash
               << " observations_hash=" << gClothMaterial.observationsHash
               << '\n';
+    if (gripTrajectoryPointer != nullptr) {
+        std::cout << "grip_trajectory_schema="
+                  << numi::kGripTrajectorySchema
+                  << " content_fingerprint="
+                  << gripTrajectory.contentFingerprint
+                  << " poses=" << gripTrajectory.poses.size()
+                  << " duration_seconds="
+                  << gripTrajectory.poses.back().timeSeconds
+                  << " maximum_rotation_radians="
+                  << numi::maximumGripTrajectoryRotation(gripTrajectory)
+                  << '\n';
+    }
     std::cout << "model=explicit_yarn_cloth_reference"
               << " scenario=" << scenarioName
               << " nodes=" << first.cloth.particles.size()

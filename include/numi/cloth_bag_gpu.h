@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 10u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 11u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
 #define NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY 4096u
 #define NUMI_CLOTH_BAG_GPU_MOUTH_RIM_CAPACITY 64u
@@ -28,6 +28,8 @@ typedef struct MR_ALIGN16 NumiClothBagGPUConfig {
     mr_float4 gravityAndTimestep;
     // xyz virtual-handle position, w 1 when the grip is active.
     mr_float4 gripTargetAndActive;
+    // Relative virtual-handle orientation as a unit quaternion xyzw.
+    mr_float4 gripOrientation;
     // x yarn radius, y guarded self-contact cell size,
     // z cloth/ground friction, w cloth/self friction.
     mr_float4 clothMaterial;
@@ -181,7 +183,7 @@ typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
 } NumiClothBagGPUBatch;
 
 #ifndef __METAL_VERSION__
-static_assert(sizeof(NumiClothBagGPUConfig) == 176);
+static_assert(sizeof(NumiClothBagGPUConfig) == 192);
 static_assert(sizeof(NumiClothBagGPUParticle) == 48);
 static_assert(sizeof(NumiClothBagGPUDistance) == 32);
 static_assert(sizeof(NumiClothBagGPUGrip) == 48);

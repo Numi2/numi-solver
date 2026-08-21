@@ -42,6 +42,12 @@ Metal cloth executables accept a complete artifact with `--material FILE`; the
 fitter writes one only after its separate qualification gates pass, and exact
 authored-default parity tests guard the runtime handoff.
 
+Recorded hand motion is also an explicit solver input. Both cloth paths accept
+the same timestamped relative translation and quaternion orientation through
+the [six-degree-of-freedom seam-grip contract](docs/GRIP_TRAJECTORY.md). The
+rotation acts on all ten compliant cuff attachments; it does not rotate or pose
+the bag directly. This is recorded replay support, not a live cursor UI.
+
 | Grounded start | Top-seam lift | Mouth exit | Released descent | Two grounded |
 |:--:|:--:|:--:|:--:|:--:|
 | ![Grounded woven bag before the Metal seam lift](docs/assets/cloth-metal-pickup-0.png) | ![Metal cloth bag hanging from the highlighted top cuff](docs/assets/cloth-metal-pickup-60.png) | ![Fruit crossing the open 48-knot mouth in the Metal replay](docs/assets/cloth-metal-pickup-160.png) | ![Released fruit descending while the Metal handle becomes stationary](docs/assets/cloth-metal-pickup-240.png) | ![Two released fruit physically grounded after the fixed-handle settling tail](docs/assets/cloth-metal-pickup-480.png) |
@@ -369,19 +375,23 @@ ceiling. `--deformable-response-probe` checks true endpoint-mass transfer with
 free and plane-supported yarn. `--self-friction-probe` independently checks
 yarn/yarn sticking, sliding, momentum conservation, dissipation, cone
 feasibility, and replay; `--cloth-ground-friction-probe` checks loaded sticking,
-cone-limited sliding, and zero-load invariance. `--dump-frames PREFIX` exports five evenly spaced states
+cone-limited sliding, and zero-load invariance. `--dump-frames PREFIX` exports
+five evenly spaced states
 from the first authoritative trajectory; `--dump-every N` instead exports
 every Nth step plus the final state. `grounded` settles an open produce bag on
 a plane, `spin` begins airborne and drives a compliant ten-knot cuff patch
-around a smooth orbit, and `pickup` lifts that same grip patch from the grounded state and
-pours fruit onto the plane. Its FP64 mechanics and evidence boundary are
-separate from the Metal harnesses.
+around a smooth orbit, `pickup` lifts that same grip patch from the grounded
+state and pours fruit onto the plane, and `recorded` consumes
+`--grip-trajectory FILE` as a relative six-degree-of-freedom seam pose. Its
+FP64 mechanics and evidence boundary are separate from the Metal harnesses.
 
 The Metal cloth harness accepts `--replays N`, `--iterations N`,
 `--strain-sweeps N`, and opt-in `--grounded-prefix`, `--grounded-steps`,
 `--grounded-dump-every`, `--spin-prefix`, `--spin-steps`,
 `--spin-dump-every`, `--pickup-prefix`, `--pickup-steps`, and
-`--pickup-dump-every` trajectory arguments. It reconstructs the full cloth
+`--pickup-dump-every` trajectory arguments. A recorded replay additionally
+uses `--grip-trajectory`, `--recorded-steps`, optional `--recorded-prefix`, and
+`--recorded-dump-every`. It reconstructs the full cloth
 internal-constraint/grip topology, validates conflict-free graph colors,
 compares every published value
 against an independent FP64 oracle, exercises active extension limiting,

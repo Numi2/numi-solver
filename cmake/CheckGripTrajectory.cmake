@@ -1,0 +1,96 @@
+if(NOT DEFINED CPU_EXECUTABLE OR NOT DEFINED METAL_EXECUTABLE OR
+   NOT DEFINED IDENTITY_TRAJECTORY OR NOT DEFINED ROTATION_TRAJECTORY)
+    message(FATAL_ERROR
+        "CPU_EXECUTABLE, METAL_EXECUTABLE, IDENTITY_TRAJECTORY, and "
+        "ROTATION_TRAJECTORY are required"
+    )
+endif()
+
+set(cpu_arguments
+    --scenario recorded
+    --steps 1
+    --substeps 24
+    --iterations 32
+    --replays 2
+)
+execute_process(
+    COMMAND "${CPU_EXECUTABLE}" ${cpu_arguments}
+        --grip-trajectory "${IDENTITY_TRAJECTORY}"
+    RESULT_VARIABLE identity_result
+    OUTPUT_VARIABLE identity_output
+    ERROR_VARIABLE identity_error
+)
+if(NOT identity_result EQUAL 0 OR
+   NOT identity_output MATCHES "deterministic=true" OR
+   NOT identity_output MATCHES "result=PASS")
+    message(FATAL_ERROR
+        "CPU identity grip trajectory failed (${identity_result})\n"
+        "${identity_output}${identity_error}"
+    )
+endif()
+
+execute_process(
+    COMMAND "${CPU_EXECUTABLE}" ${cpu_arguments}
+        --grip-trajectory "${ROTATION_TRAJECTORY}"
+    RESULT_VARIABLE rotation_result
+    OUTPUT_VARIABLE rotation_output
+    ERROR_VARIABLE rotation_error
+)
+if(NOT rotation_result EQUAL 0 OR
+   NOT rotation_output MATCHES "deterministic=true" OR
+   NOT rotation_output MATCHES "maximum_rotation_radians=0.0349" OR
+   NOT rotation_output MATCHES "result=PASS")
+    message(FATAL_ERROR
+        "CPU rotating grip trajectory failed (${rotation_result})\n"
+        "${rotation_output}${rotation_error}"
+    )
+endif()
+
+string(REGEX MATCH "state_hash=0x[0-9a-f]+" identity_hash
+    "${identity_output}")
+string(REGEX MATCH "state_hash=0x[0-9a-f]+" rotation_hash
+    "${rotation_output}")
+if(identity_hash STREQUAL "" OR rotation_hash STREQUAL "" OR
+   identity_hash STREQUAL rotation_hash)
+    message(FATAL_ERROR
+        "rotating the seam did not change the CPU physical state\n"
+        "identity=${identity_hash} rotation=${rotation_hash}"
+    )
+endif()
+
+execute_process(
+    COMMAND "${METAL_EXECUTABLE}"
+        --replays 2
+        --iterations 32
+        --strain-sweeps 3
+        --grip-trajectory "${ROTATION_TRAJECTORY}"
+        --recorded-steps 1
+        --recorded-dump-every 1
+    RESULT_VARIABLE metal_result
+    OUTPUT_VARIABLE metal_output
+    ERROR_VARIABLE metal_error
+)
+if(NOT metal_result EQUAL 0 OR
+   NOT metal_output MATCHES
+       "grip_rotation_angle_radians=.*replay_exact=true failure_flags=0" OR
+   NOT metal_output MATCHES
+       "recorded_requested=true steps=1 replay_exact=true" OR
+   NOT metal_output MATCHES "qualified=true state_hash=0x[0-9a-f]+" OR
+   NOT metal_output MATCHES "result=PASS")
+    message(FATAL_ERROR
+        "Metal rotating grip trajectory failed (${metal_result})\n"
+        "${metal_output}${metal_error}"
+    )
+endif()
+
+string(REGEX MATCH "content_fingerprint=0x[0-9a-f]+" cpu_fingerprint
+    "${rotation_output}")
+if(cpu_fingerprint STREQUAL "" OR
+   NOT metal_output MATCHES "${cpu_fingerprint}")
+    message(FATAL_ERROR "grip trajectory provenance did not reach both paths")
+endif()
+
+message(STATUS
+    "6-DoF seam trajectory changed CPU state and passed Metal replay: "
+    "${cpu_fingerprint}"
+)
