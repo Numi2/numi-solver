@@ -4779,15 +4779,17 @@ PickupReplay runPickupReplay(
                 1.0f
             );
         }
-        replay.final = runGPU(
-            device,
-            queue,
-            pipelines,
-            state,
-            iterations,
-            strainSweeps,
-            configs
-        );
+        @autoreleasepool {
+            replay.final = runGPU(
+                device,
+                queue,
+                pipelines,
+                state,
+                iterations,
+                strainSweeps,
+                configs
+            );
+        }
         replay.failureFree = replay.failureFree &&
             replay.final.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE;
         replay.gpuSeconds += replay.final.seconds;
