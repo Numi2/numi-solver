@@ -121,6 +121,17 @@ swift tools/compose_cloth_gif.swift \
   done)
 ```
 
+The opt-in Metal trajectory uses the same 240-frame, 48-substep pickup motion,
+holds the final handle for 60 more frames so spilled fruit can settle, executes
+two full replays, and exports every tenth frame from replay one:
+
+```sh
+./build/numi-solver-cloth-metal \
+  --replays 2 --iterations 32 --strain-sweeps 3 \
+  --pickup-prefix build/metal-pickup --pickup-steps 300 \
+  --pickup-dump-every 10
+```
+
 ## Solver boundary
 
 The initial `src/metal/MetalWorldContact.metal` import was preserved

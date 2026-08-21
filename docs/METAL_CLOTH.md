@@ -226,6 +226,20 @@ Run it with:
   --replays 2 --iterations 32 --strain-sweeps 3
 ```
 
+The complete pickup is an explicit long-running qualification. It advances
+48 device-resident substeps per 1/120-second frame, follows the 240-frame
+pickup motion, then holds the final handle for a 60-frame settling tail. It
+publishes only at frame boundaries, exports replay-one states every ten frames,
+and compares all 300 frame hashes plus the final physical buffers with replay
+two. At least two released fruit must physically rest on the plane at the end:
+
+```sh
+./build/numi-solver-cloth-metal \
+  --replays 2 --iterations 32 --strain-sweeps 3 \
+  --pickup-prefix build/metal-pickup --pickup-steps 300 \
+  --pickup-dump-every 10
+```
+
 The Apple M4 result measured on 2026-08-21 was:
 
 ```text

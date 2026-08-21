@@ -4928,7 +4928,7 @@ int run(const int argc, const char* const* argv) {
     std::uint32_t replays = 2u;
     std::uint32_t iterations = 32u;
     std::uint32_t strainSweeps = 3u;
-    std::uint32_t pickupSteps = 240u;
+    std::uint32_t pickupSteps = 300u;
     std::uint32_t pickupDumpEvery = 10u;
     std::string pickupPrefix;
     std::string metallibPath = NUMI_TEMPORAL_CONE_METALLIB;
@@ -4977,10 +4977,10 @@ int run(const int argc, const char* const* argv) {
         throw std::runtime_error("iterations and strain sweeps must be positive");
     }
     if (!pickupPrefix.empty() &&
-        (pickupSteps == 0u || pickupSteps > 240u ||
+        (pickupSteps == 0u || pickupSteps > 300u ||
          pickupDumpEvery == 0u)) {
         throw std::runtime_error(
-            "Metal pickup requires 1..240 steps and positive dump cadence"
+            "Metal pickup requires 1..300 steps and positive dump cadence"
         );
     }
 
@@ -5328,6 +5328,7 @@ int run(const int argc, const char* const* argv) {
     double pickupGroundPenetration = 0.0;
     double pickupSelfPenetration = 0.0;
     std::uint32_t pickupReleasedMask = 0u;
+    std::uint32_t pickupGroundedReleasedCount = 0u;
     if (pickupRequested) {
         pickupFirst = runPickupReplay(
             device,
@@ -5358,8 +5359,23 @@ int run(const int argc, const char* const* argv) {
             bitwiseEqualPhysicalState(
                 pickupFirst.final, pickupSecond.final
             );
-        pickupComplete = pickupSteps == 240u;
+        pickupComplete = pickupSteps == 300u;
         pickupReleasedMask = pickupFirst.final.releaseStatus.masks.y;
+        for (std::size_t index = 0u;
+             index < pickupFirst.final.fruits.size();
+             ++index) {
+            const NumiClothBagGPUFruit& fruit =
+                pickupFirst.final.fruits[index];
+            if ((pickupReleasedMask & (1u << index)) != 0u &&
+                std::abs(
+                    static_cast<double>(
+                        fruit.positionAndInverseMass.z -
+                        fruit.previousAndRadius.w
+                    )
+                ) <= 2.0e-6) {
+                ++pickupGroundedReleasedCount;
+            }
+        }
         pickupStrainViolation = maximumStrainViolation(
             pickupFirst.final.particles,
             pickupFirst.final.distances
@@ -5380,6 +5396,7 @@ int run(const int argc, const char* const* argv) {
         (pickupComplete && pickupFirst.failureFree &&
          pickupSecond.failureFree && pickupReplayExact &&
          std::popcount(pickupReleasedMask) >= 2 &&
+         pickupGroundedReleasedCount >= 2u &&
          pickupStrainViolation <= 2.0e-6 &&
          pickupGroundPenetration <= 1.0e-6 &&
          pickupSelfPenetration <= 2.0e-6);
@@ -7098,6 +7115,8 @@ int run(const int argc, const char* const* argv) {
               << " replay_exact=" << pickupReplayExact
               << " released_mask=" << pickupReleasedMask
               << " released_count=" << std::popcount(pickupReleasedMask)
+              << " grounded_released_count="
+              << pickupGroundedReleasedCount
               << " strain_violation=" << pickupStrainViolation
               << " ground_penetration=" << pickupGroundPenetration
               << " self_penetration=" << pickupSelfPenetration
