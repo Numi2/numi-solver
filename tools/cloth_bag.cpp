@@ -360,6 +360,7 @@ struct ClothModel {
     Quaternion gripOrientation{};
     bool gripActive{};
     std::uint32_t gripAttachmentGeneration{1u};
+    std::uint32_t gripPatchCenterRing{};
 };
 
 struct Metrics {
@@ -405,6 +406,8 @@ struct Metrics {
     double maximumRegrabCaptureError{};
     std::uint32_t regrabCount{};
     std::uint64_t inactiveGripSubsteps{};
+    std::uint32_t gripPatchSelectionCount{};
+    std::uint32_t maximumGripPatchRingShift{};
     std::uint64_t ballYarnContacts{};
     std::uint64_t sweptBallYarnContacts{};
     std::uint64_t selfContacts{};
@@ -454,6 +457,14 @@ struct SimulationResult {
 
 std::uint32_t nodeIndex(const std::uint32_t level, const std::uint32_t ring) {
     return level * kAround + ring % kAround;
+}
+
+std::uint32_t cyclicRingDistance(
+    const std::uint32_t first,
+    const std::uint32_t second
+) {
+    const std::uint32_t direct = first > second ? first - second : second - first;
+    return std::min(direct, kAround - direct);
 }
 
 double smoothstep(const double value) {
@@ -1517,6 +1528,47 @@ void updateGrip(
                 throw std::runtime_error(
                     "grip reattachment generation is not sequential"
                 );
+            }
+            if (trajectory->selectNearestCuffPatch) {
+                std::uint32_t centerRing = 0u;
+                double nearestDistanceSquared =
+                    std::numeric_limits<double>::infinity();
+                for (std::uint32_t ring = 0u; ring < kAround; ++ring) {
+                    const Vec3 separation = cloth.particles[
+                        nodeIndex(kLevels - 1u, ring)
+                    ].position - cloth.gripTarget;
+                    const double distanceSquared = lengthSquared(separation);
+                    if (distanceSquared < nearestDistanceSquared) {
+                        nearestDistanceSquared = distanceSquared;
+                        centerRing = ring;
+                    }
+                }
+                constexpr std::uint32_t patchWidth = 5u;
+                if (cloth.grips.size() != 2u * patchWidth) {
+                    throw std::logic_error(
+                        "dynamic cuff selection requires ten grip constraints"
+                    );
+                }
+                for (std::uint32_t row = 0u; row < 2u; ++row) {
+                    for (std::uint32_t slot = 0u;
+                         slot < patchWidth;
+                         ++slot) {
+                        const std::uint32_t ring = (
+                            centerRing + kAround + slot - 2u
+                        ) % kAround;
+                        cloth.grips[row * patchWidth + slot].particle =
+                            nodeIndex(kLevels - 2u + row, ring);
+                    }
+                }
+                metrics.maximumGripPatchRingShift = std::max(
+                    metrics.maximumGripPatchRingShift,
+                    cyclicRingDistance(
+                        cloth.gripPatchCenterRing,
+                        centerRing
+                    )
+                );
+                cloth.gripPatchCenterRing = centerRing;
+                ++metrics.gripPatchSelectionCount;
             }
             double maximumCaptureDistance = 0.0;
             for (const GripConstraint& constraint : cloth.grips) {
@@ -5296,6 +5348,9 @@ std::uint64_t hashResult(const SimulationResult& result) {
     if (result.cloth.gripAttachmentGeneration > 1u) {
         append(static_cast<double>(result.cloth.gripAttachmentGeneration));
         for (const GripConstraint& grip : result.cloth.grips) {
+            if (result.metrics.gripPatchSelectionCount > 0u) {
+                append(static_cast<double>(grip.particle));
+            }
             append(grip.targetOffset.x);
             append(grip.targetOffset.y);
             append(grip.targetOffset.z);
@@ -5332,7 +5387,9 @@ void dumpOBJ(const std::string& path, const SimulationResult& result) {
                << result.cloth.gripOrientation.w << ' '
                << result.cloth.gripOrientation.x << ' '
                << result.cloth.gripOrientation.y << ' '
-               << result.cloth.gripOrientation.z << '\n';
+               << result.cloth.gripOrientation.z
+               << " patch_center "
+               << result.cloth.gripPatchCenterRing << '\n';
     }
     for (std::size_t index = 0; index < result.balls.size(); ++index) {
         const Ball& ball = result.balls[index];
@@ -5347,6 +5404,38 @@ void dumpOBJ(const std::string& path, const SimulationResult& result) {
                << ball.angularVelocity.y << ' '
                << ball.angularVelocity.z << '\n';
     }
+}
+
+bool gripParticlesUnique(const ClothModel& cloth) {
+    for (std::size_t first = 0u; first < cloth.grips.size(); ++first) {
+        for (std::size_t second = first + 1u;
+             second < cloth.grips.size();
+             ++second) {
+            if (cloth.grips[first].particle == cloth.grips[second].particle) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool gripPatchTopologyExact(const ClothModel& cloth) {
+    constexpr std::uint32_t patchWidth = 5u;
+    if (cloth.grips.size() != 2u * patchWidth) {
+        return false;
+    }
+    for (std::uint32_t row = 0u; row < 2u; ++row) {
+        for (std::uint32_t slot = 0u; slot < patchWidth; ++slot) {
+            const std::uint32_t ring = (
+                cloth.gripPatchCenterRing + kAround + slot - 2u
+            ) % kAround;
+            if (cloth.grips[row * patchWidth + slot].particle !=
+                nodeIndex(kLevels - 2u + row, ring)) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 bool acceptable(const SimulationResult& result, const bool deterministic) {
@@ -5370,7 +5459,14 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
     for (const Particle& particle : result.cloth.particles) {
         clothMass += particle.mass;
     }
+    const bool spatialPatchValid =
+        result.metrics.gripPatchSelectionCount == 0u ||
+        (result.metrics.gripPatchSelectionCount ==
+             result.metrics.regrabCount &&
+         gripParticlesUnique(result.cloth) &&
+         gripPatchTopologyExact(result.cloth));
     return allFinite && deterministic && pickupOutcome &&
+        spatialPatchValid &&
         result.metrics.escapedMask == 0u &&
         result.metrics.spilledMask == 0u && groundValid &&
         std::abs(clothMass - kClothMass) < 1.0e-12 &&
@@ -5649,6 +5745,10 @@ int main(int argc, char** argv) try {
                   << numi::gripTrajectoryAttachmentGenerations(
                          gripTrajectory
                      )
+                  << " selection_mode="
+                  << (gripTrajectory.selectNearestCuffPatch
+                          ? "nearest_cuff_patch"
+                          : "fixed_patch")
                   << '\n';
     }
     std::cout << "model=explicit_yarn_cloth_reference"
@@ -5770,6 +5870,16 @@ int main(int argc, char** argv) try {
               << metrics.maximumRegrabCaptureError
               << " inactive_grip_substeps="
               << metrics.inactiveGripSubsteps
+              << " patch_selection_count="
+              << metrics.gripPatchSelectionCount
+              << " maximum_patch_ring_shift="
+              << metrics.maximumGripPatchRingShift
+              << " selected_patch_center_ring="
+              << first.cloth.gripPatchCenterRing
+              << " patch_particles_unique="
+              << gripParticlesUnique(first.cloth)
+              << " patch_topology_exact="
+              << gripPatchTopologyExact(first.cloth)
               << " max_friction_cone_ratio="
               << metrics.maximumFrictionConeRatio
               << " max_rolling_resistance_ratio="

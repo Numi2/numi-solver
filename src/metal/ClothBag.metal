@@ -30,6 +30,12 @@ inline bool validConfig(
          (abs(length(config.gripOrientation) - 1.0f) > 1.0e-4f ||
           config.gripControl.x == 0u ||
           !(config.gripMaterial.x > 0.0f))) ||
+        config.gripControl.y > 1u ||
+        (config.gripControl.y == 1u &&
+         (config.gripControl.z < 2u * config.gripControl.w + 1u ||
+          config.gripControl.z > NUMI_CLOTH_BAG_GPU_MOUTH_RIM_CAPACITY ||
+          config.gripControl.w > 16u ||
+          config.control.w != 2u * (2u * config.gripControl.w + 1u))) ||
         !all(isfinite(config.gripMaterial)) ||
         config.gripMaterial.x < 0.0f ||
         !all(isfinite(config.clothMaterial)) || config.clothMaterial.x < 0.0f ||
@@ -573,6 +579,7 @@ kernel void numi_cloth_bag_update_grip_attachment(
     device const NumiClothBagGPUParticle* particles [[buffer(1)]],
     device NumiClothBagGPUGrip* grips [[buffer(2)]],
     device atomic_uint* failure [[buffer(3)]],
+    device const uint* cuffParticles [[buffer(4)]],
     const uint index [[thread_position_in_grid]]
 ) {
     if (!validConfig(config, failure) || index >= config.control.w ||
@@ -588,7 +595,39 @@ kernel void numi_cloth_bag_update_grip_attachment(
         recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_GRIP_CAPTURE);
         return;
     }
-    const uint particleIndex = grip.particle.x;
+    uint particleIndex = grip.particle.x;
+    if (config.gripControl.y == 1u) {
+        const uint ringCount = config.gripControl.z;
+        uint centerRing = 0u;
+        float nearestDistanceSquared = INFINITY;
+        for (uint ring = 0u; ring < ringCount; ++ring) {
+            const uint candidate = cuffParticles[ringCount + ring];
+            if (candidate >= config.control.y) {
+                recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+                return;
+            }
+            const float3 candidateSeparation =
+                particles[candidate].positionAndInverseMass.xyz -
+                config.gripTargetAndActive.xyz;
+            const float distanceSquared = dot(
+                candidateSeparation,
+                candidateSeparation
+            );
+            if (distanceSquared < nearestDistanceSquared) {
+                nearestDistanceSquared = distanceSquared;
+                centerRing = ring;
+            }
+        }
+        const uint patchWidth = 2u * config.gripControl.w + 1u;
+        const uint row = index / patchWidth;
+        const uint slot = index % patchWidth;
+        const uint ring = (
+            centerRing + ringCount + slot - config.gripControl.w
+        ) % ringCount;
+        particleIndex = cuffParticles[row * ringCount + ring];
+        grip.particle.x = particleIndex;
+        grip.particle.w = centerRing;
+    }
     if (particleIndex >= config.control.y) {
         recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
         return;

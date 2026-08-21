@@ -46,9 +46,22 @@ Recorded hand motion is also an explicit solver input. Both cloth paths accept
 the same timestamped relative translation and quaternion orientation through
 the [six-degree-of-freedom seam-grip contract](docs/GRIP_TRAJECTORY.md). The
 rotation acts on all ten compliant cuff attachments; it does not rotate or pose
-the bag directly. Version 2 can release and re-grab the moving cuff by
-recapturing its live local offsets, and rejects distant teleport grabs. This is
-recorded replay support, not a live cursor UI.
+the bag directly. Version 3 can release and re-grab the moving cuff at the
+nearest live top-opening location: it selects five adjacent knots on each cuff
+row, recaptures their live local offsets, and rejects distant teleport grabs.
+Versions 1 and 2 remain readable for exact replay; version 2 retains its fixed
+authored patch. This is recorded replay support, not a live cursor UI or a
+finger/cuff collision model.
+
+| Initial seam patch, ring 0 | Re-grabbed opposite seam patch, ring 24 |
+|:--:|:--:|
+| ![The virtual handle attached to ten knots at top-cuff ring zero](docs/assets/cloth-seam-patch-regrab-0.png) | ![The same physical bag after deterministic release and re-grab at top-cuff ring twenty-four](docs/assets/cloth-seam-patch-regrab-1.png) |
+
+These two Apple Metal solver-state frames are not manually posed. The
+committed version-3 input releases the original patch, grabs near ring 12,
+releases again, and grabs near ring 24. Both CPU FP64 and Apple Metal select
+the same ten unique two-row cuff knots; the orange connectors are generated
+from those selected indices rather than a fixed rendering location.
 
 | Grounded start | Top-seam lift | Mouth exit | Released descent | Two grounded |
 |:--:|:--:|:--:|:--:|:--:|

@@ -482,6 +482,7 @@ struct InitialState {
     std::vector<NumiClothBagGPUSelfPair> selfPairs;
     std::vector<std::uint32_t> selfPairLookup;
     std::vector<std::uint32_t> mouthRimParticles;
+    std::vector<std::uint32_t> cuffParticles;
     std::vector<NumiClothBagGPUBatch> distanceBatches;
     std::vector<NumiClothBagGPUBatch> knotBatches;
     std::vector<NumiClothBagGPUBatch> bendBatches;
@@ -911,7 +912,7 @@ InitialState makeInitialState() {
         1.0f
     );
     result.config.gripOrientation = f4(0.0f, 0.0f, 0.0f, 1.0f);
-    result.config.gripControl = u4(1u, 0u, 0u, 0u);
+    result.config.gripControl = u4(1u, 0u, kAround, 2u);
     result.config.gripMaterial = f4(kGripCaptureRadius, 0.0f, 0.0f, 0.0f);
     float maximumLimitedYarnLength = 0.0f;
     for (const NumiClothBagGPUDistance& distance : result.distances) {
@@ -949,8 +950,16 @@ InitialState makeInitialState() {
     );
     result.config.mouthMaterial = f4(0.025f, 0.0f, 0.0f, 0.0f);
     result.mouthRimParticles.reserve(kAround);
+    result.cuffParticles.reserve(2u * kAround);
     for (std::uint32_t ring = 0u; ring < kAround; ++ring) {
         result.mouthRimParticles.push_back(nodeIndex(kLevels - 1u, ring));
+    }
+    for (std::uint32_t level = kLevels - 2u;
+         level < kLevels;
+         ++level) {
+        for (std::uint32_t ring = 0u; ring < kAround; ++ring) {
+            result.cuffParticles.push_back(nodeIndex(level, ring));
+        }
     }
     result.grips.reserve(kGripCount);
     for (std::uint32_t level = kLevels - 2u; level < kLevels; ++level) {
@@ -4041,6 +4050,8 @@ GPUResult runGPU(
             config.control.y != initial.config.control.y ||
             config.control.z != initial.config.control.z ||
             config.control.w != initial.config.control.w ||
+            config.gripControl.z != initial.config.gripControl.z ||
+            config.gripControl.w != initial.config.gripControl.w ||
             std::memcmp(
                 &config.constraintCounts,
                 &initial.config.constraintCounts,
@@ -4060,6 +4071,22 @@ GPUResult runGPU(
                 "Metal cloth trajectory changes fixed topology"
             );
         }
+        if (config.gripControl.y == 1u &&
+            initial.cuffParticles.size() !=
+                2u * static_cast<std::size_t>(config.gripControl.z)) {
+            throw std::logic_error(
+                "Metal cloth trajectory has incomplete cuff topology"
+            );
+        }
+    }
+    if (!std::all_of(
+            initial.cuffParticles.begin(),
+            initial.cuffParticles.end(),
+            [&](const std::uint32_t particle) {
+                return particle < initial.particles.size();
+            }
+        )) {
+        throw std::logic_error("Metal cloth cuff topology is out of range");
     }
     id<MTLBuffer> configBuffer = [device
         newBufferWithBytes:&trajectoryConfigs.front()
@@ -4084,6 +4111,7 @@ GPUResult runGPU(
     id<MTLBuffer> selfBatchBuffer = makeBytes(initial.selfBatches);
     id<MTLBuffer> selfPairLookupBuffer = makeBytes(initial.selfPairLookup);
     id<MTLBuffer> mouthRimBuffer = makeBytes(initial.mouthRimParticles);
+    id<MTLBuffer> cuffParticleBuffer = makeBytes(initial.cuffParticles);
     id<MTLBuffer> selfCellBuffer = makeZeroed(
         4096u * sizeof(std::uint64_t)
     );
@@ -4156,6 +4184,7 @@ GPUResult runGPU(
         yarnAerodynamicReductionBuffer == nil ||
         selfPairBuffer == nil || selfBatchBuffer == nil ||
         selfPairLookupBuffer == nil || mouthRimBuffer == nil ||
+        cuffParticleBuffer == nil ||
         selfCellBuffer == nil ||
         selfActiveFlagBuffer == nil || selfActiveBatchCountBuffer == nil ||
         selfActiveBatchIndexBuffer == nil ||
@@ -4224,6 +4253,7 @@ GPUResult runGPU(
     [encoder setBuffer:particleBuffer offset:0 atIndex:1];
     [encoder setBuffer:gripBuffer offset:0 atIndex:2];
     [encoder setBuffer:failureBuffer offset:0 atIndex:3];
+    [encoder setBuffer:cuffParticleBuffer offset:0 atIndex:4];
     dispatch(
         encoder,
         pipelines.updateGripAttachment,
@@ -4833,6 +4863,7 @@ void dumpGPUOBJ(
     const std::string& path,
     const std::vector<NumiClothBagGPUParticle>& particles,
     const std::vector<NumiClothBagGPUFruit>& fruits,
+    const std::vector<NumiClothBagGPUGrip>& grips,
     const NumiClothBagGPUConfig& config
 ) {
     std::ofstream output(path);
@@ -4888,7 +4919,8 @@ void dumpGPUOBJ(
            << config.gripOrientation.w << ' '
            << config.gripOrientation.x << ' '
            << config.gripOrientation.y << ' '
-           << config.gripOrientation.z << '\n';
+           << config.gripOrientation.z << " patch_center "
+           << (grips.empty() ? 0u : grips.front().particle.w) << '\n';
     for (std::size_t index = 0u; index < fruits.size(); ++index) {
         const NumiClothBagGPUFruit& fruit = fruits[index];
         output << "# ball " << index << " center "
@@ -5008,6 +5040,10 @@ InitialState makeTrajectoryInitialState(
     );
     state.config.gripOrientation = gripQuaternion4(pose.orientation);
     state.config.gripControl.x = pose.attachmentGeneration;
+    state.config.gripControl.y = trajectory != nullptr &&
+            trajectory->selectNearestCuffPatch
+        ? 1u
+        : 0u;
     return state;
 }
 
@@ -5035,6 +5071,7 @@ TrajectoryReplay runTrajectoryReplay(
             dumpPrefix + "-0.obj",
             state.particles,
             state.fruits,
+            state.grips,
             state.config
         );
     }
@@ -5064,6 +5101,10 @@ TrajectoryReplay runTrajectoryReplay(
                 pose.orientation
             );
             configs[substep].gripControl.x = pose.attachmentGeneration;
+            configs[substep].gripControl.y = trajectory != nullptr &&
+                    trajectory->selectNearestCuffPatch
+                ? 1u
+                : 0u;
         }
         @autoreleasepool {
             replay.final = runGPU(
@@ -5110,6 +5151,7 @@ TrajectoryReplay runTrajectoryReplay(
                 dumpPrefix + "-" + std::to_string(completedSteps) + ".obj",
                 replay.final.particles,
                 replay.final.fruits,
+                replay.final.grips,
                 configs.back()
             );
         }
@@ -5915,6 +5957,7 @@ int run(const int argc, const char* const* argv) {
         hashGPUResult(gripRotationReplayGPU);
     InitialState distantRegrabInitial = initial;
     distantRegrabInitial.config.gripControl.x = 2u;
+    distantRegrabInitial.config.gripControl.y = 1u;
     distantRegrabInitial.config.gripTargetAndActive.x +=
         2.0f * kGripCaptureRadius;
     const GPUResult distantRegrabGPU = runGPU(
@@ -6211,9 +6254,15 @@ int run(const int argc, const char* const* argv) {
     bool recordedAttachmentGenerationsExact = true;
     double recordedMaximumCaptureDistance = 0.0;
     double recordedMaximumCaptureError = 0.0;
+    bool recordedDynamicPatchSelection = false;
+    bool recordedPatchTopologyExact = true;
+    bool recordedPatchCenterExact = true;
+    std::uint32_t recordedPatchCenterRing = 0u;
     if (recordedRequested) {
         recordedAttachmentGenerations =
             numi::gripTrajectoryAttachmentGenerations(gripTrajectory);
+        recordedDynamicPatchSelection =
+            gripTrajectory.selectNearestCuffPatch;
         for (std::uint64_t completedSubstep = 1u;
              completedSubstep <= static_cast<std::uint64_t>(recordedSteps) *
                  kPickupSubstepsPerFrame;
@@ -6298,6 +6347,35 @@ int run(const int argc, const char* const* argv) {
                 static_cast<double>(grip.lambda.w)
             );
         }
+        if (recordedDynamicPatchSelection &&
+            !recordedFirst.final.grips.empty()) {
+            recordedPatchTopologyExact =
+                recordedFirst.final.grips.size() == kGripCount;
+            recordedPatchCenterRing =
+                recordedFirst.final.grips.front().particle.w;
+            constexpr std::uint32_t patchWidth = 5u;
+            for (std::size_t index = 0u;
+                 index < recordedFirst.final.grips.size();
+                 ++index) {
+                const NumiClothBagGPUGrip& grip =
+                    recordedFirst.final.grips[index];
+                recordedPatchCenterExact = recordedPatchCenterExact &&
+                    grip.particle.w == recordedPatchCenterRing;
+                const std::uint32_t row = static_cast<std::uint32_t>(
+                    index / patchWidth
+                );
+                const std::uint32_t slot = static_cast<std::uint32_t>(
+                    index % patchWidth
+                );
+                const std::uint32_t ring = (
+                    recordedPatchCenterRing + kAround + slot - 2u
+                ) % kAround;
+                recordedPatchTopologyExact = recordedPatchTopologyExact &&
+                    row < 2u &&
+                    grip.particle.x ==
+                        initial.cuffParticles[row * kAround + ring];
+            }
+        }
     }
     const bool recordedQualified = !recordedRequested ||
         (recordedFirst.failureFree && recordedSecond.failureFree &&
@@ -6310,7 +6388,9 @@ int run(const int argc, const char* const* argv) {
              initial.config.gripMaterial.x + 1.0e-6 &&
          recordedMaximumCaptureError <= 2.0e-6 &&
          (recordedAttachmentGenerations <= 1u ||
-          recordedInactiveSubsteps > 0u));
+         recordedInactiveSubsteps > 0u) &&
+         (!recordedDynamicPatchSelection ||
+          (recordedPatchCenterExact && recordedPatchTopologyExact)));
     const GPUResult& gpu = gpuResults.front();
     bool deterministic = true;
     for (std::size_t replay = 1u; replay < gpuResults.size(); ++replay) {
@@ -7761,6 +7841,10 @@ int run(const int argc, const char* const* argv) {
               << (recordedRequested
                       ? recordedAttachmentGenerations
                       : 0u)
+              << " selection_mode="
+              << (recordedDynamicPatchSelection
+                      ? "nearest_cuff_patch"
+                      : "fixed_patch")
               << '\n'
               << "abi=" << NUMI_CLOTH_BAG_GPU_ABI_VERSION
               << " particles=" << initial.particles.size()
@@ -8144,6 +8228,17 @@ int run(const int argc, const char* const* argv) {
               << recordedMaximumCaptureDistance
               << " maximum_regrab_capture_error="
               << recordedMaximumCaptureError
+              << " patch_selection_count="
+              << (recordedDynamicPatchSelection &&
+                          recordedAttachmentGenerations > 0u
+                      ? recordedAttachmentGenerations - 1u
+                      : 0u)
+              << " selected_patch_center_ring="
+              << recordedPatchCenterRing
+              << " patch_center_exact="
+              << recordedPatchCenterExact
+              << " patch_topology_exact="
+              << recordedPatchTopologyExact
               << " shape_change=" << recordedShapeChange
               << " first_gpu_seconds=" << recordedFirst.gpuSeconds
               << " second_gpu_seconds=" << recordedSecond.gpuSeconds

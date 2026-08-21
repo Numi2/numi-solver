@@ -61,6 +61,7 @@ private struct Grip {
     var center: Vec3
     var active: Bool
     var orientation: Quaternion
+    var patchCenterRing: Int
 }
 
 private enum PrimitiveKind {
@@ -140,10 +141,18 @@ private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit], Grip?) {
             } else {
                 orientation = .identity
             }
+            let patchCenterRing: Int
+            if fields.count >= 15, fields[13] == "patch_center",
+               let ring = Int(fields[14]) {
+                patchCenterRing = ((ring % around) + around) % around
+            } else {
+                patchCenterRing = 0
+            }
             grip = Grip(
                 center: Vec3(x: x, y: y, z: z),
                 active: active,
-                orientation: orientation
+                orientation: orientation,
+                patchCenterRing: patchCenterRing
             )
         }
     }
@@ -603,7 +612,7 @@ private func render(
         context.setLineWidth(1.8)
         for level in (levels - 2)..<levels {
             for offset in -2...2 {
-                let ring = (around + offset) % around
+                let ring = (around + grip.patchCenterRing + offset) % around
                 let seamPoint = project(
                     vertices[level * around + ring]
                 ).point

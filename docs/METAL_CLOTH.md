@@ -20,7 +20,8 @@ versioned ABI in `include/numi/cloth_bag_gpu.h` owns:
   two-ring exclusion, with swept CCD and present-time normal response;
 - unilateral cloth/ground and fruit/ground projection;
 - the ten finite-compliance top-seam grips, including quaternion-rotated local
-  offsets for a recorded six-degree-of-freedom hand pose;
+  offsets for a recorded six-degree-of-freedom hand pose and deterministic
+  nearest-cuff patch selection on reattachment;
 - gravity prediction and symplectic position advance;
 - XPBD axial-yarn projection;
 - the unilateral 28.5% extension ceiling;
@@ -262,37 +263,43 @@ zero release/escape, bounded residuals, and exact 60-frame replay:
   --spin-dump-every 5
 ```
 
-ABI 12 retains the ABI-11 unit `gripOrientation` quaternion and adds an
-attachment generation plus a finite capture radius. A device-side transition
-kernel runs before integration: when an active generation changes, it captures
-the live cuff positions in the inverse handle frame, clears the grip
-multipliers, and records capture distance and reconstruction error. The grip
-kernel then rotates those local offsets before its finite-compliance XPBD
-solve. A strict recorded-pose file can drive those fields for every substep;
-see [GRIP_TRAJECTORY.md](GRIP_TRAJECTORY.md). The focused rotation probe
-compares Metal against the independent FP64 equation, the rejection probe
-requires an out-of-radius grab to fail, and the recorded trajectory gate runs
-two exact full-topology release/re-grab replays. The committed input is
+ABI 13 retains the ABI-12 unit `gripOrientation`, attachment generation, and
+finite capture radius, and adds explicit cuff topology plus a selection mode.
+A device-side transition kernel runs before integration: when an active
+generation changes in version-3 mode, every grip deterministically scans the
+same live upper cuff row for the nearest center, derives its own unique node
+from the contiguous five-ring patch on one of two rows, captures that position
+in the inverse handle frame, clears its multiplier, and records capture
+distance and reconstruction error. The grip kernel then rotates those local
+offsets before its finite-compliance XPBD solve. A strict recorded-pose file
+can drive those fields for every substep; see
+[GRIP_TRAJECTORY.md](GRIP_TRAJECTORY.md). The focused rotation probe compares
+Metal against the independent FP64 equation, the rejection probe requires an
+out-of-radius grab to fail, and the recorded trajectory gate runs two exact
+full-topology spatial release/re-grab replays. The committed input is
 synthetic, not a measured hand path.
 
-The Apple M4 Pro ABI-12 re-grab certificate measured on 2026-08-21 was:
+The Apple M4 Pro ABI-13 spatial re-grab certificate measured on 2026-08-21 was:
 
 ```text
-grip_trajectory_loaded=true schema=numi.grip.trajectory.v2
-attachment_generations=3
+grip_trajectory_loaded=true schema=numi.grip.trajectory.v3
+attachment_generations=3 selection_mode=nearest_cuff_patch
 distant_regrab_rejected=true failure_flags=16
 recorded_requested=true steps=1 replay_exact=true
 regrab_count=2 inactive_grip_substeps=12
 attachment_generations_exact=true
-maximum_regrab_capture_distance=0.055554337800
-maximum_regrab_capture_error=0.000000000931
+maximum_regrab_capture_distance=0.056479156017
+maximum_regrab_capture_error=0.000000003725
+patch_selection_count=2 selected_patch_center_ring=24
+patch_center_exact=true patch_topology_exact=true
 strain_violation=0.000000000000 ground_penetration=0.000000000000
-self_penetration=0.000000007517 escape_mask=0 qualified=true
+self_penetration=0.000000006234 escape_mask=0 qualified=true
+state_hash=0xb41a53293c5e9e6
 result=PASS
 ```
 
-The complete serial M4 Pro suite passed `40/40` in `611.38 s`, including the
-`103.20 s` airborne spin and `427.50 s` pickup/pour trajectories.
+The complete serial M4 Pro suite passed `41/41` in `609.84 s`, including the
+`102.80 s` airborne spin and `425.79 s` pickup/pour trajectories.
 
 The following Apple M4 result measured on 2026-08-21 is retained as the ABI-10
 release-classification baseline:

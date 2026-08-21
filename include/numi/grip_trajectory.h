@@ -19,8 +19,10 @@ inline constexpr std::string_view kGripTrajectorySchemaV1 =
     "numi.grip.trajectory.v1";
 inline constexpr std::string_view kGripTrajectorySchemaV2 =
     "numi.grip.trajectory.v2";
+inline constexpr std::string_view kGripTrajectorySchemaV3 =
+    "numi.grip.trajectory.v3";
 inline constexpr std::string_view kGripTrajectorySchema =
-    kGripTrajectorySchemaV2;
+    kGripTrajectorySchemaV3;
 
 struct GripTrajectoryVector3 {
   double x{};
@@ -47,6 +49,7 @@ struct GripTrajectory {
   std::vector<GripTrajectoryPose> poses;
   std::string schema;
   std::string contentFingerprint;
+  bool selectNearestCuffPatch{};
 };
 
 inline std::string trimGripTrajectory(std::string value) {
@@ -220,11 +223,14 @@ inline GripTrajectory loadGripTrajectory(const std::string &path) {
           "schema=" + std::string(kGripTrajectorySchemaV1);
       const std::string schemaV2 =
           "schema=" + std::string(kGripTrajectorySchemaV2);
-      if (line != schemaV1 && line != schemaV2) {
+      const std::string schemaV3 =
+          "schema=" + std::string(kGripTrajectorySchemaV3);
+      if (line != schemaV1 && line != schemaV2 && line != schemaV3) {
         throw std::runtime_error("grip trajectory schema mismatch");
       }
       result.schema = line.substr(std::string("schema=").size());
-      permitsReactivation = line == schemaV2;
+      permitsReactivation = line == schemaV2 || line == schemaV3;
+      result.selectNearestCuffPatch = line == schemaV3;
       sawSchema = true;
       continue;
     }

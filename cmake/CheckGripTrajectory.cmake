@@ -1,9 +1,10 @@
 if(NOT DEFINED CPU_EXECUTABLE OR NOT DEFINED METAL_EXECUTABLE OR
    NOT DEFINED IDENTITY_TRAJECTORY OR NOT DEFINED ROTATION_TRAJECTORY OR
-   NOT DEFINED REGRAB_TRAJECTORY)
+   NOT DEFINED REGRAB_TRAJECTORY OR NOT DEFINED PATCH_REGRAB_TRAJECTORY)
     message(FATAL_ERROR
         "CPU_EXECUTABLE, METAL_EXECUTABLE, IDENTITY_TRAJECTORY, "
-        "ROTATION_TRAJECTORY, and REGRAB_TRAJECTORY are required"
+        "ROTATION_TRAJECTORY, REGRAB_TRAJECTORY, and "
+        "PATCH_REGRAB_TRAJECTORY are required"
     )
 endif()
 
@@ -14,6 +15,31 @@ set(cpu_arguments
     --iterations 32
     --replays 2
 )
+execute_process(
+    COMMAND "${CPU_EXECUTABLE}" ${cpu_arguments}
+        --grip-trajectory "${PATCH_REGRAB_TRAJECTORY}"
+    RESULT_VARIABLE patch_regrab_result
+    OUTPUT_VARIABLE patch_regrab_output
+    ERROR_VARIABLE patch_regrab_error
+)
+if(NOT patch_regrab_result EQUAL 0 OR
+   NOT patch_regrab_output MATCHES
+       "grip_trajectory_schema=numi.grip.trajectory.v3" OR
+   NOT patch_regrab_output MATCHES
+       "attachment_generations=3 selection_mode=nearest_cuff_patch" OR
+   NOT patch_regrab_output MATCHES "regrab_count=2" OR
+   NOT patch_regrab_output MATCHES "patch_selection_count=2" OR
+   NOT patch_regrab_output MATCHES "maximum_patch_ring_shift=12" OR
+   NOT patch_regrab_output MATCHES "selected_patch_center_ring=24" OR
+   NOT patch_regrab_output MATCHES
+       "patch_particles_unique=true patch_topology_exact=true" OR
+   NOT patch_regrab_output MATCHES "deterministic=true" OR
+   NOT patch_regrab_output MATCHES "result=PASS")
+    message(FATAL_ERROR
+        "CPU spatial seam re-grab failed (${patch_regrab_result})\n"
+        "${patch_regrab_output}${patch_regrab_error}"
+    )
+endif()
 execute_process(
     COMMAND "${CPU_EXECUTABLE}" ${cpu_arguments}
         --grip-trajectory "${REGRAB_TRAJECTORY}"
@@ -84,7 +110,7 @@ execute_process(
         --replays 2
         --iterations 32
         --strain-sweeps 3
-        --grip-trajectory "${REGRAB_TRAJECTORY}"
+        --grip-trajectory "${PATCH_REGRAB_TRAJECTORY}"
         --recorded-steps 1
         --recorded-dump-every 1
     RESULT_VARIABLE metal_result
@@ -100,6 +126,10 @@ if(NOT metal_result EQUAL 0 OR
        "regrab_count=2 inactive_grip_substeps=[1-9][0-9]*" OR
    NOT metal_output MATCHES
        "attachment_generations_exact=true" OR
+   NOT metal_output MATCHES
+       "patch_selection_count=2 selected_patch_center_ring=24" OR
+   NOT metal_output MATCHES
+       "patch_center_exact=true patch_topology_exact=true" OR
    NOT metal_output MATCHES "qualified=true state_hash=0x[0-9a-f]+" OR
    NOT metal_output MATCHES "result=PASS")
     message(FATAL_ERROR
@@ -109,7 +139,7 @@ if(NOT metal_result EQUAL 0 OR
 endif()
 
 string(REGEX MATCH "content_fingerprint=0x[0-9a-f]+" cpu_fingerprint
-    "${regrab_output}")
+    "${patch_regrab_output}")
 if(cpu_fingerprint STREQUAL "" OR
    NOT metal_output MATCHES "${cpu_fingerprint}")
     message(FATAL_ERROR "grip trajectory provenance did not reach both paths")

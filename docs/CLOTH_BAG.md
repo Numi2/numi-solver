@@ -184,14 +184,21 @@ pinned and the handle is not attached to the bottom. The visible orange
 connector lines show the physical lag between the target and the ten massive
 seam knots.
 
-Recorded trajectory version 2 can release and later re-grab that same cuff
-patch. On each reattachment transition the solver captures the ten live knot
-positions in the current handle frame before integration and clears the grip
-constraint history. The new constraints therefore begin with zero or
-roundoff-scale positional error. Any selected cuff knot farther than the
-authored `0.12 m` capture radius rejects the grab instead of teleporting the
-bag. The current interface always uses this fixed ten-knot patch; it does not
-yet select a new patch from arbitrary hand/cuff collision geometry.
+Recorded trajectory version 3 can release and later re-grab a different part
+of the top cuff. On each reattachment transition the solver scans the 48 live
+knots in the upper cuff row, chooses the nearest one with a deterministic
+lowest-index tie break, and rebuilds the grip from that center plus two
+neighbors on either side in both cuff rows. The ten selected knot indices are
+unique. It then captures their live positions in the current handle frame
+before integration and clears the grip constraint history. The new constraints
+therefore begin with zero or roundoff-scale positional error. Any selected
+cuff knot farther than the authored `0.12 m` capture radius rejects the grab
+instead of teleporting the bag. Version 2 remains readable and retains its
+fixed authored patch.
+
+This is spatial selection from a recorded point handle, not a live hand/cuff
+collision query. Patch width remains five knots per row; finger contact area,
+normal pressure, and frictional grasp mechanics are not represented.
 
 The airborne spin uses a smoothly accelerated orbit. The qualified grounded
 pickup uses a lift, a brief loaded interval, a vertical downward snap, and a
