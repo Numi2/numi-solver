@@ -181,10 +181,11 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
   Metal-performance evidence.
 - `build/numi-solver-cloth-metal` for the versioned device-owned gravity,
   graph-colored axial XPBD, crossing-angle knots, ground-aware yarn bending,
-  unilateral extension limit, ten-knot seam grip, and velocity-publication
-  subset on the full 1,465-particle/2,904-segment topology. It gates FP64
-  equation error and exact replay; it is not yet the complete contact-bearing
-  bag trajectory.
+  unilateral extension limit, ten-knot seam grip, twelve-fruit translation,
+  all 66 fruit-pair normal contacts, cloth/fruit ground projection, and
+  velocity publication on the full 1,465-particle/2,904-segment topology. It
+  gates FP64 equation error and exact replay; it is not yet the complete
+  yarn-contact-bearing bag trajectory.
 - `build/numi-solver-articulated` for canonical articulated mass/Jacobian
   factorization, response-column solves, cone contact, and deterministic
   generalized-velocity publication on one command buffer.
@@ -263,8 +264,9 @@ The Metal cloth subset accepts `--replays N`, `--iterations N`, and
 `--strain-sweeps N`. It reconstructs the full cloth internal-constraint/grip
 topology, validates conflict-free graph colors, compares every published value
 against an independent FP64 oracle, exercises active extension limiting,
-compression invariance, and ground-supported bending, and requires
-byte-identical replay. See
+compression invariance, ground-supported bending, unequal-mass fruit-pair
+separation, and cloth/fruit plane support, and requires byte-identical replay.
+See
 [docs/METAL_CLOTH.md](docs/METAL_CLOTH.md) for its exact boundary.
 
 The remaining physical-realism limits and their required evidence are tracked

@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 2u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 3u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
 
 enum NumiClothBagGPUFailure : mr_u32 {
@@ -17,14 +17,19 @@ typedef struct MR_ALIGN16 NumiClothBagGPUConfig {
     // x ABI, y particle count, z distance count, w grip count.
     mr_uint4 control;
     // x crossing-angle knot count, y yarn-bend count,
-    // z 1 when the ground-aware bend response is active, w reserved.
+    // z 1 when ground response is active, w fruit count.
     mr_uint4 constraintCounts;
+    // x fruit-pair count, yzw reserved.
+    mr_uint4 contactCounts;
     // xyz gravitational acceleration, w substep timestep.
     mr_float4 gravityAndTimestep;
     // xyz virtual-handle position, w 1 when the grip is active.
     mr_float4 gripTargetAndActive;
     // x yarn radius used by ground-aware bend projection, yzw reserved.
     mr_float4 clothMaterial;
+    // x fruit-pair friction, y fruit/ground friction,
+    // z fruit rolling resistance, w reserved.
+    mr_float4 fruitMaterial;
 } NumiClothBagGPUConfig;
 
 typedef struct MR_ALIGN16 NumiClothBagGPUParticle {
@@ -69,6 +74,28 @@ typedef struct MR_ALIGN16 NumiClothBagGPUBend {
     mr_float4 material;
 } NumiClothBagGPUBend;
 
+typedef struct MR_ALIGN16 NumiClothBagGPUFruit {
+    // xyz center, w inverse mass.
+    mr_float4 positionAndInverseMass;
+    // xyz center at the beginning of the substep, w radius.
+    mr_float4 previousAndRadius;
+    // xyz linear velocity, w accumulated ground-normal impulse.
+    mr_float4 velocityAndGroundImpulse;
+    // xyz angular velocity, w reserved.
+    mr_float4 angularVelocity;
+    // Quaternion xyzw.
+    mr_float4 orientation;
+    // x appearance, yzw reserved.
+    mr_uint4 identity;
+} NumiClothBagGPUFruit;
+
+typedef struct MR_ALIGN16 NumiClothBagGPUFruitPair {
+    // x first fruit, y second fruit, z graph color, w stable pair index.
+    mr_uint4 fruitsAndColor;
+    // xyz accumulated impulse-weighted normal, w accumulated normal impulse.
+    mr_float4 contact;
+} NumiClothBagGPUFruitPair;
+
 typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
     // x first constraint, y constraint count, z expected graph color,
     // w reserved.
@@ -76,11 +103,13 @@ typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
 } NumiClothBagGPUBatch;
 
 #ifndef __METAL_VERSION__
-static_assert(sizeof(NumiClothBagGPUConfig) == 80);
+static_assert(sizeof(NumiClothBagGPUConfig) == 112);
 static_assert(sizeof(NumiClothBagGPUParticle) == 48);
 static_assert(sizeof(NumiClothBagGPUDistance) == 32);
 static_assert(sizeof(NumiClothBagGPUGrip) == 48);
 static_assert(sizeof(NumiClothBagGPUKnot) == 48);
 static_assert(sizeof(NumiClothBagGPUBend) == 32);
+static_assert(sizeof(NumiClothBagGPUFruit) == 96);
+static_assert(sizeof(NumiClothBagGPUFruitPair) == 32);
 static_assert(sizeof(NumiClothBagGPUBatch) == 16);
 #endif

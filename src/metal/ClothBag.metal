@@ -25,7 +25,8 @@ inline bool validConfig(
         !isfinite(config.gravityAndTimestep.w) ||
         !all(isfinite(config.gravityAndTimestep.xyz)) ||
         !all(isfinite(config.gripTargetAndActive.xyz)) ||
-        !isfinite(config.clothMaterial.x) || config.clothMaterial.x < 0.0f) {
+        !all(isfinite(config.clothMaterial)) || config.clothMaterial.x < 0.0f ||
+        !all(isfinite(config.fruitMaterial))) {
         recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
         return false;
     }
@@ -41,7 +42,9 @@ kernel void numi_cloth_bag_begin_substep(
     device NumiClothBagGPUGrip* grips [[buffer(3)]],
     device NumiClothBagGPUKnot* knots [[buffer(4)]],
     device NumiClothBagGPUBend* bends [[buffer(5)]],
-    device atomic_uint* failure [[buffer(6)]],
+    device NumiClothBagGPUFruit* fruits [[buffer(6)]],
+    device NumiClothBagGPUFruitPair* fruitPairs [[buffer(7)]],
+    device atomic_uint* failure [[buffer(8)]],
     const uint index [[thread_position_in_grid]]
 ) {
     if (!validConfig(config, failure)) {
@@ -84,6 +87,37 @@ kernel void numi_cloth_bag_begin_substep(
     }
     if (index < config.constraintCounts.y) {
         bends[index].material.w = 0.0f;
+    }
+    if (index < config.constraintCounts.w) {
+        NumiClothBagGPUFruit fruit = fruits[index];
+        const float3 position = fruit.positionAndInverseMass.xyz;
+        const float inverseMass = fruit.positionAndInverseMass.w;
+        const float radius = fruit.previousAndRadius.w;
+        const float3 velocity = fruit.velocityAndGroundImpulse.xyz;
+        if (!all(isfinite(position)) || !all(isfinite(velocity)) ||
+            !all(isfinite(fruit.angularVelocity)) ||
+            !all(isfinite(fruit.orientation)) || !isfinite(inverseMass) ||
+            !isfinite(radius) || !(inverseMass > 0.0f) || !(radius > 0.0f)) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+            return;
+        }
+        const float timestep = config.gravityAndTimestep.w;
+        fruit.previousAndRadius.xyz = position;
+        fruit.velocityAndGroundImpulse.xyz = fma(
+            config.gravityAndTimestep.xyz,
+            float3(timestep),
+            velocity
+        );
+        fruit.velocityAndGroundImpulse.w = 0.0f;
+        fruit.positionAndInverseMass.xyz = fma(
+            fruit.velocityAndGroundImpulse.xyz,
+            float3(timestep),
+            position
+        );
+        fruits[index] = fruit;
+    }
+    if (index < config.contactCounts.x) {
+        fruitPairs[index].contact = float4(0.0f);
     }
 }
 
@@ -436,6 +470,119 @@ kernel void numi_cloth_bag_solve_grip(
     grips[index] = grip;
 }
 
+kernel void numi_cloth_bag_solve_fruit_pair(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUFruit* fruits [[buffer(1)]],
+    device NumiClothBagGPUFruitPair* pairs [[buffer(2)]],
+    constant NumiClothBagGPUBatch& batch [[buffer(3)]],
+    device atomic_uint* failure [[buffer(4)]],
+    const uint localIndex [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) || localIndex >= batch.control.y) {
+        return;
+    }
+    const uint pairIndex = batch.control.x + localIndex;
+    if (pairIndex >= config.contactCounts.x) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        return;
+    }
+    NumiClothBagGPUFruitPair pair = pairs[pairIndex];
+    if (pair.fruitsAndColor.z != batch.control.z) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_BATCH);
+        return;
+    }
+    const uint firstIndex = pair.fruitsAndColor.x;
+    const uint secondIndex = pair.fruitsAndColor.y;
+    if (firstIndex >= config.constraintCounts.w ||
+        secondIndex >= config.constraintCounts.w ||
+        firstIndex == secondIndex) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        return;
+    }
+    NumiClothBagGPUFruit first = fruits[firstIndex];
+    NumiClothBagGPUFruit second = fruits[secondIndex];
+    const float3 difference =
+        second.positionAndInverseMass.xyz -
+        first.positionAndInverseMass.xyz;
+    const float currentLength = length(difference);
+    const float target =
+        first.previousAndRadius.w + second.previousAndRadius.w;
+    if (!isfinite(currentLength) || !isfinite(target) ||
+        !all(isfinite(pair.contact))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    if (!(currentLength < target) || !(currentLength > 1.0e-12f)) {
+        return;
+    }
+    const float denominator =
+        first.positionAndInverseMass.w + second.positionAndInverseMass.w;
+    if (!(denominator > 0.0f) || !isfinite(denominator)) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    const float lambda = (target - currentLength) / denominator;
+    const float3 normal = difference / currentLength;
+    const float3 correction = normal * lambda;
+    first.positionAndInverseMass.xyz -=
+        correction * first.positionAndInverseMass.w;
+    second.positionAndInverseMass.xyz +=
+        correction * second.positionAndInverseMass.w;
+    const float impulseMagnitude = lambda / config.gravityAndTimestep.w;
+    pair.contact.xyz += normal * impulseMagnitude;
+    pair.contact.w += impulseMagnitude;
+    if (!all(isfinite(first.positionAndInverseMass.xyz)) ||
+        !all(isfinite(second.positionAndInverseMass.xyz)) ||
+        !all(isfinite(pair.contact))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    fruits[firstIndex] = first;
+    fruits[secondIndex] = second;
+    pairs[pairIndex] = pair;
+}
+
+kernel void numi_cloth_bag_solve_ground(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device NumiClothBagGPUFruit* fruits [[buffer(2)]],
+    device atomic_uint* failure [[buffer(3)]],
+    const uint index [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) || config.constraintCounts.z == 0u) {
+        return;
+    }
+    if (index < config.control.y) {
+        NumiClothBagGPUParticle particle = particles[index];
+        if (!isfinite(particle.positionAndInverseMass.z)) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+            return;
+        }
+        particle.positionAndInverseMass.z = max(
+            particle.positionAndInverseMass.z,
+            config.clothMaterial.x
+        );
+        particles[index] = particle;
+    }
+    if (index < config.constraintCounts.w) {
+        NumiClothBagGPUFruit fruit = fruits[index];
+        const float penetration =
+            fruit.previousAndRadius.w - fruit.positionAndInverseMass.z;
+        if (!isfinite(penetration)) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+            return;
+        }
+        if (penetration > 0.0f) {
+            const float impulse = penetration /
+                (fruit.positionAndInverseMass.w *
+                 config.gravityAndTimestep.w);
+            fruit.velocityAndGroundImpulse.w += impulse;
+            fruit.positionAndInverseMass.z = fruit.previousAndRadius.w;
+        }
+        fruits[index] = fruit;
+    }
+}
+
 kernel void numi_cloth_bag_limit_strain(
     constant NumiClothBagGPUConfig& config [[buffer(0)]],
     device NumiClothBagGPUParticle* particles [[buffer(1)]],
@@ -514,4 +661,25 @@ kernel void numi_cloth_bag_finalize_substep(
         return;
     }
     particles[index] = particle;
+}
+
+kernel void numi_cloth_bag_finalize_fruit(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUFruit* fruits [[buffer(1)]],
+    device atomic_uint* failure [[buffer(2)]],
+    const uint index [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) ||
+        index >= config.constraintCounts.w) {
+        return;
+    }
+    NumiClothBagGPUFruit fruit = fruits[index];
+    fruit.velocityAndGroundImpulse.xyz =
+        (fruit.positionAndInverseMass.xyz - fruit.previousAndRadius.xyz) /
+        config.gravityAndTimestep.w;
+    if (!all(isfinite(fruit.velocityAndGroundImpulse))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    fruits[index] = fruit;
 }

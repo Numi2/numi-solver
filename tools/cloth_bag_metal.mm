@@ -36,6 +36,9 @@ constexpr std::uint32_t kDistanceCount = 2904u;
 constexpr std::uint32_t kGripCount = 10u;
 constexpr std::uint32_t kKnotCount = 1369u;
 constexpr std::uint32_t kBendCount = 2834u;
+constexpr std::uint32_t kFruitCount = 12u;
+constexpr std::uint32_t kFruitPairCount =
+    kFruitCount * (kFruitCount - 1u) / 2u;
 constexpr float kOrdinaryMass = 0.000050f;
 constexpr float kHemMass = 0.000100f;
 constexpr float kGripCompliance = 2.0e-4f;
@@ -262,9 +265,12 @@ struct InitialState {
     std::vector<NumiClothBagGPUGrip> grips;
     std::vector<NumiClothBagGPUKnot> knots;
     std::vector<NumiClothBagGPUBend> bends;
+    std::vector<NumiClothBagGPUFruit> fruits;
+    std::vector<NumiClothBagGPUFruitPair> fruitPairs;
     std::vector<NumiClothBagGPUBatch> distanceBatches;
     std::vector<NumiClothBagGPUBatch> knotBatches;
     std::vector<NumiClothBagGPUBatch> bendBatches;
+    std::vector<NumiClothBagGPUBatch> fruitPairBatches;
 };
 
 struct EdgeSpec {
@@ -285,6 +291,13 @@ struct BendSpec {
     std::uint32_t middle{};
     std::uint32_t third{};
     float compliance{};
+    std::uint32_t color{};
+};
+
+struct FruitPairSpec {
+    std::uint32_t first{};
+    std::uint32_t second{};
+    std::uint32_t stableIndex{};
     std::uint32_t color{};
 };
 
@@ -662,8 +675,9 @@ InitialState makeInitialState() {
         kGripCount
     );
     result.config.constraintCounts = u4(
-        kKnotCount, kBendCount, 0u, 0u
+        kKnotCount, kBendCount, 0u, kFruitCount
     );
+    result.config.contactCounts = u4(kFruitPairCount, 0u, 0u, 0u);
     result.config.gravityAndTimestep = f4(0.0f, 0.0f, -9.81f, kTimestep);
     result.config.gripTargetAndActive = f4(
         static_cast<float>(base.x + 0.002),
@@ -672,6 +686,7 @@ InitialState makeInitialState() {
         1.0f
     );
     result.config.clothMaterial = f4(0.004f, 0.0f, 0.0f, 0.0f);
+    result.config.fruitMaterial = f4(0.30f, 0.42f, 0.015f, 0.0f);
     result.grips.reserve(kGripCount);
     for (std::uint32_t level = kLevels - 2u; level < kLevels; ++level) {
         for (const int offset : {-2, -1, 0, 1, 2}) {
@@ -694,6 +709,112 @@ InitialState makeInitialState() {
             grip.lambda = f4(0.0f, 0.0f, 0.0f);
             result.grips.push_back(grip);
         }
+    }
+
+    constexpr std::array<DVec3, kFruitCount> fruitPositions{{
+        {0.190, 0.000, 0.088},
+        {0.118, 0.149, 0.083},
+        {-0.042, 0.185, 0.093},
+        {-0.171, 0.082, 0.078},
+        {-0.171, -0.082, 0.086},
+        {-0.042, -0.185, 0.090},
+        {0.118, -0.149, 0.081},
+        {0.000, 0.000, 0.084},
+        {0.105, 0.000, 0.210},
+        {0.000, 0.105, 0.210},
+        {-0.105, 0.000, 0.215},
+        {0.000, -0.105, 0.210},
+    }};
+    constexpr std::array<float, kFruitCount> fruitRadii{{
+        0.070f, 0.065f, 0.075f, 0.060f, 0.068f, 0.072f,
+        0.063f, 0.066f, 0.072f, 0.064f, 0.070f, 0.067f,
+    }};
+    constexpr std::array<float, kFruitCount> fruitMasses{{
+        0.21f, 0.17f, 0.26f, 0.14f, 0.19f, 0.23f,
+        0.16f, 0.18f, 0.23f, 0.17f, 0.21f, 0.18f,
+    }};
+    constexpr std::array<std::uint32_t, kFruitCount> appearances{{
+        0u, 1u, 2u, 1u, 3u, 0u,
+        2u, 3u, 0u, 1u, 2u, 3u,
+    }};
+    result.fruits.reserve(kFruitCount);
+    for (std::size_t index = 0u; index < fruitPositions.size(); ++index) {
+        const DVec3 position = fruitPositions[index] + DVec3{0.0, 0.0, 0.009};
+        NumiClothBagGPUFruit fruit{};
+        fruit.positionAndInverseMass = f4(
+            static_cast<float>(position.x),
+            static_cast<float>(position.y),
+            static_cast<float>(position.z),
+            1.0f / fruitMasses[index]
+        );
+        fruit.previousAndRadius = f4(
+            static_cast<float>(position.x),
+            static_cast<float>(position.y),
+            static_cast<float>(position.z),
+            fruitRadii[index]
+        );
+        fruit.velocityAndGroundImpulse = f4(0.0f, 0.0f, 0.0f, 0.0f);
+        fruit.angularVelocity = f4(0.0f, 0.0f, 0.0f, 0.0f);
+        fruit.orientation = f4(0.0f, 0.0f, 0.0f, 1.0f);
+        fruit.identity = u4(appearances[index], 0u, 0u, 0u);
+        result.fruits.push_back(fruit);
+    }
+
+    std::vector<FruitPairSpec> pairSpecs;
+    pairSpecs.reserve(kFruitPairCount);
+    std::uint32_t stablePair = 0u;
+    for (std::uint32_t first = 0u; first < kFruitCount; ++first) {
+        for (std::uint32_t second = first + 1u;
+             second < kFruitCount;
+             ++second, ++stablePair) {
+            pairSpecs.push_back({first, second, stablePair, 0u});
+        }
+    }
+    particleColors.assign(kFruitCount, 0u);
+    std::uint32_t pairColorCount = 0u;
+    for (FruitPairSpec& pair : pairSpecs) {
+        const std::uint64_t unavailable =
+            particleColors[pair.first] | particleColors[pair.second];
+        const std::uint64_t available = ~unavailable;
+        if (available == 0u) {
+            throw std::logic_error("fruit pair coloring exceeds 64 colors");
+        }
+        pair.color = static_cast<std::uint32_t>(
+            std::countr_zero(available)
+        );
+        pairColorCount = std::max(pairColorCount, pair.color + 1u);
+        const std::uint64_t bit = std::uint64_t{1u} << pair.color;
+        particleColors[pair.first] |= bit;
+        particleColors[pair.second] |= bit;
+    }
+    std::stable_sort(
+        pairSpecs.begin(),
+        pairSpecs.end(),
+        [](const FruitPairSpec& first, const FruitPairSpec& second) {
+            return first.color < second.color;
+        }
+    );
+    result.fruitPairs.reserve(pairSpecs.size());
+    batchStart = 0u;
+    for (std::uint32_t color = 0u; color < pairColorCount; ++color) {
+        const std::uint32_t first = batchStart;
+        while (batchStart < pairSpecs.size() &&
+               pairSpecs[batchStart].color == color) {
+            const FruitPairSpec& source = pairSpecs[batchStart];
+            NumiClothBagGPUFruitPair pair{};
+            pair.fruitsAndColor = u4(
+                source.first,
+                source.second,
+                source.color,
+                source.stableIndex
+            );
+            pair.contact = f4(0.0f, 0.0f, 0.0f, 0.0f);
+            result.fruitPairs.push_back(pair);
+            ++batchStart;
+        }
+        result.fruitPairBatches.push_back({
+            u4(first, batchStart - first, color, 0u)
+        });
     }
     return result;
 }
@@ -772,6 +893,76 @@ InitialState makeGroundBendProbeState() {
     return result;
 }
 
+NumiClothBagGPUFruit makeProbeFruit(
+    const DVec3 position,
+    const float inverseMass,
+    const float radius
+) {
+    NumiClothBagGPUFruit fruit{};
+    fruit.positionAndInverseMass = f4(
+        static_cast<float>(position.x),
+        static_cast<float>(position.y),
+        static_cast<float>(position.z),
+        inverseMass
+    );
+    fruit.previousAndRadius = f4(
+        static_cast<float>(position.x),
+        static_cast<float>(position.y),
+        static_cast<float>(position.z),
+        radius
+    );
+    fruit.velocityAndGroundImpulse = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    fruit.angularVelocity = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    fruit.orientation = f4(0.0f, 0.0f, 0.0f, 1.0f);
+    fruit.identity = u4(0u, 0u, 0u, 0u);
+    return fruit;
+}
+
+InitialState makeFruitPairProbeState() {
+    InitialState result;
+    result.config.control = u4(
+        NUMI_CLOTH_BAG_GPU_ABI_VERSION, 0u, 0u, 0u
+    );
+    result.config.constraintCounts = u4(0u, 0u, 0u, 2u);
+    result.config.contactCounts = u4(1u, 0u, 0u, 0u);
+    result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
+    result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    result.config.clothMaterial = f4(0.004f, 0.0f, 0.0f, 0.0f);
+    result.config.fruitMaterial = f4(0.30f, 0.42f, 0.015f, 0.0f);
+    result.fruits = {
+        makeProbeFruit({0.0, 0.0, 2.0}, 1.0f, 1.0f),
+        makeProbeFruit({1.5, 0.0, 2.0}, 2.0f, 1.0f),
+    };
+    NumiClothBagGPUFruitPair pair{};
+    pair.fruitsAndColor = u4(0u, 1u, 0u, 0u);
+    pair.contact = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    result.fruitPairs = {pair};
+    result.fruitPairBatches = {{u4(0u, 1u, 0u, 0u)}};
+    return result;
+}
+
+InitialState makeGroundContactProbeState() {
+    InitialState result;
+    result.config.control = u4(
+        NUMI_CLOTH_BAG_GPU_ABI_VERSION, 1u, 0u, 0u
+    );
+    result.config.constraintCounts = u4(0u, 0u, 1u, 1u);
+    result.config.contactCounts = u4(0u, 0u, 0u, 0u);
+    result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
+    result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    result.config.clothMaterial = f4(0.004f, 0.0f, 0.0f, 0.0f);
+    result.config.fruitMaterial = f4(0.30f, 0.42f, 0.015f, 0.0f);
+    NumiClothBagGPUParticle particle{};
+    particle.positionAndInverseMass = f4(0.0f, 0.0f, 0.0f, 1.0f);
+    particle.previousAndMass = f4(0.0f, 0.0f, 0.0f, 1.0f);
+    particle.velocity = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    result.particles = {particle};
+    result.fruits = {
+        makeProbeFruit({0.0, 0.0, 0.5}, 2.0f, 1.0f)
+    };
+    return result;
+}
+
 bool verifyColoring(const InitialState& state) {
     for (const NumiClothBagGPUBatch& batch : state.distanceBatches) {
         std::vector<bool> used(state.particles.size(), false);
@@ -824,6 +1015,21 @@ bool verifyColoring(const InitialState& state) {
             used[constraint.particlesAndColor.z] = true;
         }
     }
+    for (const NumiClothBagGPUBatch& batch : state.fruitPairBatches) {
+        std::vector<bool> used(state.fruits.size(), false);
+        for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
+            const auto& pair = state.fruitPairs[batch.control.x + local];
+            if (pair.fruitsAndColor.z != batch.control.z ||
+                pair.fruitsAndColor.x >= used.size() ||
+                pair.fruitsAndColor.y >= used.size() ||
+                used[pair.fruitsAndColor.x] ||
+                used[pair.fruitsAndColor.y]) {
+                return false;
+            }
+            used[pair.fruitsAndColor.x] = true;
+            used[pair.fruitsAndColor.y] = true;
+        }
+    }
     std::vector<bool> gripUsed(state.particles.size(), false);
     for (const auto& grip : state.grips) {
         if (grip.particle.x >= gripUsed.size() || gripUsed[grip.particle.x]) {
@@ -874,12 +1080,31 @@ struct OracleBend {
     double lambda{};
 };
 
+struct OracleFruit {
+    DVec3 position{};
+    DVec3 previous{};
+    DVec3 velocity{};
+    DVec3 angularVelocity{};
+    double inverseMass{};
+    double radius{};
+    double groundNormalImpulse{};
+};
+
+struct OracleFruitPair {
+    std::uint32_t first{};
+    std::uint32_t second{};
+    DVec3 weightedNormal{};
+    double normalImpulse{};
+};
+
 struct OracleResult {
     std::vector<OracleParticle> particles;
     std::vector<OracleDistance> distances;
     std::vector<OracleGrip> grips;
     std::vector<OracleKnot> knots;
     std::vector<OracleBend> bends;
+    std::vector<OracleFruit> fruits;
+    std::vector<OracleFruitPair> fruitPairs;
 };
 
 OracleResult runOracle(
@@ -943,6 +1168,27 @@ OracleResult runOracle(
             0.0,
         });
     }
+    result.fruits.reserve(initial.fruits.size());
+    for (const auto& source : initial.fruits) {
+        result.fruits.push_back({
+            d3(source.positionAndInverseMass),
+            d3(source.previousAndRadius),
+            d3(source.velocityAndGroundImpulse),
+            d3(source.angularVelocity),
+            static_cast<double>(source.positionAndInverseMass.w),
+            static_cast<double>(source.previousAndRadius.w),
+            0.0,
+        });
+    }
+    result.fruitPairs.reserve(initial.fruitPairs.size());
+    for (const auto& source : initial.fruitPairs) {
+        result.fruitPairs.push_back({
+            source.fruitsAndColor.x,
+            source.fruitsAndColor.y,
+            {},
+            0.0,
+        });
+    }
     const double timestep = initial.config.gravityAndTimestep.w;
     const DVec3 gravity = d3(initial.config.gravityAndTimestep);
     const DVec3 gripTarget = d3(initial.config.gripTargetAndActive);
@@ -952,6 +1198,12 @@ OracleResult runOracle(
             particle.velocity += gravity * timestep;
             particle.position += particle.velocity * timestep;
         }
+    }
+    for (OracleFruit& fruit : result.fruits) {
+        fruit.previous = fruit.position;
+        fruit.velocity += gravity * timestep;
+        fruit.groundNormalImpulse = 0.0;
+        fruit.position += fruit.velocity * timestep;
     }
     for (std::uint32_t iteration = 0u; iteration < iterations; ++iteration) {
         for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
@@ -1181,6 +1433,51 @@ OracleResult runOracle(
             grip.lambda += deltaLambda;
             particle.position += deltaLambda * particle.inverseMass;
         }
+        for (const NumiClothBagGPUBatch& batch : initial.fruitPairBatches) {
+            for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
+                OracleFruitPair& pair =
+                    result.fruitPairs[batch.control.x + local];
+                OracleFruit& first = result.fruits[pair.first];
+                OracleFruit& second = result.fruits[pair.second];
+                const DVec3 difference = second.position - first.position;
+                const double currentLength = length(difference);
+                const double target = first.radius + second.radius;
+                if (!(currentLength < target) ||
+                    !(currentLength > 1.0e-12)) {
+                    continue;
+                }
+                const double denominator =
+                    first.inverseMass + second.inverseMass;
+                if (!(denominator > 0.0)) {
+                    continue;
+                }
+                const double lambda =
+                    (target - currentLength) / denominator;
+                const DVec3 normal = difference / currentLength;
+                const DVec3 correction = normal * lambda;
+                first.position -= correction * first.inverseMass;
+                second.position += correction * second.inverseMass;
+                const double impulseMagnitude = lambda / timestep;
+                pair.weightedNormal += normal * impulseMagnitude;
+                pair.normalImpulse += impulseMagnitude;
+            }
+        }
+        if (initial.config.constraintCounts.z != 0u) {
+            const double clothRadius = initial.config.clothMaterial.x;
+            for (OracleParticle& particle : result.particles) {
+                particle.position.z = std::max(
+                    particle.position.z, clothRadius
+                );
+            }
+            for (OracleFruit& fruit : result.fruits) {
+                const double penetration = fruit.radius - fruit.position.z;
+                if (penetration > 0.0) {
+                    fruit.groundNormalImpulse += penetration /
+                        (fruit.inverseMass * timestep);
+                    fruit.position.z = fruit.radius;
+                }
+            }
+        }
     }
     for (std::uint32_t sweep = 0u; sweep < strainSweeps; ++sweep) {
         for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
@@ -1215,6 +1512,9 @@ OracleResult runOracle(
     for (OracleParticle& particle : result.particles) {
         particle.velocity =
             (particle.position - particle.previous) / timestep;
+    }
+    for (OracleFruit& fruit : result.fruits) {
+        fruit.velocity = (fruit.position - fruit.previous) / timestep;
     }
     return result;
 }
@@ -1272,6 +1572,8 @@ struct GPUResult {
     std::vector<NumiClothBagGPUGrip> grips;
     std::vector<NumiClothBagGPUKnot> knots;
     std::vector<NumiClothBagGPUBend> bends;
+    std::vector<NumiClothBagGPUFruit> fruits;
+    std::vector<NumiClothBagGPUFruitPair> fruitPairs;
     std::uint32_t failure{};
     double seconds{};
 };
@@ -1282,8 +1584,11 @@ struct Pipelines {
     id<MTLComputePipelineState> knot;
     id<MTLComputePipelineState> bend;
     id<MTLComputePipelineState> grip;
+    id<MTLComputePipelineState> fruitPair;
+    id<MTLComputePipelineState> ground;
     id<MTLComputePipelineState> strain;
     id<MTLComputePipelineState> finalize;
+    id<MTLComputePipelineState> finalizeFruit;
 };
 
 GPUResult runGPU(
@@ -1314,6 +1619,8 @@ GPUResult runGPU(
     id<MTLBuffer> gripBuffer = makeBytes(initial.grips);
     id<MTLBuffer> knotBuffer = makeBytes(initial.knots);
     id<MTLBuffer> bendBuffer = makeBytes(initial.bends);
+    id<MTLBuffer> fruitBuffer = makeBytes(initial.fruits);
+    id<MTLBuffer> fruitPairBuffer = makeBytes(initial.fruitPairs);
     std::uint32_t zero = 0u;
     id<MTLBuffer> failureBuffer = [device
         newBufferWithBytes:&zero
@@ -1322,6 +1629,7 @@ GPUResult runGPU(
     if (configBuffer == nil || particleBuffer == nil ||
         distanceBuffer == nil || gripBuffer == nil ||
         knotBuffer == nil || bendBuffer == nil ||
+        fruitBuffer == nil || fruitPairBuffer == nil ||
         failureBuffer == nil) {
         throw std::runtime_error("failed to allocate Metal cloth buffers");
     }
@@ -1338,7 +1646,9 @@ GPUResult runGPU(
     [encoder setBuffer:gripBuffer offset:0 atIndex:3];
     [encoder setBuffer:knotBuffer offset:0 atIndex:4];
     [encoder setBuffer:bendBuffer offset:0 atIndex:5];
-    [encoder setBuffer:failureBuffer offset:0 atIndex:6];
+    [encoder setBuffer:fruitBuffer offset:0 atIndex:6];
+    [encoder setBuffer:fruitPairBuffer offset:0 atIndex:7];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:8];
     dispatch(
         encoder,
         pipelines.begin,
@@ -1348,6 +1658,8 @@ GPUResult runGPU(
             initial.grips.size(),
             initial.knots.size(),
             initial.bends.size(),
+            initial.fruits.size(),
+            initial.fruitPairs.size(),
         })
     );
 
@@ -1387,6 +1699,27 @@ GPUResult runGPU(
         [encoder setBuffer:gripBuffer offset:0 atIndex:2];
         [encoder setBuffer:failureBuffer offset:0 atIndex:3];
         dispatch(encoder, pipelines.grip, initial.grips.size());
+        for (const NumiClothBagGPUBatch& batch : initial.fruitPairBatches) {
+            [encoder setComputePipelineState:pipelines.fruitPair];
+            [encoder setBuffer:configBuffer offset:0 atIndex:0];
+            [encoder setBuffer:fruitBuffer offset:0 atIndex:1];
+            [encoder setBuffer:fruitPairBuffer offset:0 atIndex:2];
+            [encoder setBytes:&batch length:sizeof(batch) atIndex:3];
+            [encoder setBuffer:failureBuffer offset:0 atIndex:4];
+            dispatch(encoder, pipelines.fruitPair, batch.control.y);
+        }
+        if (initial.config.constraintCounts.z != 0u) {
+            [encoder setComputePipelineState:pipelines.ground];
+            [encoder setBuffer:configBuffer offset:0 atIndex:0];
+            [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+            [encoder setBuffer:fruitBuffer offset:0 atIndex:2];
+            [encoder setBuffer:failureBuffer offset:0 atIndex:3];
+            dispatch(
+                encoder,
+                pipelines.ground,
+                std::max(initial.particles.size(), initial.fruits.size())
+            );
+        }
     }
     for (std::uint32_t sweep = 0u; sweep < strainSweeps; ++sweep) {
         for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
@@ -1404,6 +1737,11 @@ GPUResult runGPU(
     [encoder setBuffer:particleBuffer offset:0 atIndex:1];
     [encoder setBuffer:failureBuffer offset:0 atIndex:2];
     dispatch(encoder, pipelines.finalize, initial.particles.size());
+    [encoder setComputePipelineState:pipelines.finalizeFruit];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:fruitBuffer offset:0 atIndex:1];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:2];
+    dispatch(encoder, pipelines.finalizeFruit, initial.fruits.size());
     [encoder endEncoding];
     [commandBuffer commit];
     [commandBuffer waitUntilCompleted];
@@ -1425,6 +1763,8 @@ GPUResult runGPU(
     assign(result.grips, gripBuffer, initial.grips);
     assign(result.knots, knotBuffer, initial.knots);
     assign(result.bends, bendBuffer, initial.bends);
+    assign(result.fruits, fruitBuffer, initial.fruits);
+    assign(result.fruitPairs, fruitPairBuffer, initial.fruitPairs);
     result.failure = *static_cast<const std::uint32_t*>(failureBuffer.contents);
     if (commandBuffer.GPUEndTime >= commandBuffer.GPUStartTime) {
         result.seconds = commandBuffer.GPUEndTime - commandBuffer.GPUStartTime;
@@ -1462,6 +1802,8 @@ std::uint64_t hashGPUResult(const GPUResult& result) {
     append(result.grips);
     append(result.knots);
     append(result.bends);
+    append(result.fruits);
+    append(result.fruitPairs);
     hash ^= result.failure;
     hash *= 1099511628211ull;
     return hash;
@@ -1550,8 +1892,11 @@ int run(const int argc, const char* const* argv) {
         makePipeline(device, library, @"numi_cloth_bag_solve_knot"),
         makePipeline(device, library, @"numi_cloth_bag_solve_bend"),
         makePipeline(device, library, @"numi_cloth_bag_solve_grip"),
+        makePipeline(device, library, @"numi_cloth_bag_solve_fruit_pair"),
+        makePipeline(device, library, @"numi_cloth_bag_solve_ground"),
         makePipeline(device, library, @"numi_cloth_bag_limit_strain"),
         makePipeline(device, library, @"numi_cloth_bag_finalize_substep"),
+        makePipeline(device, library, @"numi_cloth_bag_finalize_fruit"),
     };
 
     std::vector<GPUResult> gpuResults;
@@ -1588,6 +1933,30 @@ int run(const int argc, const char* const* argv) {
         1u,
         0u
     );
+    const InitialState fruitPairInitial = makeFruitPairProbeState();
+    const OracleResult fruitPairOracle = runOracle(
+        fruitPairInitial, 1u, 0u
+    );
+    const GPUResult fruitPairGPU = runGPU(
+        device,
+        queue,
+        pipelines,
+        fruitPairInitial,
+        1u,
+        0u
+    );
+    const InitialState groundContactInitial = makeGroundContactProbeState();
+    const OracleResult groundContactOracle = runOracle(
+        groundContactInitial, 1u, 0u
+    );
+    const GPUResult groundContactGPU = runGPU(
+        device,
+        queue,
+        pipelines,
+        groundContactInitial,
+        1u,
+        0u
+    );
     const GPUResult& gpu = gpuResults.front();
     bool deterministic = true;
     for (std::size_t replay = 1u; replay < gpuResults.size(); ++replay) {
@@ -1597,7 +1966,9 @@ int run(const int argc, const char* const* argv) {
             bitwiseEqual(gpu.distances, gpuResults[replay].distances) &&
             bitwiseEqual(gpu.grips, gpuResults[replay].grips) &&
             bitwiseEqual(gpu.knots, gpuResults[replay].knots) &&
-            bitwiseEqual(gpu.bends, gpuResults[replay].bends);
+            bitwiseEqual(gpu.bends, gpuResults[replay].bends) &&
+            bitwiseEqual(gpu.fruits, gpuResults[replay].fruits) &&
+            bitwiseEqual(gpu.fruitPairs, gpuResults[replay].fruitPairs);
     }
 
     double maximumPositionError = 0.0;
@@ -1608,6 +1979,11 @@ int run(const int argc, const char* const* argv) {
     double maximumBendLambdaError = 0.0;
     double maximumKnotLambda = 0.0;
     double maximumBendLambda = 0.0;
+    double maximumFruitPositionError = 0.0;
+    double maximumFruitVelocityError = 0.0;
+    double maximumFruitPairContactError = 0.0;
+    double maximumFruitPairImpulse = 0.0;
+    double maximumFruitPairPenetration = 0.0;
     double maximumDisplacement = 0.0;
     for (std::size_t index = 0u; index < gpu.particles.size(); ++index) {
         const DVec3 gpuPosition = d3(
@@ -1637,6 +2013,61 @@ int run(const int argc, const char* const* argv) {
             length(gpuPosition - d3(
                 initial.particles[index].positionAndInverseMass
             ))
+        );
+    }
+    for (std::size_t index = 0u; index < gpu.fruits.size(); ++index) {
+        const DVec3 positionDelta =
+            d3(gpu.fruits[index].positionAndInverseMass) -
+            oracle.fruits[index].position;
+        const DVec3 velocityDelta =
+            d3(gpu.fruits[index].velocityAndGroundImpulse) -
+            oracle.fruits[index].velocity;
+        maximumFruitPositionError = std::max(
+            maximumFruitPositionError,
+            std::max({
+                std::abs(positionDelta.x),
+                std::abs(positionDelta.y),
+                std::abs(positionDelta.z),
+            })
+        );
+        maximumFruitVelocityError = std::max(
+            maximumFruitVelocityError,
+            std::max({
+                std::abs(velocityDelta.x),
+                std::abs(velocityDelta.y),
+                std::abs(velocityDelta.z),
+            })
+        );
+    }
+    for (std::size_t index = 0u; index < gpu.fruitPairs.size(); ++index) {
+        const DVec3 gpuWeightedNormal = d3(gpu.fruitPairs[index].contact);
+        const DVec3 normalDelta =
+            gpuWeightedNormal - oracle.fruitPairs[index].weightedNormal;
+        maximumFruitPairContactError = std::max({
+            maximumFruitPairContactError,
+            std::abs(normalDelta.x),
+            std::abs(normalDelta.y),
+            std::abs(normalDelta.z),
+            std::abs(
+                static_cast<double>(gpu.fruitPairs[index].contact.w) -
+                oracle.fruitPairs[index].normalImpulse
+            ),
+        });
+        maximumFruitPairImpulse = std::max(
+            maximumFruitPairImpulse,
+            static_cast<double>(gpu.fruitPairs[index].contact.w)
+        );
+        const auto& pair = gpu.fruitPairs[index];
+        const double separation = length(
+            d3(gpu.fruits[pair.fruitsAndColor.y].positionAndInverseMass) -
+            d3(gpu.fruits[pair.fruitsAndColor.x].positionAndInverseMass)
+        );
+        const double target =
+            gpu.fruits[pair.fruitsAndColor.x].previousAndRadius.w +
+            gpu.fruits[pair.fruitsAndColor.y].previousAndRadius.w;
+        maximumFruitPairPenetration = std::max(
+            maximumFruitPairPenetration,
+            target - separation
         );
     }
     for (std::size_t index = 0u; index < gpu.distances.size(); ++index) {
@@ -1742,6 +2173,50 @@ int run(const int argc, const char* const* argv) {
     const double freeEndpointRise =
         groundBendGPU.particles[2].positionAndInverseMass.z -
         groundBendInitial.particles[2].positionAndInverseMass.z;
+    double fruitPairProbePositionError = 0.0;
+    for (std::size_t index = 0u; index < fruitPairGPU.fruits.size(); ++index) {
+        const DVec3 delta =
+            d3(fruitPairGPU.fruits[index].positionAndInverseMass) -
+            fruitPairOracle.fruits[index].position;
+        fruitPairProbePositionError = std::max(
+            fruitPairProbePositionError,
+            std::max({std::abs(delta.x), std::abs(delta.y), std::abs(delta.z)})
+        );
+    }
+    const double fruitPairProbeSeparation = length(
+        d3(fruitPairGPU.fruits[1].positionAndInverseMass) -
+        d3(fruitPairGPU.fruits[0].positionAndInverseMass)
+    );
+    const double fruitPairProbeCenterError = length(
+        pairCenterOfMass(fruitPairGPU.fruits) -
+        pairCenterOfMass(fruitPairInitial.fruits)
+    );
+    const double fruitPairProbeImpulseError = std::abs(
+        static_cast<double>(fruitPairGPU.fruitPairs[0].contact.w) -
+        fruitPairOracle.fruitPairs[0].normalImpulse
+    );
+    const double fruitPairProbeImpulse =
+        fruitPairGPU.fruitPairs[0].contact.w;
+    const double groundClothHeight =
+        groundContactGPU.particles[0].positionAndInverseMass.z;
+    const double groundFruitHeight =
+        groundContactGPU.fruits[0].positionAndInverseMass.z;
+    const double groundFruitImpulse =
+        groundContactGPU.fruits[0].velocityAndGroundImpulse.w;
+    const double groundContactPositionError = std::max(
+        std::abs(
+            groundClothHeight -
+            groundContactOracle.particles[0].position.z
+        ),
+        std::abs(
+            groundFruitHeight -
+            groundContactOracle.fruits[0].position.z
+        )
+    );
+    const double groundContactImpulseError = std::abs(
+        groundFruitImpulse -
+        groundContactOracle.fruits[0].groundNormalImpulse
+    );
     double averageSeconds = 0.0;
     for (const GPUResult& replay : gpuResults) {
         averageSeconds += replay.seconds;
@@ -1754,6 +2229,8 @@ int run(const int argc, const char* const* argv) {
         initial.grips.size() == kGripCount &&
         initial.knots.size() == kKnotCount &&
         initial.bends.size() == kBendCount &&
+        initial.fruits.size() == kFruitCount &&
+        initial.fruitPairs.size() == kFruitPairCount &&
         coloringExact && gpu.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
         deterministic && maximumPositionError <= 2.0e-5 &&
         maximumVelocityError <= 0.12 &&
@@ -1762,6 +2239,10 @@ int run(const int argc, const char* const* argv) {
         maximumKnotLambdaError <= 2.0e-8 &&
         maximumBendLambdaError <= 2.0e-8 &&
         maximumKnotLambda > 1.0e-12 && maximumBendLambda > 1.0e-12 &&
+        maximumFruitPositionError <= 2.0e-6 &&
+        maximumFruitVelocityError <= 0.02 &&
+        maximumFruitPairContactError <= 2.0e-5 &&
+        maximumFruitPairPenetration <= 2.0e-6 &&
         strainViolation <= 2.0e-6 &&
         maximumDisplacement > 1.0e-4 && gripForce > 1.0 &&
         strainGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
@@ -1771,7 +2252,18 @@ int run(const int argc, const char* const* argv) {
         probeCenterOfMassError <= 1.0e-7 &&
         groundBendGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
         groundBendPositionError <= 2.0e-7 &&
-        supportedHeight >= 0.004 - 1.0e-8 && freeEndpointRise > 0.0;
+        supportedHeight >= 0.004 - 1.0e-8 && freeEndpointRise > 0.0 &&
+        fruitPairGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
+        fruitPairProbePositionError <= 2.0e-7 &&
+        std::abs(fruitPairProbeSeparation - 2.0) <= 2.0e-7 &&
+        fruitPairProbeCenterError <= 1.0e-7 &&
+        fruitPairProbeImpulseError <= 2.0e-6 &&
+        fruitPairProbeImpulse > 0.0 &&
+        groundContactGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
+        groundContactPositionError <= 1.0e-7 &&
+        groundContactImpulseError <= 2.0e-6 &&
+        groundClothHeight >= 0.004 - 1.0e-8 &&
+        groundFruitHeight >= 1.0 - 1.0e-8;
 
     std::cout << std::fixed << std::setprecision(12)
               << "device=" << device.name.UTF8String << '\n'
@@ -1780,10 +2272,14 @@ int run(const int argc, const char* const* argv) {
               << " distances=" << initial.distances.size()
               << " grips=" << initial.grips.size()
               << " knots=" << initial.knots.size()
-              << " bends=" << initial.bends.size() << '\n'
+              << " bends=" << initial.bends.size()
+              << " fruits=" << initial.fruits.size()
+              << " fruit_pairs=" << initial.fruitPairs.size() << '\n'
               << "distance_colors=" << initial.distanceBatches.size()
               << " knot_colors=" << initial.knotBatches.size()
-              << " bend_colors=" << initial.bendBatches.size() << '\n'
+              << " bend_colors=" << initial.bendBatches.size()
+              << " fruit_pair_colors="
+              << initial.fruitPairBatches.size() << '\n'
               << "iterations=" << iterations
               << " strain_sweeps=" << strainSweeps
               << " replays=" << replays << '\n'
@@ -1799,6 +2295,13 @@ int run(const int argc, const char* const* argv) {
               << " max_bend_lambda_error=" << maximumBendLambdaError
               << " max_knot_lambda=" << maximumKnotLambda
               << " max_bend_lambda=" << maximumBendLambda << '\n'
+              << "max_fruit_position_error=" << maximumFruitPositionError
+              << " max_fruit_velocity_error=" << maximumFruitVelocityError
+              << " max_fruit_pair_contact_error="
+              << maximumFruitPairContactError
+              << " max_fruit_pair_impulse=" << maximumFruitPairImpulse
+              << " max_fruit_pair_penetration="
+              << maximumFruitPairPenetration << '\n'
               << "max_strain_violation=" << strainViolation
               << " max_displacement=" << maximumDisplacement
               << " grip_force=" << gripForce << '\n'
@@ -1813,6 +2316,23 @@ int run(const int argc, const char* const* argv) {
               << " supported_height=" << supportedHeight
               << " free_endpoint_rise=" << freeEndpointRise
               << " ground_bend_failure_flags=" << groundBendGPU.failure
+              << '\n'
+              << "fruit_pair_probe_position_error="
+              << fruitPairProbePositionError
+              << " separation=" << fruitPairProbeSeparation
+              << " center_error=" << fruitPairProbeCenterError
+              << " impulse_error=" << fruitPairProbeImpulseError
+              << " normal_impulse=" << fruitPairProbeImpulse
+              << " fruit_pair_probe_failure_flags=" << fruitPairGPU.failure
+              << '\n'
+              << "ground_contact_position_error="
+              << groundContactPositionError
+              << " ground_contact_impulse_error="
+              << groundContactImpulseError
+              << " cloth_height=" << groundClothHeight
+              << " fruit_height=" << groundFruitHeight
+              << " fruit_normal_impulse=" << groundFruitImpulse
+              << " ground_contact_failure_flags=" << groundContactGPU.failure
               << '\n'
               << "average_gpu_seconds=" << averageSeconds
               << " state_hash=0x" << std::hex << hashGPUResult(gpu)

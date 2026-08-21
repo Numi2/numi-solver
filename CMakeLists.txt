@@ -470,16 +470,16 @@ if(BUILD_TESTING)
             --iterations 32
     )
     add_test(
-        NAME cloth_bag.metal_internal_constraints
+        NAME cloth_bag.metal_internal_contact
         COMMAND $<TARGET_FILE:numi-solver-cloth-metal>
             --replays 2
             --iterations 32
             --strain-sweeps 3
     )
     set_tests_properties(
-        cloth_bag.metal_internal_constraints
+        cloth_bag.metal_internal_contact
         PROPERTIES
-            LABELS "metal;physics;cloth;reference;strain;knot;bend;pickup"
+            LABELS "metal;physics;cloth;reference;strain;knot;bend;fruit;contact;ground;pickup"
             TIMEOUT 60
     )
     add_test(

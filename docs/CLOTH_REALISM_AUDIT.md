@@ -84,9 +84,11 @@ to a real produce bag.
 - The complete trajectory evidence remains an FP64 CPU reference. The initial
   Metal cloth ABI now owns full-topology gravity integration, graph-colored
   axial XPBD, crossing-angle knots, ground-aware yarn bending, the unilateral
-  strain ceiling, ten-knot seam grip, and velocity publication. That subset
-  passes independent FP64 equation comparison and exact replay; see
-  [METAL_CLOTH.md](METAL_CLOTH.md). All contact and friction transactions,
+  strain ceiling, ten-knot seam grip, twelve-fruit translation, all 66
+  fruit-pair normal contacts, cloth/fruit ground projection, and velocity
+  publication. That subset passes independent FP64 equation comparison and
+  exact replay; see [METAL_CLOTH.md](METAL_CLOTH.md). Sphere/yarn and yarn/yarn
+  contact, continuous collision detection, all friction transactions,
   aerodynamics, fruit rotation, release classification, complete-trajectory
   parity, profiler evidence, and matched physical outcomes remain open.
 
