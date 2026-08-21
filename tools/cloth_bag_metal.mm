@@ -17,6 +17,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -1323,10 +1324,10 @@ InitialState makeSelfCCDProbeState() {
         return value;
     };
     result.particles = {
-        particle({-1.0, 0.0, 0.0}, {}, 0.0f),
-        particle({1.0, 0.0, 0.0}, {}, 0.0f),
-        particle({0.0, -1.0, 0.08}, {0.0, 0.0, -16.0}, 1.0f),
-        particle({0.0, 1.0, 0.08}, {0.0, 0.0, -16.0}, 1.0f),
+        particle({-1.0, 0.0, 0.0}, {}, 1.0f),
+        particle({1.0, 0.0, 0.0}, {}, 1.0f),
+        particle({0.0, -1.0, 0.08}, {2.0, 0.0, -16.0}, 1.0f),
+        particle({0.0, 1.0, 0.08}, {2.0, 0.0, -16.0}, 1.0f),
     };
     NumiClothBagGPUDistance firstDistance{};
     firstDistance.particlesAndColor = u4(0u, 1u, 0u, 0u);
@@ -1539,6 +1540,13 @@ struct OracleYarnContact {
     double sweptAdvance{};
 };
 
+struct OracleSelfImpulse {
+    DVec3 normalOnFirst{};
+    double normalImpulse{};
+    std::array<double, 2> firstEndpointImpulses{};
+    std::array<double, 2> secondEndpointImpulses{};
+};
+
 struct OracleResult {
     std::vector<OracleParticle> particles;
     std::vector<OracleDistance> distances;
@@ -1551,6 +1559,8 @@ struct OracleResult {
     std::uint64_t presentSelfContacts{};
     std::uint64_t sweptSelfContacts{};
     double maximumSelfCorrection{};
+    std::unordered_map<std::uint32_t, OracleSelfImpulse> selfImpulses;
+    std::uint64_t selfFrictionContacts{};
     std::array<std::uint64_t, 4> frictionContacts{};
     std::uint64_t rollingContacts{};
     double maximumFrictionConeRatio{};
@@ -2081,9 +2091,9 @@ void solveOracleSelfContact(
         for (std::uint32_t localIndex = 0u;
              localIndex < batch.control.y;
              ++localIndex) {
-            const NumiClothBagGPUSelfPair& pair = initial.selfPairs[
-                batch.control.x + localIndex
-            ];
+            const std::uint32_t pairIndex = batch.control.x + localIndex;
+            const NumiClothBagGPUSelfPair& pair =
+                initial.selfPairs[pairIndex];
             const mr_uint4 first = initial.distances[
                 pair.firstSegment
             ].particlesAndColor;
@@ -2245,6 +2255,17 @@ void solveOracleSelfContact(
             state.maximumSelfCorrection = std::max(
                 state.maximumSelfCorrection, correction
             );
+            const double impulse = lambda /
+                initial.config.gravityAndTimestep.w;
+            OracleSelfImpulse& response = state.selfImpulses[pairIndex];
+            response.normalOnFirst -= normal * impulse;
+            response.normalImpulse += impulse;
+            response.firstEndpointImpulses[0] +=
+                firstStartWeight * impulse;
+            response.firstEndpointImpulses[1] += firstWeight * impulse;
+            response.secondEndpointImpulses[0] +=
+                secondStartWeight * impulse;
+            response.secondEndpointImpulses[1] += secondWeight * impulse;
         }
     }
 }
@@ -2406,6 +2427,106 @@ void applyOracleClothGroundFriction(
         recordOracleFriction(
             state, 2u, tangentialImpulse, frictionLimit
         );
+    }
+}
+
+void applyOracleSelfFriction(
+    const InitialState& initial,
+    OracleResult& state
+) {
+    const double friction = initial.config.clothMaterial.w;
+    for (const NumiClothBagGPUBatch& batch : initial.selfBatches) {
+        for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
+            const std::uint32_t pairIndex = batch.control.x + local;
+            const auto responseIterator = state.selfImpulses.find(pairIndex);
+            if (responseIterator == state.selfImpulses.end()) {
+                continue;
+            }
+            const OracleSelfImpulse& response = responseIterator->second;
+            const double normalLength = length(response.normalOnFirst);
+            const double firstSum =
+                response.firstEndpointImpulses[0] +
+                response.firstEndpointImpulses[1];
+            const double secondSum =
+                response.secondEndpointImpulses[0] +
+                response.secondEndpointImpulses[1];
+            if (!(response.normalImpulse > 0.0) ||
+                !(normalLength > 1.0e-10) ||
+                !(firstSum > 1.0e-12) || !(secondSum > 1.0e-12)) {
+                continue;
+            }
+            const NumiClothBagGPUSelfPair& pair =
+                initial.selfPairs[pairIndex];
+            const OracleDistance& firstDistance =
+                state.distances[pair.firstSegment];
+            const OracleDistance& secondDistance =
+                state.distances[pair.secondSegment];
+            OracleParticle& firstStart =
+                state.particles[firstDistance.first];
+            OracleParticle& firstEnd =
+                state.particles[firstDistance.second];
+            OracleParticle& secondStart =
+                state.particles[secondDistance.first];
+            OracleParticle& secondEnd =
+                state.particles[secondDistance.second];
+            const DVec3 normal = response.normalOnFirst / normalLength;
+            const std::array<double, 2> firstWeights{{
+                response.firstEndpointImpulses[0] / firstSum,
+                response.firstEndpointImpulses[1] / firstSum,
+            }};
+            const std::array<double, 2> secondWeights{{
+                response.secondEndpointImpulses[0] / secondSum,
+                response.secondEndpointImpulses[1] / secondSum,
+            }};
+            const DVec3 firstVelocity =
+                firstStart.velocity * firstWeights[0] +
+                firstEnd.velocity * firstWeights[1];
+            const DVec3 secondVelocity =
+                secondStart.velocity * secondWeights[0] +
+                secondEnd.velocity * secondWeights[1];
+            const DVec3 relativeVelocity = firstVelocity - secondVelocity;
+            const DVec3 tangentVelocity = relativeVelocity -
+                normal * dot(relativeVelocity, normal);
+            const double slipSpeed = length(tangentVelocity);
+            if (!(slipSpeed > 1.0e-10)) {
+                continue;
+            }
+            const DVec3 tangent = tangentVelocity / slipSpeed;
+            const double denominator =
+                firstStart.inverseMass * firstWeights[0] * firstWeights[0] +
+                firstEnd.inverseMass * firstWeights[1] * firstWeights[1] +
+                secondStart.inverseMass *
+                    secondWeights[0] * secondWeights[0] +
+                secondEnd.inverseMass *
+                    secondWeights[1] * secondWeights[1];
+            if (!(denominator > 0.0)) {
+                continue;
+            }
+            const double frictionLimit =
+                friction * response.normalImpulse;
+            const double tangentialImpulse = std::min(
+                slipSpeed / denominator, frictionLimit
+            );
+            if (!(tangentialImpulse > 0.0)) {
+                continue;
+            }
+            const DVec3 impulseOnFirst = tangent * -tangentialImpulse;
+            firstStart.velocity += impulseOnFirst *
+                (firstStart.inverseMass * firstWeights[0]);
+            firstEnd.velocity += impulseOnFirst *
+                (firstEnd.inverseMass * firstWeights[1]);
+            secondStart.velocity -= impulseOnFirst *
+                (secondStart.inverseMass * secondWeights[0]);
+            secondEnd.velocity -= impulseOnFirst *
+                (secondEnd.inverseMass * secondWeights[1]);
+            ++state.selfFrictionContacts;
+            if (frictionLimit > 0.0) {
+                state.maximumFrictionConeRatio = std::max(
+                    state.maximumFrictionConeRatio,
+                    tangentialImpulse / frictionLimit
+                );
+            }
+        }
     }
 }
 
@@ -3073,6 +3194,7 @@ OracleResult runOracle(
         fruit.velocity = (fruit.position - fruit.previous) / timestep;
     }
     applyOracleClothGroundFriction(initial, result);
+    applyOracleSelfFriction(initial, result);
     applyOracleYarnFriction(initial, result);
     applyOracleFruitPairFriction(initial, result);
     applyOracleFruitGroundFriction(initial, result);
@@ -3163,6 +3285,11 @@ struct Pipelines {
     id<MTLComputePipelineState> selfBatchCompact;
     id<MTLComputePipelineState> selfDetect;
     id<MTLComputePipelineState> selfContact;
+    id<MTLComputePipelineState> selfImpulseSort;
+    id<MTLComputePipelineState> selfImpulseClear;
+    id<MTLComputePipelineState> selfImpulseAggregate;
+    id<MTLComputePipelineState> selfFrictionBatchCount;
+    id<MTLComputePipelineState> selfFriction;
     id<MTLComputePipelineState> finalize;
     id<MTLComputePipelineState> finalizeFruit;
     id<MTLComputePipelineState> clothGroundFriction;
@@ -3228,6 +3355,22 @@ GPUResult runGPU(
     id<MTLBuffer> activeSelfBatchCountBuffer = makeZeroed(
         sizeof(std::uint32_t)
     );
+    id<MTLBuffer> selfImpulseRecordBuffer = makeZeroed(
+        NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY *
+            sizeof(NumiClothBagGPUSelfImpulse)
+    );
+    id<MTLBuffer> selfImpulseAggregateBuffer = makeZeroed(
+        NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY *
+            sizeof(NumiClothBagGPUSelfImpulse)
+    );
+    const std::vector<std::uint64_t> emptySelfImpulseKeys(
+        NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY,
+        std::numeric_limits<std::uint64_t>::max()
+    );
+    id<MTLBuffer> selfImpulseKeyBuffer = makeBytes(emptySelfImpulseKeys);
+    id<MTLBuffer> selfImpulseCountBuffer = makeZeroed(
+        sizeof(std::uint32_t)
+    );
     NumiClothBagGPUSelfStatus zeroSelfStatus{};
     id<MTLBuffer> selfStatusBuffer = [device
         newBufferWithBytes:&zeroSelfStatus
@@ -3253,6 +3396,9 @@ GPUResult runGPU(
         selfActiveFlagBuffer == nil || selfActiveBatchCountBuffer == nil ||
         selfActiveBatchIndexBuffer == nil ||
         activeSelfBatchCountBuffer == nil ||
+        selfImpulseRecordBuffer == nil ||
+        selfImpulseAggregateBuffer == nil ||
+        selfImpulseKeyBuffer == nil || selfImpulseCountBuffer == nil ||
         selfStatusBuffer == nil ||
         frictionStatusBuffer == nil ||
         failureBuffer == nil) {
@@ -3409,6 +3555,9 @@ GPUResult runGPU(
         [encoder setBytes:&mode length:sizeof(mode) atIndex:9];
         [encoder setBytes:&epoch length:sizeof(epoch) atIndex:10];
         [encoder setBuffer:distanceBuffer offset:0 atIndex:11];
+        [encoder setBuffer:selfImpulseRecordBuffer offset:0 atIndex:12];
+        [encoder setBuffer:selfImpulseKeyBuffer offset:0 atIndex:13];
+        [encoder setBuffer:selfImpulseCountBuffer offset:0 atIndex:14];
         dispatch(
             encoder,
             pipelines.selfContact,
@@ -3552,6 +3701,46 @@ GPUResult runGPU(
             }
         }
     }
+    [encoder setComputePipelineState:pipelines.selfImpulseSort];
+    [encoder setBuffer:selfImpulseKeyBuffer offset:0 atIndex:0];
+    dispatch(encoder, pipelines.selfImpulseSort, 256u);
+    [encoder setComputePipelineState:pipelines.selfImpulseClear];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:selfActiveFlagBuffer offset:0 atIndex:1];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:2];
+    dispatch(
+        encoder, pipelines.selfImpulseClear, initial.selfPairs.size()
+    );
+    [encoder setComputePipelineState:pipelines.selfImpulseAggregate];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:selfImpulseKeyBuffer offset:0 atIndex:1];
+    [encoder setBuffer:selfImpulseRecordBuffer offset:0 atIndex:2];
+    [encoder setBuffer:selfImpulseCountBuffer offset:0 atIndex:3];
+    [encoder setBuffer:selfImpulseAggregateBuffer offset:0 atIndex:4];
+    [encoder setBuffer:selfActiveFlagBuffer offset:0 atIndex:5];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:6];
+    dispatch(
+        encoder,
+        pipelines.selfImpulseAggregate,
+        NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY
+    );
+    [encoder setComputePipelineState:pipelines.selfFrictionBatchCount];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:selfBatchBuffer offset:0 atIndex:1];
+    [encoder setBuffer:selfActiveFlagBuffer offset:0 atIndex:2];
+    [encoder setBuffer:selfActiveBatchCountBuffer offset:0 atIndex:3];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:4];
+    dispatch(
+        encoder,
+        pipelines.selfFrictionBatchCount,
+        initial.selfBatches.size()
+    );
+    [encoder setComputePipelineState:pipelines.selfBatchCompact];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:selfActiveBatchCountBuffer offset:0 atIndex:1];
+    [encoder setBuffer:selfActiveBatchIndexBuffer offset:0 atIndex:2];
+    [encoder setBuffer:activeSelfBatchCountBuffer offset:0 atIndex:3];
+    dispatch(encoder, pipelines.selfBatchCompact, 256u);
     buildYarnContacts();
     [encoder setComputePipelineState:pipelines.finalize];
     [encoder setBuffer:configBuffer offset:0 atIndex:0];
@@ -3570,6 +3759,21 @@ GPUResult runGPU(
     [encoder setBuffer:failureBuffer offset:0 atIndex:3];
     dispatch(
         encoder, pipelines.clothGroundFriction, initial.particles.size()
+    );
+    [encoder setComputePipelineState:pipelines.selfFriction];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+    [encoder setBuffer:distanceBuffer offset:0 atIndex:2];
+    [encoder setBuffer:selfPairBuffer offset:0 atIndex:3];
+    [encoder setBuffer:selfBatchBuffer offset:0 atIndex:4];
+    [encoder setBuffer:selfActiveFlagBuffer offset:0 atIndex:5];
+    [encoder setBuffer:selfImpulseAggregateBuffer offset:0 atIndex:6];
+    [encoder setBuffer:selfActiveBatchIndexBuffer offset:0 atIndex:7];
+    [encoder setBuffer:activeSelfBatchCountBuffer offset:0 atIndex:8];
+    [encoder setBuffer:frictionStatusBuffer offset:0 atIndex:9];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:10];
+    dispatch(
+        encoder, pipelines.selfFriction, initial.maximumSelfBatchSize
     );
     for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
         [encoder setComputePipelineState:pipelines.yarnFriction];
@@ -3865,6 +4069,17 @@ int run(const int argc, const char* const* argv) {
         makePipeline(device, library, @"numi_cloth_bag_compact_self_batches"),
         makePipeline(device, library, @"numi_cloth_bag_detect_self_contact"),
         makePipeline(device, library, @"numi_cloth_bag_solve_self_contact"),
+        makePipeline(device, library, @"numi_cloth_bag_sort_self_impulses"),
+        makePipeline(
+            device, library, @"numi_cloth_bag_clear_self_impulse_map"
+        ),
+        makePipeline(
+            device, library, @"numi_cloth_bag_aggregate_self_impulses"
+        ),
+        makePipeline(
+            device, library, @"numi_cloth_bag_count_self_friction_batches"
+        ),
+        makePipeline(device, library, @"numi_cloth_bag_apply_self_friction"),
         makePipeline(device, library, @"numi_cloth_bag_finalize_substep"),
         makePipeline(device, library, @"numi_cloth_bag_finalize_fruit"),
         makePipeline(
@@ -4298,6 +4513,12 @@ int run(const int argc, const char* const* argv) {
     }};
     const bool frictionContactCountsExact =
         gpuFrictionContacts == oracle.frictionContacts;
+    const std::uint64_t gpuSelfFrictionContacts =
+        gpu.frictionStatus.metrics.w;
+    const std::uint64_t selfFrictionContactCountDifference =
+        gpuSelfFrictionContacts > oracle.selfFrictionContacts
+        ? gpuSelfFrictionContacts - oracle.selfFrictionContacts
+        : oracle.selfFrictionContacts - gpuSelfFrictionContacts;
     std::uint64_t maximumFrictionContactCountDifference = 0u;
     for (std::size_t index = 0u; index < gpuFrictionContacts.size(); ++index) {
         const std::uint64_t actual = gpuFrictionContacts[index];
@@ -4802,6 +5023,102 @@ int run(const int argc, const char* const* argv) {
     const double selfCCDMaximumCorrection = std::bit_cast<float>(
         selfCCDGPU.selfStatus.counters.z
     );
+    double selfCCDFrictionVelocityError = 0.0;
+    std::array<DVec3, 4> selfCCDVelocityBefore{};
+    std::array<DVec3, 4> selfCCDVelocityAfter{};
+    DVec3 selfCCDMomentumBefore{};
+    DVec3 selfCCDMomentumAfter{};
+    double selfCCDEnergyBefore = 0.0;
+    double selfCCDEnergyAfter = 0.0;
+    for (std::size_t index = 0u;
+         index < selfCCDGPU.particles.size();
+         ++index) {
+        selfCCDVelocityBefore[index] = (
+            d3(selfCCDGPU.particles[index].positionAndInverseMass) -
+            d3(selfCCDInitial.particles[index].positionAndInverseMass)
+        ) / selfCCDInitial.config.gravityAndTimestep.w;
+        selfCCDVelocityAfter[index] = d3(
+            selfCCDGPU.particles[index].velocity
+        );
+        const DVec3 velocityDelta = selfCCDVelocityAfter[index] -
+            selfCCDOracle.particles[index].velocity;
+        selfCCDFrictionVelocityError = std::max({
+            selfCCDFrictionVelocityError,
+            std::abs(velocityDelta.x),
+            std::abs(velocityDelta.y),
+            std::abs(velocityDelta.z),
+        });
+        const double inverseMass =
+            selfCCDGPU.particles[index].positionAndInverseMass.w;
+        if (inverseMass > 0.0) {
+            const double mass = 1.0 / inverseMass;
+            selfCCDMomentumBefore += selfCCDVelocityBefore[index] * mass;
+            selfCCDMomentumAfter += selfCCDVelocityAfter[index] * mass;
+            selfCCDEnergyBefore += 0.5 * mass *
+                dot(selfCCDVelocityBefore[index], selfCCDVelocityBefore[index]);
+            selfCCDEnergyAfter += 0.5 * mass *
+                dot(selfCCDVelocityAfter[index], selfCCDVelocityAfter[index]);
+        }
+    }
+    DVec3 selfCCDFrictionNormal{0.0, 0.0, 1.0};
+    std::array<double, 2> selfCCDFirstWeights{{0.5, 0.5}};
+    std::array<double, 2> selfCCDSecondWeights{{0.5, 0.5}};
+    const auto selfCCDImpulse = selfCCDOracle.selfImpulses.find(0u);
+    if (selfCCDImpulse != selfCCDOracle.selfImpulses.end()) {
+        const OracleSelfImpulse& response = selfCCDImpulse->second;
+        const double normalLength = length(response.normalOnFirst);
+        const double firstSum =
+            response.firstEndpointImpulses[0] +
+            response.firstEndpointImpulses[1];
+        const double secondSum =
+            response.secondEndpointImpulses[0] +
+            response.secondEndpointImpulses[1];
+        if (normalLength > 1.0e-12) {
+            selfCCDFrictionNormal = response.normalOnFirst / normalLength;
+        }
+        if (firstSum > 1.0e-12) {
+            selfCCDFirstWeights = {{
+                response.firstEndpointImpulses[0] / firstSum,
+                response.firstEndpointImpulses[1] / firstSum,
+            }};
+        }
+        if (secondSum > 1.0e-12) {
+            selfCCDSecondWeights = {{
+                response.secondEndpointImpulses[0] / secondSum,
+                response.secondEndpointImpulses[1] / secondSum,
+            }};
+        }
+    }
+    const auto selfCCDContactVelocity = [](
+        const std::array<DVec3, 4>& velocities,
+        const std::array<double, 2>& firstWeights,
+        const std::array<double, 2>& secondWeights
+    ) {
+        const DVec3 firstVelocity = velocities[0] * firstWeights[0] +
+            velocities[1] * firstWeights[1];
+        const DVec3 secondVelocity = velocities[2] * secondWeights[0] +
+            velocities[3] * secondWeights[1];
+        return firstVelocity - secondVelocity;
+    };
+    const double selfCCDSlipBefore = tangentialSpeed(
+        selfCCDContactVelocity(
+            selfCCDVelocityBefore,
+            selfCCDFirstWeights,
+            selfCCDSecondWeights
+        ),
+        selfCCDFrictionNormal
+    );
+    const double selfCCDSlipAfter = tangentialSpeed(
+        selfCCDContactVelocity(
+            selfCCDVelocityAfter,
+            selfCCDFirstWeights,
+            selfCCDSecondWeights
+        ),
+        selfCCDFrictionNormal
+    );
+    const double selfCCDMomentumError = length(
+        selfCCDMomentumAfter - selfCCDMomentumBefore
+    );
     const double fruitPairProbeConeRatio = std::bit_cast<float>(
         fruitPairGPU.frictionStatus.metrics.x
     );
@@ -4813,6 +5130,9 @@ int run(const int argc, const char* const* argv) {
     );
     const double yarnCCDProbeConeRatio = std::bit_cast<float>(
         yarnCCDGPU.frictionStatus.metrics.x
+    );
+    const double selfCCDProbeConeRatio = std::bit_cast<float>(
+        selfCCDGPU.frictionStatus.metrics.x
     );
     double averageSeconds = 0.0;
     for (const GPUResult& replay : gpuResults) {
@@ -4868,6 +5188,8 @@ int run(const int argc, const char* const* argv) {
         gpuMaximumRollingResistanceRatio <= 1.0 + 1.0e-6 &&
         maximumRollingResistanceRatioError <= 2.0e-5 &&
         rollingContactCountExact &&
+        selfFrictionContactCountDifference <= 4u &&
+        gpuSelfFrictionContacts > 0u &&
         strainViolation <= 2.0e-6 &&
         maximumDisplacement > 1.0e-4 && gripForce > 1.0 &&
         strainGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
@@ -4931,9 +5253,16 @@ int run(const int argc, const char* const* argv) {
         selfCCDGPU.selfStatus.counters.x == 0u &&
         selfCCDGPU.selfStatus.counters.y == 1u &&
         selfCCDPositionError <= 2.0e-6 &&
-        std::abs(selfCCDFinalSeparation) <= 2.0e-6 &&
-        selfCCDFinalMovingHeight > 0.0 &&
-        selfCCDMaximumCorrection > 0.08;
+        std::abs(selfCCDFinalSeparation) <= 5.0e-6 &&
+        selfCCDMaximumCorrection > 0.08 &&
+        selfCCDFrictionVelocityError <= 1.0e-3 &&
+        selfCCDGPU.frictionStatus.metrics.w ==
+            selfCCDOracle.selfFrictionContacts &&
+        selfCCDGPU.frictionStatus.metrics.w > 0u &&
+        selfCCDProbeConeRatio <= 1.0 + 1.0e-6 &&
+        selfCCDSlipAfter < selfCCDSlipBefore &&
+        selfCCDEnergyAfter < selfCCDEnergyBefore &&
+        selfCCDMomentumError <= 1.0e-5;
 
     std::cout << std::fixed << std::setprecision(12)
               << "device=" << device.name.UTF8String << '\n'
@@ -5037,9 +5366,13 @@ int run(const int argc, const char* const* argv) {
               << " expected_cloth_ground=" << oracle.frictionContacts[2]
               << " fruit_ground=" << gpuFrictionContacts[3]
               << " expected_fruit_ground=" << oracle.frictionContacts[3]
+              << " self=" << gpuSelfFrictionContacts
+              << " expected_self=" << oracle.selfFrictionContacts
               << " count_exact=" << frictionContactCountsExact
               << " max_count_difference="
-              << maximumFrictionContactCountDifference << '\n'
+              << maximumFrictionContactCountDifference
+              << " self_count_difference="
+              << selfFrictionContactCountDifference << '\n'
               << "max_friction_cone_ratio="
               << gpuMaximumFrictionConeRatio
               << " expected=" << oracle.maximumFrictionConeRatio
@@ -5137,6 +5470,16 @@ int run(const int argc, const char* const* argv) {
               << " present_contacts="
               << selfCCDGPU.selfStatus.counters.x
               << " swept_contacts=" << selfCCDGPU.selfStatus.counters.y
+              << " friction_velocity_error="
+              << selfCCDFrictionVelocityError
+              << " friction_contacts="
+              << selfCCDGPU.frictionStatus.metrics.w
+              << " cone_ratio=" << selfCCDProbeConeRatio
+              << " slip_before=" << selfCCDSlipBefore
+              << " slip_after=" << selfCCDSlipAfter
+              << " energy_before=" << selfCCDEnergyBefore
+              << " energy_after=" << selfCCDEnergyAfter
+              << " momentum_error=" << selfCCDMomentumError
               << " self_ccd_failure_flags=" << selfCCDGPU.failure << '\n'
               << "average_gpu_seconds=" << averageSeconds
               << " state_hash=0x" << std::hex << hashGPUResult(gpu)

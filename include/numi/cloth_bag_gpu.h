@@ -2,8 +2,9 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 7u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 8u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
+#define NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY 4096u
 
 enum NumiClothBagGPUFailure : mr_u32 {
     NUMI_CLOTH_BAG_GPU_FAILURE_NONE = 0u,
@@ -132,12 +133,22 @@ typedef struct MR_ALIGN16 NumiClothBagGPUSelfStatus {
     mr_uint4 counters;
 } NumiClothBagGPUSelfStatus;
 
+typedef struct MR_ALIGN16 NumiClothBagGPUSelfImpulse {
+    // x static self-pair index, y first segment, z second segment, w epoch.
+    mr_uint4 identity;
+    // xyz accumulated impulse on the first segment, w normal impulse.
+    mr_float4 normalAndImpulse;
+    // xy impulse-weighted first-segment endpoint weights,
+    // zw impulse-weighted second-segment endpoint weights.
+    mr_float4 endpointImpulses;
+} NumiClothBagGPUSelfImpulse;
+
 typedef struct MR_ALIGN16 NumiClothBagGPUFrictionStatus {
     // x fruit-pair, y fruit/yarn, z cloth/ground, w fruit/ground contacts.
     mr_uint4 counters;
     // x maximum Coulomb-cone ratio as positive-float bits,
     // y maximum rolling-resistance ratio as positive-float bits,
-    // z rolling-resistance contact count, w reserved.
+    // z rolling-resistance contact count, w yarn/yarn friction contacts.
     mr_uint4 metrics;
 } NumiClothBagGPUFrictionStatus;
 
@@ -159,6 +170,7 @@ static_assert(sizeof(NumiClothBagGPUFruitPair) == 32);
 static_assert(sizeof(NumiClothBagGPUYarnContact) == 112);
 static_assert(sizeof(NumiClothBagGPUSelfPair) == 8);
 static_assert(sizeof(NumiClothBagGPUSelfStatus) == 16);
+static_assert(sizeof(NumiClothBagGPUSelfImpulse) == 48);
 static_assert(sizeof(NumiClothBagGPUFrictionStatus) == 32);
 static_assert(sizeof(NumiClothBagGPUBatch) == 16);
 #endif

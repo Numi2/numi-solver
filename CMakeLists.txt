@@ -479,7 +479,7 @@ if(BUILD_TESTING)
     set_tests_properties(
         cloth_bag.metal_internal_contact
         PROPERTIES
-            LABELS "metal;physics;cloth;reference;strain;reconciliation;knot;bend;fruit;contact;ccd;yarn;self_contact;ground;friction;rolling;pickup"
+            LABELS "metal;physics;cloth;reference;strain;reconciliation;knot;bend;fruit;contact;ccd;yarn;self_contact;self_friction;ground;friction;rolling;pickup"
             TIMEOUT 60
     )
     add_test(

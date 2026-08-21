@@ -188,12 +188,11 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
   yarn/yarn candidates, spatially compacted current and exhaustive swept
   yarn/yarn self-contact, fixed contact/strain reconciliation, and velocity
   publication on the full 1,465-particle/2,904-segment topology. It then applies
-  cloth/ground, fruit/yarn, fruit/fruit, and fruit/ground Coulomb friction plus
-  load-capped fruit rolling resistance.
+  cloth/ground, yarn/yarn, fruit/yarn, fruit/fruit, and fruit/ground Coulomb
+  friction plus load-capped fruit rolling resistance.
   It gates FP64 equation and impulse error, sphere/yarn and yarn/yarn tunneling
   response probes, sub-micrometer final self-overlap, and exact replay;
-  yarn/yarn self-friction, aerodynamics, and the complete bag trajectory remain
-  open.
+  aerodynamics and the complete bag trajectory remain open.
 - `build/numi-solver-articulated` for canonical articulated mass/Jacobian
   factorization, response-column solves, cone contact, and deterministic
   generalized-velocity publication on one command buffer.

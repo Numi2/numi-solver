@@ -1512,9 +1512,15 @@ kernel void numi_cloth_bag_solve_self_contact(
     constant uint& mode [[buffer(9)]],
     constant uint& epoch [[buffer(10)]],
     device const NumiClothBagGPUDistance* distances [[buffer(11)]],
+    device NumiClothBagGPUSelfImpulse* impulseRecords [[buffer(12)]],
+    device ulong* impulseKeys [[buffer(13)]],
+    device atomic_uint* impulseCount [[buffer(14)]],
     const uint localIndex [[thread_position_in_threadgroup]],
+    const uint groupWidth [[threads_per_threadgroup]],
     const uint groupIndex [[threadgroup_position_in_grid]]
 ) {
+    threadgroup uint responsePrefix[256];
+    threadgroup uint responseBase;
     if (!validConfig(config, failure) || mode > 1u || groupIndex != 0u) {
         if (localIndex == 0u) {
             recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
@@ -1526,6 +1532,8 @@ kernel void numi_cloth_bag_solve_self_contact(
     for (uint activeBatch = 0u;
          activeBatch < *activeBatchCount;
          ++activeBatch) {
+        bool acceptedResponse = false;
+        NumiClothBagGPUSelfImpulse response = {};
         const uint batchIndex = activeBatchIndices[activeBatch];
         const NumiClothBagGPUBatch batch = batches[batchIndex];
         if (batch.control.x + batch.control.y > config.contactCounts.z) {
@@ -1542,21 +1550,20 @@ kernel void numi_cloth_bag_solve_self_contact(
                 pair.secondSegment >= config.control.z ||
                 pair.firstSegment == pair.secondSegment) {
                 recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
-                continue;
-            }
-            const uint4 first =
-                distances[pair.firstSegment].particlesAndColor;
-            const uint4 second =
-                distances[pair.secondSegment].particlesAndColor;
-            const uint4 indices = uint4(
-                first.x, first.y, second.x, second.y
-            );
-            if (any(indices >= uint4(config.control.y)) ||
-                indices.x == indices.y || indices.x == indices.z ||
-                indices.x == indices.w || indices.y == indices.z ||
-                indices.y == indices.w || indices.z == indices.w) {
-                recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
             } else {
+                const uint4 first =
+                    distances[pair.firstSegment].particlesAndColor;
+                const uint4 second =
+                    distances[pair.secondSegment].particlesAndColor;
+                const uint4 indices = uint4(
+                    first.x, first.y, second.x, second.y
+                );
+                if (any(indices >= uint4(config.control.y)) ||
+                    indices.x == indices.y || indices.x == indices.z ||
+                    indices.x == indices.w || indices.y == indices.z ||
+                    indices.y == indices.w || indices.z == indices.w) {
+                    recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+                } else {
                 NumiClothBagGPUParticle firstStart = particles[indices.x];
                 NumiClothBagGPUParticle firstEnd = particles[indices.y];
                 NumiClothBagGPUParticle secondStart = particles[indices.z];
@@ -1758,6 +1765,339 @@ kernel void numi_cloth_bag_solve_self_contact(
                                 as_type<uint>(correction),
                                 memory_order_relaxed
                             );
+                            const float impulse = lambda /
+                                config.gravityAndTimestep.w;
+                            response.identity = uint4(
+                                pairIndex,
+                                pair.firstSegment,
+                                pair.secondSegment,
+                                epoch
+                            );
+                            response.normalAndImpulse = float4(
+                                -normal * impulse, impulse
+                            );
+                            response.endpointImpulses = float4(
+                                firstStartWeight * impulse,
+                                firstWeight * impulse,
+                                secondStartWeight * impulse,
+                                secondWeight * impulse
+                            );
+                            acceptedResponse = true;
+                        }
+                    }
+                }
+                }
+            }
+        }
+        responsePrefix[localIndex] = acceptedResponse ? 1u : 0u;
+        threadgroup_barrier(mem_flags::mem_threadgroup | mem_flags::mem_device);
+        for (uint offset = 1u; offset < groupWidth; offset <<= 1u) {
+            const uint addition = localIndex >= offset
+                ? responsePrefix[localIndex - offset]
+                : 0u;
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+            responsePrefix[localIndex] += addition;
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+        }
+        if (localIndex == 0u) {
+            const uint acceptedCount = responsePrefix[groupWidth - 1u];
+            responseBase = atomic_fetch_add_explicit(
+                impulseCount, acceptedCount, memory_order_relaxed
+            );
+            if (responseBase + acceptedCount >
+                NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY) {
+                recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+            }
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+        if (acceptedResponse) {
+            const uint recordIndex =
+                responseBase + responsePrefix[localIndex] - 1u;
+            if (recordIndex < NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY) {
+                impulseRecords[recordIndex] = response;
+                impulseKeys[recordIndex] =
+                    (static_cast<ulong>(response.identity.x) << 32u) |
+                    static_cast<ulong>(recordIndex);
+            }
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup | mem_flags::mem_device);
+    }
+}
+
+kernel void numi_cloth_bag_sort_self_impulses(
+    device ulong* keys [[buffer(0)]],
+    const uint localIndex [[thread_position_in_threadgroup]],
+    const uint groupIndex [[threadgroup_position_in_grid]]
+) {
+    constexpr uint capacity = NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY;
+    constexpr uint threadCount = 256u;
+    threadgroup ulong sortedKeys[capacity];
+    if (groupIndex != 0u) {
+        return;
+    }
+    for (uint index = localIndex; index < capacity; index += threadCount) {
+        sortedKeys[index] = keys[index];
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    for (uint sequence = 2u; sequence <= capacity; sequence <<= 1u) {
+        for (uint stride = sequence >> 1u; stride > 0u; stride >>= 1u) {
+            for (uint index = localIndex;
+                 index < capacity;
+                 index += threadCount) {
+                const uint partner = index ^ stride;
+                if (partner > index) {
+                    const bool ascending = (index & sequence) == 0u;
+                    const ulong first = sortedKeys[index];
+                    const ulong second = sortedKeys[partner];
+                    if ((ascending && first > second) ||
+                        (!ascending && first < second)) {
+                        sortedKeys[index] = second;
+                        sortedKeys[partner] = first;
+                    }
+                }
+            }
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+        }
+    }
+    for (uint index = localIndex; index < capacity; index += threadCount) {
+        keys[index] = sortedKeys[index];
+    }
+}
+
+kernel void numi_cloth_bag_clear_self_impulse_map(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device uint* pairToAggregate [[buffer(1)]],
+    device atomic_uint* failure [[buffer(2)]],
+    const uint pairIndex [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) ||
+        pairIndex >= config.contactCounts.z) {
+        return;
+    }
+    pairToAggregate[pairIndex] = 0u;
+}
+
+kernel void numi_cloth_bag_aggregate_self_impulses(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device const ulong* sortedKeys [[buffer(1)]],
+    device const NumiClothBagGPUSelfImpulse* records [[buffer(2)]],
+    device const atomic_uint* recordCount [[buffer(3)]],
+    device NumiClothBagGPUSelfImpulse* aggregates [[buffer(4)]],
+    device uint* pairToAggregate [[buffer(5)]],
+    device atomic_uint* failure [[buffer(6)]],
+    const uint sortedIndex [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) ||
+        sortedIndex >= NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY) {
+        return;
+    }
+    const uint count = min(
+        atomic_load_explicit(recordCount, memory_order_relaxed),
+        NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY
+    );
+    if (sortedIndex >= count) {
+        return;
+    }
+    const uint pairIndex = static_cast<uint>(sortedKeys[sortedIndex] >> 32u);
+    if (pairIndex >= config.contactCounts.z) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        return;
+    }
+    if (sortedIndex > 0u &&
+        static_cast<uint>(sortedKeys[sortedIndex - 1u] >> 32u) == pairIndex) {
+        return;
+    }
+    NumiClothBagGPUSelfImpulse aggregate = {};
+    aggregate.identity.x = pairIndex;
+    for (uint cursor = sortedIndex; cursor < count; ++cursor) {
+        const ulong key = sortedKeys[cursor];
+        if (static_cast<uint>(key >> 32u) != pairIndex) {
+            break;
+        }
+        const uint recordIndex = static_cast<uint>(key);
+        if (recordIndex >= count) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+            return;
+        }
+        const NumiClothBagGPUSelfImpulse source = records[recordIndex];
+        aggregate.identity.yz = source.identity.yz;
+        aggregate.identity.w += 1u;
+        aggregate.normalAndImpulse += source.normalAndImpulse;
+        aggregate.endpointImpulses += source.endpointImpulses;
+    }
+    aggregates[sortedIndex] = aggregate;
+    pairToAggregate[pairIndex] = sortedIndex + 1u;
+}
+
+kernel void numi_cloth_bag_count_self_friction_batches(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device const NumiClothBagGPUBatch* batches [[buffer(1)]],
+    device const uint* pairToAggregate [[buffer(2)]],
+    device uint* activeBatchCounts [[buffer(3)]],
+    device atomic_uint* failure [[buffer(4)]],
+    const uint batchIndex [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) ||
+        batchIndex >= config.contactCounts.w) {
+        return;
+    }
+    const NumiClothBagGPUBatch batch = batches[batchIndex];
+    if (batch.control.x + batch.control.y > config.contactCounts.z) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        activeBatchCounts[batchIndex] = 0u;
+        return;
+    }
+    uint active = 0u;
+    for (uint local = 0u; local < batch.control.y; ++local) {
+        active += pairToAggregate[batch.control.x + local] != 0u;
+    }
+    activeBatchCounts[batchIndex] = active;
+}
+
+kernel void numi_cloth_bag_apply_self_friction(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device const NumiClothBagGPUDistance* distances [[buffer(2)]],
+    device const NumiClothBagGPUSelfPair* pairs [[buffer(3)]],
+    device const NumiClothBagGPUBatch* batches [[buffer(4)]],
+    device const uint* pairToAggregate [[buffer(5)]],
+    device const NumiClothBagGPUSelfImpulse* aggregates [[buffer(6)]],
+    device const uint* activeBatchIndices [[buffer(7)]],
+    device const uint* activeBatchCount [[buffer(8)]],
+    device atomic_uint* status [[buffer(9)]],
+    device atomic_uint* failure [[buffer(10)]],
+    const uint localIndex [[thread_position_in_threadgroup]],
+    const uint groupIndex [[threadgroup_position_in_grid]]
+) {
+    if (!validConfig(config, failure) || groupIndex != 0u) {
+        if (localIndex == 0u) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        }
+        return;
+    }
+    const float friction = config.clothMaterial.w;
+    for (uint activeBatch = 0u;
+         activeBatch < *activeBatchCount;
+         ++activeBatch) {
+        const uint batchIndex = activeBatchIndices[activeBatch];
+        const NumiClothBagGPUBatch batch = batches[batchIndex];
+        const uint pairIndex = batch.control.x + localIndex;
+        if (localIndex < batch.control.y) {
+            const uint aggregateSlot = pairToAggregate[pairIndex];
+            if (aggregateSlot != 0u) {
+                const NumiClothBagGPUSelfPair pair = pairs[pairIndex];
+                const NumiClothBagGPUSelfImpulse contact =
+                    aggregates[aggregateSlot - 1u];
+                if (pair.firstSegment >= config.control.z ||
+                    pair.secondSegment >= config.control.z ||
+                    contact.identity.x != pairIndex) {
+                    recordFailure(
+                        failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE
+                    );
+                } else {
+                    const uint4 first = distances[
+                        pair.firstSegment
+                    ].particlesAndColor;
+                    const uint4 second = distances[
+                        pair.secondSegment
+                    ].particlesAndColor;
+                    const float normalImpulse =
+                        contact.normalAndImpulse.w;
+                    const float normalLength = length(
+                        contact.normalAndImpulse.xyz
+                    );
+                    const float firstSum =
+                        contact.endpointImpulses.x +
+                        contact.endpointImpulses.y;
+                    const float secondSum =
+                        contact.endpointImpulses.z +
+                        contact.endpointImpulses.w;
+                    if (normalImpulse > 0.0f && normalLength > 1.0e-10f &&
+                        firstSum > 1.0e-12f && secondSum > 1.0e-12f) {
+                        const float3 normal =
+                            contact.normalAndImpulse.xyz / normalLength;
+                        const float2 firstWeights =
+                            contact.endpointImpulses.xy / firstSum;
+                        const float2 secondWeights =
+                            contact.endpointImpulses.zw / secondSum;
+                        NumiClothBagGPUParticle firstStart =
+                            particles[first.x];
+                        NumiClothBagGPUParticle firstEnd =
+                            particles[first.y];
+                        NumiClothBagGPUParticle secondStart =
+                            particles[second.x];
+                        NumiClothBagGPUParticle secondEnd =
+                            particles[second.y];
+                        const float3 firstVelocity =
+                            firstStart.velocity.xyz * firstWeights.x +
+                            firstEnd.velocity.xyz * firstWeights.y;
+                        const float3 secondVelocity =
+                            secondStart.velocity.xyz * secondWeights.x +
+                            secondEnd.velocity.xyz * secondWeights.y;
+                        const float3 relativeVelocity =
+                            firstVelocity - secondVelocity;
+                        const float3 tangentVelocity = relativeVelocity -
+                            normal * dot(relativeVelocity, normal);
+                        const float slipSpeed = length(tangentVelocity);
+                        if (slipSpeed > 1.0e-10f) {
+                            const float3 tangent =
+                                tangentVelocity / slipSpeed;
+                            const float denominator =
+                                firstStart.positionAndInverseMass.w *
+                                    firstWeights.x * firstWeights.x +
+                                firstEnd.positionAndInverseMass.w *
+                                    firstWeights.y * firstWeights.y +
+                                secondStart.positionAndInverseMass.w *
+                                    secondWeights.x * secondWeights.x +
+                                secondEnd.positionAndInverseMass.w *
+                                    secondWeights.y * secondWeights.y;
+                            if (denominator > 0.0f) {
+                                const float frictionLimit =
+                                    friction * normalImpulse;
+                                const float tangentialImpulse = min(
+                                    slipSpeed / denominator,
+                                    frictionLimit
+                                );
+                                if (tangentialImpulse > 0.0f) {
+                                    const float3 impulseOnFirst =
+                                        tangent * -tangentialImpulse;
+                                    firstStart.velocity.xyz +=
+                                        impulseOnFirst *
+                                        (firstStart.positionAndInverseMass.w *
+                                         firstWeights.x);
+                                    firstEnd.velocity.xyz +=
+                                        impulseOnFirst *
+                                        (firstEnd.positionAndInverseMass.w *
+                                         firstWeights.y);
+                                    secondStart.velocity.xyz -=
+                                        impulseOnFirst *
+                                        (secondStart.positionAndInverseMass.w *
+                                         secondWeights.x);
+                                    secondEnd.velocity.xyz -=
+                                        impulseOnFirst *
+                                        (secondEnd.positionAndInverseMass.w *
+                                         secondWeights.y);
+                                    particles[first.x] = firstStart;
+                                    particles[first.y] = firstEnd;
+                                    particles[second.x] = secondStart;
+                                    particles[second.y] = secondEnd;
+                                    atomic_fetch_add_explicit(
+                                        status + 7u,
+                                        1u,
+                                        memory_order_relaxed
+                                    );
+                                    if (frictionLimit > 0.0f) {
+                                        atomic_fetch_max_explicit(
+                                            status + 4u,
+                                            as_type<uint>(
+                                                tangentialImpulse /
+                                                frictionLimit
+                                            ),
+                                            memory_order_relaxed
+                                        );
+                                    }
+                                }
+                            }
                         }
                     }
                 }

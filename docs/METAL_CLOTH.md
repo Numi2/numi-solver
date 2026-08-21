@@ -25,8 +25,8 @@ versioned ABI in `include/numi/cloth_bag_gpu.h` owns:
 - the unilateral 28.5% extension ceiling;
 - deterministic contact/strain reconciliation after that ceiling; and
 - velocity publication from accepted positions;
-- maximum-dissipation Coulomb friction for cloth/ground, fruit/yarn,
-  fruit/fruit, and fruit/ground contact; and
+- maximum-dissipation Coulomb friction for cloth/ground, yarn/yarn,
+  fruit/yarn, fruit/fruit, and fruit/ground contact; and
 - normal-load-capped fruit rolling resistance.
 
 The distance, knot, bend, and fruit-pair graphs are greedily colored once into
@@ -57,6 +57,15 @@ transaction preserves batch order while compacting only active batches for
 response. The swept pass retains exhaustive AABB admission before conservative
 advancement so fast relative motion cannot skip cells. No position update uses
 a float atomic.
+
+Every accepted yarn/yarn normal response appends one compact 48-byte impulse
+record. A deterministic 4,096-key bitonic transaction sorts those records by
+the static pair index, then one owner aggregates normal impulse and
+impulse-weighted endpoint coordinates for each contacted pair. The existing
+packed pair map and ownership-safe static batches are reused for the
+maximum-dissipation tangential solve. This gives all four yarn endpoints one
+conflict-free writer per batch without allocating a dense response record for
+all 4,149,792 candidates.
 
 For distance constraint `ij`, the device evaluates the same XPBD equation as
 the FP64 cloth reference:
@@ -166,8 +175,10 @@ a fixed segment within one 0.01-second substep; Metal must publish the same
 impact time, normal, segment weight, removable advance, final separation, and
 normal impulse as FP64 despite no endpoint-time crossing test being sufficient.
 A second focused CCD case moves one yarn segment completely through another in
-one substep. Metal must stop it on the original side at the `8 mm` combined
-capsule diameter and match FP64 positions and accepted swept-contact count.
+one substep while sliding tangentially. Metal must stop it at the `8 mm`
+combined capsule diameter, reduce tangential slip and kinetic energy, conserve
+linear momentum, and match FP64 positions, velocities, accepted swept-contact
+count, friction count, and cone ratio.
 The fruit-pair probe also drives tangential slip and requires slip and kinetic
 energy to fall while linear momentum is conserved. The ground probe requires
 cloth slip, fruit slip, and rolling speed all to fall under their independent
@@ -186,7 +197,7 @@ Run it with:
 The Apple M4 result measured on 2026-08-21 was:
 
 ```text
-abi=7 particles=1465 distances=2904 grips=10 knots=1369 bends=2834
+abi=8 particles=1465 distances=2904 grips=10 knots=1369 bends=2834
 fruits=12 fruit_pairs=66 fruit_yarn_candidates=34848
 distance_colors=5 knot_colors=6 bend_colors=5 fruit_pair_colors=15
 self_pairs=4149792 self_batches=29263 max_self_batch=256
@@ -225,6 +236,7 @@ reconciliation_passes=8 final_contact_passes=2 certificate_passes=8
 friction_contacts_pair=0 expected_pair=0
 friction_contacts_yarn=12 expected_yarn=10 max_count_difference=2
 friction_contacts_cloth_ground=0 friction_contacts_fruit_ground=0
+friction_contacts_self=7 expected_self=6 self_count_difference=1
 max_friction_cone_ratio=1.000000000000 expected=1.000000000000
 max_rolling_ratio=0.000000000000 expected_rolling=0.000000000000
 strain_probe_initial_violation=0.215000003576
@@ -255,15 +267,21 @@ final_separation=-0.000000003725 final_fruit_x=-0.023999996483
 response_error=0.000001202958 friction_contacts=1
 cone_ratio=0.128008306026 slip_before=2.000001854884
 slip_after=0.000000017553
-self_ccd_position_error=0.000000000288
-final_separation=0.000000001311 final_moving_height=0.008000001311
-max_correction=0.087999999523 present_contacts=0 swept_contacts=1
-state_hash=0xf98c847f8e9e4b2b
+self_ccd_position_error=0.000000357628
+final_separation=0.000004277196 final_moving_height=-0.036001820117
+max_correction=0.087999925017 present_contacts=0 swept_contacts=1
+self_friction_velocity_error=0.000027455503 friction_contacts=1
+cone_ratio=0.668487787247 slip_before=2.000063489379
+slip_after=0.000050152179
+energy_before=157.924313130071 energy_after=155.924161600600
+momentum_error=0.000000478928
+state_hash=0x3148d4dbbdb096c4
 result=PASS
 ```
 
-The eight normal-response-count differences and two friction-count differences
-are FP32/FP64 classifications of
+The eight normal-response-count differences, two fruit/yarn friction-count
+differences, and one yarn/yarn friction-count difference are FP32/FP64
+classifications of
 already-resolved contacts whose separation is within the declared two-micron
 surface tolerance. They are not hidden: the gate separately requires the
 qualified control state, final penetration, accumulated impulse error, and
@@ -276,13 +294,15 @@ Qualification runs of this transaction ranged from `0.648646624992 s` to
 complete-trajectory baseline or profiler trace. Compact segment-pair records,
 the triangular lookup, zeroed device buffers without host mirrors, and scoped
 Metal autorelease pools reduced the executable's measured maximum resident set
-from `401,801,216` to `235,192,320` bytes. The memory-layout comparison itself
+from `401,801,216` to `235,192,320` bytes before the self-friction response
+log; the qualified ABI-8 transaction measured `238,157,824` bytes. The
+memory-layout comparison itself
 preserved its exact state hash and qualification values; later qualified
 physics transactions intentionally changed the state hash. This is a
 resource-footprint result, not a speed claim. The complete 16-test
 Metal-labelled suite subsequently passed under the same shared-machine load.
 The qualified combined metallib SHA-256 is
-`673d525fd8bc506a8dd2cdc33cef73772fcc42cbe2d6ee016a98ad0b1dba3137`.
+`fb7a66ce13f50e9c6482792145f59c7884862f2873276895eb76337a9e5ba683`.
 
 ## Remaining boundary
 
@@ -292,11 +312,12 @@ limiting, crossing-angle knots, yarn bending, ground-aware bend response, and
 the ten-knot seam attachment, fruit free translation, fruit-pair normal
 contact, cloth/fruit ground projection, full fruit/yarn present and swept
 candidate geometry and normal response, full-topology swept/current yarn
-self-contact with deterministic active-batch compaction, four contact-friction
-families, and fruit rolling resistance. It does **not** yet
+self-contact with deterministic active-batch compaction, five contact-friction
+families, and fruit rolling resistance. It does
+**not** yet
 include:
 
-- yarn/yarn self-friction or aerodynamic loads;
+- aerodynamic loads;
 - fruit rotational integration, orientation publication, or release masks; or
 - the complete grounded, spin, or pickup outcome on Metal.
 

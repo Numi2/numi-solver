@@ -91,12 +91,12 @@ to a real produce bag.
   impulse publication, exhaustive nonlocal yarn/yarn candidate coverage,
   spatially compacted current and exhaustive swept yarn/yarn self-contact, and
   final contact/strain reconciliation before velocity publication. It also
-  owns cloth/ground, fruit/yarn, fruit/fruit, and fruit/ground Coulomb friction
-  plus load-capped fruit rolling resistance. That subset passes
+  owns cloth/ground, yarn/yarn, fruit/yarn, fruit/fruit, and fruit/ground
+  Coulomb friction plus load-capped fruit rolling resistance. That subset passes
   independent FP64 equation comparison and exact replay; see
-  [METAL_CLOTH.md](METAL_CLOTH.md). Yarn/yarn self-friction, aerodynamics,
-  fruit orientation integration, release classification, complete-trajectory
-  parity, profiler evidence, and matched physical outcomes remain open.
+  [METAL_CLOTH.md](METAL_CLOTH.md). Aerodynamics, fruit orientation
+  integration, release classification, complete-trajectory parity, profiler
+  evidence, and matched physical outcomes remain open.
 
 Completion requires the specimen measurements and held-out replay above.
 Visual plausibility and the current executable certificates are necessary but
