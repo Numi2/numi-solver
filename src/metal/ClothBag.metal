@@ -39,6 +39,14 @@ struct PointSegmentSample {
     float distance;
 };
 
+struct SegmentSegmentSample {
+    float3 firstPoint;
+    float3 secondPoint;
+    float firstWeight;
+    float secondWeight;
+    float distance;
+};
+
 inline float3 safeNormalized(const float3 value) {
     const float magnitude = length(value);
     return magnitude > 1.0e-14f
@@ -58,6 +66,199 @@ inline PointSegmentSample samplePointSegment(
         : 0.0f;
     const float3 closest = fma(direction, float3(weight), first);
     return {closest, weight, length(closest - point)};
+}
+
+inline SegmentSegmentSample sampleSegments(
+    const float3 firstStart,
+    const float3 firstEnd,
+    const float3 secondStart,
+    const float3 secondEnd
+) {
+    const float3 firstDirection = firstEnd - firstStart;
+    const float3 secondDirection = secondEnd - secondStart;
+    const float3 offset = firstStart - secondStart;
+    const float firstLengthSquared = dot(firstDirection, firstDirection);
+    const float secondLengthSquared = dot(secondDirection, secondDirection);
+    const float secondProjection = dot(secondDirection, offset);
+    float firstWeight = 0.0f;
+    float secondWeight = 0.0f;
+    if (firstLengthSquared <= 1.0e-20f &&
+        secondLengthSquared <= 1.0e-20f) {
+        return {
+            firstStart,
+            secondStart,
+            0.0f,
+            0.0f,
+            length(secondStart - firstStart),
+        };
+    }
+    if (firstLengthSquared <= 1.0e-20f) {
+        secondWeight = clamp(
+            secondProjection / secondLengthSquared, 0.0f, 1.0f
+        );
+    } else {
+        const float firstProjection = dot(firstDirection, offset);
+        if (secondLengthSquared <= 1.0e-20f) {
+            firstWeight = clamp(
+                -firstProjection / firstLengthSquared, 0.0f, 1.0f
+            );
+        } else {
+            const float crossProjection = dot(
+                firstDirection, secondDirection
+            );
+            const float denominator =
+                firstLengthSquared * secondLengthSquared -
+                crossProjection * crossProjection;
+            if (denominator > 1.0e-20f) {
+                firstWeight = clamp(
+                    (crossProjection * secondProjection -
+                     firstProjection * secondLengthSquared) / denominator,
+                    0.0f,
+                    1.0f
+                );
+            }
+            secondWeight = (
+                crossProjection * firstWeight + secondProjection
+            ) / secondLengthSquared;
+            if (secondWeight < 0.0f) {
+                secondWeight = 0.0f;
+                firstWeight = clamp(
+                    -firstProjection / firstLengthSquared, 0.0f, 1.0f
+                );
+            } else if (secondWeight > 1.0f) {
+                secondWeight = 1.0f;
+                firstWeight = clamp(
+                    (crossProjection - firstProjection) /
+                        firstLengthSquared,
+                    0.0f,
+                    1.0f
+                );
+            }
+        }
+    }
+    const float3 firstPoint = fma(
+        firstDirection, float3(firstWeight), firstStart
+    );
+    const float3 secondPoint = fma(
+        secondDirection, float3(secondWeight), secondStart
+    );
+    return {
+        firstPoint,
+        secondPoint,
+        firstWeight,
+        secondWeight,
+        length(secondPoint - firstPoint),
+    };
+}
+
+inline float3 selfContactNormal(
+    const float3 separation,
+    const float3 firstDirection,
+    const float3 secondDirection,
+    const float3 previousOffset
+) {
+    const float separationLength = length(separation);
+    if (separationLength > 1.0e-12f) {
+        return separation / separationLength;
+    }
+    float3 normal = safeNormalized(cross(firstDirection, secondDirection));
+    if (dot(previousOffset, normal) > 0.0f) {
+        normal *= -1.0f;
+    }
+    return normal;
+}
+
+inline bool edgeBoundsOverlap(
+    const NumiClothBagGPUParticle firstStart,
+    const NumiClothBagGPUParticle firstEnd,
+    const NumiClothBagGPUParticle secondStart,
+    const NumiClothBagGPUParticle secondEnd,
+    const bool swept,
+    const float expansion
+) {
+    float3 firstMinimum = min(
+        firstStart.positionAndInverseMass.xyz,
+        firstEnd.positionAndInverseMass.xyz
+    );
+    float3 firstMaximum = max(
+        firstStart.positionAndInverseMass.xyz,
+        firstEnd.positionAndInverseMass.xyz
+    );
+    float3 secondMinimum = min(
+        secondStart.positionAndInverseMass.xyz,
+        secondEnd.positionAndInverseMass.xyz
+    );
+    float3 secondMaximum = max(
+        secondStart.positionAndInverseMass.xyz,
+        secondEnd.positionAndInverseMass.xyz
+    );
+    if (swept) {
+        firstMinimum = min(
+            firstMinimum,
+            min(
+                firstStart.previousAndMass.xyz,
+                firstEnd.previousAndMass.xyz
+            )
+        );
+        firstMaximum = max(
+            firstMaximum,
+            max(
+                firstStart.previousAndMass.xyz,
+                firstEnd.previousAndMass.xyz
+            )
+        );
+        secondMinimum = min(
+            secondMinimum,
+            min(
+                secondStart.previousAndMass.xyz,
+                secondEnd.previousAndMass.xyz
+            )
+        );
+        secondMaximum = max(
+            secondMaximum,
+            max(
+                secondStart.previousAndMass.xyz,
+                secondEnd.previousAndMass.xyz
+            )
+        );
+    }
+    firstMinimum -= expansion;
+    firstMaximum += expansion;
+    secondMinimum -= expansion;
+    secondMaximum += expansion;
+    return all(firstMinimum <= secondMaximum) &&
+        all(firstMaximum >= secondMinimum);
+}
+
+inline SegmentSegmentSample sampleSweptSegments(
+    const NumiClothBagGPUParticle firstStart,
+    const NumiClothBagGPUParticle firstEnd,
+    const NumiClothBagGPUParticle secondStart,
+    const NumiClothBagGPUParticle secondEnd,
+    const float time
+) {
+    return sampleSegments(
+        mix(
+            firstStart.previousAndMass.xyz,
+            firstStart.positionAndInverseMass.xyz,
+            time
+        ),
+        mix(
+            firstEnd.previousAndMass.xyz,
+            firstEnd.positionAndInverseMass.xyz,
+            time
+        ),
+        mix(
+            secondStart.previousAndMass.xyz,
+            secondStart.positionAndInverseMass.xyz,
+            time
+        ),
+        mix(
+            secondEnd.previousAndMass.xyz,
+            secondEnd.positionAndInverseMass.xyz,
+            time
+        )
+    );
 }
 
 inline PointSegmentSample sampleSweptPointSegment(
@@ -924,6 +1125,610 @@ kernel void numi_cloth_bag_solve_yarn_batch(
         threadgroup_barrier(mem_flags::mem_device);
     }
     fruits[fruitIndex] = fruit;
+}
+
+kernel void numi_cloth_bag_build_self_cells(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device const NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device const NumiClothBagGPUDistance* distances [[buffer(2)]],
+    device ulong* entries [[buffer(3)]],
+    device atomic_uint* failure [[buffer(4)]],
+    const uint index [[thread_position_in_grid]]
+) {
+    constexpr uint entryCapacity = 4096u;
+    if (!validConfig(config, failure) || index >= entryCapacity) {
+        return;
+    }
+    if (index >= config.control.z) {
+        entries[index] = 0xfffffffffffffffful;
+        return;
+    }
+    const NumiClothBagGPUDistance segment = distances[index];
+    const uint firstIndex = segment.particlesAndColor.x;
+    const uint secondIndex = segment.particlesAndColor.y;
+    const float cellSize = config.clothMaterial.y;
+    if (firstIndex >= config.control.y || secondIndex >= config.control.y ||
+        !(cellSize > 2.0f * config.clothMaterial.x)) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        entries[index] = 0xfffffffffffffffful;
+        return;
+    }
+    const float3 first = particles[firstIndex].positionAndInverseMass.xyz;
+    const float3 second = particles[secondIndex].positionAndInverseMass.xyz;
+    if (length(second - first) >
+        cellSize - 2.0f * config.clothMaterial.x) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        entries[index] = 0xfffffffffffffffful;
+        return;
+    }
+    const int3 coordinate = int3(floor((0.5f * (first + second)) / cellSize));
+    if (any(coordinate < int3(-512)) || any(coordinate > int3(511))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        entries[index] = 0xfffffffffffffffful;
+        return;
+    }
+    const uint3 encoded = uint3(coordinate + int3(512));
+    const uint key = encoded.x | (encoded.y << 10u) | (encoded.z << 20u);
+    entries[index] = (static_cast<ulong>(key) << 32u) |
+        static_cast<ulong>(index);
+}
+
+kernel void numi_cloth_bag_sort_self_cells(
+    device ulong* entries [[buffer(0)]],
+    const uint localIndex [[thread_position_in_threadgroup]],
+    const uint groupIndex [[threadgroup_position_in_grid]]
+) {
+    constexpr uint entryCapacity = 4096u;
+    constexpr uint threadCount = 256u;
+    threadgroup ulong sortedEntries[entryCapacity];
+    if (groupIndex != 0u) {
+        return;
+    }
+    for (uint index = localIndex;
+         index < entryCapacity;
+         index += threadCount) {
+        sortedEntries[index] = entries[index];
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    for (uint sequence = 2u;
+         sequence <= entryCapacity;
+         sequence <<= 1u) {
+        for (uint stride = sequence >> 1u;
+             stride > 0u;
+             stride >>= 1u) {
+            for (uint index = localIndex;
+                 index < entryCapacity;
+                 index += threadCount) {
+                const uint partner = index ^ stride;
+                if (partner > index) {
+                    const bool ascending = (index & sequence) == 0u;
+                    const ulong first = sortedEntries[index];
+                    const ulong second = sortedEntries[partner];
+                    if ((ascending && first > second) ||
+                        (!ascending && first < second)) {
+                        sortedEntries[index] = second;
+                        sortedEntries[partner] = first;
+                    }
+                }
+            }
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+        }
+    }
+    for (uint index = localIndex;
+         index < entryCapacity;
+         index += threadCount) {
+        entries[index] = sortedEntries[index];
+    }
+}
+
+kernel void numi_cloth_bag_detect_self_spatial(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device const NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device const NumiClothBagGPUDistance* distances [[buffer(2)]],
+    device const ulong* sortedEntries [[buffer(3)]],
+    device const uint* pairLookup [[buffer(4)]],
+    device uint* activeEpochs [[buffer(5)]],
+    device atomic_uint* failure [[buffer(6)]],
+    constant uint& epoch [[buffer(7)]],
+    const uint firstSegment [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) || firstSegment >= config.control.z ||
+        epoch <= 1u) {
+        return;
+    }
+    const NumiClothBagGPUDistance firstDistance = distances[firstSegment];
+    const uint firstStartIndex = firstDistance.particlesAndColor.x;
+    const uint firstEndIndex = firstDistance.particlesAndColor.y;
+    const NumiClothBagGPUParticle firstStart = particles[firstStartIndex];
+    const NumiClothBagGPUParticle firstEnd = particles[firstEndIndex];
+    const float cellSize = config.clothMaterial.y;
+    const int3 coordinate = int3(floor(
+        (0.5f * (
+            firstStart.positionAndInverseMass.xyz +
+            firstEnd.positionAndInverseMass.xyz
+        )) / cellSize
+    ));
+    for (int zOffset = -1; zOffset <= 1; ++zOffset) {
+        for (int yOffset = -1; yOffset <= 1; ++yOffset) {
+            for (int xOffset = -1; xOffset <= 1; ++xOffset) {
+                const int3 neighbor = coordinate + int3(
+                    xOffset, yOffset, zOffset
+                );
+                if (any(neighbor < int3(-512)) ||
+                    any(neighbor > int3(511))) {
+                    continue;
+                }
+                const uint3 encoded = uint3(neighbor + int3(512));
+                const uint key = encoded.x |
+                    (encoded.y << 10u) | (encoded.z << 20u);
+                uint lower = 0u;
+                uint upper = config.control.z;
+                while (lower < upper) {
+                    const uint middle = lower + (upper - lower) / 2u;
+                    const uint middleKey = static_cast<uint>(
+                        sortedEntries[middle] >> 32u
+                    );
+                    if (middleKey < key) {
+                        lower = middle + 1u;
+                    } else {
+                        upper = middle;
+                    }
+                }
+                for (uint sortedIndex = lower;
+                     sortedIndex < config.control.z;
+                     ++sortedIndex) {
+                    const ulong entry = sortedEntries[sortedIndex];
+                    if (static_cast<uint>(entry >> 32u) != key) {
+                        break;
+                    }
+                    const uint secondSegment = static_cast<uint>(entry);
+                    if (secondSegment <= firstSegment) {
+                        continue;
+                    }
+                    const uint pairLookupIndex =
+                        firstSegment *
+                            (2u * config.control.z - firstSegment - 1u) /
+                            2u +
+                        (secondSegment - firstSegment - 1u);
+                    const uint pairIndex = pairLookup[pairLookupIndex];
+                    if (pairIndex == NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE) {
+                        continue;
+                    }
+                    const NumiClothBagGPUDistance secondDistance =
+                        distances[secondSegment];
+                    if (edgeBoundsOverlap(
+                        firstStart,
+                        firstEnd,
+                        particles[secondDistance.particlesAndColor.x],
+                        particles[secondDistance.particlesAndColor.y],
+                        false,
+                        config.clothMaterial.x
+                    )) {
+                        activeEpochs[pairIndex] = epoch;
+                    }
+                }
+            }
+        }
+    }
+}
+
+kernel void numi_cloth_bag_count_self_batches(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device const NumiClothBagGPUBatch* batches [[buffer(1)]],
+    device const uint* activeEpochs [[buffer(2)]],
+    device uint* activeBatchCounts [[buffer(3)]],
+    device atomic_uint* failure [[buffer(4)]],
+    constant uint& epoch [[buffer(5)]],
+    const uint batchIndex [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) ||
+        batchIndex >= config.contactCounts.w) {
+        return;
+    }
+    const NumiClothBagGPUBatch batch = batches[batchIndex];
+    if (batch.control.x + batch.control.y > config.contactCounts.z) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        activeBatchCounts[batchIndex] = 0u;
+        return;
+    }
+    uint count = 0u;
+    for (uint local = 0u; local < batch.control.y; ++local) {
+        count += activeEpochs[batch.control.x + local] == epoch;
+    }
+    activeBatchCounts[batchIndex] = count;
+}
+
+kernel void numi_cloth_bag_compact_self_batches(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device const uint* activeBatchCounts [[buffer(1)]],
+    device uint* activeBatchIndices [[buffer(2)]],
+    device uint* activeBatchCount [[buffer(3)]],
+    const uint localIndex [[thread_position_in_threadgroup]],
+    const uint groupIndex [[threadgroup_position_in_grid]]
+) {
+    constexpr uint threadCount = 256u;
+    threadgroup uint prefix[threadCount];
+    threadgroup uint base;
+    if (groupIndex != 0u) {
+        return;
+    }
+    if (localIndex == 0u) {
+        base = 0u;
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    const uint chunkCount =
+        (config.contactCounts.w + threadCount - 1u) / threadCount;
+    for (uint chunk = 0u; chunk < chunkCount; ++chunk) {
+        const uint batchIndex = chunk * threadCount + localIndex;
+        const uint active = batchIndex < config.contactCounts.w &&
+            activeBatchCounts[batchIndex] != 0u;
+        prefix[localIndex] = active;
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+        for (uint offset = 1u; offset < threadCount; offset <<= 1u) {
+            const uint addition = localIndex >= offset
+                ? prefix[localIndex - offset]
+                : 0u;
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+            prefix[localIndex] += addition;
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+        }
+        if (active != 0u) {
+            activeBatchIndices[base + prefix[localIndex] - 1u] = batchIndex;
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+        if (localIndex == 0u) {
+            base += prefix[threadCount - 1u];
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+    }
+    if (localIndex == 0u) {
+        *activeBatchCount = base;
+    }
+}
+
+kernel void numi_cloth_bag_detect_self_contact(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device const NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device const NumiClothBagGPUSelfPair* pairs [[buffer(2)]],
+    device const NumiClothBagGPUBatch* batches [[buffer(3)]],
+    device uint* activeFlags [[buffer(4)]],
+    device uint* activeBatchCounts [[buffer(5)]],
+    device atomic_uint* failure [[buffer(6)]],
+    constant uint& mode [[buffer(7)]],
+    device const NumiClothBagGPUDistance* distances [[buffer(8)]],
+    const uint localIndex [[thread_position_in_threadgroup]],
+    const uint batchIndex [[threadgroup_position_in_grid]]
+) {
+    threadgroup atomic_uint groupCount;
+    if (localIndex == 0u) {
+        atomic_store_explicit(&groupCount, 0u, memory_order_relaxed);
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    if (!validConfig(config, failure) || mode > 1u ||
+        batchIndex >= config.contactCounts.w) {
+        if (localIndex == 0u) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        }
+        return;
+    }
+    const NumiClothBagGPUBatch batch = batches[batchIndex];
+    if (batch.control.x + batch.control.y > config.contactCounts.z) {
+        if (localIndex == 0u) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+            activeBatchCounts[batchIndex] = 0u;
+        }
+        return;
+    }
+    if (localIndex < batch.control.y) {
+        const uint pairIndex = batch.control.x + localIndex;
+        const NumiClothBagGPUSelfPair pair = pairs[pairIndex];
+        bool active = false;
+        if (pair.firstSegment >= config.control.z ||
+            pair.secondSegment >= config.control.z ||
+            pair.firstSegment == pair.secondSegment) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        } else {
+            const uint4 first =
+                distances[pair.firstSegment].particlesAndColor;
+            const uint4 second =
+                distances[pair.secondSegment].particlesAndColor;
+            const uint4 indices = uint4(
+                first.x, first.y, second.x, second.y
+            );
+            if (any(indices >= uint4(config.control.y))) {
+                recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+            } else {
+                active = edgeBoundsOverlap(
+                    particles[indices.x],
+                    particles[indices.y],
+                    particles[indices.z],
+                    particles[indices.w],
+                    mode == 1u,
+                    config.clothMaterial.x
+                );
+            }
+        }
+        activeFlags[pairIndex] = active;
+        if (active) {
+            atomic_fetch_add_explicit(
+                &groupCount, 1u, memory_order_relaxed
+            );
+        }
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    if (localIndex == 0u) {
+        activeBatchCounts[batchIndex] = atomic_load_explicit(
+            &groupCount, memory_order_relaxed
+        );
+    }
+}
+
+kernel void numi_cloth_bag_solve_self_contact(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device const NumiClothBagGPUSelfPair* pairs [[buffer(2)]],
+    device const NumiClothBagGPUBatch* batches [[buffer(3)]],
+    device const uint* activeEpochs [[buffer(4)]],
+    device const uint* activeBatchIndices [[buffer(5)]],
+    device const uint* activeBatchCount [[buffer(6)]],
+    device atomic_uint* status [[buffer(7)]],
+    device atomic_uint* failure [[buffer(8)]],
+    constant uint& mode [[buffer(9)]],
+    constant uint& epoch [[buffer(10)]],
+    device const NumiClothBagGPUDistance* distances [[buffer(11)]],
+    const uint localIndex [[thread_position_in_threadgroup]],
+    const uint groupIndex [[threadgroup_position_in_grid]]
+) {
+    if (!validConfig(config, failure) || mode > 1u || groupIndex != 0u) {
+        if (localIndex == 0u) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        }
+        return;
+    }
+    constexpr float distanceTolerance = 1.0e-9f;
+    const float target = 2.0f * config.clothMaterial.x;
+    for (uint activeBatch = 0u;
+         activeBatch < *activeBatchCount;
+         ++activeBatch) {
+        const uint batchIndex = activeBatchIndices[activeBatch];
+        const NumiClothBagGPUBatch batch = batches[batchIndex];
+        if (batch.control.x + batch.control.y > config.contactCounts.z) {
+            if (localIndex == 0u) {
+                recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+            }
+            continue;
+        }
+        const uint pairIndex = batch.control.x + localIndex;
+        if (localIndex < batch.control.y &&
+            activeEpochs[pairIndex] == epoch) {
+            const NumiClothBagGPUSelfPair pair = pairs[pairIndex];
+            if (pair.firstSegment >= config.control.z ||
+                pair.secondSegment >= config.control.z ||
+                pair.firstSegment == pair.secondSegment) {
+                recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+                continue;
+            }
+            const uint4 first =
+                distances[pair.firstSegment].particlesAndColor;
+            const uint4 second =
+                distances[pair.secondSegment].particlesAndColor;
+            const uint4 indices = uint4(
+                first.x, first.y, second.x, second.y
+            );
+            if (any(indices >= uint4(config.control.y)) ||
+                indices.x == indices.y || indices.x == indices.z ||
+                indices.x == indices.w || indices.y == indices.z ||
+                indices.y == indices.w || indices.z == indices.w) {
+                recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+            } else {
+                NumiClothBagGPUParticle firstStart = particles[indices.x];
+                NumiClothBagGPUParticle firstEnd = particles[indices.y];
+                NumiClothBagGPUParticle secondStart = particles[indices.z];
+                NumiClothBagGPUParticle secondEnd = particles[indices.w];
+                if (edgeBoundsOverlap(
+                    firstStart,
+                    firstEnd,
+                    secondStart,
+                    secondEnd,
+                    mode == 1u,
+                    config.clothMaterial.x
+                )) {
+                    float firstWeight = 0.0f;
+                    float secondWeight = 0.0f;
+                    float3 normal = float3(0.0f);
+                    float correction = 0.0f;
+                    if (mode == 0u) {
+                        const SegmentSegmentSample closest = sampleSegments(
+                            firstStart.positionAndInverseMass.xyz,
+                            firstEnd.positionAndInverseMass.xyz,
+                            secondStart.positionAndInverseMass.xyz,
+                            secondEnd.positionAndInverseMass.xyz
+                        );
+                        if (closest.distance < target) {
+                            firstWeight = closest.firstWeight;
+                            secondWeight = closest.secondWeight;
+                            const float3 firstPrevious = mix(
+                                firstStart.previousAndMass.xyz,
+                                firstEnd.previousAndMass.xyz,
+                                firstWeight
+                            );
+                            const float3 secondPrevious = mix(
+                                secondStart.previousAndMass.xyz,
+                                secondEnd.previousAndMass.xyz,
+                                secondWeight
+                            );
+                            normal = selfContactNormal(
+                                closest.secondPoint - closest.firstPoint,
+                                firstEnd.positionAndInverseMass.xyz -
+                                    firstStart.positionAndInverseMass.xyz,
+                                secondEnd.positionAndInverseMass.xyz -
+                                    secondStart.positionAndInverseMass.xyz,
+                                firstPrevious - secondPrevious
+                            );
+                            correction = target - closest.distance;
+                        }
+                    } else {
+                        const float motionBound =
+                            length(
+                                firstStart.positionAndInverseMass.xyz -
+                                firstStart.previousAndMass.xyz
+                            ) +
+                            length(
+                                firstEnd.positionAndInverseMass.xyz -
+                                firstEnd.previousAndMass.xyz
+                            ) +
+                            length(
+                                secondStart.positionAndInverseMass.xyz -
+                                secondStart.previousAndMass.xyz
+                            ) +
+                            length(
+                                secondEnd.positionAndInverseMass.xyz -
+                                secondEnd.previousAndMass.xyz
+                            );
+                        if (motionBound >= 1.0e-14f) {
+                            float time = 0.0f;
+                            SegmentSegmentSample impact =
+                                sampleSweptSegments(
+                                    firstStart,
+                                    firstEnd,
+                                    secondStart,
+                                    secondEnd,
+                                    0.0f
+                                );
+                            bool found = impact.distance <=
+                                target + distanceTolerance;
+                            if (!found) {
+                                for (uint iteration = 0u;
+                                     iteration < 80u;
+                                     ++iteration) {
+                                    impact = sampleSweptSegments(
+                                        firstStart,
+                                        firstEnd,
+                                        secondStart,
+                                        secondEnd,
+                                        time
+                                    );
+                                    const float gap = impact.distance - target;
+                                    if (gap <= distanceTolerance) {
+                                        found = true;
+                                        break;
+                                    }
+                                    const float advance =
+                                        0.9f * gap / motionBound;
+                                    if (!isfinite(advance) ||
+                                        !(advance > 0.0f) ||
+                                        time + advance >= 1.0f) {
+                                        break;
+                                    }
+                                    time += max(advance, 1.0e-10f);
+                                }
+                            }
+                            if (found) {
+                                firstWeight = impact.firstWeight;
+                                secondWeight = impact.secondWeight;
+                                const float3 firstPrevious = mix(
+                                    firstStart.previousAndMass.xyz,
+                                    firstEnd.previousAndMass.xyz,
+                                    firstWeight
+                                );
+                                const float3 secondPrevious = mix(
+                                    secondStart.previousAndMass.xyz,
+                                    secondEnd.previousAndMass.xyz,
+                                    secondWeight
+                                );
+                                const float3 firstImpactStart = mix(
+                                    firstStart.previousAndMass.xyz,
+                                    firstStart.positionAndInverseMass.xyz,
+                                    time
+                                );
+                                const float3 firstImpactEnd = mix(
+                                    firstEnd.previousAndMass.xyz,
+                                    firstEnd.positionAndInverseMass.xyz,
+                                    time
+                                );
+                                const float3 secondImpactStart = mix(
+                                    secondStart.previousAndMass.xyz,
+                                    secondStart.positionAndInverseMass.xyz,
+                                    time
+                                );
+                                const float3 secondImpactEnd = mix(
+                                    secondEnd.previousAndMass.xyz,
+                                    secondEnd.positionAndInverseMass.xyz,
+                                    time
+                                );
+                                normal = selfContactNormal(
+                                    impact.secondPoint - impact.firstPoint,
+                                    firstImpactEnd - firstImpactStart,
+                                    secondImpactEnd - secondImpactStart,
+                                    firstPrevious - secondPrevious
+                                );
+                                const float3 firstRemaining =
+                                    (firstStart.positionAndInverseMass.xyz -
+                                     firstImpactStart) *
+                                        (1.0f - firstWeight) +
+                                    (firstEnd.positionAndInverseMass.xyz -
+                                     firstImpactEnd) * firstWeight;
+                                const float3 secondRemaining =
+                                    (secondStart.positionAndInverseMass.xyz -
+                                     secondImpactStart) *
+                                        (1.0f - secondWeight) +
+                                    (secondEnd.positionAndInverseMass.xyz -
+                                     secondImpactEnd) * secondWeight;
+                                correction = dot(
+                                    firstRemaining - secondRemaining,
+                                    normal
+                                );
+                                if (!(correction > 0.0f)) {
+                                    correction = 0.0f;
+                                }
+                            }
+                        }
+                    }
+                    if (correction > 0.0f) {
+                        const float firstStartWeight = 1.0f - firstWeight;
+                        const float secondStartWeight = 1.0f - secondWeight;
+                        const float denominator =
+                            firstStart.positionAndInverseMass.w *
+                                firstStartWeight * firstStartWeight +
+                            firstEnd.positionAndInverseMass.w *
+                                firstWeight * firstWeight +
+                            secondStart.positionAndInverseMass.w *
+                                secondStartWeight * secondStartWeight +
+                            secondEnd.positionAndInverseMass.w *
+                                secondWeight * secondWeight;
+                        if (denominator > 0.0f && isfinite(denominator)) {
+                            const float lambda = correction / denominator;
+                            firstStart.positionAndInverseMass.xyz -= normal *
+                                (firstStart.positionAndInverseMass.w *
+                                 firstStartWeight * lambda);
+                            firstEnd.positionAndInverseMass.xyz -= normal *
+                                (firstEnd.positionAndInverseMass.w *
+                                 firstWeight * lambda);
+                            secondStart.positionAndInverseMass.xyz += normal *
+                                (secondStart.positionAndInverseMass.w *
+                                 secondStartWeight * lambda);
+                            secondEnd.positionAndInverseMass.xyz += normal *
+                                (secondEnd.positionAndInverseMass.w *
+                                 secondWeight * lambda);
+                            particles[indices.x] = firstStart;
+                            particles[indices.y] = firstEnd;
+                            particles[indices.z] = secondStart;
+                            particles[indices.w] = secondEnd;
+                            atomic_fetch_add_explicit(
+                                status + mode, 1u, memory_order_relaxed
+                            );
+                            atomic_fetch_max_explicit(
+                                status + 2u,
+                                as_type<uint>(correction),
+                                memory_order_relaxed
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        threadgroup_barrier(mem_flags::mem_device);
+    }
 }
 
 kernel void numi_cloth_bag_build_yarn_contacts(

@@ -88,12 +88,14 @@ to a real produce bag.
   fruit-pair normal contacts, cloth/fruit ground projection, all 34,848
   present/swept fruit-yarn candidate geometries, conservative-advancement CCD,
   deterministic ground-aware sphere/yarn normal response, accumulated normal
-  impulse publication, and velocity publication. That subset passes
+  impulse publication, exhaustive nonlocal yarn/yarn candidate coverage,
+  spatially compacted current and exhaustive swept yarn/yarn self-contact, and
+  velocity publication. That subset passes
   independent FP64 equation comparison and exact replay; see
-  [METAL_CLOTH.md](METAL_CLOTH.md). Yarn/yarn contact, sparse contact
-  compaction, all friction transactions, aerodynamics, fruit rotation, release
-  classification, complete-trajectory parity, profiler evidence, and matched
-  physical outcomes remain open.
+  [METAL_CLOTH.md](METAL_CLOTH.md). Final contact/strain reconciliation, all
+  friction transactions, aerodynamics, fruit rotation, release classification,
+  complete-trajectory parity, profiler evidence, and matched physical outcomes
+  remain open.
 
 Completion requires the specimen measurements and held-out replay above.
 Visual plausibility and the current executable certificates are necessary but

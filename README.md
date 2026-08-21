@@ -184,10 +184,13 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
   unilateral extension limit, ten-knot seam grip, twelve-fruit translation,
   all 66 fruit-pair normal contacts, cloth/fruit ground projection, all 34,848
   present and swept fruit/yarn candidate geometries, deterministic
-  ground-aware fruit/yarn normal response, and velocity publication on the
-  full 1,465-particle/2,904-segment topology. It gates FP64 equation and
-  impulse error, a tunneling-and-response CCD probe, and exact replay; yarn
-  self-contact, friction, and the complete bag trajectory remain open.
+  ground-aware fruit/yarn normal response, all 4,149,792 graph-excluded
+  yarn/yarn candidates, spatially compacted current and exhaustive swept
+  yarn/yarn self-contact, and velocity publication on the full
+  1,465-particle/2,904-segment topology.
+  It gates FP64 equation and impulse error, sphere/yarn and yarn/yarn tunneling
+  response probes, sub-micrometer final self-overlap, and exact replay;
+  friction and the complete bag trajectory remain open.
 - `build/numi-solver-articulated` for canonical articulated mass/Jacobian
   factorization, response-column solves, cone contact, and deterministic
   generalized-velocity publication on one command buffer.
@@ -269,7 +272,8 @@ against an independent FP64 oracle, exercises active extension limiting,
 compression invariance, ground-supported bending, unequal-mass fruit-pair
 separation, cloth/fruit plane support, and a fruit crossing fully through a
 yarn segment between frame endpoints and being returned to the correct side,
-and requires byte-identical replay.
+plus one yarn segment crossing another in a full substep, and requires
+byte-identical replay.
 See
 [docs/METAL_CLOTH.md](docs/METAL_CLOTH.md) for its exact boundary.
 

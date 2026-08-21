@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 5u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 6u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
 
 enum NumiClothBagGPUFailure : mr_u32 {
@@ -19,7 +19,8 @@ typedef struct MR_ALIGN16 NumiClothBagGPUConfig {
     // x crossing-angle knot count, y yarn-bend count,
     // z 1 when ground response is active, w fruit count.
     mr_uint4 constraintCounts;
-    // x fruit-pair count, y sphere/yarn candidate count, zw reserved.
+    // x fruit-pair count, y sphere/yarn candidate count,
+    // z nonlocal yarn/yarn pair count, w yarn/yarn batch count.
     mr_uint4 contactCounts;
     // xyz gravitational acceleration, w substep timestep.
     mr_float4 gravityAndTimestep;
@@ -117,6 +118,19 @@ typedef struct MR_ALIGN16 NumiClothBagGPUYarnContact {
     mr_float4 segmentImpulse;
 } NumiClothBagGPUYarnContact;
 
+typedef struct NumiClothBagGPUSelfPair {
+    // Indices of the two yarn segments in the distance table. Their four
+    // particle endpoints are resolved from that owning table on demand.
+    mr_u32 firstSegment;
+    mr_u32 secondSegment;
+} NumiClothBagGPUSelfPair;
+
+typedef struct MR_ALIGN16 NumiClothBagGPUSelfStatus {
+    // x accepted present contacts, y accepted swept contacts,
+    // z maximum correction encoded as positive-float bits, w reserved.
+    mr_uint4 counters;
+} NumiClothBagGPUSelfStatus;
+
 typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
     // x first constraint, y constraint count, z expected graph color,
     // w reserved.
@@ -133,5 +147,7 @@ static_assert(sizeof(NumiClothBagGPUBend) == 32);
 static_assert(sizeof(NumiClothBagGPUFruit) == 96);
 static_assert(sizeof(NumiClothBagGPUFruitPair) == 32);
 static_assert(sizeof(NumiClothBagGPUYarnContact) == 112);
+static_assert(sizeof(NumiClothBagGPUSelfPair) == 8);
+static_assert(sizeof(NumiClothBagGPUSelfStatus) == 16);
 static_assert(sizeof(NumiClothBagGPUBatch) == 16);
 #endif
