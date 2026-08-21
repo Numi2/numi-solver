@@ -303,16 +303,16 @@ A four-second/1,920-step run passed with zero failures and escapes, condition
 upper bound `2460.12`, maximum KKT `1.990e-6`, maximum VI `1.999e-6`, and 543
 maximum iterations. A deterministic half-timestep replay differed by
 `0.025897510 m` in final position L-infinity norm, below its declared
-`0.075 m` refinement gate. The complete CTest suite contains 15 passing tests,
-including zero-contact freefall, stress, long-horizon, refinement, rollback,
-and Metal gates.
+`0.075 m` refinement gate. The current complete CTest suite contains 29 tests,
+including zero-contact freefall, stress, long-horizon, refinement, cloth,
+rollback, and Metal gates.
 
 This is matched evidence for Numi streamed CSR over Numi dense storage on the
 declared bag topology. No claim against an external simulator follows without
 a matched implementation and measurement. The exact mechanics and
 approximation boundary are documented in [BRAIDED_BAG.md](BRAIDED_BAG.md).
 The qualified combined metallib SHA-256 is
-`58aa8d970a863c3cdbbe10f68937c732e56af851fee4e7755069aefc35db66fe`.
+`6339b10b571fdccd034d25bec125ce4ba0ae6f001a75b0325ad2d77861877c71`.
 
 ## Response-column assembly and chained solve gate
 

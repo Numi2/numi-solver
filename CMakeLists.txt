@@ -26,6 +26,7 @@ find_library(METAL_FRAMEWORK Metal REQUIRED)
 set(NUMI_SOLVER_SHADER_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
 set(NUMI_SOLVER_AIR "${NUMI_SOLVER_SHADER_DIR}/NumiTemporalCone.air")
 set(NUMI_SOLVER_BRAIDED_BAG_AIR "${NUMI_SOLVER_SHADER_DIR}/NumiBraidedBag.air")
+set(NUMI_SOLVER_CLOTH_BAG_AIR "${NUMI_SOLVER_SHADER_DIR}/NumiClothBag.air")
 set(NUMI_SOLVER_ARTICULATED_AIR "${NUMI_SOLVER_SHADER_DIR}/NumiArticulatedOperator.air")
 set(NUMI_SOLVER_INVERSE_ABA_AIR "${NUMI_SOLVER_SHADER_DIR}/NumiArticulatedInverseABA.air")
 set(NUMI_SOLVER_METALLIB "${NUMI_SOLVER_SHADER_DIR}/NumiTemporalCone.metallib")
@@ -33,6 +34,10 @@ set(NUMI_SOLVER_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/metal/MetalWorldContact.
 set(
     NUMI_SOLVER_BRAIDED_BAG_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/src/metal/BraidedBag.metal"
+)
+set(
+    NUMI_SOLVER_CLOTH_BAG_SOURCE
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/metal/ClothBag.metal"
 )
 set(
     NUMI_SOLVER_ARTICULATED_SOURCE
@@ -53,6 +58,7 @@ set(
     include/numi/temporal_cone_island.h
     include/numi/temporal_cone_probe.h
     include/numi/braided_bag.h
+    include/numi/cloth_bag_gpu.h
 )
 
 add_custom_command(
@@ -77,6 +83,13 @@ add_custom_command(
         -O3
         -fno-fast-math
         -I "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        -c "${NUMI_SOLVER_CLOTH_BAG_SOURCE}"
+        -o "${NUMI_SOLVER_CLOTH_BAG_AIR}"
+    COMMAND "${XCRUN_EXECUTABLE}" -sdk macosx metal
+        -std=metal4.0
+        -O3
+        -fno-fast-math
+        -I "${CMAKE_CURRENT_SOURCE_DIR}/include"
         -c "${NUMI_SOLVER_ARTICULATED_SOURCE}"
         -o "${NUMI_SOLVER_ARTICULATED_AIR}"
     COMMAND "${XCRUN_EXECUTABLE}" -sdk macosx metal
@@ -92,12 +105,14 @@ add_custom_command(
     COMMAND "${XCRUN_EXECUTABLE}" -sdk macosx metallib
         "${NUMI_SOLVER_AIR}"
         "${NUMI_SOLVER_BRAIDED_BAG_AIR}"
+        "${NUMI_SOLVER_CLOTH_BAG_AIR}"
         "${NUMI_SOLVER_ARTICULATED_AIR}"
         "${NUMI_SOLVER_INVERSE_ABA_AIR}"
         -o "${NUMI_SOLVER_METALLIB}"
     DEPENDS
         "${NUMI_SOLVER_SOURCE}"
         "${NUMI_SOLVER_BRAIDED_BAG_SOURCE}"
+        "${NUMI_SOLVER_CLOTH_BAG_SOURCE}"
         "${NUMI_SOLVER_ARTICULATED_SOURCE}"
         "${NUMI_SOLVER_INVERSE_ABA_SOURCE}"
         ${NUMI_SOLVER_HEADERS}
@@ -217,6 +232,26 @@ target_compile_features(numi-solver-cloth-bag PRIVATE cxx_std_23)
 target_compile_options(
     numi-solver-cloth-bag
     PRIVATE -Wall -Wextra -Wpedantic
+)
+
+add_executable(numi-solver-cloth-metal tools/cloth_bag_metal.mm)
+add_dependencies(numi-solver-cloth-metal numi_temporal_cone)
+target_link_libraries(
+    numi-solver-cloth-metal
+    PRIVATE
+        numi_temporal_cone_abi
+        "${FOUNDATION_FRAMEWORK}"
+        "${METAL_FRAMEWORK}"
+)
+target_compile_features(numi-solver-cloth-metal PRIVATE cxx_std_23)
+target_compile_options(
+    numi-solver-cloth-metal
+    PRIVATE -fobjc-arc -Wall -Wextra -Wpedantic
+)
+target_compile_definitions(
+    numi-solver-cloth-metal
+    PRIVATE
+        NUMI_TEMPORAL_CONE_METALLIB="${NUMI_SOLVER_METALLIB}"
 )
 
 add_executable(numi-solver-articulated tools/temporal_cone_articulated.mm)
@@ -433,6 +468,19 @@ if(BUILD_TESTING)
             --steps 30
             --substeps 24
             --iterations 32
+    )
+    add_test(
+        NAME cloth_bag.metal_axial_grip
+        COMMAND $<TARGET_FILE:numi-solver-cloth-metal>
+            --replays 2
+            --iterations 32
+            --strain-sweeps 3
+    )
+    set_tests_properties(
+        cloth_bag.metal_axial_grip
+        PROPERTIES
+            LABELS "metal;physics;cloth;reference;strain;pickup"
+            TIMEOUT 60
     )
     add_test(
         NAME cloth_bag.rolling_friction

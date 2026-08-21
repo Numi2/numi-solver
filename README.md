@@ -157,7 +157,7 @@ slower without compiler optimization; timing from an unoptimized build is not
 qualification evidence.
 
 The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
-`-fno-fast-math`, plus ten native harnesses:
+`-fno-fast-math`, plus eleven native harnesses:
 
 - `build/numi-solver-math` for isolated local cone blocks;
 - `build/numi-solver-islands` for dense-versus-streamed coupled
@@ -179,6 +179,11 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
   Its 2,880 triangles are export/raster and area-certificate geometry, never
   collision or mechanical constraints. This is a CPU reference, not
   Metal-performance evidence.
+- `build/numi-solver-cloth-metal` for the versioned device-owned gravity,
+  graph-colored axial XPBD, unilateral extension limit, ten-knot seam grip,
+  and velocity-publication subset on the full 1,465-particle/2,904-segment
+  topology. It gates FP64 equation error and exact replay; it is not yet the
+  complete contact-bearing bag trajectory.
 - `build/numi-solver-articulated` for canonical articulated mass/Jacobian
   factorization, response-column solves, cone contact, and deterministic
   generalized-velocity publication on one command buffer.
@@ -199,6 +204,7 @@ Run the default FP64 comparisons and deterministic replays:
 ./build/numi-solver-rigid
 ./build/numi-solver-braided-bag
 ./build/numi-solver-cloth-bag
+./build/numi-solver-cloth-metal
 ./build/numi-solver-articulated
 ./build/numi-solver-articulated-capacity
 ./build/numi-solver-articulated-conditioning
@@ -251,6 +257,13 @@ a plane, `spin` begins airborne and drives a compliant ten-knot cuff patch
 around a smooth orbit, and `pickup` lifts that same grip patch from the grounded state and
 pours fruit onto the plane. Its FP64 mechanics and evidence boundary are
 separate from the Metal harnesses.
+
+The Metal cloth subset accepts `--replays N`, `--iterations N`, and
+`--strain-sweeps N`. It reconstructs the full cloth particle/distance/grip
+topology, validates conflict-free graph colors, compares every published value
+against an independent FP64 oracle, exercises active extension limiting and
+compression invariance, and requires byte-identical replay. See
+[docs/METAL_CLOTH.md](docs/METAL_CLOTH.md) for its exact boundary.
 
 The remaining physical-realism limits and their required evidence are tracked
 explicitly in [docs/CLOTH_REALISM_AUDIT.md](docs/CLOTH_REALISM_AUDIT.md).
@@ -325,7 +338,8 @@ SIMD32 method, [docs/OPERATOR_ASSEMBLY.md](docs/OPERATOR_ASSEMBLY.md) for the
 response-column producer, [docs/BRAIDED_BAG.md](docs/BRAIDED_BAG.md) for the
 executable deformable containment benchmark,
 [docs/CLOTH_BAG.md](docs/CLOTH_BAG.md) for the dense cloth mechanics reference,
-and
+[docs/METAL_CLOTH.md](docs/METAL_CLOTH.md) for the qualified Metal axial/grip
+subset and its remaining transaction boundary, and
 [docs/QUALIFICATION.md](docs/QUALIFICATION.md) for measured Apple GPU evidence.
 See
 [docs/RIGID_MECHANICS.md](docs/RIGID_MECHANICS.md) for the velocity-level rigid

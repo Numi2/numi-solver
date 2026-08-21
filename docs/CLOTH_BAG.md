@@ -16,11 +16,13 @@ The 2,880 triangles in an exported OBJ exist only for rasterization and a
 minimum-area topology certificate. They are not stretch, bend, fruit-contact,
 or self-contact primitives.
 
-This is a CPU reference. It does **not** prove a Metal cloth implementation,
-Temporal Cone cloth contact, hardware performance, or calibration to a
-particular physical bag. It does lock an executable topology, equations,
-collision geometry, three load cases, deterministic replay, and exported
-states for later implementations to match.
+This is the complete CPU reference. It does **not** prove complete Metal cloth
+contact, hardware performance, or calibration to a particular physical bag.
+The initial Metal path independently matches gravity, axial XPBD, unilateral
+strain limiting, and the ten-knot seam grip on the full topology; see
+[METAL_CLOTH.md](METAL_CLOTH.md). This reference locks the remaining topology,
+equations, collision geometry, three load cases, deterministic replay, and
+exported states for the device implementation to match.
 
 ## Topology and mass
 
@@ -291,4 +293,4 @@ target. `--dump-frames PREFIX` captures five evenly spaced states;
 renderer draws the axial yarn graph as cotton-like cylinders and the ten seam
 connectors, but never modifies state. A PNG or GIF therefore visualizes the
 qualified CPU trajectory; it is not independent proof of material calibration
-or of a future Metal implementation.
+or of complete Metal trajectory parity.

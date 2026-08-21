@@ -300,7 +300,7 @@ Metal dispatch-boundary counter sampling is unsupported on this device/toolchain
 so no stage-level occupancy, bandwidth, or counter percentage is claimed.
 
 The qualified combined metallib SHA-256 is
-`58aa8d970a863c3cdbbe10f68937c732e56af851fee4e7755069aefc35db66fe`.
+`6339b10b571fdccd034d25bec125ce4ba0ae6f001a75b0325ad2d77861877c71`.
 
 Use `--dump-obj PATH` to export the final braid lines and ball-center comments
 for inspection. The OBJ is a geometry aid; the numerical and containment

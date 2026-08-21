@@ -81,9 +81,14 @@ to a real produce bag.
   friction, drop, seam-pickup, swing, and spill trials. Parameters must be fit
   on calibration trials and then judged on held-out trajectories using measured
   geometry, force, timing, and release outcomes.
-- The current evidence is an FP64 CPU reference. A production Metal cloth path
-  still needs owning kernels, parity against these transactions, deterministic
-  replay, profiler evidence, and matched physical outcomes.
+- The complete trajectory evidence remains an FP64 CPU reference. The initial
+  Metal cloth ABI now owns full-topology gravity integration, graph-colored
+  axial XPBD, the unilateral strain ceiling, ten-knot seam grip, and velocity
+  publication. That subset passes independent FP64 equation comparison and
+  exact replay; see [METAL_CLOTH.md](METAL_CLOTH.md). Metal knot/bend solves,
+  all contact and friction transactions, aerodynamics, fruit rotation, release
+  classification, complete-trajectory parity, profiler evidence, and matched
+  physical outcomes remain open.
 
 Completion requires the specimen measurements and held-out replay above.
 Visual plausibility and the current executable certificates are necessary but
