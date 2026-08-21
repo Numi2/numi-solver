@@ -1034,6 +1034,7 @@ InitialState makeYarnCCDProbeState() {
     distance.particlesAndColor = u4(0u, 1u, 0u, 0u);
     distance.material = f4(0.2f, 0.0f, 0.0f, kStrainLimit);
     result.distances = {distance};
+    result.distanceBatches = {{u4(0u, 1u, 0u, 0u)}};
     NumiClothBagGPUFruit fruit = makeProbeFruit(
         {-0.1, 0.0, 1.0}, 1.0f, 0.02f
     );
@@ -1195,6 +1196,12 @@ struct OracleYarnContact {
     bool currentOverlap{};
     bool sweptImpact{};
     bool degenerateCurrent{};
+    DVec3 fruitNormalImpulse{};
+    double normalImpulse{};
+    std::array<double, 2> segmentImpulse{};
+    std::uint32_t responseCount{};
+    double firstSweptTime{};
+    double sweptAdvance{};
 };
 
 struct OracleResult {
@@ -1234,7 +1241,8 @@ OraclePointSegmentSample samplePointSegment(
 
 std::vector<OracleYarnContact> buildOracleYarnContacts(
     const InitialState& initial,
-    const OracleResult& state
+    const OracleResult& state,
+    const std::vector<OracleYarnContact>* accumulated = nullptr
 ) {
     std::vector<OracleYarnContact> result;
     result.reserve(initial.yarnContacts.size());
@@ -1336,7 +1344,7 @@ std::vector<OracleYarnContact> buildOracleYarnContacts(
                 }
             }
         }
-        result.push_back({
+        OracleYarnContact contact{
             fruitIndex,
             segmentIndex,
             segment.first,
@@ -1352,9 +1360,212 @@ std::vector<OracleYarnContact> buildOracleYarnContacts(
             current.distance < target,
             sweptImpact,
             degenerateCurrent,
-        });
+        };
+        if (accumulated != nullptr && result.size() < accumulated->size()) {
+            const OracleYarnContact& previous = (*accumulated)[result.size()];
+            contact.fruitNormalImpulse = previous.fruitNormalImpulse;
+            contact.normalImpulse = previous.normalImpulse;
+            contact.segmentImpulse = previous.segmentImpulse;
+            contact.responseCount = previous.responseCount;
+            contact.firstSweptTime = previous.firstSweptTime;
+            contact.sweptAdvance = previous.sweptAdvance;
+        }
+        result.push_back(contact);
     }
     return result;
+}
+
+double applyOracleYarnCorrection(
+    const InitialState& initial,
+    OracleResult& state,
+    const std::uint32_t firstIndex,
+    const std::uint32_t secondIndex,
+    OracleFruit& fruit,
+    const double firstWeight,
+    const double secondWeight,
+    const DVec3 normal,
+    const double correctionDistance
+) {
+    OracleParticle& first = state.particles[firstIndex];
+    OracleParticle& second = state.particles[secondIndex];
+    const bool groundEnabled = initial.config.constraintCounts.z != 0u;
+    const double groundHeight = initial.config.clothMaterial.x;
+    bool firstGroundActive = groundEnabled && normal.z < 0.0 &&
+        firstWeight > 0.0 && first.position.z <= groundHeight + 1.0e-9;
+    bool secondGroundActive = groundEnabled && normal.z < 0.0 &&
+        secondWeight > 0.0 && second.position.z <= groundHeight + 1.0e-9;
+    if (firstGroundActive) {
+        first.position.z = groundHeight;
+    }
+    if (secondGroundActive) {
+        second.position.z = groundHeight;
+    }
+    double remaining = correctionDistance;
+    double accumulatedLambda = 0.0;
+    for (std::uint32_t activeSetIteration = 0u;
+         activeSetIteration < 3u && remaining > 1.0e-14;
+         ++activeSetIteration) {
+        DVec3 firstResponse = normal * first.inverseMass;
+        DVec3 secondResponse = normal * second.inverseMass;
+        if (firstGroundActive) {
+            firstResponse.z = 0.0;
+        }
+        if (secondGroundActive) {
+            secondResponse.z = 0.0;
+        }
+        const double denominator = fruit.inverseMass +
+            dot(normal, firstResponse) * firstWeight * firstWeight +
+            dot(normal, secondResponse) * secondWeight * secondWeight;
+        if (!(denominator > 0.0)) {
+            break;
+        }
+        const double unconstrainedLambda = remaining / denominator;
+        double stepLambda = unconstrainedLambda;
+        if (groundEnabled && normal.z < 0.0) {
+            const double firstVertical = firstResponse.z * firstWeight;
+            if (!firstGroundActive && firstVertical < 0.0) {
+                stepLambda = std::min(
+                    stepLambda,
+                    std::max(0.0, first.position.z - groundHeight) /
+                        -firstVertical
+                );
+            }
+            const double secondVertical = secondResponse.z * secondWeight;
+            if (!secondGroundActive && secondVertical < 0.0) {
+                stepLambda = std::min(
+                    stepLambda,
+                    std::max(0.0, second.position.z - groundHeight) /
+                        -secondVertical
+                );
+            }
+        }
+        fruit.position -= normal * (fruit.inverseMass * stepLambda);
+        first.position += firstResponse * (firstWeight * stepLambda);
+        second.position += secondResponse * (secondWeight * stepLambda);
+        accumulatedLambda += stepLambda;
+        remaining = std::max(
+            0.0,
+            remaining - denominator * stepLambda
+        );
+        if (stepLambda >= unconstrainedLambda - 1.0e-14) {
+            break;
+        }
+        bool activated = false;
+        if (!firstGroundActive && firstWeight > 0.0 &&
+            first.position.z <= groundHeight + 1.0e-9) {
+            first.position.z = groundHeight;
+            firstGroundActive = true;
+            activated = true;
+        }
+        if (!secondGroundActive && secondWeight > 0.0 &&
+            second.position.z <= groundHeight + 1.0e-9) {
+            second.position.z = groundHeight;
+            secondGroundActive = true;
+            activated = true;
+        }
+        if (!activated) {
+            break;
+        }
+    }
+    return accumulatedLambda;
+}
+
+void solveOracleYarnBatches(
+    const InitialState& initial,
+    OracleResult& state,
+    const bool swept
+) {
+    if (state.yarnContacts.empty() || state.fruits.empty()) {
+        return;
+    }
+    const double timestep = initial.config.gravityAndTimestep.w;
+    const double clothRadius = initial.config.clothMaterial.x;
+    for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
+        for (std::uint32_t phase = 0u; phase < batch.control.y; ++phase) {
+            for (std::uint32_t fruitIndex = 0u;
+                 fruitIndex < state.fruits.size();
+                 ++fruitIndex) {
+                const std::uint32_t localSegment =
+                    (phase + fruitIndex) % batch.control.y;
+                const std::uint32_t segmentIndex =
+                    batch.control.x + localSegment;
+                const OracleDistance& segment =
+                    state.distances[segmentIndex];
+                OracleFruit& fruit = state.fruits[fruitIndex];
+                OracleYarnContact& contact = state.yarnContacts[
+                    fruitIndex * state.distances.size() + segmentIndex
+                ];
+                DVec3 normal{};
+                double firstWeight = 0.0;
+                double secondWeight = 0.0;
+                double correction = 0.0;
+                if (swept) {
+                    if (contact.sweptImpact) {
+                        normal = contact.sweptNormal;
+                        secondWeight = contact.sweptWeight;
+                        firstWeight = 1.0 - secondWeight;
+                        correction = contact.removedAdvance;
+                    }
+                } else {
+                    const OraclePointSegmentSample current =
+                        samplePointSegment(
+                            fruit.position,
+                            state.particles[segment.first].position,
+                            state.particles[segment.second].position
+                        );
+                    const double target = fruit.radius + clothRadius;
+                    if (current.distance < target) {
+                        if (current.distance < 1.0e-12) {
+                            const DVec3 segmentDirection = normalized(
+                                state.particles[segment.second].position -
+                                state.particles[segment.first].position
+                            );
+                            normal = normalized(cross(
+                                segmentDirection,
+                                std::abs(segmentDirection.z) < 0.9
+                                    ? DVec3{0.0, 0.0, 1.0}
+                                    : DVec3{1.0, 0.0, 0.0}
+                            ));
+                        } else {
+                            normal = (
+                                current.closest - fruit.position
+                            ) / current.distance;
+                        }
+                        secondWeight = current.weight;
+                        firstWeight = 1.0 - secondWeight;
+                        correction = target - current.distance;
+                    }
+                }
+                if (!(correction > 0.0)) {
+                    continue;
+                }
+                const double lambda = applyOracleYarnCorrection(
+                    initial,
+                    state,
+                    segment.first,
+                    segment.second,
+                    fruit,
+                    firstWeight,
+                    secondWeight,
+                    normal,
+                    correction
+                );
+                if (!(lambda > 0.0)) {
+                    continue;
+                }
+                const double impulse = lambda / timestep;
+                contact.fruitNormalImpulse -= normal * impulse;
+                contact.normalImpulse += impulse;
+                contact.segmentImpulse[0] += firstWeight * impulse;
+                contact.segmentImpulse[1] += secondWeight * impulse;
+                if (swept) {
+                    contact.firstSweptTime = contact.impactTime;
+                    contact.sweptAdvance += correction;
+                }
+                ++contact.responseCount;
+            }
+        }
+    }
 }
 
 OracleResult runOracle(
@@ -1455,6 +1666,8 @@ OracleResult runOracle(
         fruit.groundNormalImpulse = 0.0;
         fruit.position += fruit.velocity * timestep;
     }
+    result.yarnContacts = buildOracleYarnContacts(initial, result);
+    solveOracleYarnBatches(initial, result, true);
     for (std::uint32_t iteration = 0u; iteration < iterations; ++iteration) {
         for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
             for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
@@ -1712,6 +1925,7 @@ OracleResult runOracle(
                 pair.normalImpulse += impulseMagnitude;
             }
         }
+        solveOracleYarnBatches(initial, result, false);
         if (initial.config.constraintCounts.z != 0u) {
             const double clothRadius = initial.config.clothMaterial.x;
             for (OracleParticle& particle : result.particles) {
@@ -1766,7 +1980,9 @@ OracleResult runOracle(
     for (OracleFruit& fruit : result.fruits) {
         fruit.velocity = (fruit.position - fruit.previous) / timestep;
     }
-    result.yarnContacts = buildOracleYarnContacts(initial, result);
+    result.yarnContacts = buildOracleYarnContacts(
+        initial, result, &result.yarnContacts
+    );
     return result;
 }
 
@@ -1839,6 +2055,7 @@ struct Pipelines {
     id<MTLComputePipelineState> fruitPair;
     id<MTLComputePipelineState> ground;
     id<MTLComputePipelineState> strain;
+    id<MTLComputePipelineState> yarnSolve;
     id<MTLComputePipelineState> yarnContacts;
     id<MTLComputePipelineState> finalize;
     id<MTLComputePipelineState> finalizeFruit;
@@ -1904,6 +2121,7 @@ GPUResult runGPU(
     [encoder setBuffer:fruitBuffer offset:0 atIndex:6];
     [encoder setBuffer:fruitPairBuffer offset:0 atIndex:7];
     [encoder setBuffer:failureBuffer offset:0 atIndex:8];
+    [encoder setBuffer:yarnContactBuffer offset:0 atIndex:9];
     dispatch(
         encoder,
         pipelines.begin,
@@ -1917,6 +2135,37 @@ GPUResult runGPU(
             initial.fruitPairs.size(),
         })
     );
+
+    const auto buildYarnContacts = [&] {
+        [encoder setComputePipelineState:pipelines.yarnContacts];
+        [encoder setBuffer:configBuffer offset:0 atIndex:0];
+        [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+        [encoder setBuffer:distanceBuffer offset:0 atIndex:2];
+        [encoder setBuffer:fruitBuffer offset:0 atIndex:3];
+        [encoder setBuffer:yarnContactBuffer offset:0 atIndex:4];
+        [encoder setBuffer:failureBuffer offset:0 atIndex:5];
+        dispatch(
+            encoder,
+            pipelines.yarnContacts,
+            initial.yarnContacts.size()
+        );
+    };
+    const auto solveYarnBatches = [&](const std::uint32_t mode) {
+        for (NumiClothBagGPUBatch batch : initial.distanceBatches) {
+            batch.control.w = mode;
+            [encoder setComputePipelineState:pipelines.yarnSolve];
+            [encoder setBuffer:configBuffer offset:0 atIndex:0];
+            [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+            [encoder setBuffer:distanceBuffer offset:0 atIndex:2];
+            [encoder setBuffer:fruitBuffer offset:0 atIndex:3];
+            [encoder setBuffer:yarnContactBuffer offset:0 atIndex:4];
+            [encoder setBytes:&batch length:sizeof(batch) atIndex:5];
+            [encoder setBuffer:failureBuffer offset:0 atIndex:6];
+            dispatch(encoder, pipelines.yarnSolve, initial.fruits.size());
+        }
+    };
+    buildYarnContacts();
+    solveYarnBatches(1u);
 
     for (std::uint32_t iteration = 0u; iteration < iterations; ++iteration) {
         for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
@@ -1963,6 +2212,7 @@ GPUResult runGPU(
             [encoder setBuffer:failureBuffer offset:0 atIndex:4];
             dispatch(encoder, pipelines.fruitPair, batch.control.y);
         }
+        solveYarnBatches(0u);
         if (initial.config.constraintCounts.z != 0u) {
             [encoder setComputePipelineState:pipelines.ground];
             [encoder setBuffer:configBuffer offset:0 atIndex:0];
@@ -1987,14 +2237,7 @@ GPUResult runGPU(
             dispatch(encoder, pipelines.strain, batch.control.y);
         }
     }
-    [encoder setComputePipelineState:pipelines.yarnContacts];
-    [encoder setBuffer:configBuffer offset:0 atIndex:0];
-    [encoder setBuffer:particleBuffer offset:0 atIndex:1];
-    [encoder setBuffer:distanceBuffer offset:0 atIndex:2];
-    [encoder setBuffer:fruitBuffer offset:0 atIndex:3];
-    [encoder setBuffer:yarnContactBuffer offset:0 atIndex:4];
-    [encoder setBuffer:failureBuffer offset:0 atIndex:5];
-    dispatch(encoder, pipelines.yarnContacts, initial.yarnContacts.size());
+    buildYarnContacts();
     [encoder setComputePipelineState:pipelines.finalize];
     [encoder setBuffer:configBuffer offset:0 atIndex:0];
     [encoder setBuffer:particleBuffer offset:0 atIndex:1];
@@ -2160,6 +2403,7 @@ int run(const int argc, const char* const* argv) {
         makePipeline(device, library, @"numi_cloth_bag_solve_fruit_pair"),
         makePipeline(device, library, @"numi_cloth_bag_solve_ground"),
         makePipeline(device, library, @"numi_cloth_bag_limit_strain"),
+        makePipeline(device, library, @"numi_cloth_bag_solve_yarn_batch"),
         makePipeline(device, library, @"numi_cloth_bag_build_yarn_contacts"),
         makePipeline(device, library, @"numi_cloth_bag_finalize_substep"),
         makePipeline(device, library, @"numi_cloth_bag_finalize_fruit"),
@@ -2355,8 +2599,13 @@ int run(const int argc, const char* const* argv) {
     bool yarnIdentityExact =
         gpu.yarnContacts.size() == oracle.yarnContacts.size();
     bool yarnControlExact = yarnIdentityExact;
+    bool yarnControlQualified = yarnIdentityExact;
+    bool yarnResponseCountExact = yarnIdentityExact;
     std::uint64_t currentYarnOverlapCount = 0u;
     std::uint64_t sweptYarnImpactCount = 0u;
+    std::uint64_t acceptedYarnResponseCount = 0u;
+    std::uint64_t expectedYarnResponseCount = 0u;
+    std::uint64_t yarnResponseCountMismatches = 0u;
     double maximumYarnSeparationError = 0.0;
     double maximumYarnCurrentNormalError = 0.0;
     double maximumYarnSweptNormalError = 0.0;
@@ -2364,6 +2613,9 @@ int run(const int argc, const char* const* argv) {
     double maximumActiveYarnWeightError = 0.0;
     double maximumYarnImpactTimeError = 0.0;
     double maximumYarnAdvanceError = 0.0;
+    double maximumYarnResponseError = 0.0;
+    double maximumYarnNormalImpulse = 0.0;
+    double maximumYarnPenetration = 0.0;
     for (std::size_t index = 0u;
          index < gpu.yarnContacts.size() && index < oracle.yarnContacts.size();
          ++index) {
@@ -2378,8 +2630,31 @@ int run(const int argc, const char* const* argv) {
             (actual.control.x != 0u) == expected.currentOverlap &&
             (actual.control.y != 0u) == expected.sweptImpact &&
             (actual.control.z != 0u) == expected.degenerateCurrent;
+        const double actualSeparation =
+            actual.currentNormalAndSeparation.w;
+        const bool overlapQualified =
+            (actual.control.x != 0u) == expected.currentOverlap ||
+            (std::abs(actualSeparation) <= 2.0e-6 &&
+             std::abs(expected.currentSeparation) <= 2.0e-6);
+        const bool sweptQualified =
+            (actual.control.y != 0u) == expected.sweptImpact ||
+            (std::abs(actual.sweptNormalAndAdvance.w) <= 2.0e-6 &&
+             std::abs(expected.removedAdvance) <= 2.0e-6);
+        yarnControlQualified = yarnControlQualified && overlapQualified &&
+            sweptQualified &&
+            (actual.control.z != 0u) == expected.degenerateCurrent;
+        yarnResponseCountExact = yarnResponseCountExact &&
+            actual.control.w == expected.responseCount;
+        yarnResponseCountMismatches +=
+            actual.control.w != expected.responseCount;
         currentYarnOverlapCount += actual.control.x != 0u;
         sweptYarnImpactCount += actual.control.y != 0u;
+        acceptedYarnResponseCount += actual.control.w;
+        expectedYarnResponseCount += expected.responseCount;
+        maximumYarnPenetration = std::max(
+            maximumYarnPenetration,
+            std::max(0.0, -actualSeparation)
+        );
         maximumYarnSeparationError = std::max(
             maximumYarnSeparationError,
             std::abs(
@@ -2447,6 +2722,39 @@ int run(const int argc, const char* const* argv) {
                 static_cast<double>(actual.sweptNormalAndAdvance.w) -
                 expected.removedAdvance
             )
+        );
+        const DVec3 fruitImpulseDelta =
+            d3(actual.fruitNormalAndImpulse) -
+            expected.fruitNormalImpulse;
+        maximumYarnResponseError = std::max({
+            maximumYarnResponseError,
+            std::abs(fruitImpulseDelta.x),
+            std::abs(fruitImpulseDelta.y),
+            std::abs(fruitImpulseDelta.z),
+            std::abs(
+                static_cast<double>(actual.fruitNormalAndImpulse.w) -
+                expected.normalImpulse
+            ),
+            std::abs(
+                static_cast<double>(actual.segmentImpulse.x) -
+                expected.segmentImpulse[0]
+            ),
+            std::abs(
+                static_cast<double>(actual.segmentImpulse.y) -
+                expected.segmentImpulse[1]
+            ),
+            std::abs(
+                static_cast<double>(actual.segmentImpulse.z) -
+                expected.firstSweptTime
+            ),
+            std::abs(
+                static_cast<double>(actual.segmentImpulse.w) -
+                expected.sweptAdvance
+            ),
+        });
+        maximumYarnNormalImpulse = std::max(
+            maximumYarnNormalImpulse,
+            static_cast<double>(actual.fruitNormalAndImpulse.w)
         );
     }
     for (std::size_t index = 0u; index < gpu.distances.size(); ++index) {
@@ -2635,15 +2943,53 @@ int run(const int argc, const char* const* argv) {
             yarnCCDExpected.removedAdvance
         ),
     });
-    const bool yarnCCDFlagsExact =
-        yarnCCDContact.control.x == 0u &&
-        yarnCCDContact.control.y == 1u &&
-        yarnCCDContact.control.z == 0u &&
-        yarnCCDExpected.currentOverlap == false &&
-        yarnCCDExpected.sweptImpact == true;
-    const double yarnCCDImpactTime = yarnCCDContact.weightsAndTime.z;
+    const bool yarnCCDFlagsQualified =
+        ((yarnCCDContact.control.x != 0u) ==
+            yarnCCDExpected.currentOverlap ||
+         (std::abs(yarnCCDContact.currentNormalAndSeparation.w) <= 2.0e-6 &&
+          std::abs(yarnCCDExpected.currentSeparation) <= 2.0e-6)) &&
+        (yarnCCDContact.control.y != 0u) ==
+            yarnCCDExpected.sweptImpact &&
+        (yarnCCDContact.control.z != 0u) ==
+            yarnCCDExpected.degenerateCurrent &&
+        yarnCCDContact.control.w == yarnCCDExpected.responseCount;
+    const DVec3 yarnCCDResponseDelta =
+        d3(yarnCCDContact.fruitNormalAndImpulse) -
+        yarnCCDExpected.fruitNormalImpulse;
+    const double yarnCCDResponseError = std::max({
+        std::abs(yarnCCDResponseDelta.x),
+        std::abs(yarnCCDResponseDelta.y),
+        std::abs(yarnCCDResponseDelta.z),
+        std::abs(
+            static_cast<double>(yarnCCDContact.fruitNormalAndImpulse.w) -
+            yarnCCDExpected.normalImpulse
+        ),
+        std::abs(
+            static_cast<double>(yarnCCDContact.segmentImpulse.x) -
+            yarnCCDExpected.segmentImpulse[0]
+        ),
+        std::abs(
+            static_cast<double>(yarnCCDContact.segmentImpulse.y) -
+            yarnCCDExpected.segmentImpulse[1]
+        ),
+        std::abs(
+            static_cast<double>(yarnCCDContact.segmentImpulse.z) -
+            yarnCCDExpected.firstSweptTime
+        ),
+        std::abs(
+            static_cast<double>(yarnCCDContact.segmentImpulse.w) -
+            yarnCCDExpected.sweptAdvance
+        ),
+    });
+    const double yarnCCDImpactTime = yarnCCDContact.segmentImpulse.z;
     const double yarnCCDRemovedAdvance =
-        yarnCCDContact.sweptNormalAndAdvance.w;
+        yarnCCDContact.segmentImpulse.w;
+    const double yarnCCDFinalSeparation =
+        yarnCCDContact.currentNormalAndSeparation.w;
+    const double yarnCCDFinalFruitX =
+        yarnCCDGPU.fruits[0].positionAndInverseMass.x;
+    const double yarnCCDNormalImpulse =
+        yarnCCDContact.fruitNormalAndImpulse.w;
     double averageSeconds = 0.0;
     for (const GPUResult& replay : gpuResults) {
         averageSeconds += replay.seconds;
@@ -2671,13 +3017,16 @@ int run(const int argc, const char* const* argv) {
         maximumFruitVelocityError <= 0.02 &&
         maximumFruitPairContactError <= 2.0e-5 &&
         maximumFruitPairPenetration <= 2.0e-6 &&
-        yarnIdentityExact && yarnControlExact &&
+        yarnIdentityExact && yarnControlQualified &&
         maximumYarnSeparationError <= 2.0e-5 &&
         maximumYarnCurrentNormalError <= 5.0e-4 &&
         maximumYarnSweptNormalError <= 5.0e-4 &&
         maximumActiveYarnWeightError <= 2.0e-4 &&
         maximumYarnImpactTimeError <= 2.0e-4 &&
         maximumYarnAdvanceError <= 2.0e-5 &&
+        maximumYarnResponseError <= 5.0e-2 &&
+        maximumYarnPenetration <= 2.0e-6 &&
+        acceptedYarnResponseCount > 0u && maximumYarnNormalImpulse > 0.0 &&
         strainViolation <= 2.0e-6 &&
         maximumDisplacement > 1.0e-4 && gripForce > 1.0 &&
         strainGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
@@ -2700,9 +3049,12 @@ int run(const int argc, const char* const* argv) {
         groundClothHeight >= 0.004 - 1.0e-8 &&
         groundFruitHeight >= 1.0 - 1.0e-8 &&
         yarnCCDGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
-        yarnCCDFlagsExact && yarnCCDGeometryError <= 5.0e-6 &&
+        yarnCCDFlagsQualified && yarnCCDGeometryError <= 5.0e-6 &&
+        yarnCCDResponseError <= 1.0e-4 &&
         yarnCCDImpactTime > 0.30 && yarnCCDImpactTime < 0.50 &&
-        yarnCCDRemovedAdvance > 0.05;
+        yarnCCDRemovedAdvance > 0.05 &&
+        std::abs(yarnCCDFinalSeparation) <= 2.0e-6 &&
+        yarnCCDFinalFruitX < 0.0 && yarnCCDNormalImpulse > 1.0;
 
     std::cout << std::fixed << std::setprecision(12)
               << "device=" << device.name.UTF8String << '\n'
@@ -2745,6 +3097,7 @@ int run(const int argc, const char* const* argv) {
               << maximumFruitPairPenetration << '\n'
               << "yarn_identity_exact=" << yarnIdentityExact
               << " yarn_control_exact=" << yarnControlExact
+              << " yarn_control_qualified=" << yarnControlQualified
               << " current_yarn_overlaps=" << currentYarnOverlapCount
               << " swept_yarn_impacts=" << sweptYarnImpactCount << '\n'
               << "max_yarn_separation_error="
@@ -2760,6 +3113,16 @@ int run(const int argc, const char* const* argv) {
               << maximumYarnImpactTimeError
               << " max_yarn_advance_error="
               << maximumYarnAdvanceError << '\n'
+              << "yarn_response_count_exact=" << yarnResponseCountExact
+              << " accepted_yarn_responses=" << acceptedYarnResponseCount
+              << " expected_yarn_responses=" << expectedYarnResponseCount
+              << " response_count_mismatches="
+              << yarnResponseCountMismatches
+              << " max_yarn_normal_impulse="
+              << maximumYarnNormalImpulse
+              << " max_yarn_response_error="
+              << maximumYarnResponseError
+              << " max_yarn_penetration=" << maximumYarnPenetration << '\n'
               << "max_strain_violation=" << strainViolation
               << " max_displacement=" << maximumDisplacement
               << " grip_force=" << gripForce << '\n'
@@ -2798,6 +3161,11 @@ int run(const int argc, const char* const* argv) {
               << " current_overlap="
               << (yarnCCDContact.control.x != 0u)
               << " swept_impact=" << (yarnCCDContact.control.y != 0u)
+              << " response_count=" << yarnCCDContact.control.w
+              << " normal_impulse=" << yarnCCDNormalImpulse
+              << " final_separation=" << yarnCCDFinalSeparation
+              << " final_fruit_x=" << yarnCCDFinalFruitX
+              << " response_error=" << yarnCCDResponseError
               << " yarn_ccd_failure_flags=" << yarnCCDGPU.failure << '\n'
               << "average_gpu_seconds=" << averageSeconds
               << " state_hash=0x" << std::hex << hashGPUResult(gpu)

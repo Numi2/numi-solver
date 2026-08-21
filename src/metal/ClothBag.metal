@@ -84,6 +84,118 @@ inline PointSegmentSample sampleSweptPointSegment(
     return samplePointSegment(ballPosition, firstPosition, secondPosition);
 }
 
+inline float applyYarnCorrection(
+    constant NumiClothBagGPUConfig& config,
+    device NumiClothBagGPUParticle* particles,
+    const uint firstIndex,
+    const uint secondIndex,
+    thread NumiClothBagGPUFruit& fruit,
+    const float firstWeight,
+    const float secondWeight,
+    const float3 normal,
+    const float correctionDistance,
+    device atomic_uint* failure
+) {
+    NumiClothBagGPUParticle first = particles[firstIndex];
+    NumiClothBagGPUParticle second = particles[secondIndex];
+    const bool groundEnabled = config.constraintCounts.z != 0u;
+    const float groundHeight = config.clothMaterial.x;
+    bool firstGroundActive = groundEnabled && normal.z < 0.0f &&
+        firstWeight > 0.0f &&
+        first.positionAndInverseMass.z <= groundHeight + 1.0e-9f;
+    bool secondGroundActive = groundEnabled && normal.z < 0.0f &&
+        secondWeight > 0.0f &&
+        second.positionAndInverseMass.z <= groundHeight + 1.0e-9f;
+    if (firstGroundActive) {
+        first.positionAndInverseMass.z = groundHeight;
+    }
+    if (secondGroundActive) {
+        second.positionAndInverseMass.z = groundHeight;
+    }
+
+    float remaining = correctionDistance;
+    float accumulatedLambda = 0.0f;
+    for (uint activeSetIteration = 0u;
+         activeSetIteration < 3u && remaining > 1.0e-14f;
+         ++activeSetIteration) {
+        float3 firstResponse = normal * first.positionAndInverseMass.w;
+        float3 secondResponse = normal * second.positionAndInverseMass.w;
+        if (firstGroundActive) {
+            firstResponse.z = 0.0f;
+        }
+        if (secondGroundActive) {
+            secondResponse.z = 0.0f;
+        }
+        const float denominator = fruit.positionAndInverseMass.w +
+            dot(normal, firstResponse) * firstWeight * firstWeight +
+            dot(normal, secondResponse) * secondWeight * secondWeight;
+        if (!(denominator > 0.0f) || !isfinite(denominator)) {
+            break;
+        }
+        const float unconstrainedLambda = remaining / denominator;
+        float stepLambda = unconstrainedLambda;
+        if (groundEnabled && normal.z < 0.0f) {
+            const float firstVertical = firstResponse.z * firstWeight;
+            if (!firstGroundActive && firstVertical < 0.0f) {
+                stepLambda = min(
+                    stepLambda,
+                    max(
+                        0.0f,
+                        first.positionAndInverseMass.z - groundHeight
+                    ) / -firstVertical
+                );
+            }
+            const float secondVertical = secondResponse.z * secondWeight;
+            if (!secondGroundActive && secondVertical < 0.0f) {
+                stepLambda = min(
+                    stepLambda,
+                    max(
+                        0.0f,
+                        second.positionAndInverseMass.z - groundHeight
+                    ) / -secondVertical
+                );
+            }
+        }
+        fruit.positionAndInverseMass.xyz -= normal *
+            (fruit.positionAndInverseMass.w * stepLambda);
+        first.positionAndInverseMass.xyz += firstResponse *
+            (firstWeight * stepLambda);
+        second.positionAndInverseMass.xyz += secondResponse *
+            (secondWeight * stepLambda);
+        accumulatedLambda += stepLambda;
+        remaining = max(0.0f, remaining - denominator * stepLambda);
+        if (stepLambda >= unconstrainedLambda - 1.0e-14f) {
+            break;
+        }
+        bool activated = false;
+        if (!firstGroundActive && firstWeight > 0.0f &&
+            first.positionAndInverseMass.z <= groundHeight + 1.0e-9f) {
+            first.positionAndInverseMass.z = groundHeight;
+            firstGroundActive = true;
+            activated = true;
+        }
+        if (!secondGroundActive && secondWeight > 0.0f &&
+            second.positionAndInverseMass.z <= groundHeight + 1.0e-9f) {
+            second.positionAndInverseMass.z = groundHeight;
+            secondGroundActive = true;
+            activated = true;
+        }
+        if (!activated) {
+            break;
+        }
+    }
+    if (!all(isfinite(fruit.positionAndInverseMass.xyz)) ||
+        !all(isfinite(first.positionAndInverseMass.xyz)) ||
+        !all(isfinite(second.positionAndInverseMass.xyz)) ||
+        !isfinite(accumulatedLambda)) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return 0.0f;
+    }
+    particles[firstIndex] = first;
+    particles[secondIndex] = second;
+    return accumulatedLambda;
+}
+
 } // namespace
 
 kernel void numi_cloth_bag_begin_substep(
@@ -96,6 +208,7 @@ kernel void numi_cloth_bag_begin_substep(
     device NumiClothBagGPUFruit* fruits [[buffer(6)]],
     device NumiClothBagGPUFruitPair* fruitPairs [[buffer(7)]],
     device atomic_uint* failure [[buffer(8)]],
+    device NumiClothBagGPUYarnContact* yarnContacts [[buffer(9)]],
     const uint index [[thread_position_in_grid]]
 ) {
     if (!validConfig(config, failure)) {
@@ -169,6 +282,13 @@ kernel void numi_cloth_bag_begin_substep(
     }
     if (index < config.contactCounts.x) {
         fruitPairs[index].contact = float4(0.0f);
+    }
+    if (index < config.contactCounts.y) {
+        NumiClothBagGPUYarnContact contact = yarnContacts[index];
+        contact.control.w = 0u;
+        contact.fruitNormalAndImpulse = float4(0.0f);
+        contact.segmentImpulse = float4(0.0f);
+        yarnContacts[index] = contact;
     }
 }
 
@@ -693,6 +813,119 @@ kernel void numi_cloth_bag_limit_strain(
     particles[secondIndex] = second;
 }
 
+kernel void numi_cloth_bag_solve_yarn_batch(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device const NumiClothBagGPUDistance* distances [[buffer(2)]],
+    device NumiClothBagGPUFruit* fruits [[buffer(3)]],
+    device NumiClothBagGPUYarnContact* contacts [[buffer(4)]],
+    constant NumiClothBagGPUBatch& batch [[buffer(5)]],
+    device atomic_uint* failure [[buffer(6)]],
+    const uint fruitIndex [[thread_position_in_threadgroup]]
+) {
+    if (!validConfig(config, failure) ||
+        config.contactCounts.y !=
+            config.control.z * config.constraintCounts.w ||
+        batch.control.x + batch.control.y > config.control.z ||
+        batch.control.y == 0u || batch.control.w > 1u ||
+        fruitIndex >= config.constraintCounts.w) {
+        if (fruitIndex < config.constraintCounts.w) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        }
+        return;
+    }
+    NumiClothBagGPUFruit fruit = fruits[fruitIndex];
+    for (uint phase = 0u; phase < batch.control.y; ++phase) {
+        const uint localSegment =
+            (phase + fruitIndex) % batch.control.y;
+        const uint segmentIndex = batch.control.x + localSegment;
+        const NumiClothBagGPUDistance segment = distances[segmentIndex];
+        const uint firstIndex = segment.particlesAndColor.x;
+        const uint secondIndex = segment.particlesAndColor.y;
+        const uint contactIndex =
+            fruitIndex * config.control.z + segmentIndex;
+        if (segment.particlesAndColor.z != batch.control.z ||
+            firstIndex >= config.control.y ||
+            secondIndex >= config.control.y || firstIndex == secondIndex ||
+            contactIndex >= config.contactCounts.y) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+            threadgroup_barrier(mem_flags::mem_device);
+            continue;
+        }
+        NumiClothBagGPUYarnContact contact = contacts[contactIndex];
+        float3 normal = float3(0.0f);
+        float firstWeight = 0.0f;
+        float secondWeight = 0.0f;
+        float correction = 0.0f;
+        if (batch.control.w == 1u) {
+            if (contact.control.y != 0u) {
+                normal = contact.sweptNormalAndAdvance.xyz;
+                secondWeight = contact.weightsAndTime.y;
+                firstWeight = 1.0f - secondWeight;
+                correction = contact.sweptNormalAndAdvance.w;
+            }
+        } else {
+            const NumiClothBagGPUParticle first = particles[firstIndex];
+            const NumiClothBagGPUParticle second = particles[secondIndex];
+            const PointSegmentSample current = samplePointSegment(
+                fruit.positionAndInverseMass.xyz,
+                first.positionAndInverseMass.xyz,
+                second.positionAndInverseMass.xyz
+            );
+            const float target =
+                fruit.previousAndRadius.w + config.clothMaterial.x;
+            if (current.distance < target) {
+                if (current.distance < 1.0e-12f) {
+                    const float3 segmentDirection = safeNormalized(
+                        second.positionAndInverseMass.xyz -
+                        first.positionAndInverseMass.xyz
+                    );
+                    const float3 axis = abs(segmentDirection.z) < 0.9f
+                        ? float3(0.0f, 0.0f, 1.0f)
+                        : float3(1.0f, 0.0f, 0.0f);
+                    normal = safeNormalized(cross(segmentDirection, axis));
+                } else {
+                    normal = (
+                        current.closest - fruit.positionAndInverseMass.xyz
+                    ) / current.distance;
+                }
+                secondWeight = current.weight;
+                firstWeight = 1.0f - secondWeight;
+                correction = target - current.distance;
+            }
+        }
+        if (correction > 0.0f) {
+            const float lambda = applyYarnCorrection(
+                config,
+                particles,
+                firstIndex,
+                secondIndex,
+                fruit,
+                firstWeight,
+                secondWeight,
+                normal,
+                correction,
+                failure
+            );
+            if (lambda > 0.0f) {
+                const float impulse = lambda / config.gravityAndTimestep.w;
+                contact.fruitNormalAndImpulse.xyz -= normal * impulse;
+                contact.fruitNormalAndImpulse.w += impulse;
+                contact.segmentImpulse.x += firstWeight * impulse;
+                contact.segmentImpulse.y += secondWeight * impulse;
+                if (batch.control.w == 1u) {
+                    contact.segmentImpulse.z = contact.weightsAndTime.z;
+                    contact.segmentImpulse.w += correction;
+                }
+                contact.control.w += 1u;
+            }
+        }
+        contacts[contactIndex] = contact;
+        threadgroup_barrier(mem_flags::mem_device);
+    }
+    fruits[fruitIndex] = fruit;
+}
+
 kernel void numi_cloth_bag_build_yarn_contacts(
     constant NumiClothBagGPUConfig& config [[buffer(0)]],
     device const NumiClothBagGPUParticle* particles [[buffer(1)]],
@@ -823,7 +1056,7 @@ kernel void numi_cloth_bag_build_yarn_contacts(
         }
     }
 
-    NumiClothBagGPUYarnContact contact{};
+    NumiClothBagGPUYarnContact contact = contacts[index];
     contact.identity = uint4(
         fruitIndex, segmentIndex, firstIndex, secondIndex
     );
@@ -836,11 +1069,10 @@ kernel void numi_cloth_bag_build_yarn_contacts(
     contact.weightsAndTime = float4(
         current.weight, sweptWeight, impactTime, target
     );
-    contact.control = uint4(
+    contact.control.xyz = uint3(
         current.distance < target,
         sweptImpact,
-        degenerateCurrent,
-        0u
+        degenerateCurrent
     );
     if (!all(isfinite(contact.currentNormalAndSeparation)) ||
         !all(isfinite(contact.sweptNormalAndAdvance)) ||

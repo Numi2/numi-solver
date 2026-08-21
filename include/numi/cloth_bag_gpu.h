@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 4u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 5u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
 
 enum NumiClothBagGPUFailure : mr_u32 {
@@ -108,8 +108,13 @@ typedef struct MR_ALIGN16 NumiClothBagGPUYarnContact {
     // z impact time in [0,1], w combined sphere/yarn radius.
     mr_float4 weightsAndTime;
     // x current overlap, y swept impact, z degenerate current normal,
-    // w reserved.
+    // w accepted normal-response count.
     mr_uint4 control;
+    // xyz accumulated normal impulse on the fruit, w total normal impulse.
+    mr_float4 fruitNormalAndImpulse;
+    // x/y accumulated normal impulse weights on the first/second yarn knot,
+    // z first accepted swept-impact time, w accumulated swept advance.
+    mr_float4 segmentImpulse;
 } NumiClothBagGPUYarnContact;
 
 typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
@@ -127,6 +132,6 @@ static_assert(sizeof(NumiClothBagGPUKnot) == 48);
 static_assert(sizeof(NumiClothBagGPUBend) == 32);
 static_assert(sizeof(NumiClothBagGPUFruit) == 96);
 static_assert(sizeof(NumiClothBagGPUFruitPair) == 32);
-static_assert(sizeof(NumiClothBagGPUYarnContact) == 80);
+static_assert(sizeof(NumiClothBagGPUYarnContact) == 112);
 static_assert(sizeof(NumiClothBagGPUBatch) == 16);
 #endif

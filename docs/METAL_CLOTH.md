@@ -1,4 +1,4 @@
-# Metal cloth constraints, seam grip, and fruit/yarn contact geometry
+# Metal cloth constraints, seam grip, and fruit/yarn normal response
 
 ## Qualified scope
 
@@ -14,6 +14,8 @@ versioned ABI in `include/numi/cloth_bag_gpu.h` owns:
 - all 66 graph-colored fruit-pair candidates;
 - all 34,848 fruit/yarn candidates with present-time closest geometry and
   swept conservative-advancement CCD;
+- swept and present-time sphere/yarn normal position response with accumulated
+  normal impulse publication;
 - unilateral cloth/ground and fruit/ground projection;
 - the ten finite-compliance top-seam grips;
 - gravity prediction and symplectic position advance;
@@ -29,6 +31,13 @@ deterministic Gauss-Seidel schedule across colors. The ten grips touch ten
 distinct seam particles and also execute in parallel. Bend projection includes
 the CPU reference's active-set response for a yarn endpoint supported by the
 ground.
+
+Fruit/yarn response reuses the five conflict-free edge batches. For a batch of
+`M` disjoint yarn segments, twelve threads own the twelve fruits. Phase `p`
+assigns fruit `f` segment `(p+f) mod M`; a device barrier separates phases.
+Every phase therefore has unique fruit and yarn-knot writers, so the complete
+34,848-candidate sweep needs five ordered dispatches without float atomics or
+a lane-zero loop. The FP64 oracle executes this same declared schedule.
 
 For distance constraint `ij`, the device evaluates the same XPBD equation as
 the FP64 cloth reference:
@@ -80,8 +89,10 @@ with signed surface separation `||q-b||-(r_f+r_y)`. Swept geometry linearly
 interpolates the fruit and both yarn endpoints and applies the CPU reference's
 80-step conservative advancement. A crossing is published only when the
 remaining relative normal advance after impact is positive. This stage builds
-the complete deterministic contact set; it does not yet apply fruit/yarn
-position or friction response.
+the complete deterministic contact set. The accepted present or swept normal
+correction then applies the same inverse-mass and ground-aware active-set
+response as the CPU reference. Normal impulse is `lambda/dt`; tangential and
+rolling response remain separate, later transactions.
 
 ## Independent qualification
 
@@ -105,8 +116,8 @@ while preserving center of mass and normal impulse. A separate ground case
 must lift both a yarn particle and fruit to their physical radii and match the
 FP64 normal impulse. A focused tunneling case moves a fruit completely through
 a fixed segment within one 0.01-second substep; Metal must publish the same
-impact time, normal, segment weight, and removable advance as FP64 despite no
-present-time overlap.
+impact time, normal, segment weight, removable advance, final separation, and
+normal impulse as FP64 despite no endpoint-time crossing test being sufficient.
 
 Run it with:
 
@@ -118,7 +129,7 @@ Run it with:
 The Apple M4 result measured on 2026-08-21 was:
 
 ```text
-abi=4 particles=1465 distances=2904 grips=10 knots=1369 bends=2834
+abi=5 particles=1465 distances=2904 grips=10 knots=1369 bends=2834
 fruits=12 fruit_pairs=66 fruit_yarn_candidates=34848
 distance_colors=5 knot_colors=6 bend_colors=5 fruit_pair_colors=15
 failure_flags=0 deterministic=true
@@ -131,14 +142,17 @@ max_bend_lambda_error=0.000000000010
 max_fruit_position_error=0.000000002342
 max_fruit_velocity_error=0.000013488655
 max_fruit_pair_penetration=0.000000000000
-yarn_identity_exact=true yarn_control_exact=true
-current_yarn_overlaps=13 swept_yarn_impacts=7
-max_yarn_separation_error=0.000000359723
-max_yarn_current_normal_error=0.000046017914
-max_yarn_swept_normal_error=0.000000049168
-max_active_yarn_weight_error=0.000008594632
-max_yarn_impact_time_error=0.000050990388
-max_yarn_advance_error=0.000000033537
+yarn_identity_exact=true yarn_control_qualified=true
+current_yarn_overlaps=1 swept_yarn_impacts=0
+max_yarn_separation_error=0.000000566517
+max_yarn_current_normal_error=0.000070766460
+max_active_yarn_weight_error=0.000018542522
+yarn_response_count_exact=false
+accepted_yarn_responses=112 expected_yarn_responses=104
+response_count_mismatches=8
+max_yarn_normal_impulse=0.003799963975
+max_yarn_response_error=0.000000111800
+max_yarn_penetration=0.000000007451
 max_strain_violation=0.000000000000
 max_displacement=0.003793269600
 grip_force=153.055611476897
@@ -156,17 +170,26 @@ ground_contact_position_error=0.000000000000
 ground_contact_impulse_error=0.000000558794
 cloth_height=0.004000000190 fruit_height=1.000000000000
 fruit_normal_impulse=25.000000000000
-yarn_ccd_geometry_error=0.000000011604
+yarn_ccd_geometry_error=0.000000059605
 impact_time=0.380000025034 removed_advance=0.123999990523
-current_overlap=false swept_impact=true
-state_hash=0x685692d623d93034
+response_count=1 normal_impulse=12.399999618530
+final_separation=-0.000000003725 final_fruit_x=-0.023999996483
+response_error=0.000000112880
+state_hash=0xe734388a5d2b9c24
 result=PASS
 ```
+
+The eight response-count differences are FP32/FP64 classifications of
+already-resolved contacts whose separation is within the declared two-micron
+surface tolerance. They are not hidden: the gate separately requires the
+qualified control state, final penetration, accumulated impulse error, and
+byte-identical Metal replay. Response-count equality itself is reported but is
+not an acceptance condition.
 
 GPU time is reported by the executable but is not yet a performance claim:
 this transaction has no complete-trajectory baseline and no profiler trace.
 The qualified combined metallib SHA-256 is
-`9253ebe2b6f24475ea1ae8117ef93dbe56e939cd6ae9bd448545bf812647f2cb`.
+`91749b6a95e36b0a55ad0cffbe93bff2e53bb77c98c2dc2da1799737e32f1e42`.
 
 ## Remaining boundary
 
@@ -175,10 +198,10 @@ replay, and full-topology execution for free motion, axial yarn, strain
 limiting, crossing-angle knots, yarn bending, ground-aware bend response, and
 the ten-knot seam attachment, fruit free translation, fruit-pair normal
 contact, cloth/fruit ground projection, and full fruit/yarn present and swept
-candidate geometry. It does **not** yet include:
+candidate geometry and normal response. It does **not** yet include:
 
-- sphere/yarn contact response or any yarn/yarn contact;
-- contact compaction/solve/reduction or contact/strain reconciliation;
+- any yarn/yarn contact;
+- sparse contact compaction or contact/strain reconciliation;
 - friction, rolling resistance, or aerodynamic loads;
 - fruit rotational integration, orientation publication, or release masks; or
 - the complete grounded, spin, or pickup outcome on Metal.

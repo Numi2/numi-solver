@@ -87,10 +87,11 @@ to a real produce bag.
   strain ceiling, ten-knot seam grip, twelve-fruit translation, all 66
   fruit-pair normal contacts, cloth/fruit ground projection, all 34,848
   present/swept fruit-yarn candidate geometries, conservative-advancement CCD,
-  and velocity publication. That subset passes independent FP64 equation
-  comparison and exact replay; see [METAL_CLOTH.md](METAL_CLOTH.md).
-  Sphere/yarn response, yarn/yarn contact, contact compaction and reduction,
-  all friction transactions, aerodynamics, fruit rotation, release
+  deterministic ground-aware sphere/yarn normal response, accumulated normal
+  impulse publication, and velocity publication. That subset passes
+  independent FP64 equation comparison and exact replay; see
+  [METAL_CLOTH.md](METAL_CLOTH.md). Yarn/yarn contact, sparse contact
+  compaction, all friction transactions, aerodynamics, fruit rotation, release
   classification, complete-trajectory parity, profiler evidence, and matched
   physical outcomes remain open.
 

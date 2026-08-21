@@ -312,7 +312,7 @@ declared bag topology. No claim against an external simulator follows without
 a matched implementation and measurement. The exact mechanics and
 approximation boundary are documented in [BRAIDED_BAG.md](BRAIDED_BAG.md).
 The qualified combined metallib SHA-256 is
-`9253ebe2b6f24475ea1ae8117ef93dbe56e939cd6ae9bd448545bf812647f2cb`.
+`91749b6a95e36b0a55ad0cffbe93bff2e53bb77c98c2dc2da1799737e32f1e42`.
 
 ## Response-column assembly and chained solve gate
 
