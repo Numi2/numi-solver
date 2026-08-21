@@ -93,10 +93,11 @@ to a real produce bag.
   final contact/strain reconciliation before velocity publication. It also
   owns cloth/ground, yarn/yarn, fruit/yarn, fruit/fruit, and fruit/ground
   Coulomb friction plus load-capped fruit rolling resistance and normalized
-  fruit orientation integration. That subset passes independent FP64 equation
-  comparison and exact replay; see
-  [METAL_CLOTH.md](METAL_CLOTH.md). Aerodynamics, fruit orientation
-  publication in a complete trajectory, release classification,
+  fruit orientation integration. It also owns full-yarn cylinder air loads and
+  fruit translational/rotational air decay. That subset passes independent
+  FP64 equation comparison and exact replay; see
+  [METAL_CLOTH.md](METAL_CLOTH.md). Fruit orientation publication in a
+  complete trajectory, release classification,
   complete-trajectory parity, profiler evidence, and matched physical outcomes
   remain open.
 

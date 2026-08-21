@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 8u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 9u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
 #define NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY 4096u
 
@@ -33,6 +33,11 @@ typedef struct MR_ALIGN16 NumiClothBagGPUConfig {
     // x fruit-pair friction, y fruit/ground friction,
     // z fruit rolling resistance, w fruit/yarn friction.
     mr_float4 fruitMaterial;
+    // xyz air velocity, w air density.
+    mr_float4 airVelocityAndDensity;
+    // x yarn crossflow drag, y yarn axial skin friction,
+    // z fruit translational drag, w fruit rotational drag.
+    mr_float4 aerodynamicCoefficients;
 } NumiClothBagGPUConfig;
 
 typedef struct MR_ALIGN16 NumiClothBagGPUParticle {
@@ -152,6 +157,12 @@ typedef struct MR_ALIGN16 NumiClothBagGPUFrictionStatus {
     mr_uint4 metrics;
 } NumiClothBagGPUFrictionStatus;
 
+typedef struct MR_ALIGN16 NumiClothBagGPUAerodynamicsStatus {
+    // x maximum yarn force, y maximum fruit force,
+    // z maximum fruit torque encoded as positive-float bits, w reserved.
+    mr_uint4 metrics;
+} NumiClothBagGPUAerodynamicsStatus;
+
 typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
     // x first constraint, y constraint count, z expected graph color,
     // w reserved.
@@ -159,7 +170,7 @@ typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
 } NumiClothBagGPUBatch;
 
 #ifndef __METAL_VERSION__
-static_assert(sizeof(NumiClothBagGPUConfig) == 112);
+static_assert(sizeof(NumiClothBagGPUConfig) == 144);
 static_assert(sizeof(NumiClothBagGPUParticle) == 48);
 static_assert(sizeof(NumiClothBagGPUDistance) == 32);
 static_assert(sizeof(NumiClothBagGPUGrip) == 48);
@@ -172,5 +183,6 @@ static_assert(sizeof(NumiClothBagGPUSelfPair) == 8);
 static_assert(sizeof(NumiClothBagGPUSelfStatus) == 16);
 static_assert(sizeof(NumiClothBagGPUSelfImpulse) == 48);
 static_assert(sizeof(NumiClothBagGPUFrictionStatus) == 32);
+static_assert(sizeof(NumiClothBagGPUAerodynamicsStatus) == 16);
 static_assert(sizeof(NumiClothBagGPUBatch) == 16);
 #endif

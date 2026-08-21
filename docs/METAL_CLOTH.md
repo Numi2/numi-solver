@@ -28,7 +28,10 @@ versioned ABI in `include/numi/cloth_bag_gpu.h` owns:
 - maximum-dissipation Coulomb friction for cloth/ground, yarn/yarn,
   fruit/yarn, fruit/fruit, and fruit/ground contact; and
 - normal-load-capped fruit rolling resistance; and
-- normalized fruit-orientation integration after contact impulses.
+- normalized fruit-orientation integration after contact impulses;
+- cylinder crossflow and axial skin-friction air loads on every yarn segment;
+  and
+- exact quadratic translational and rotational air decay for every fruit.
 
 The distance, knot, bend, and fruit-pair graphs are greedily colored once into
 five, six, five, and fifteen deterministic batches. No two constraints in a
@@ -148,6 +151,14 @@ velocity writers without float atomics. Cloth and fruit ground response are
 one-thread-per-body transactions. Positive-float atomic maxima publish only
 cone certificates and never own simulated state.
 
+Air loads run between gravity and position advance, matching the FP64
+transaction order. Conflict-free distance colors accumulate each segment's
+force into its two endpoints. One fixed 256-lane tree reduction computes the
+global dissipative attenuation from drag power and inverse-mass-weighted force
+norm; a parallel particle pass then applies the force. Fruit translation and
+rotation use the reference's exact one-step quadratic attenuation. No air-load
+transaction can reverse relative velocity or add relative kinetic energy.
+
 ## Independent qualification
 
 The harness reconstructs the reference bag's 48 by 28 wall and 13 by 13
@@ -189,6 +200,10 @@ angular velocities, contact counts, and maximum cone ratios are compared with
 the independent FP64 schedule. Fruit orientations are compared componentwise
 with FP64 after friction, must remain unit length, and a focused tangential
 fruit collision must produce a nonzero orientation change.
+Separate air probes require yarn and fruit energy to fall, compare forces,
+torque, linear velocity, and angular velocity with FP64, verify subdivision
+invariance for a uniformly moving yarn, and require a yarn moving with the air
+to receive no physical drag.
 
 Run it with:
 
@@ -200,7 +215,7 @@ Run it with:
 The Apple M4 result measured on 2026-08-21 was:
 
 ```text
-abi=8 particles=1465 distances=2904 grips=10 knots=1369 bends=2834
+abi=9 particles=1465 distances=2904 grips=10 knots=1369 bends=2834
 fruits=12 fruit_pairs=66 fruit_yarn_candidates=34848
 distance_colors=5 knot_colors=6 bend_colors=5 fruit_pair_colors=15
 self_pairs=4149792 self_batches=29263 max_self_batch=256
@@ -216,6 +231,8 @@ max_fruit_velocity_error=0.000439966229
 max_fruit_angular_velocity_error=0.000007092363
 max_fruit_orientation_error=0.000000001746
 max_fruit_orientation_norm_error=0.000000001746
+max_yarn_aerodynamic_force=0.000000001152 expected=0.000000001152
+max_fruit_aerodynamic_force=0.000000014756 expected=0.000000014756
 max_fruit_pair_penetration=0.000000000000
 yarn_identity_exact=true yarn_control_qualified=true
 current_yarn_overlaps=0 swept_yarn_impacts=0
@@ -281,7 +298,15 @@ cone_ratio=0.668487787247 slip_before=2.000063489379
 slip_after=0.000050152179
 energy_before=157.924313130071 energy_after=155.924161600600
 momentum_error=0.000000478928
-state_hash=0xd858ec97d9bbc4ef
+yarn_aerodynamics_velocity_error=0.000000930480
+force=0.172502279282 force_error=0.000000008350
+energy_before=25.000000000000 energy_after=24.993015079104
+refinement_error=0.000000476837 co_moving_delta=0.000002861023
+fruit_aerodynamics_velocity_error=0.000029432718
+force=0.132944747806 force_error=0.000000004606
+torque=0.000002209812 torque_error=0.000000000000
+energy_before=3.155968230148 energy_after=3.148686517625
+state_hash=0xb76e21e1186b5557
 result=PASS
 ```
 
@@ -301,14 +326,15 @@ complete-trajectory baseline or profiler trace. Compact segment-pair records,
 the triangular lookup, zeroed device buffers without host mirrors, and scoped
 Metal autorelease pools reduced the executable's measured maximum resident set
 from `401,801,216` to `235,192,320` bytes before the self-friction response
-log; the qualified ABI-8 transaction measured `238,157,824` bytes. The
-memory-layout comparison itself
+log; the qualified ABI-8 transaction measured `238,157,824` bytes, and the
+ABI-9 air-load transaction measured `240,222,208` bytes. The memory-layout
+comparison itself
 preserved its exact state hash and qualification values; later qualified
 physics transactions intentionally changed the state hash. This is a
 resource-footprint result, not a speed claim. The complete 16-test
 Metal-labelled suite subsequently passed under the same shared-machine load.
 The qualified combined metallib SHA-256 is
-`1ead4bb5bf13cf86c3202fc9d627d88b6d163617a3db3147f7440a0d6f3145bf`.
+`9554759541ac4cd8230464bbc00111ad0401a8e614d8ef07109cc2ac05fd7850`.
 
 ## Remaining boundary
 
@@ -320,11 +346,11 @@ contact, cloth/fruit ground projection, full fruit/yarn present and swept
 candidate geometry and normal response, full-topology swept/current yarn
 self-contact with deterministic active-batch compaction, five contact-friction
 families, fruit rolling resistance, and normalized fruit orientation
-integration. It does
+integration, full-yarn cylinder air loads, and fruit translational/rotational
+air loads. It does
 **not** yet
 include:
 
-- aerodynamic loads;
 - release masks; or
 - the complete grounded, spin, or pickup outcome on Metal.
 

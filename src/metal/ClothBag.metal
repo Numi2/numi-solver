@@ -26,7 +26,11 @@ inline bool validConfig(
         !all(isfinite(config.gravityAndTimestep.xyz)) ||
         !all(isfinite(config.gripTargetAndActive.xyz)) ||
         !all(isfinite(config.clothMaterial)) || config.clothMaterial.x < 0.0f ||
-        !all(isfinite(config.fruitMaterial))) {
+        !all(isfinite(config.fruitMaterial)) ||
+        !all(isfinite(config.airVelocityAndDensity)) ||
+        config.airVelocityAndDensity.w < 0.0f ||
+        !all(isfinite(config.aerodynamicCoefficients)) ||
+        any(config.aerodynamicCoefficients < 0.0f)) {
         recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
         return false;
     }
@@ -468,11 +472,6 @@ kernel void numi_cloth_bag_begin_substep(
                 float3(timestep),
                 velocity
             );
-            particle.positionAndInverseMass.xyz = fma(
-                particle.velocity.xyz,
-                float3(timestep),
-                position
-            );
             particle.velocity.w = particle.velocity.z;
         }
         particles[index] = particle;
@@ -510,11 +509,6 @@ kernel void numi_cloth_bag_begin_substep(
             velocity
         );
         fruit.velocityAndGroundImpulse.w = 0.0f;
-        fruit.positionAndInverseMass.xyz = fma(
-            fruit.velocityAndGroundImpulse.xyz,
-            float3(timestep),
-            position
-        );
         fruits[index] = fruit;
     }
     if (index < config.contactCounts.x) {
@@ -526,6 +520,271 @@ kernel void numi_cloth_bag_begin_substep(
         contact.fruitNormalAndImpulse = float4(0.0f);
         contact.segmentImpulse = float4(0.0f);
         yarnContacts[index] = contact;
+    }
+}
+
+kernel void numi_cloth_bag_clear_yarn_aerodynamic_forces(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device float4* forces [[buffer(1)]],
+    device atomic_uint* failure [[buffer(2)]],
+    const uint index [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) || index >= config.control.y) {
+        return;
+    }
+    forces[index] = float4(0.0f);
+}
+
+kernel void numi_cloth_bag_accumulate_yarn_aerodynamics(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device const NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device const NumiClothBagGPUDistance* distances [[buffer(2)]],
+    constant NumiClothBagGPUBatch& batch [[buffer(3)]],
+    device float4* forces [[buffer(4)]],
+    device atomic_uint* status [[buffer(5)]],
+    device atomic_uint* failure [[buffer(6)]],
+    const uint localIndex [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) || localIndex >= batch.control.y ||
+        batch.control.x + batch.control.y > config.control.z) {
+        return;
+    }
+    const NumiClothBagGPUDistance distance =
+        distances[batch.control.x + localIndex];
+    const uint firstIndex = distance.particlesAndColor.x;
+    const uint secondIndex = distance.particlesAndColor.y;
+    if (firstIndex >= config.control.y || secondIndex >= config.control.y ||
+        firstIndex == secondIndex) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        return;
+    }
+    const float3 firstPosition =
+        particles[firstIndex].positionAndInverseMass.xyz;
+    const float3 secondPosition =
+        particles[secondIndex].positionAndInverseMass.xyz;
+    const float3 span = secondPosition - firstPosition;
+    const float spanLength = length(span);
+    if (!(spanLength > 1.0e-12f)) {
+        return;
+    }
+    const float3 axis = span / spanLength;
+    const float3 airVelocity = config.airVelocityAndDensity.xyz;
+    const float3 relativeVelocity =
+        0.5f * (
+            particles[firstIndex].velocity.xyz +
+            particles[secondIndex].velocity.xyz
+        ) - airVelocity;
+    const float3 axialVelocity = axis * dot(relativeVelocity, axis);
+    const float3 crossflowVelocity = relativeVelocity - axialVelocity;
+    const float density = config.airVelocityAndDensity.w;
+    const float crossflowCoefficient =
+        0.5f * density * config.aerodynamicCoefficients.x *
+        (2.0f * config.clothMaterial.x * spanLength);
+    constexpr float pi = 3.14159265358979323846f;
+    const float skinCoefficient =
+        0.5f * density * config.aerodynamicCoefficients.y *
+        (2.0f * pi * config.clothMaterial.x * spanLength);
+    const float3 force =
+        -crossflowCoefficient * length(crossflowVelocity) *
+            crossflowVelocity -
+        skinCoefficient * length(axialVelocity) * axialVelocity;
+    if (!all(isfinite(force))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    forces[firstIndex].xyz += 0.5f * force;
+    forces[secondIndex].xyz += 0.5f * force;
+    atomic_fetch_max_explicit(
+        status,
+        as_type<uint>(length(force)),
+        memory_order_relaxed
+    );
+}
+
+kernel void numi_cloth_bag_reduce_yarn_aerodynamics(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device const NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device const float4* forces [[buffer(2)]],
+    device float4* reduction [[buffer(3)]],
+    device atomic_uint* failure [[buffer(4)]],
+    const uint localIndex [[thread_position_in_threadgroup]],
+    const uint groupWidth [[threads_per_threadgroup]],
+    const uint groupIndex [[threadgroup_position_in_grid]]
+) {
+    threadgroup float dragPower[256];
+    threadgroup float inverseMassForceSquared[256];
+    if (!validConfig(config, failure) || groupIndex != 0u ||
+        groupWidth != 256u) {
+        if (localIndex == 0u) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        }
+        return;
+    }
+    float localPower = 0.0f;
+    float localWeightedForceSquared = 0.0f;
+    for (uint index = localIndex;
+         index < config.control.y;
+         index += groupWidth) {
+        const NumiClothBagGPUParticle particle = particles[index];
+        if (particle.positionAndInverseMass.w > 0.0f) {
+            const float3 force = forces[index].xyz;
+            localPower += dot(
+                force,
+                particle.velocity.xyz - config.airVelocityAndDensity.xyz
+            );
+            localWeightedForceSquared +=
+                particle.positionAndInverseMass.w * dot(force, force);
+        }
+    }
+    dragPower[localIndex] = localPower;
+    inverseMassForceSquared[localIndex] = localWeightedForceSquared;
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    for (uint stride = groupWidth >> 1u; stride > 0u; stride >>= 1u) {
+        if (localIndex < stride) {
+            dragPower[localIndex] += dragPower[localIndex + stride];
+            inverseMassForceSquared[localIndex] +=
+                inverseMassForceSquared[localIndex + stride];
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+    }
+    if (localIndex == 0u) {
+        float attenuation = 1.0f;
+        if (inverseMassForceSquared[0] > 0.0f) {
+            attenuation = dragPower[0] < 0.0f
+                ? 1.0f / (
+                    1.0f + config.gravityAndTimestep.w *
+                        inverseMassForceSquared[0] / -dragPower[0]
+                )
+                : 0.0f;
+        }
+        reduction[0] = float4(
+            dragPower[0],
+            inverseMassForceSquared[0],
+            attenuation,
+            0.0f
+        );
+    }
+}
+
+kernel void numi_cloth_bag_apply_yarn_aerodynamics(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device const float4* forces [[buffer(2)]],
+    device const float4* reduction [[buffer(3)]],
+    device atomic_uint* failure [[buffer(4)]],
+    const uint index [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) || index >= config.control.y) {
+        return;
+    }
+    NumiClothBagGPUParticle particle = particles[index];
+    if (particle.positionAndInverseMass.w > 0.0f) {
+        particle.velocity.xyz += forces[index].xyz * (
+            reduction[0].z * particle.positionAndInverseMass.w *
+            config.gravityAndTimestep.w
+        );
+        particle.velocity.w = particle.velocity.z;
+    }
+    if (!all(isfinite(particle.velocity.xyz))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    particles[index] = particle;
+}
+
+kernel void numi_cloth_bag_apply_fruit_aerodynamics(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUFruit* fruits [[buffer(1)]],
+    device atomic_uint* status [[buffer(2)]],
+    device atomic_uint* failure [[buffer(3)]],
+    const uint index [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) ||
+        index >= config.constraintCounts.w) {
+        return;
+    }
+    NumiClothBagGPUFruit fruit = fruits[index];
+    constexpr float pi = 3.14159265358979323846f;
+    const float density = config.airVelocityAndDensity.w;
+    const float timestep = config.gravityAndTimestep.w;
+    const float inverseMass = fruit.positionAndInverseMass.w;
+    const float radius = fruit.previousAndRadius.w;
+    const float3 relativeVelocity =
+        fruit.velocityAndGroundImpulse.xyz -
+        config.airVelocityAndDensity.xyz;
+    const float speed = length(relativeVelocity);
+    const float translationalCoefficient =
+        0.5f * density * config.aerodynamicCoefficients.z *
+        pi * radius * radius;
+    const float translationalAttenuation = 1.0f / (
+        1.0f + inverseMass * translationalCoefficient * speed * timestep
+    );
+    fruit.velocityAndGroundImpulse.xyz =
+        config.airVelocityAndDensity.xyz +
+        relativeVelocity * translationalAttenuation;
+    const float3 angularVelocity = fruit.angularVelocity.xyz;
+    const float angularSpeed = length(angularVelocity);
+    const float rotationalCoefficient =
+        (3.0f * pi * pi / 8.0f) * density *
+        config.aerodynamicCoefficients.w *
+        radius * radius * radius * radius * radius;
+    const float inverseRotationalInertia = fruitInverseInertia(fruit);
+    const float rotationalAttenuation = 1.0f / (
+        1.0f + inverseRotationalInertia * rotationalCoefficient *
+            angularSpeed * timestep
+    );
+    fruit.angularVelocity.xyz *= rotationalAttenuation;
+    const float forceMagnitude = translationalCoefficient * speed * speed;
+    const float torqueMagnitude =
+        rotationalCoefficient * angularSpeed * angularSpeed;
+    atomic_fetch_max_explicit(
+        status + 1u,
+        as_type<uint>(forceMagnitude),
+        memory_order_relaxed
+    );
+    atomic_fetch_max_explicit(
+        status + 2u,
+        as_type<uint>(torqueMagnitude),
+        memory_order_relaxed
+    );
+    if (!all(isfinite(fruit.velocityAndGroundImpulse.xyz)) ||
+        !all(isfinite(fruit.angularVelocity.xyz))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    fruits[index] = fruit;
+}
+
+kernel void numi_cloth_bag_advance_positions(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device NumiClothBagGPUFruit* fruits [[buffer(2)]],
+    device atomic_uint* failure [[buffer(3)]],
+    const uint index [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure)) {
+        return;
+    }
+    const float timestep = config.gravityAndTimestep.w;
+    if (index < config.control.y) {
+        NumiClothBagGPUParticle particle = particles[index];
+        if (particle.positionAndInverseMass.w > 0.0f) {
+            particle.positionAndInverseMass.xyz = fma(
+                particle.velocity.xyz,
+                float3(timestep),
+                particle.positionAndInverseMass.xyz
+            );
+            particles[index] = particle;
+        }
+    }
+    if (index < config.constraintCounts.w) {
+        NumiClothBagGPUFruit fruit = fruits[index];
+        fruit.positionAndInverseMass.xyz = fma(
+            fruit.velocityAndGroundImpulse.xyz,
+            float3(timestep),
+            fruit.positionAndInverseMass.xyz
+        );
+        fruits[index] = fruit;
     }
 }
 

@@ -50,6 +50,11 @@ constexpr float kFruitRollingResistance = 0.015f;
 constexpr float kFruitYarnFriction = 0.36f;
 constexpr float kClothGroundFriction = 0.45f;
 constexpr float kClothSelfFriction = 0.34f;
+constexpr float kAirDensity = 1.225f;
+constexpr float kYarnCrossflowDrag = 1.10f;
+constexpr float kYarnSkinFriction = 0.010f;
+constexpr float kFruitDrag = 0.47f;
+constexpr float kFruitRotationalDrag = 0.010f;
 
 std::size_t packedSelfPairIndex(
     const std::uint32_t first,
@@ -752,6 +757,15 @@ InitialState makeInitialState() {
         kFruitRollingResistance,
         kFruitYarnFriction
     );
+    result.config.airVelocityAndDensity = f4(
+        0.0f, 0.0f, 0.0f, kAirDensity
+    );
+    result.config.aerodynamicCoefficients = f4(
+        kYarnCrossflowDrag,
+        kYarnSkinFriction,
+        kFruitDrag,
+        kFruitRotationalDrag
+    );
     result.grips.reserve(kGripCount);
     for (std::uint32_t level = kLevels - 2u; level < kLevels; ++level) {
         for (const int offset : {-2, -1, 0, 1, 2}) {
@@ -1341,6 +1355,103 @@ InitialState makeSelfCCDProbeState() {
     return result;
 }
 
+InitialState makeYarnAerodynamicsProbeState(
+    const bool refined,
+    const bool coMovingAir
+) {
+    InitialState result;
+    const std::uint32_t particleCount = refined ? 3u : 2u;
+    const std::uint32_t distanceCount = refined ? 2u : 1u;
+    result.config.control = u4(
+        NUMI_CLOTH_BAG_GPU_ABI_VERSION,
+        particleCount,
+        distanceCount,
+        0u
+    );
+    result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
+    result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    result.config.clothMaterial = f4(
+        0.004f, 0.0f, kClothGroundFriction, kClothSelfFriction
+    );
+    result.config.airVelocityAndDensity = coMovingAir
+        ? f4(3.0f, 4.0f, 0.0f, kAirDensity)
+        : f4(0.0f, 0.0f, 0.0f, kAirDensity);
+    result.config.aerodynamicCoefficients = f4(
+        kYarnCrossflowDrag,
+        kYarnSkinFriction,
+        kFruitDrag,
+        kFruitRotationalDrag
+    );
+    const auto particle = [](const double x, const double mass) {
+        NumiClothBagGPUParticle value{};
+        value.positionAndInverseMass = f4(
+            static_cast<float>(x), 0.0f, 2.0f,
+            static_cast<float>(1.0 / mass)
+        );
+        value.previousAndMass = f4(
+            static_cast<float>(x), 0.0f, 2.0f,
+            static_cast<float>(mass)
+        );
+        value.velocity = f4(3.0f, 4.0f, 0.0f, 0.0f);
+        return value;
+    };
+    if (refined) {
+        result.particles = {
+            particle(-1.0, 0.5),
+            particle(0.0, 1.0),
+            particle(1.0, 0.5),
+        };
+        NumiClothBagGPUDistance first{};
+        first.particlesAndColor = u4(0u, 1u, 0u, 0u);
+        first.material = f4(1.0f, 0.0f, 0.0f, kStrainLimit);
+        NumiClothBagGPUDistance second{};
+        second.particlesAndColor = u4(1u, 2u, 1u, 0u);
+        second.material = f4(1.0f, 0.0f, 0.0f, kStrainLimit);
+        result.distances = {first, second};
+        result.distanceBatches = {
+            {u4(0u, 1u, 0u, 0u)},
+            {u4(1u, 1u, 1u, 0u)},
+        };
+    } else {
+        result.particles = {particle(-1.0, 1.0), particle(1.0, 1.0)};
+        NumiClothBagGPUDistance distance{};
+        distance.particlesAndColor = u4(0u, 1u, 0u, 0u);
+        distance.material = f4(2.0f, 0.0f, 0.0f, kStrainLimit);
+        result.distances = {distance};
+        result.distanceBatches = {{u4(0u, 1u, 0u, 0u)}};
+    }
+    return result;
+}
+
+InitialState makeFruitAerodynamicsProbeState() {
+    InitialState result;
+    result.config.control = u4(
+        NUMI_CLOTH_BAG_GPU_ABI_VERSION, 0u, 0u, 0u
+    );
+    result.config.constraintCounts = u4(0u, 0u, 0u, 1u);
+    result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
+    result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    result.config.clothMaterial = f4(
+        0.004f, 0.0f, kClothGroundFriction, kClothSelfFriction
+    );
+    result.config.airVelocityAndDensity = f4(
+        0.0f, 0.0f, 0.0f, kAirDensity
+    );
+    result.config.aerodynamicCoefficients = f4(
+        kYarnCrossflowDrag,
+        kYarnSkinFriction,
+        kFruitDrag,
+        kFruitRotationalDrag
+    );
+    result.fruits = {
+        makeProbeFruit({0.0, 0.0, 10.0}, 1.0f / 0.21f, 0.07f)
+    };
+    result.fruits[0].velocityAndGroundImpulse =
+        f4(5.0f, -1.0f, 2.0f, 0.0f);
+    result.fruits[0].angularVelocity = f4(3.0f, 4.0f, 2.0f, 0.0f);
+    return result;
+}
+
 bool verifyColoring(const InitialState& state) {
     for (const NumiClothBagGPUBatch& batch : state.distanceBatches) {
         std::vector<bool> used(state.particles.size(), false);
@@ -1566,6 +1677,9 @@ struct OracleResult {
     std::uint64_t rollingContacts{};
     double maximumFrictionConeRatio{};
     double maximumRollingResistanceRatio{};
+    double maximumYarnAerodynamicForce{};
+    double maximumFruitAerodynamicForce{};
+    double maximumFruitAerodynamicTorque{};
 };
 
 struct OraclePointSegmentSample {
@@ -2799,6 +2913,110 @@ void integrateOracleFruitOrientation(
     }
 }
 
+void applyOracleAerodynamics(
+    const InitialState& initial,
+    OracleResult& state
+) {
+    const DVec3 airVelocity = d3(initial.config.airVelocityAndDensity);
+    const double density = initial.config.airVelocityAndDensity.w;
+    const double timestep = initial.config.gravityAndTimestep.w;
+    std::vector<DVec3> forces(state.particles.size());
+    for (const OracleDistance& distance : state.distances) {
+        const OracleParticle& first = state.particles[distance.first];
+        const OracleParticle& second = state.particles[distance.second];
+        const DVec3 span = second.position - first.position;
+        const double spanLength = length(span);
+        if (!(spanLength > 1.0e-12)) {
+            continue;
+        }
+        const DVec3 axis = span / spanLength;
+        const DVec3 relativeVelocity =
+            (first.velocity + second.velocity) * 0.5 - airVelocity;
+        const DVec3 axialVelocity =
+            axis * dot(relativeVelocity, axis);
+        const DVec3 crossflowVelocity =
+            relativeVelocity - axialVelocity;
+        const double crossflowCoefficient =
+            0.5 * density * initial.config.aerodynamicCoefficients.x *
+            (2.0 * initial.config.clothMaterial.x * spanLength);
+        const double skinCoefficient =
+            0.5 * density * initial.config.aerodynamicCoefficients.y *
+            (2.0 * std::numbers::pi *
+                initial.config.clothMaterial.x * spanLength);
+        const DVec3 force = crossflowVelocity * (
+            -crossflowCoefficient * length(crossflowVelocity)
+        ) + axialVelocity * (-skinCoefficient * length(axialVelocity));
+        forces[distance.first] += force * 0.5;
+        forces[distance.second] += force * 0.5;
+        state.maximumYarnAerodynamicForce = std::max(
+            state.maximumYarnAerodynamicForce,
+            length(force)
+        );
+    }
+    double dragPower = 0.0;
+    double inverseMassWeightedForceSquared = 0.0;
+    for (std::size_t index = 0u; index < state.particles.size(); ++index) {
+        const OracleParticle& particle = state.particles[index];
+        if (!(particle.inverseMass > 0.0)) {
+            continue;
+        }
+        dragPower += dot(
+            forces[index], particle.velocity - airVelocity
+        );
+        inverseMassWeightedForceSquared +=
+            particle.inverseMass * dot(forces[index], forces[index]);
+    }
+    double attenuation = 1.0;
+    if (inverseMassWeightedForceSquared > 0.0) {
+        attenuation = dragPower < 0.0
+            ? 1.0 / (
+                1.0 + timestep * inverseMassWeightedForceSquared /
+                    -dragPower
+            )
+            : 0.0;
+    }
+    for (std::size_t index = 0u; index < state.particles.size(); ++index) {
+        OracleParticle& particle = state.particles[index];
+        if (particle.inverseMass > 0.0) {
+            particle.velocity += forces[index] * (
+                attenuation * particle.inverseMass * timestep
+            );
+        }
+    }
+    for (OracleFruit& fruit : state.fruits) {
+        const DVec3 relativeVelocity = fruit.velocity - airVelocity;
+        const double speed = length(relativeVelocity);
+        const double translationalCoefficient =
+            0.5 * density * initial.config.aerodynamicCoefficients.z *
+            std::numbers::pi * fruit.radius * fruit.radius;
+        fruit.velocity = airVelocity + relativeVelocity * (
+            1.0 / (
+                1.0 + fruit.inverseMass * translationalCoefficient *
+                    speed * timestep
+            )
+        );
+        const double angularSpeed = length(fruit.angularVelocity);
+        const double rotationalCoefficient =
+            (3.0 * std::numbers::pi * std::numbers::pi / 8.0) *
+            density * initial.config.aerodynamicCoefficients.w *
+            std::pow(fruit.radius, 5.0);
+        fruit.angularVelocity = fruit.angularVelocity * (
+            1.0 / (
+                1.0 + oracleFruitInverseInertia(fruit) *
+                    rotationalCoefficient * angularSpeed * timestep
+            )
+        );
+        state.maximumFruitAerodynamicForce = std::max(
+            state.maximumFruitAerodynamicForce,
+            translationalCoefficient * speed * speed
+        );
+        state.maximumFruitAerodynamicTorque = std::max(
+            state.maximumFruitAerodynamicTorque,
+            rotationalCoefficient * angularSpeed * angularSpeed
+        );
+    }
+}
+
 OracleResult runOracle(
     const InitialState& initial,
     const std::uint32_t iterations,
@@ -2897,13 +3115,21 @@ OracleResult runOracle(
         if (particle.inverseMass > 0.0) {
             particle.velocity += gravity * timestep;
             particle.predictedVerticalVelocity = particle.velocity.z;
-            particle.position += particle.velocity * timestep;
         }
     }
     for (OracleFruit& fruit : result.fruits) {
         fruit.previous = fruit.position;
         fruit.velocity += gravity * timestep;
         fruit.groundNormalImpulse = 0.0;
+    }
+    applyOracleAerodynamics(initial, result);
+    for (OracleParticle& particle : result.particles) {
+        if (particle.inverseMass > 0.0) {
+            particle.predictedVerticalVelocity = particle.velocity.z;
+            particle.position += particle.velocity * timestep;
+        }
+    }
+    for (OracleFruit& fruit : result.fruits) {
         fruit.position += fruit.velocity * timestep;
     }
     solveOracleSelfContact(initial, result, true);
@@ -3308,12 +3534,19 @@ struct GPUResult {
     std::vector<NumiClothBagGPUYarnContact> yarnContacts;
     NumiClothBagGPUSelfStatus selfStatus{};
     NumiClothBagGPUFrictionStatus frictionStatus{};
+    NumiClothBagGPUAerodynamicsStatus aerodynamicsStatus{};
     std::uint32_t failure{};
     double seconds{};
 };
 
 struct Pipelines {
     id<MTLComputePipelineState> begin;
+    id<MTLComputePipelineState> yarnAerodynamicsClear;
+    id<MTLComputePipelineState> yarnAerodynamicsAccumulate;
+    id<MTLComputePipelineState> yarnAerodynamicsReduce;
+    id<MTLComputePipelineState> yarnAerodynamicsApply;
+    id<MTLComputePipelineState> fruitAerodynamics;
+    id<MTLComputePipelineState> advance;
     id<MTLComputePipelineState> distance;
     id<MTLComputePipelineState> knot;
     id<MTLComputePipelineState> bend;
@@ -3385,6 +3618,12 @@ GPUResult runGPU(
     id<MTLBuffer> fruitBuffer = makeBytes(initial.fruits);
     id<MTLBuffer> fruitPairBuffer = makeBytes(initial.fruitPairs);
     id<MTLBuffer> yarnContactBuffer = makeBytes(initial.yarnContacts);
+    id<MTLBuffer> yarnAerodynamicForceBuffer = makeZeroed(
+        initial.particles.size() * sizeof(mr_float4)
+    );
+    id<MTLBuffer> yarnAerodynamicReductionBuffer = makeZeroed(
+        sizeof(mr_float4)
+    );
     id<MTLBuffer> selfPairBuffer = makeBytes(initial.selfPairs);
     id<MTLBuffer> selfBatchBuffer = makeBytes(initial.selfBatches);
     id<MTLBuffer> selfPairLookupBuffer = makeBytes(initial.selfPairLookup);
@@ -3427,6 +3666,11 @@ GPUResult runGPU(
         newBufferWithBytes:&zeroFrictionStatus
                    length:sizeof(zeroFrictionStatus)
                   options:MTLResourceStorageModeShared];
+    NumiClothBagGPUAerodynamicsStatus zeroAerodynamicsStatus{};
+    id<MTLBuffer> aerodynamicsStatusBuffer = [device
+        newBufferWithBytes:&zeroAerodynamicsStatus
+                   length:sizeof(zeroAerodynamicsStatus)
+                  options:MTLResourceStorageModeShared];
     std::uint32_t zero = 0u;
     id<MTLBuffer> failureBuffer = [device
         newBufferWithBytes:&zero
@@ -3436,7 +3680,8 @@ GPUResult runGPU(
         distanceBuffer == nil || gripBuffer == nil ||
         knotBuffer == nil || bendBuffer == nil ||
         fruitBuffer == nil || fruitPairBuffer == nil ||
-        yarnContactBuffer == nil ||
+        yarnContactBuffer == nil || yarnAerodynamicForceBuffer == nil ||
+        yarnAerodynamicReductionBuffer == nil ||
         selfPairBuffer == nil || selfBatchBuffer == nil ||
         selfPairLookupBuffer == nil || selfCellBuffer == nil ||
         selfActiveFlagBuffer == nil || selfActiveBatchCountBuffer == nil ||
@@ -3447,6 +3692,7 @@ GPUResult runGPU(
         selfImpulseKeyBuffer == nil || selfImpulseCountBuffer == nil ||
         selfStatusBuffer == nil ||
         frictionStatusBuffer == nil ||
+        aerodynamicsStatusBuffer == nil ||
         failureBuffer == nil) {
         throw std::runtime_error("failed to allocate Metal cloth buffers");
     }
@@ -3479,6 +3725,68 @@ GPUResult runGPU(
             initial.fruits.size(),
             initial.fruitPairs.size(),
         })
+    );
+    [encoder setComputePipelineState:pipelines.yarnAerodynamicsClear];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:yarnAerodynamicForceBuffer offset:0 atIndex:1];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:2];
+    dispatch(
+        encoder,
+        pipelines.yarnAerodynamicsClear,
+        initial.particles.size()
+    );
+    for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
+        [encoder setComputePipelineState:pipelines.yarnAerodynamicsAccumulate];
+        [encoder setBuffer:configBuffer offset:0 atIndex:0];
+        [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+        [encoder setBuffer:distanceBuffer offset:0 atIndex:2];
+        [encoder setBytes:&batch length:sizeof(batch) atIndex:3];
+        [encoder setBuffer:yarnAerodynamicForceBuffer offset:0 atIndex:4];
+        [encoder setBuffer:aerodynamicsStatusBuffer offset:0 atIndex:5];
+        [encoder setBuffer:failureBuffer offset:0 atIndex:6];
+        dispatch(
+            encoder,
+            pipelines.yarnAerodynamicsAccumulate,
+            batch.control.y
+        );
+    }
+    [encoder setComputePipelineState:pipelines.yarnAerodynamicsReduce];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+    [encoder setBuffer:yarnAerodynamicForceBuffer offset:0 atIndex:2];
+    [encoder setBuffer:yarnAerodynamicReductionBuffer offset:0 atIndex:3];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:4];
+    dispatch(encoder, pipelines.yarnAerodynamicsReduce, 256u);
+    [encoder setComputePipelineState:pipelines.yarnAerodynamicsApply];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+    [encoder setBuffer:yarnAerodynamicForceBuffer offset:0 atIndex:2];
+    [encoder setBuffer:yarnAerodynamicReductionBuffer offset:0 atIndex:3];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:4];
+    dispatch(
+        encoder,
+        pipelines.yarnAerodynamicsApply,
+        initial.particles.size()
+    );
+    [encoder setComputePipelineState:pipelines.fruitAerodynamics];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:fruitBuffer offset:0 atIndex:1];
+    [encoder setBuffer:aerodynamicsStatusBuffer offset:0 atIndex:2];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:3];
+    dispatch(
+        encoder,
+        pipelines.fruitAerodynamics,
+        initial.fruits.size()
+    );
+    [encoder setComputePipelineState:pipelines.advance];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+    [encoder setBuffer:fruitBuffer offset:0 atIndex:2];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:3];
+    dispatch(
+        encoder,
+        pipelines.advance,
+        std::max(initial.particles.size(), initial.fruits.size())
     );
 
     const auto buildYarnContacts = [&] {
@@ -3887,6 +4195,10 @@ GPUResult runGPU(
         *static_cast<const NumiClothBagGPUFrictionStatus*>(
             frictionStatusBuffer.contents
         );
+    result.aerodynamicsStatus =
+        *static_cast<const NumiClothBagGPUAerodynamicsStatus*>(
+            aerodynamicsStatusBuffer.contents
+        );
     result.failure = *static_cast<const std::uint32_t*>(failureBuffer.contents);
     if (commandBuffer.GPUEndTime >= commandBuffer.GPUStartTime) {
         result.seconds = commandBuffer.GPUEndTime - commandBuffer.GPUStartTime;
@@ -3935,6 +4247,9 @@ std::uint64_t hashGPUResult(const GPUResult& result) {
         result.frictionStatus
     }};
     append(frictionStatus);
+    const std::array<NumiClothBagGPUAerodynamicsStatus, 1>
+        aerodynamicsStatus{{result.aerodynamicsStatus}};
+    append(aerodynamicsStatus);
     hash ^= result.failure;
     hash *= 1099511628211ull;
     return hash;
@@ -4104,6 +4419,32 @@ int run(const int argc, const char* const* argv) {
     }
     const Pipelines pipelines{
         makePipeline(device, library, @"numi_cloth_bag_begin_substep"),
+        makePipeline(
+            device,
+            library,
+            @"numi_cloth_bag_clear_yarn_aerodynamic_forces"
+        ),
+        makePipeline(
+            device,
+            library,
+            @"numi_cloth_bag_accumulate_yarn_aerodynamics"
+        ),
+        makePipeline(
+            device,
+            library,
+            @"numi_cloth_bag_reduce_yarn_aerodynamics"
+        ),
+        makePipeline(
+            device,
+            library,
+            @"numi_cloth_bag_apply_yarn_aerodynamics"
+        ),
+        makePipeline(
+            device,
+            library,
+            @"numi_cloth_bag_apply_fruit_aerodynamics"
+        ),
+        makePipeline(device, library, @"numi_cloth_bag_advance_positions"),
         makePipeline(device, library, @"numi_cloth_bag_solve_distance"),
         makePipeline(device, library, @"numi_cloth_bag_solve_knot"),
         makePipeline(device, library, @"numi_cloth_bag_solve_bend"),
@@ -4230,6 +4571,52 @@ int run(const int argc, const char* const* argv) {
         0u,
         0u
     );
+    const InitialState yarnAerodynamicsInitial =
+        makeYarnAerodynamicsProbeState(false, false);
+    const OracleResult yarnAerodynamicsOracle = runOracle(
+        yarnAerodynamicsInitial, 0u, 0u
+    );
+    const GPUResult yarnAerodynamicsGPU = runGPU(
+        device,
+        queue,
+        pipelines,
+        yarnAerodynamicsInitial,
+        0u,
+        0u
+    );
+    const InitialState refinedYarnAerodynamicsInitial =
+        makeYarnAerodynamicsProbeState(true, false);
+    const GPUResult refinedYarnAerodynamicsGPU = runGPU(
+        device,
+        queue,
+        pipelines,
+        refinedYarnAerodynamicsInitial,
+        0u,
+        0u
+    );
+    const InitialState coMovingYarnAerodynamicsInitial =
+        makeYarnAerodynamicsProbeState(false, true);
+    const GPUResult coMovingYarnAerodynamicsGPU = runGPU(
+        device,
+        queue,
+        pipelines,
+        coMovingYarnAerodynamicsInitial,
+        0u,
+        0u
+    );
+    const InitialState fruitAerodynamicsInitial =
+        makeFruitAerodynamicsProbeState();
+    const OracleResult fruitAerodynamicsOracle = runOracle(
+        fruitAerodynamicsInitial, 0u, 0u
+    );
+    const GPUResult fruitAerodynamicsGPU = runGPU(
+        device,
+        queue,
+        pipelines,
+        fruitAerodynamicsInitial,
+        0u,
+        0u
+    );
     const GPUResult& gpu = gpuResults.front();
     bool deterministic = true;
     for (std::size_t replay = 1u; replay < gpuResults.size(); ++replay) {
@@ -4255,6 +4642,11 @@ int run(const int argc, const char* const* argv) {
                 &gpu.frictionStatus,
                 &gpuResults[replay].frictionStatus,
                 sizeof(gpu.frictionStatus)
+            ) == 0 &&
+            std::memcmp(
+                &gpu.aerodynamicsStatus,
+                &gpuResults[replay].aerodynamicsStatus,
+                sizeof(gpu.aerodynamicsStatus)
             ) == 0;
     }
 
@@ -4621,6 +5013,27 @@ int run(const int argc, const char* const* argv) {
     );
     const bool rollingContactCountExact =
         gpu.frictionStatus.metrics.z == oracle.rollingContacts;
+    const double gpuMaximumYarnAerodynamicForce = std::bit_cast<float>(
+        gpu.aerodynamicsStatus.metrics.x
+    );
+    const double gpuMaximumFruitAerodynamicForce = std::bit_cast<float>(
+        gpu.aerodynamicsStatus.metrics.y
+    );
+    const double gpuMaximumFruitAerodynamicTorque = std::bit_cast<float>(
+        gpu.aerodynamicsStatus.metrics.z
+    );
+    const double maximumYarnAerodynamicForceError = std::abs(
+        gpuMaximumYarnAerodynamicForce -
+        oracle.maximumYarnAerodynamicForce
+    );
+    const double maximumFruitAerodynamicForceError = std::abs(
+        gpuMaximumFruitAerodynamicForce -
+        oracle.maximumFruitAerodynamicForce
+    );
+    const double maximumFruitAerodynamicTorqueError = std::abs(
+        gpuMaximumFruitAerodynamicTorque -
+        oracle.maximumFruitAerodynamicTorque
+    );
     for (std::size_t index = 0u; index < gpu.distances.size(); ++index) {
         maximumDistanceLambdaError = std::max(
             maximumDistanceLambdaError,
@@ -5227,6 +5640,152 @@ int run(const int argc, const char* const* argv) {
     const double selfCCDMomentumError = length(
         selfCCDMomentumAfter - selfCCDMomentumBefore
     );
+    const auto yarnRelativeEnergy = [](
+        const InitialState& source,
+        const std::vector<NumiClothBagGPUParticle>& particles
+    ) {
+        const DVec3 airVelocity = d3(source.config.airVelocityAndDensity);
+        double energy = 0.0;
+        for (std::size_t index = 0u; index < particles.size(); ++index) {
+            const double mass = source.particles[index].previousAndMass.w;
+            const DVec3 relativeVelocity =
+                d3(particles[index].velocity) - airVelocity;
+            energy += 0.5 * mass * dot(
+                relativeVelocity, relativeVelocity
+            );
+        }
+        return energy;
+    };
+    const auto yarnCenterVelocity = [](
+        const InitialState& source,
+        const GPUResult& result
+    ) {
+        DVec3 momentum{};
+        double mass = 0.0;
+        for (std::size_t index = 0u;
+             index < result.particles.size();
+             ++index) {
+            const double particleMass =
+                source.particles[index].previousAndMass.w;
+            momentum += d3(result.particles[index].velocity) * particleMass;
+            mass += particleMass;
+        }
+        return momentum / mass;
+    };
+    const double yarnAerodynamicsEnergyBefore = yarnRelativeEnergy(
+        yarnAerodynamicsInitial, yarnAerodynamicsInitial.particles
+    );
+    const double yarnAerodynamicsEnergyAfter = yarnRelativeEnergy(
+        yarnAerodynamicsInitial, yarnAerodynamicsGPU.particles
+    );
+    double yarnAerodynamicsVelocityError = 0.0;
+    for (std::size_t index = 0u;
+         index < yarnAerodynamicsGPU.particles.size();
+         ++index) {
+        const DVec3 delta = d3(
+            yarnAerodynamicsGPU.particles[index].velocity
+        ) - yarnAerodynamicsOracle.particles[index].velocity;
+        yarnAerodynamicsVelocityError = std::max({
+            yarnAerodynamicsVelocityError,
+            std::abs(delta.x),
+            std::abs(delta.y),
+            std::abs(delta.z),
+        });
+    }
+    const double yarnAerodynamicsRefinementError = length(
+        yarnCenterVelocity(
+            yarnAerodynamicsInitial, yarnAerodynamicsGPU
+        ) -
+        yarnCenterVelocity(
+            refinedYarnAerodynamicsInitial,
+            refinedYarnAerodynamicsGPU
+        )
+    );
+    double coMovingYarnAerodynamicsDelta = 0.0;
+    for (std::size_t index = 0u;
+         index < coMovingYarnAerodynamicsGPU.particles.size();
+         ++index) {
+        const DVec3 delta = d3(
+            coMovingYarnAerodynamicsGPU.particles[index].velocity
+        ) - d3(coMovingYarnAerodynamicsInitial.particles[index].velocity);
+        coMovingYarnAerodynamicsDelta = std::max({
+            coMovingYarnAerodynamicsDelta,
+            std::abs(delta.x),
+            std::abs(delta.y),
+            std::abs(delta.z),
+        });
+    }
+    const double yarnAerodynamicsProbeForce = std::bit_cast<float>(
+        yarnAerodynamicsGPU.aerodynamicsStatus.metrics.x
+    );
+    const double yarnAerodynamicsProbeForceError = std::abs(
+        yarnAerodynamicsProbeForce -
+        yarnAerodynamicsOracle.maximumYarnAerodynamicForce
+    );
+    const NumiClothBagGPUFruit& fruitAerodynamicsSource =
+        fruitAerodynamicsInitial.fruits[0];
+    const DVec3 fruitAerodynamicsVelocityBefore = d3(
+        fruitAerodynamicsSource.velocityAndGroundImpulse
+    );
+    const DVec3 fruitAerodynamicsAngularBefore = d3(
+        fruitAerodynamicsSource.angularVelocity
+    );
+    const DVec3 fruitAerodynamicsVelocityAfter = d3(
+        fruitAerodynamicsGPU.fruits[0].velocityAndGroundImpulse
+    );
+    const DVec3 fruitAerodynamicsAngularAfter = d3(
+        fruitAerodynamicsGPU.fruits[0].angularVelocity
+    );
+    const double fruitAerodynamicsMass =
+        1.0 / fruitAerodynamicsSource.positionAndInverseMass.w;
+    const double fruitAerodynamicsInertia =
+        0.4 * fruitAerodynamicsMass *
+        fruitAerodynamicsSource.previousAndRadius.w *
+        fruitAerodynamicsSource.previousAndRadius.w;
+    const double fruitAerodynamicsEnergyBefore =
+        0.5 * fruitAerodynamicsMass * dot(
+            fruitAerodynamicsVelocityBefore,
+            fruitAerodynamicsVelocityBefore
+        ) + 0.5 * fruitAerodynamicsInertia * dot(
+            fruitAerodynamicsAngularBefore,
+            fruitAerodynamicsAngularBefore
+        );
+    const double fruitAerodynamicsEnergyAfter =
+        0.5 * fruitAerodynamicsMass * dot(
+            fruitAerodynamicsVelocityAfter,
+            fruitAerodynamicsVelocityAfter
+        ) + 0.5 * fruitAerodynamicsInertia * dot(
+            fruitAerodynamicsAngularAfter,
+            fruitAerodynamicsAngularAfter
+        );
+    const DVec3 fruitAerodynamicsVelocityDelta =
+        fruitAerodynamicsVelocityAfter -
+        fruitAerodynamicsOracle.fruits[0].velocity;
+    const DVec3 fruitAerodynamicsAngularDelta =
+        fruitAerodynamicsAngularAfter -
+        fruitAerodynamicsOracle.fruits[0].angularVelocity;
+    const double fruitAerodynamicsVelocityError = std::max({
+        std::abs(fruitAerodynamicsVelocityDelta.x),
+        std::abs(fruitAerodynamicsVelocityDelta.y),
+        std::abs(fruitAerodynamicsVelocityDelta.z),
+        std::abs(fruitAerodynamicsAngularDelta.x),
+        std::abs(fruitAerodynamicsAngularDelta.y),
+        std::abs(fruitAerodynamicsAngularDelta.z),
+    });
+    const double fruitAerodynamicsProbeForce = std::bit_cast<float>(
+        fruitAerodynamicsGPU.aerodynamicsStatus.metrics.y
+    );
+    const double fruitAerodynamicsProbeTorque = std::bit_cast<float>(
+        fruitAerodynamicsGPU.aerodynamicsStatus.metrics.z
+    );
+    const double fruitAerodynamicsProbeForceError = std::abs(
+        fruitAerodynamicsProbeForce -
+        fruitAerodynamicsOracle.maximumFruitAerodynamicForce
+    );
+    const double fruitAerodynamicsProbeTorqueError = std::abs(
+        fruitAerodynamicsProbeTorque -
+        fruitAerodynamicsOracle.maximumFruitAerodynamicTorque
+    );
     const double fruitPairProbeConeRatio = std::bit_cast<float>(
         fruitPairGPU.frictionStatus.metrics.x
     );
@@ -5273,6 +5832,11 @@ int run(const int argc, const char* const* argv) {
         maximumFruitAngularVelocityError <= 2.0e-4 &&
         maximumFruitOrientationError <= 2.0e-6 &&
         maximumFruitOrientationNormError <= 2.0e-7 &&
+        maximumYarnAerodynamicForceError <= 2.0e-6 &&
+        maximumFruitAerodynamicForceError <= 2.0e-6 &&
+        maximumFruitAerodynamicTorqueError <= 2.0e-8 &&
+        gpuMaximumYarnAerodynamicForce > 0.0 &&
+        gpuMaximumFruitAerodynamicForce > 0.0 &&
         maximumFruitPairContactError <= 2.0e-5 &&
         maximumFruitPairPenetration <= 2.0e-6 &&
         yarnIdentityExact && yarnControlQualified &&
@@ -5374,7 +5938,25 @@ int run(const int argc, const char* const* argv) {
         selfCCDProbeConeRatio <= 1.0 + 1.0e-6 &&
         selfCCDSlipAfter < selfCCDSlipBefore &&
         selfCCDEnergyAfter < selfCCDEnergyBefore &&
-        selfCCDMomentumError <= 1.0e-5;
+        selfCCDMomentumError <= 1.0e-5 &&
+        yarnAerodynamicsGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
+        refinedYarnAerodynamicsGPU.failure ==
+            NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
+        coMovingYarnAerodynamicsGPU.failure ==
+            NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
+        yarnAerodynamicsVelocityError <= 1.0e-5 &&
+        yarnAerodynamicsProbeForceError <= 1.0e-6 &&
+        yarnAerodynamicsProbeForce > 0.0 &&
+        yarnAerodynamicsEnergyAfter < yarnAerodynamicsEnergyBefore &&
+        yarnAerodynamicsRefinementError <= 1.0e-6 &&
+        coMovingYarnAerodynamicsDelta <= 5.0e-6 &&
+        fruitAerodynamicsGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
+        fruitAerodynamicsVelocityError <= 5.0e-5 &&
+        fruitAerodynamicsProbeForceError <= 1.0e-6 &&
+        fruitAerodynamicsProbeTorqueError <= 1.0e-8 &&
+        fruitAerodynamicsProbeForce > 0.0 &&
+        fruitAerodynamicsProbeTorque > 0.0 &&
+        fruitAerodynamicsEnergyAfter < fruitAerodynamicsEnergyBefore;
 
     std::cout << std::fixed << std::setprecision(12)
               << "device=" << device.name.UTF8String << '\n'
@@ -5424,6 +6006,21 @@ int run(const int argc, const char* const* argv) {
               << " max_fruit_pair_impulse=" << maximumFruitPairImpulse
               << " max_fruit_pair_penetration="
               << maximumFruitPairPenetration << '\n'
+              << "max_yarn_aerodynamic_force="
+              << gpuMaximumYarnAerodynamicForce
+              << " expected=" << oracle.maximumYarnAerodynamicForce
+              << " error=" << maximumYarnAerodynamicForceError
+              << " max_fruit_aerodynamic_force="
+              << gpuMaximumFruitAerodynamicForce
+              << " expected_fruit="
+              << oracle.maximumFruitAerodynamicForce
+              << " fruit_error=" << maximumFruitAerodynamicForceError
+              << " max_fruit_aerodynamic_torque="
+              << gpuMaximumFruitAerodynamicTorque
+              << " expected_torque="
+              << oracle.maximumFruitAerodynamicTorque
+              << " torque_error=" << maximumFruitAerodynamicTorqueError
+              << '\n'
               << "yarn_identity_exact=" << yarnIdentityExact
               << " yarn_control_exact=" << yarnControlExact
               << " yarn_control_qualified=" << yarnControlQualified
@@ -5601,6 +6198,27 @@ int run(const int argc, const char* const* argv) {
               << " energy_after=" << selfCCDEnergyAfter
               << " momentum_error=" << selfCCDMomentumError
               << " self_ccd_failure_flags=" << selfCCDGPU.failure << '\n'
+              << "yarn_aerodynamics_velocity_error="
+              << yarnAerodynamicsVelocityError
+              << " force=" << yarnAerodynamicsProbeForce
+              << " force_error=" << yarnAerodynamicsProbeForceError
+              << " energy_before=" << yarnAerodynamicsEnergyBefore
+              << " energy_after=" << yarnAerodynamicsEnergyAfter
+              << " refinement_error="
+              << yarnAerodynamicsRefinementError
+              << " co_moving_delta=" << coMovingYarnAerodynamicsDelta
+              << " yarn_aerodynamics_failure_flags="
+              << yarnAerodynamicsGPU.failure << '\n'
+              << "fruit_aerodynamics_velocity_error="
+              << fruitAerodynamicsVelocityError
+              << " force=" << fruitAerodynamicsProbeForce
+              << " force_error=" << fruitAerodynamicsProbeForceError
+              << " torque=" << fruitAerodynamicsProbeTorque
+              << " torque_error=" << fruitAerodynamicsProbeTorqueError
+              << " energy_before=" << fruitAerodynamicsEnergyBefore
+              << " energy_after=" << fruitAerodynamicsEnergyAfter
+              << " fruit_aerodynamics_failure_flags="
+              << fruitAerodynamicsGPU.failure << '\n'
               << "average_gpu_seconds=" << averageSeconds
               << " state_hash=0x" << std::hex << hashGPUResult(gpu)
               << std::dec << '\n'
