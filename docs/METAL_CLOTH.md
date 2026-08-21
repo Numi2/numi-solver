@@ -27,7 +27,8 @@ versioned ABI in `include/numi/cloth_bag_gpu.h` owns:
 - velocity publication from accepted positions;
 - maximum-dissipation Coulomb friction for cloth/ground, yarn/yarn,
   fruit/yarn, fruit/fruit, and fruit/ground contact; and
-- normal-load-capped fruit rolling resistance.
+- normal-load-capped fruit rolling resistance; and
+- normalized fruit-orientation integration after contact impulses.
 
 The distance, knot, bend, and fruit-pair graphs are greedily colored once into
 five, six, five, and fifteen deterministic batches. No two constraints in a
@@ -185,7 +186,9 @@ cloth slip, fruit slip, and rolling speed all to fall under their independent
 Coulomb and rolling caps. The sphere/yarn tunneling probe adds tangential motion
 and must reduce contact slip after the CCD response. All friction velocities,
 angular velocities, contact counts, and maximum cone ratios are compared with
-the independent FP64 schedule.
+the independent FP64 schedule. Fruit orientations are compared componentwise
+with FP64 after friction, must remain unit length, and a focused tangential
+fruit collision must produce a nonzero orientation change.
 
 Run it with:
 
@@ -211,6 +214,8 @@ max_bend_lambda_error=0.000000000008
 max_fruit_position_error=0.000000076410
 max_fruit_velocity_error=0.000439966229
 max_fruit_angular_velocity_error=0.000007092363
+max_fruit_orientation_error=0.000000001746
+max_fruit_orientation_norm_error=0.000000001746
 max_fruit_pair_penetration=0.000000000000
 yarn_identity_exact=true yarn_control_qualified=true
 current_yarn_overlaps=0 swept_yarn_impacts=0
@@ -249,6 +254,7 @@ free_endpoint_rise=0.009750500321
 fruit_pair_probe_position_error=0.000000044763
 separation=1.999999962672 center_error=0.000000019868
 normal_impulse=16.656669616699 friction_contacts=1
+orientation_error=0.000000011760 orientation_change=0.007141246926
 cone_ratio=0.057165719569 slip_before=2.999400344361
 slip_after=0.000000173872 momentum_error=0.000000834465
 ground_contact_position_error=0.000000000000
@@ -275,7 +281,7 @@ cone_ratio=0.668487787247 slip_before=2.000063489379
 slip_after=0.000050152179
 energy_before=157.924313130071 energy_after=155.924161600600
 momentum_error=0.000000478928
-state_hash=0x3148d4dbbdb096c4
+state_hash=0xd858ec97d9bbc4ef
 result=PASS
 ```
 
@@ -302,7 +308,7 @@ physics transactions intentionally changed the state hash. This is a
 resource-footprint result, not a speed claim. The complete 16-test
 Metal-labelled suite subsequently passed under the same shared-machine load.
 The qualified combined metallib SHA-256 is
-`fb7a66ce13f50e9c6482792145f59c7884862f2873276895eb76337a9e5ba683`.
+`1ead4bb5bf13cf86c3202fc9d627d88b6d163617a3db3147f7440a0d6f3145bf`.
 
 ## Remaining boundary
 
@@ -313,12 +319,13 @@ the ten-knot seam attachment, fruit free translation, fruit-pair normal
 contact, cloth/fruit ground projection, full fruit/yarn present and swept
 candidate geometry and normal response, full-topology swept/current yarn
 self-contact with deterministic active-batch compaction, five contact-friction
-families, and fruit rolling resistance. It does
+families, fruit rolling resistance, and normalized fruit orientation
+integration. It does
 **not** yet
 include:
 
 - aerodynamic loads;
-- fruit rotational integration, orientation publication, or release masks; or
+- release masks; or
 - the complete grounded, spin, or pickup outcome on Metal.
 
 Until those transactions reach Metal and match the FP64 replay, the README GIF

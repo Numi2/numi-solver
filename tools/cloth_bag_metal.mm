@@ -1504,6 +1504,7 @@ struct OracleFruit {
     DVec3 previous{};
     DVec3 velocity{};
     DVec3 angularVelocity{};
+    std::array<double, 4> orientation{{0.0, 0.0, 0.0, 1.0}};
     double inverseMass{};
     double radius{};
     double groundNormalImpulse{};
@@ -2761,6 +2762,43 @@ void applyOracleFruitGroundFriction(
     }
 }
 
+void integrateOracleFruitOrientation(
+    const InitialState& initial,
+    OracleResult& state
+) {
+    const double halfTimestep =
+        0.5 * initial.config.gravityAndTimestep.w;
+    for (OracleFruit& fruit : state.fruits) {
+        const DVec3 vectorPart{
+            fruit.orientation[0],
+            fruit.orientation[1],
+            fruit.orientation[2],
+        };
+        const double scalarPart = fruit.orientation[3];
+        const DVec3 vectorDerivative =
+            fruit.angularVelocity * scalarPart +
+            cross(fruit.angularVelocity, vectorPart);
+        const double scalarDerivative =
+            -dot(fruit.angularVelocity, vectorPart);
+        std::array<double, 4> advanced{{
+            fruit.orientation[0] + vectorDerivative.x * halfTimestep,
+            fruit.orientation[1] + vectorDerivative.y * halfTimestep,
+            fruit.orientation[2] + vectorDerivative.z * halfTimestep,
+            fruit.orientation[3] + scalarDerivative * halfTimestep,
+        }};
+        const double magnitude = std::sqrt(
+            advanced[0] * advanced[0] +
+            advanced[1] * advanced[1] +
+            advanced[2] * advanced[2] +
+            advanced[3] * advanced[3]
+        );
+        for (double& component : advanced) {
+            component /= magnitude;
+        }
+        fruit.orientation = advanced;
+    }
+}
+
 OracleResult runOracle(
     const InitialState& initial,
     const std::uint32_t iterations,
@@ -2830,6 +2868,12 @@ OracleResult runOracle(
             d3(source.previousAndRadius),
             d3(source.velocityAndGroundImpulse),
             d3(source.angularVelocity),
+            {{
+                source.orientation.x,
+                source.orientation.y,
+                source.orientation.z,
+                source.orientation.w,
+            }},
             static_cast<double>(source.positionAndInverseMass.w),
             static_cast<double>(source.previousAndRadius.w),
             0.0,
@@ -3198,6 +3242,7 @@ OracleResult runOracle(
     applyOracleYarnFriction(initial, result);
     applyOracleFruitPairFriction(initial, result);
     applyOracleFruitGroundFriction(initial, result);
+    integrateOracleFruitOrientation(initial, result);
     result.yarnContacts = buildOracleYarnContacts(
         initial, result, &result.yarnContacts
     );
@@ -3292,6 +3337,7 @@ struct Pipelines {
     id<MTLComputePipelineState> selfFriction;
     id<MTLComputePipelineState> finalize;
     id<MTLComputePipelineState> finalizeFruit;
+    id<MTLComputePipelineState> fruitOrientation;
     id<MTLComputePipelineState> clothGroundFriction;
     id<MTLComputePipelineState> yarnFriction;
     id<MTLComputePipelineState> fruitPairFriction;
@@ -3805,6 +3851,11 @@ GPUResult runGPU(
     dispatch(
         encoder, pipelines.fruitGroundFriction, initial.fruits.size()
     );
+    [encoder setComputePipelineState:pipelines.fruitOrientation];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:fruitBuffer offset:0 atIndex:1];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:2];
+    dispatch(encoder, pipelines.fruitOrientation, initial.fruits.size());
     [encoder endEncoding];
     [commandBuffer commit];
     [commandBuffer waitUntilCompleted];
@@ -4083,6 +4134,9 @@ int run(const int argc, const char* const* argv) {
         makePipeline(device, library, @"numi_cloth_bag_finalize_substep"),
         makePipeline(device, library, @"numi_cloth_bag_finalize_fruit"),
         makePipeline(
+            device, library, @"numi_cloth_bag_integrate_fruit_orientation"
+        ),
+        makePipeline(
             device, library, @"numi_cloth_bag_apply_cloth_ground_friction"
         ),
         makePipeline(device, library, @"numi_cloth_bag_apply_yarn_friction"),
@@ -4215,6 +4269,8 @@ int run(const int argc, const char* const* argv) {
     double maximumFruitPositionError = 0.0;
     double maximumFruitVelocityError = 0.0;
     double maximumFruitAngularVelocityError = 0.0;
+    double maximumFruitOrientationError = 0.0;
+    double maximumFruitOrientationNormError = 0.0;
     double maximumFruitPairContactError = 0.0;
     double maximumFruitPairImpulse = 0.0;
     double maximumFruitPairPenetration = 0.0;
@@ -4282,6 +4338,28 @@ int run(const int argc, const char* const* argv) {
                 std::abs(angularVelocityDelta.y),
                 std::abs(angularVelocityDelta.z),
             })
+        );
+        const std::array<double, 4> orientation{{
+            gpu.fruits[index].orientation.x,
+            gpu.fruits[index].orientation.y,
+            gpu.fruits[index].orientation.z,
+            gpu.fruits[index].orientation.w,
+        }};
+        double orientationNormSquared = 0.0;
+        for (std::size_t component = 0u; component < 4u; ++component) {
+            maximumFruitOrientationError = std::max(
+                maximumFruitOrientationError,
+                std::abs(
+                    orientation[component] -
+                    oracle.fruits[index].orientation[component]
+                )
+            );
+            orientationNormSquared +=
+                orientation[component] * orientation[component];
+        }
+        maximumFruitOrientationNormError = std::max(
+            maximumFruitOrientationNormError,
+            std::abs(std::sqrt(orientationNormSquared) - 1.0)
         );
     }
     for (std::size_t index = 0u; index < gpu.fruitPairs.size(); ++index) {
@@ -4672,6 +4750,8 @@ int run(const int argc, const char* const* argv) {
         fruitPairGPU.fruitPairs[0].contact.w;
     double fruitPairProbeVelocityError = 0.0;
     double fruitPairProbeAngularVelocityError = 0.0;
+    double fruitPairProbeOrientationError = 0.0;
+    double fruitPairProbeOrientationChange = 0.0;
     for (std::size_t index = 0u; index < fruitPairGPU.fruits.size(); ++index) {
         const DVec3 velocityDelta =
             d3(fruitPairGPU.fruits[index].velocityAndGroundImpulse) -
@@ -4691,6 +4771,34 @@ int run(const int argc, const char* const* argv) {
             std::abs(angularDelta.y),
             std::abs(angularDelta.z),
         });
+        const std::array<double, 4> orientation{{
+            fruitPairGPU.fruits[index].orientation.x,
+            fruitPairGPU.fruits[index].orientation.y,
+            fruitPairGPU.fruits[index].orientation.z,
+            fruitPairGPU.fruits[index].orientation.w,
+        }};
+        const std::array<double, 4> initialOrientation{{
+            fruitPairInitial.fruits[index].orientation.x,
+            fruitPairInitial.fruits[index].orientation.y,
+            fruitPairInitial.fruits[index].orientation.z,
+            fruitPairInitial.fruits[index].orientation.w,
+        }};
+        for (std::size_t component = 0u; component < 4u; ++component) {
+            fruitPairProbeOrientationError = std::max(
+                fruitPairProbeOrientationError,
+                std::abs(
+                    orientation[component] -
+                    fruitPairOracle.fruits[index].orientation[component]
+                )
+            );
+            fruitPairProbeOrientationChange = std::max(
+                fruitPairProbeOrientationChange,
+                std::abs(
+                    orientation[component] -
+                    initialOrientation[component]
+                )
+            );
+        }
     }
     const auto tangentialSpeed = [](
         const DVec3 relativeVelocity,
@@ -5163,6 +5271,8 @@ int run(const int argc, const char* const* argv) {
         maximumFruitPositionError <= 2.0e-6 &&
         maximumFruitVelocityError <= 0.02 &&
         maximumFruitAngularVelocityError <= 2.0e-4 &&
+        maximumFruitOrientationError <= 2.0e-6 &&
+        maximumFruitOrientationNormError <= 2.0e-7 &&
         maximumFruitPairContactError <= 2.0e-5 &&
         maximumFruitPairPenetration <= 2.0e-6 &&
         yarnIdentityExact && yarnControlQualified &&
@@ -5208,6 +5318,8 @@ int run(const int argc, const char* const* argv) {
         fruitPairProbeImpulse > 0.0 &&
         fruitPairProbeVelocityError <= 1.0e-4 &&
         fruitPairProbeAngularVelocityError <= 1.0e-4 &&
+        fruitPairProbeOrientationError <= 2.0e-6 &&
+        fruitPairProbeOrientationChange > 1.0e-6 &&
         fruitPairGPU.frictionStatus.counters.x ==
             fruitPairOracle.frictionContacts[0] &&
         fruitPairGPU.frictionStatus.counters.x > 0u &&
@@ -5303,6 +5415,10 @@ int run(const int argc, const char* const* argv) {
               << " max_fruit_velocity_error=" << maximumFruitVelocityError
               << " max_fruit_angular_velocity_error="
               << maximumFruitAngularVelocityError
+              << " max_fruit_orientation_error="
+              << maximumFruitOrientationError
+              << " max_fruit_orientation_norm_error="
+              << maximumFruitOrientationNormError
               << " max_fruit_pair_contact_error="
               << maximumFruitPairContactError
               << " max_fruit_pair_impulse=" << maximumFruitPairImpulse
@@ -5408,6 +5524,10 @@ int run(const int argc, const char* const* argv) {
               << " velocity_error=" << fruitPairProbeVelocityError
               << " angular_velocity_error="
               << fruitPairProbeAngularVelocityError
+              << " orientation_error="
+              << fruitPairProbeOrientationError
+              << " orientation_change="
+              << fruitPairProbeOrientationChange
               << " friction_contacts="
               << fruitPairGPU.frictionStatus.counters.x
               << " cone_ratio=" << fruitPairProbeConeRatio

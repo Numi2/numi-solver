@@ -2318,6 +2318,38 @@ kernel void numi_cloth_bag_finalize_fruit(
     fruits[index] = fruit;
 }
 
+kernel void numi_cloth_bag_integrate_fruit_orientation(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUFruit* fruits [[buffer(1)]],
+    device atomic_uint* failure [[buffer(2)]],
+    const uint index [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) ||
+        index >= config.constraintCounts.w) {
+        return;
+    }
+    NumiClothBagGPUFruit fruit = fruits[index];
+    const float3 angularVelocity = fruit.angularVelocity.xyz;
+    const float4 orientation = fruit.orientation;
+    const float4 derivative = float4(
+        orientation.w * angularVelocity +
+            cross(angularVelocity, orientation.xyz),
+        -dot(angularVelocity, orientation.xyz)
+    );
+    const float4 advanced = fma(
+        derivative,
+        float4(0.5f * config.gravityAndTimestep.w),
+        orientation
+    );
+    const float magnitudeSquared = dot(advanced, advanced);
+    if (!all(isfinite(advanced)) || !(magnitudeSquared > 1.0e-20f)) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    fruit.orientation = advanced * rsqrt(magnitudeSquared);
+    fruits[index] = fruit;
+}
+
 kernel void numi_cloth_bag_apply_cloth_ground_friction(
     constant NumiClothBagGPUConfig& config [[buffer(0)]],
     device NumiClothBagGPUParticle* particles [[buffer(1)]],
