@@ -33,6 +33,57 @@ inline bool validConfig(
     return true;
 }
 
+struct PointSegmentSample {
+    float3 closest;
+    float weight;
+    float distance;
+};
+
+inline float3 safeNormalized(const float3 value) {
+    const float magnitude = length(value);
+    return magnitude > 1.0e-14f
+        ? value / magnitude
+        : float3(1.0f, 0.0f, 0.0f);
+}
+
+inline PointSegmentSample samplePointSegment(
+    const float3 point,
+    const float3 first,
+    const float3 second
+) {
+    const float3 direction = second - first;
+    const float lengthSquared = dot(direction, direction);
+    const float weight = lengthSquared > 1.0e-20f
+        ? clamp(dot(direction, point - first) / lengthSquared, 0.0f, 1.0f)
+        : 0.0f;
+    const float3 closest = fma(direction, float3(weight), first);
+    return {closest, weight, length(closest - point)};
+}
+
+inline PointSegmentSample sampleSweptPointSegment(
+    const NumiClothBagGPUFruit fruit,
+    const NumiClothBagGPUParticle first,
+    const NumiClothBagGPUParticle second,
+    const float time
+) {
+    const float3 ballPosition = mix(
+        fruit.previousAndRadius.xyz,
+        fruit.positionAndInverseMass.xyz,
+        time
+    );
+    const float3 firstPosition = mix(
+        first.previousAndMass.xyz,
+        first.positionAndInverseMass.xyz,
+        time
+    );
+    const float3 secondPosition = mix(
+        second.previousAndMass.xyz,
+        second.positionAndInverseMass.xyz,
+        time
+    );
+    return samplePointSegment(ballPosition, firstPosition, secondPosition);
+}
+
 } // namespace
 
 kernel void numi_cloth_bag_begin_substep(
@@ -640,6 +691,164 @@ kernel void numi_cloth_bag_limit_strain(
         (second.positionAndInverseMass.w * correctionMagnitude / denominator);
     particles[firstIndex] = first;
     particles[secondIndex] = second;
+}
+
+kernel void numi_cloth_bag_build_yarn_contacts(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device const NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device const NumiClothBagGPUDistance* distances [[buffer(2)]],
+    device const NumiClothBagGPUFruit* fruits [[buffer(3)]],
+    device NumiClothBagGPUYarnContact* contacts [[buffer(4)]],
+    device atomic_uint* failure [[buffer(5)]],
+    const uint index [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) || index >= config.contactCounts.y) {
+        return;
+    }
+    const uint distanceCount = config.control.z;
+    const uint fruitCount = config.constraintCounts.w;
+    if (distanceCount == 0u || fruitCount == 0u ||
+        config.contactCounts.y != distanceCount * fruitCount) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        return;
+    }
+    const uint fruitIndex = index / distanceCount;
+    const uint segmentIndex = index - fruitIndex * distanceCount;
+    const NumiClothBagGPUDistance segment = distances[segmentIndex];
+    const uint firstIndex = segment.particlesAndColor.x;
+    const uint secondIndex = segment.particlesAndColor.y;
+    if (fruitIndex >= fruitCount || firstIndex >= config.control.y ||
+        secondIndex >= config.control.y || firstIndex == secondIndex) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        return;
+    }
+
+    const NumiClothBagGPUFruit fruit = fruits[fruitIndex];
+    const NumiClothBagGPUParticle first = particles[firstIndex];
+    const NumiClothBagGPUParticle second = particles[secondIndex];
+    const float target = fruit.previousAndRadius.w + config.clothMaterial.x;
+    const PointSegmentSample current = samplePointSegment(
+        fruit.positionAndInverseMass.xyz,
+        first.positionAndInverseMass.xyz,
+        second.positionAndInverseMass.xyz
+    );
+    float3 currentNormal;
+    const bool degenerateCurrent = current.distance < 1.0e-12f;
+    if (degenerateCurrent) {
+        const float3 segmentDirection = safeNormalized(
+            second.positionAndInverseMass.xyz -
+            first.positionAndInverseMass.xyz
+        );
+        const float3 axis = abs(segmentDirection.z) < 0.9f
+            ? float3(0.0f, 0.0f, 1.0f)
+            : float3(1.0f, 0.0f, 0.0f);
+        currentNormal = safeNormalized(cross(segmentDirection, axis));
+    } else {
+        currentNormal = (
+            current.closest - fruit.positionAndInverseMass.xyz
+        ) / current.distance;
+    }
+
+    float impactTime = 0.0f;
+    float3 sweptNormal = float3(0.0f);
+    float sweptWeight = 0.0f;
+    float removedAdvance = 0.0f;
+    bool sweptImpact = false;
+    const float motionBound =
+        length(
+            fruit.positionAndInverseMass.xyz - fruit.previousAndRadius.xyz
+        ) +
+        length(
+            first.positionAndInverseMass.xyz - first.previousAndMass.xyz
+        ) +
+        length(
+            second.positionAndInverseMass.xyz - second.previousAndMass.xyz
+        );
+    if (motionBound >= 1.0e-14f) {
+        constexpr float distanceTolerance = 1.0e-9f;
+        PointSegmentSample impact = sampleSweptPointSegment(
+            fruit, first, second, 0.0f
+        );
+        bool found = impact.distance <= target + distanceTolerance;
+        if (!found) {
+            for (uint iteration = 0u; iteration < 80u; ++iteration) {
+                impact = sampleSweptPointSegment(
+                    fruit, first, second, impactTime
+                );
+                const float gap = impact.distance - target;
+                if (gap <= distanceTolerance) {
+                    found = true;
+                    break;
+                }
+                const float advance = 0.9f * gap / motionBound;
+                if (!isfinite(advance) || !(advance > 0.0f) ||
+                    impactTime + advance >= 1.0f) {
+                    break;
+                }
+                impactTime += max(advance, 1.0e-10f);
+            }
+        }
+        if (found && impact.distance >= 1.0e-12f) {
+            const float3 ballAtImpact = mix(
+                fruit.previousAndRadius.xyz,
+                fruit.positionAndInverseMass.xyz,
+                impactTime
+            );
+            const float3 firstAtImpact = mix(
+                first.previousAndMass.xyz,
+                first.positionAndInverseMass.xyz,
+                impactTime
+            );
+            const float3 secondAtImpact = mix(
+                second.previousAndMass.xyz,
+                second.positionAndInverseMass.xyz,
+                impactTime
+            );
+            sweptNormal = (impact.closest - ballAtImpact) / impact.distance;
+            sweptWeight = impact.weight;
+            const float3 segmentRemaining =
+                (first.positionAndInverseMass.xyz - firstAtImpact) *
+                    (1.0f - sweptWeight) +
+                (second.positionAndInverseMass.xyz - secondAtImpact) *
+                    sweptWeight;
+            const float3 ballRemaining =
+                fruit.positionAndInverseMass.xyz - ballAtImpact;
+            removedAdvance = dot(
+                ballRemaining - segmentRemaining, sweptNormal
+            );
+            sweptImpact = removedAdvance > 0.0f;
+            if (!sweptImpact) {
+                removedAdvance = 0.0f;
+            }
+        }
+    }
+
+    NumiClothBagGPUYarnContact contact{};
+    contact.identity = uint4(
+        fruitIndex, segmentIndex, firstIndex, secondIndex
+    );
+    contact.currentNormalAndSeparation = float4(
+        currentNormal, current.distance - target
+    );
+    contact.sweptNormalAndAdvance = float4(
+        sweptNormal, removedAdvance
+    );
+    contact.weightsAndTime = float4(
+        current.weight, sweptWeight, impactTime, target
+    );
+    contact.control = uint4(
+        current.distance < target,
+        sweptImpact,
+        degenerateCurrent,
+        0u
+    );
+    if (!all(isfinite(contact.currentNormalAndSeparation)) ||
+        !all(isfinite(contact.sweptNormalAndAdvance)) ||
+        !all(isfinite(contact.weightsAndTime))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        return;
+    }
+    contacts[index] = contact;
 }
 
 kernel void numi_cloth_bag_finalize_substep(

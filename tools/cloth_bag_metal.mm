@@ -39,6 +39,7 @@ constexpr std::uint32_t kBendCount = 2834u;
 constexpr std::uint32_t kFruitCount = 12u;
 constexpr std::uint32_t kFruitPairCount =
     kFruitCount * (kFruitCount - 1u) / 2u;
+constexpr std::uint32_t kFruitYarnCount = kFruitCount * kDistanceCount;
 constexpr float kOrdinaryMass = 0.000050f;
 constexpr float kHemMass = 0.000100f;
 constexpr float kGripCompliance = 2.0e-4f;
@@ -81,8 +82,23 @@ double dot(const DVec3 a, const DVec3 b) {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
+DVec3 cross(const DVec3 a, const DVec3 b) {
+    return {
+        a.y * b.z - a.z * b.y,
+        a.z * b.x - a.x * b.z,
+        a.x * b.y - a.y * b.x,
+    };
+}
+
 double length(const DVec3 value) {
     return std::sqrt(dot(value, value));
+}
+
+DVec3 normalized(const DVec3 value) {
+    const double magnitude = length(value);
+    return magnitude > 1.0e-14
+        ? value / magnitude
+        : DVec3{1.0, 0.0, 0.0};
 }
 
 mr_float4 f4(
@@ -267,6 +283,7 @@ struct InitialState {
     std::vector<NumiClothBagGPUBend> bends;
     std::vector<NumiClothBagGPUFruit> fruits;
     std::vector<NumiClothBagGPUFruitPair> fruitPairs;
+    std::vector<NumiClothBagGPUYarnContact> yarnContacts;
     std::vector<NumiClothBagGPUBatch> distanceBatches;
     std::vector<NumiClothBagGPUBatch> knotBatches;
     std::vector<NumiClothBagGPUBatch> bendBatches;
@@ -677,7 +694,9 @@ InitialState makeInitialState() {
     result.config.constraintCounts = u4(
         kKnotCount, kBendCount, 0u, kFruitCount
     );
-    result.config.contactCounts = u4(kFruitPairCount, 0u, 0u, 0u);
+    result.config.contactCounts = u4(
+        kFruitPairCount, kFruitYarnCount, 0u, 0u
+    );
     result.config.gravityAndTimestep = f4(0.0f, 0.0f, -9.81f, kTimestep);
     result.config.gripTargetAndActive = f4(
         static_cast<float>(base.x + 0.002),
@@ -815,6 +834,22 @@ InitialState makeInitialState() {
         result.fruitPairBatches.push_back({
             u4(first, batchStart - first, color, 0u)
         });
+    }
+    result.yarnContacts.reserve(kFruitYarnCount);
+    for (std::uint32_t fruit = 0u; fruit < kFruitCount; ++fruit) {
+        for (std::uint32_t segment = 0u;
+             segment < kDistanceCount;
+             ++segment) {
+            const NumiClothBagGPUDistance& yarn = result.distances[segment];
+            NumiClothBagGPUYarnContact contact{};
+            contact.identity = u4(
+                fruit,
+                segment,
+                yarn.particlesAndColor.x,
+                yarn.particlesAndColor.y
+            );
+            result.yarnContacts.push_back(contact);
+        }
     }
     return result;
 }
@@ -963,6 +998,53 @@ InitialState makeGroundContactProbeState() {
     return result;
 }
 
+InitialState makeYarnCCDProbeState() {
+    InitialState result;
+    result.config.control = u4(
+        NUMI_CLOTH_BAG_GPU_ABI_VERSION, 2u, 1u, 0u
+    );
+    result.config.constraintCounts = u4(0u, 0u, 0u, 1u);
+    result.config.contactCounts = u4(0u, 1u, 0u, 0u);
+    result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
+    result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    result.config.clothMaterial = f4(0.004f, 0.0f, 0.0f, 0.0f);
+    result.config.fruitMaterial = f4(0.30f, 0.42f, 0.015f, 0.0f);
+    const auto fixedParticle = [](const DVec3 position) {
+        NumiClothBagGPUParticle value{};
+        value.positionAndInverseMass = f4(
+            static_cast<float>(position.x),
+            static_cast<float>(position.y),
+            static_cast<float>(position.z),
+            0.0f
+        );
+        value.previousAndMass = f4(
+            static_cast<float>(position.x),
+            static_cast<float>(position.y),
+            static_cast<float>(position.z),
+            0.0f
+        );
+        value.velocity = f4(0.0f, 0.0f, 0.0f, 0.0f);
+        return value;
+    };
+    result.particles = {
+        fixedParticle({0.0, -0.1, 1.0}),
+        fixedParticle({0.0, 0.1, 1.0}),
+    };
+    NumiClothBagGPUDistance distance{};
+    distance.particlesAndColor = u4(0u, 1u, 0u, 0u);
+    distance.material = f4(0.2f, 0.0f, 0.0f, kStrainLimit);
+    result.distances = {distance};
+    NumiClothBagGPUFruit fruit = makeProbeFruit(
+        {-0.1, 0.0, 1.0}, 1.0f, 0.02f
+    );
+    fruit.velocityAndGroundImpulse = f4(20.0f, 0.0f, 0.0f, 0.0f);
+    result.fruits = {fruit};
+    NumiClothBagGPUYarnContact contact{};
+    contact.identity = u4(0u, 0u, 0u, 1u);
+    result.yarnContacts = {contact};
+    return result;
+}
+
 bool verifyColoring(const InitialState& state) {
     for (const NumiClothBagGPUBatch& batch : state.distanceBatches) {
         std::vector<bool> used(state.particles.size(), false);
@@ -1097,6 +1179,24 @@ struct OracleFruitPair {
     double normalImpulse{};
 };
 
+struct OracleYarnContact {
+    std::uint32_t fruit{};
+    std::uint32_t segment{};
+    std::uint32_t first{};
+    std::uint32_t second{};
+    DVec3 currentNormal{};
+    DVec3 sweptNormal{};
+    double currentSeparation{};
+    double currentWeight{};
+    double sweptWeight{};
+    double impactTime{};
+    double combinedRadius{};
+    double removedAdvance{};
+    bool currentOverlap{};
+    bool sweptImpact{};
+    bool degenerateCurrent{};
+};
+
 struct OracleResult {
     std::vector<OracleParticle> particles;
     std::vector<OracleDistance> distances;
@@ -1105,7 +1205,157 @@ struct OracleResult {
     std::vector<OracleBend> bends;
     std::vector<OracleFruit> fruits;
     std::vector<OracleFruitPair> fruitPairs;
+    std::vector<OracleYarnContact> yarnContacts;
 };
+
+struct OraclePointSegmentSample {
+    DVec3 closest{};
+    double weight{};
+    double distance{};
+};
+
+OraclePointSegmentSample samplePointSegment(
+    const DVec3 point,
+    const DVec3 first,
+    const DVec3 second
+) {
+    const DVec3 direction = second - first;
+    const double lengthSquared = dot(direction, direction);
+    const double weight = lengthSquared > 1.0e-20
+        ? std::clamp(
+            dot(direction, point - first) / lengthSquared,
+            0.0,
+            1.0
+        )
+        : 0.0;
+    const DVec3 closest = first + direction * weight;
+    return {closest, weight, length(closest - point)};
+}
+
+std::vector<OracleYarnContact> buildOracleYarnContacts(
+    const InitialState& initial,
+    const OracleResult& state
+) {
+    std::vector<OracleYarnContact> result;
+    result.reserve(initial.yarnContacts.size());
+    const double clothRadius = initial.config.clothMaterial.x;
+    for (const NumiClothBagGPUYarnContact& source : initial.yarnContacts) {
+        const std::uint32_t fruitIndex = source.identity.x;
+        const std::uint32_t segmentIndex = source.identity.y;
+        const OracleFruit& fruit = state.fruits[fruitIndex];
+        const OracleDistance& segment = state.distances[segmentIndex];
+        const OracleParticle& first = state.particles[segment.first];
+        const OracleParticle& second = state.particles[segment.second];
+        const double target = fruit.radius + clothRadius;
+        const OraclePointSegmentSample current = samplePointSegment(
+            fruit.position, first.position, second.position
+        );
+        const bool degenerateCurrent = current.distance < 1.0e-12;
+        DVec3 currentNormal{};
+        if (degenerateCurrent) {
+            const DVec3 segmentDirection = normalized(
+                second.position - first.position
+            );
+            currentNormal = normalized(cross(
+                segmentDirection,
+                std::abs(segmentDirection.z) < 0.9
+                    ? DVec3{0.0, 0.0, 1.0}
+                    : DVec3{1.0, 0.0, 0.0}
+            ));
+        } else {
+            currentNormal =
+                (current.closest - fruit.position) / current.distance;
+        }
+
+        double impactTime = 0.0;
+        DVec3 sweptNormal{};
+        double sweptWeight = 0.0;
+        double removedAdvance = 0.0;
+        bool sweptImpact = false;
+        const double motionBound =
+            length(fruit.position - fruit.previous) +
+            length(first.position - first.previous) +
+            length(second.position - second.previous);
+        if (motionBound >= 1.0e-14) {
+            const auto sweptSample = [&fruit, &first, &second](
+                const double time
+            ) {
+                const DVec3 ball = fruit.previous +
+                    (fruit.position - fruit.previous) * time;
+                const DVec3 firstPosition = first.previous +
+                    (first.position - first.previous) * time;
+                const DVec3 secondPosition = second.previous +
+                    (second.position - second.previous) * time;
+                return samplePointSegment(
+                    ball, firstPosition, secondPosition
+                );
+            };
+            constexpr double distanceTolerance = 1.0e-9;
+            OraclePointSegmentSample impact = sweptSample(0.0);
+            bool found = impact.distance <= target + distanceTolerance;
+            if (!found) {
+                for (std::uint32_t iteration = 0u;
+                     iteration < 80u;
+                     ++iteration) {
+                    impact = sweptSample(impactTime);
+                    const double gap = impact.distance - target;
+                    if (gap <= distanceTolerance) {
+                        found = true;
+                        break;
+                    }
+                    const double advance = 0.9 * gap / motionBound;
+                    if (!std::isfinite(advance) || !(advance > 0.0) ||
+                        impactTime + advance >= 1.0) {
+                        break;
+                    }
+                    impactTime += std::max(advance, 1.0e-10);
+                }
+            }
+            if (found && impact.distance >= 1.0e-12) {
+                const DVec3 ballAtImpact = fruit.previous +
+                    (fruit.position - fruit.previous) * impactTime;
+                const DVec3 firstAtImpact = first.previous +
+                    (first.position - first.previous) * impactTime;
+                const DVec3 secondAtImpact = second.previous +
+                    (second.position - second.previous) * impactTime;
+                sweptNormal =
+                    (impact.closest - ballAtImpact) / impact.distance;
+                sweptWeight = impact.weight;
+                const DVec3 segmentRemaining =
+                    (first.position - firstAtImpact) *
+                        (1.0 - sweptWeight) +
+                    (second.position - secondAtImpact) * sweptWeight;
+                const DVec3 ballRemaining =
+                    fruit.position - ballAtImpact;
+                removedAdvance = dot(
+                    ballRemaining - segmentRemaining, sweptNormal
+                );
+                sweptImpact = removedAdvance > 0.0;
+                if (!sweptImpact) {
+                    removedAdvance = 0.0;
+                }
+            }
+        }
+        result.push_back({
+            fruitIndex,
+            segmentIndex,
+            segment.first,
+            segment.second,
+            currentNormal,
+            sweptNormal,
+            current.distance - target,
+            current.weight,
+            sweptWeight,
+            impactTime,
+            target,
+            removedAdvance,
+            current.distance < target,
+            sweptImpact,
+            degenerateCurrent,
+        });
+    }
+    return result;
+}
 
 OracleResult runOracle(
     const InitialState& initial,
@@ -1516,6 +1766,7 @@ OracleResult runOracle(
     for (OracleFruit& fruit : result.fruits) {
         fruit.velocity = (fruit.position - fruit.previous) / timestep;
     }
+    result.yarnContacts = buildOracleYarnContacts(initial, result);
     return result;
 }
 
@@ -1574,6 +1825,7 @@ struct GPUResult {
     std::vector<NumiClothBagGPUBend> bends;
     std::vector<NumiClothBagGPUFruit> fruits;
     std::vector<NumiClothBagGPUFruitPair> fruitPairs;
+    std::vector<NumiClothBagGPUYarnContact> yarnContacts;
     std::uint32_t failure{};
     double seconds{};
 };
@@ -1587,6 +1839,7 @@ struct Pipelines {
     id<MTLComputePipelineState> fruitPair;
     id<MTLComputePipelineState> ground;
     id<MTLComputePipelineState> strain;
+    id<MTLComputePipelineState> yarnContacts;
     id<MTLComputePipelineState> finalize;
     id<MTLComputePipelineState> finalizeFruit;
 };
@@ -1621,6 +1874,7 @@ GPUResult runGPU(
     id<MTLBuffer> bendBuffer = makeBytes(initial.bends);
     id<MTLBuffer> fruitBuffer = makeBytes(initial.fruits);
     id<MTLBuffer> fruitPairBuffer = makeBytes(initial.fruitPairs);
+    id<MTLBuffer> yarnContactBuffer = makeBytes(initial.yarnContacts);
     std::uint32_t zero = 0u;
     id<MTLBuffer> failureBuffer = [device
         newBufferWithBytes:&zero
@@ -1630,6 +1884,7 @@ GPUResult runGPU(
         distanceBuffer == nil || gripBuffer == nil ||
         knotBuffer == nil || bendBuffer == nil ||
         fruitBuffer == nil || fruitPairBuffer == nil ||
+        yarnContactBuffer == nil ||
         failureBuffer == nil) {
         throw std::runtime_error("failed to allocate Metal cloth buffers");
     }
@@ -1732,6 +1987,14 @@ GPUResult runGPU(
             dispatch(encoder, pipelines.strain, batch.control.y);
         }
     }
+    [encoder setComputePipelineState:pipelines.yarnContacts];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+    [encoder setBuffer:distanceBuffer offset:0 atIndex:2];
+    [encoder setBuffer:fruitBuffer offset:0 atIndex:3];
+    [encoder setBuffer:yarnContactBuffer offset:0 atIndex:4];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:5];
+    dispatch(encoder, pipelines.yarnContacts, initial.yarnContacts.size());
     [encoder setComputePipelineState:pipelines.finalize];
     [encoder setBuffer:configBuffer offset:0 atIndex:0];
     [encoder setBuffer:particleBuffer offset:0 atIndex:1];
@@ -1765,6 +2028,7 @@ GPUResult runGPU(
     assign(result.bends, bendBuffer, initial.bends);
     assign(result.fruits, fruitBuffer, initial.fruits);
     assign(result.fruitPairs, fruitPairBuffer, initial.fruitPairs);
+    assign(result.yarnContacts, yarnContactBuffer, initial.yarnContacts);
     result.failure = *static_cast<const std::uint32_t*>(failureBuffer.contents);
     if (commandBuffer.GPUEndTime >= commandBuffer.GPUStartTime) {
         result.seconds = commandBuffer.GPUEndTime - commandBuffer.GPUStartTime;
@@ -1804,6 +2068,7 @@ std::uint64_t hashGPUResult(const GPUResult& result) {
     append(result.bends);
     append(result.fruits);
     append(result.fruitPairs);
+    append(result.yarnContacts);
     hash ^= result.failure;
     hash *= 1099511628211ull;
     return hash;
@@ -1895,6 +2160,7 @@ int run(const int argc, const char* const* argv) {
         makePipeline(device, library, @"numi_cloth_bag_solve_fruit_pair"),
         makePipeline(device, library, @"numi_cloth_bag_solve_ground"),
         makePipeline(device, library, @"numi_cloth_bag_limit_strain"),
+        makePipeline(device, library, @"numi_cloth_bag_build_yarn_contacts"),
         makePipeline(device, library, @"numi_cloth_bag_finalize_substep"),
         makePipeline(device, library, @"numi_cloth_bag_finalize_fruit"),
     };
@@ -1957,6 +2223,18 @@ int run(const int argc, const char* const* argv) {
         1u,
         0u
     );
+    const InitialState yarnCCDInitial = makeYarnCCDProbeState();
+    const OracleResult yarnCCDOracle = runOracle(
+        yarnCCDInitial, 0u, 0u
+    );
+    const GPUResult yarnCCDGPU = runGPU(
+        device,
+        queue,
+        pipelines,
+        yarnCCDInitial,
+        0u,
+        0u
+    );
     const GPUResult& gpu = gpuResults.front();
     bool deterministic = true;
     for (std::size_t replay = 1u; replay < gpuResults.size(); ++replay) {
@@ -1968,7 +2246,11 @@ int run(const int argc, const char* const* argv) {
             bitwiseEqual(gpu.knots, gpuResults[replay].knots) &&
             bitwiseEqual(gpu.bends, gpuResults[replay].bends) &&
             bitwiseEqual(gpu.fruits, gpuResults[replay].fruits) &&
-            bitwiseEqual(gpu.fruitPairs, gpuResults[replay].fruitPairs);
+            bitwiseEqual(gpu.fruitPairs, gpuResults[replay].fruitPairs) &&
+            bitwiseEqual(
+                gpu.yarnContacts,
+                gpuResults[replay].yarnContacts
+            );
     }
 
     double maximumPositionError = 0.0;
@@ -2068,6 +2350,103 @@ int run(const int argc, const char* const* argv) {
         maximumFruitPairPenetration = std::max(
             maximumFruitPairPenetration,
             target - separation
+        );
+    }
+    bool yarnIdentityExact =
+        gpu.yarnContacts.size() == oracle.yarnContacts.size();
+    bool yarnControlExact = yarnIdentityExact;
+    std::uint64_t currentYarnOverlapCount = 0u;
+    std::uint64_t sweptYarnImpactCount = 0u;
+    double maximumYarnSeparationError = 0.0;
+    double maximumYarnCurrentNormalError = 0.0;
+    double maximumYarnSweptNormalError = 0.0;
+    double maximumYarnWeightError = 0.0;
+    double maximumActiveYarnWeightError = 0.0;
+    double maximumYarnImpactTimeError = 0.0;
+    double maximumYarnAdvanceError = 0.0;
+    for (std::size_t index = 0u;
+         index < gpu.yarnContacts.size() && index < oracle.yarnContacts.size();
+         ++index) {
+        const NumiClothBagGPUYarnContact& actual = gpu.yarnContacts[index];
+        const OracleYarnContact& expected = oracle.yarnContacts[index];
+        yarnIdentityExact = yarnIdentityExact &&
+            actual.identity.x == expected.fruit &&
+            actual.identity.y == expected.segment &&
+            actual.identity.z == expected.first &&
+            actual.identity.w == expected.second;
+        yarnControlExact = yarnControlExact &&
+            (actual.control.x != 0u) == expected.currentOverlap &&
+            (actual.control.y != 0u) == expected.sweptImpact &&
+            (actual.control.z != 0u) == expected.degenerateCurrent;
+        currentYarnOverlapCount += actual.control.x != 0u;
+        sweptYarnImpactCount += actual.control.y != 0u;
+        maximumYarnSeparationError = std::max(
+            maximumYarnSeparationError,
+            std::abs(
+                static_cast<double>(
+                    actual.currentNormalAndSeparation.w
+                ) - expected.currentSeparation
+            )
+        );
+        const DVec3 currentNormalDelta =
+            d3(actual.currentNormalAndSeparation) - expected.currentNormal;
+        maximumYarnCurrentNormalError = std::max({
+            maximumYarnCurrentNormalError,
+            std::abs(currentNormalDelta.x),
+            std::abs(currentNormalDelta.y),
+            std::abs(currentNormalDelta.z),
+        });
+        if (expected.sweptImpact) {
+            const DVec3 sweptNormalDelta =
+                d3(actual.sweptNormalAndAdvance) - expected.sweptNormal;
+            maximumYarnSweptNormalError = std::max({
+                maximumYarnSweptNormalError,
+                std::abs(sweptNormalDelta.x),
+                std::abs(sweptNormalDelta.y),
+                std::abs(sweptNormalDelta.z),
+            });
+        }
+        maximumYarnWeightError = std::max({
+            maximumYarnWeightError,
+            std::abs(
+                static_cast<double>(actual.weightsAndTime.x) -
+                expected.currentWeight
+            ),
+            std::abs(
+                static_cast<double>(actual.weightsAndTime.y) -
+                expected.sweptWeight
+            ),
+            std::abs(
+                static_cast<double>(actual.weightsAndTime.w) -
+                expected.combinedRadius
+            ),
+        });
+        if (expected.currentOverlap || expected.sweptImpact) {
+            maximumActiveYarnWeightError = std::max({
+                maximumActiveYarnWeightError,
+                std::abs(
+                    static_cast<double>(actual.weightsAndTime.x) -
+                    expected.currentWeight
+                ),
+                std::abs(
+                    static_cast<double>(actual.weightsAndTime.y) -
+                    expected.sweptWeight
+                ),
+            });
+        }
+        maximumYarnImpactTimeError = std::max(
+            maximumYarnImpactTimeError,
+            std::abs(
+                static_cast<double>(actual.weightsAndTime.z) -
+                expected.impactTime
+            )
+        );
+        maximumYarnAdvanceError = std::max(
+            maximumYarnAdvanceError,
+            std::abs(
+                static_cast<double>(actual.sweptNormalAndAdvance.w) -
+                expected.removedAdvance
+            )
         );
     }
     for (std::size_t index = 0u; index < gpu.distances.size(); ++index) {
@@ -2217,6 +2596,54 @@ int run(const int argc, const char* const* argv) {
         groundFruitImpulse -
         groundContactOracle.fruits[0].groundNormalImpulse
     );
+    const NumiClothBagGPUYarnContact& yarnCCDContact =
+        yarnCCDGPU.yarnContacts.front();
+    const OracleYarnContact& yarnCCDExpected =
+        yarnCCDOracle.yarnContacts.front();
+    const DVec3 yarnCCDCurrentNormalDelta =
+        d3(yarnCCDContact.currentNormalAndSeparation) -
+        yarnCCDExpected.currentNormal;
+    const DVec3 yarnCCDSweptNormalDelta =
+        d3(yarnCCDContact.sweptNormalAndAdvance) -
+        yarnCCDExpected.sweptNormal;
+    const double yarnCCDGeometryError = std::max({
+        std::abs(yarnCCDCurrentNormalDelta.x),
+        std::abs(yarnCCDCurrentNormalDelta.y),
+        std::abs(yarnCCDCurrentNormalDelta.z),
+        std::abs(yarnCCDSweptNormalDelta.x),
+        std::abs(yarnCCDSweptNormalDelta.y),
+        std::abs(yarnCCDSweptNormalDelta.z),
+        std::abs(
+            static_cast<double>(
+                yarnCCDContact.currentNormalAndSeparation.w
+            ) - yarnCCDExpected.currentSeparation
+        ),
+        std::abs(
+            static_cast<double>(yarnCCDContact.weightsAndTime.x) -
+            yarnCCDExpected.currentWeight
+        ),
+        std::abs(
+            static_cast<double>(yarnCCDContact.weightsAndTime.y) -
+            yarnCCDExpected.sweptWeight
+        ),
+        std::abs(
+            static_cast<double>(yarnCCDContact.weightsAndTime.z) -
+            yarnCCDExpected.impactTime
+        ),
+        std::abs(
+            static_cast<double>(yarnCCDContact.sweptNormalAndAdvance.w) -
+            yarnCCDExpected.removedAdvance
+        ),
+    });
+    const bool yarnCCDFlagsExact =
+        yarnCCDContact.control.x == 0u &&
+        yarnCCDContact.control.y == 1u &&
+        yarnCCDContact.control.z == 0u &&
+        yarnCCDExpected.currentOverlap == false &&
+        yarnCCDExpected.sweptImpact == true;
+    const double yarnCCDImpactTime = yarnCCDContact.weightsAndTime.z;
+    const double yarnCCDRemovedAdvance =
+        yarnCCDContact.sweptNormalAndAdvance.w;
     double averageSeconds = 0.0;
     for (const GPUResult& replay : gpuResults) {
         averageSeconds += replay.seconds;
@@ -2231,6 +2658,7 @@ int run(const int argc, const char* const* argv) {
         initial.bends.size() == kBendCount &&
         initial.fruits.size() == kFruitCount &&
         initial.fruitPairs.size() == kFruitPairCount &&
+        initial.yarnContacts.size() == kFruitYarnCount &&
         coloringExact && gpu.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
         deterministic && maximumPositionError <= 2.0e-5 &&
         maximumVelocityError <= 0.12 &&
@@ -2243,6 +2671,13 @@ int run(const int argc, const char* const* argv) {
         maximumFruitVelocityError <= 0.02 &&
         maximumFruitPairContactError <= 2.0e-5 &&
         maximumFruitPairPenetration <= 2.0e-6 &&
+        yarnIdentityExact && yarnControlExact &&
+        maximumYarnSeparationError <= 2.0e-5 &&
+        maximumYarnCurrentNormalError <= 5.0e-4 &&
+        maximumYarnSweptNormalError <= 5.0e-4 &&
+        maximumActiveYarnWeightError <= 2.0e-4 &&
+        maximumYarnImpactTimeError <= 2.0e-4 &&
+        maximumYarnAdvanceError <= 2.0e-5 &&
         strainViolation <= 2.0e-6 &&
         maximumDisplacement > 1.0e-4 && gripForce > 1.0 &&
         strainGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
@@ -2263,7 +2698,11 @@ int run(const int argc, const char* const* argv) {
         groundContactPositionError <= 1.0e-7 &&
         groundContactImpulseError <= 2.0e-6 &&
         groundClothHeight >= 0.004 - 1.0e-8 &&
-        groundFruitHeight >= 1.0 - 1.0e-8;
+        groundFruitHeight >= 1.0 - 1.0e-8 &&
+        yarnCCDGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
+        yarnCCDFlagsExact && yarnCCDGeometryError <= 5.0e-6 &&
+        yarnCCDImpactTime > 0.30 && yarnCCDImpactTime < 0.50 &&
+        yarnCCDRemovedAdvance > 0.05;
 
     std::cout << std::fixed << std::setprecision(12)
               << "device=" << device.name.UTF8String << '\n'
@@ -2274,7 +2713,9 @@ int run(const int argc, const char* const* argv) {
               << " knots=" << initial.knots.size()
               << " bends=" << initial.bends.size()
               << " fruits=" << initial.fruits.size()
-              << " fruit_pairs=" << initial.fruitPairs.size() << '\n'
+              << " fruit_pairs=" << initial.fruitPairs.size()
+              << " fruit_yarn_candidates=" << initial.yarnContacts.size()
+              << '\n'
               << "distance_colors=" << initial.distanceBatches.size()
               << " knot_colors=" << initial.knotBatches.size()
               << " bend_colors=" << initial.bendBatches.size()
@@ -2302,6 +2743,23 @@ int run(const int argc, const char* const* argv) {
               << " max_fruit_pair_impulse=" << maximumFruitPairImpulse
               << " max_fruit_pair_penetration="
               << maximumFruitPairPenetration << '\n'
+              << "yarn_identity_exact=" << yarnIdentityExact
+              << " yarn_control_exact=" << yarnControlExact
+              << " current_yarn_overlaps=" << currentYarnOverlapCount
+              << " swept_yarn_impacts=" << sweptYarnImpactCount << '\n'
+              << "max_yarn_separation_error="
+              << maximumYarnSeparationError
+              << " max_yarn_current_normal_error="
+              << maximumYarnCurrentNormalError
+              << " max_yarn_swept_normal_error="
+              << maximumYarnSweptNormalError << '\n'
+              << "max_yarn_weight_error=" << maximumYarnWeightError
+              << " max_active_yarn_weight_error="
+              << maximumActiveYarnWeightError
+              << " max_yarn_impact_time_error="
+              << maximumYarnImpactTimeError
+              << " max_yarn_advance_error="
+              << maximumYarnAdvanceError << '\n'
               << "max_strain_violation=" << strainViolation
               << " max_displacement=" << maximumDisplacement
               << " grip_force=" << gripForce << '\n'
@@ -2334,6 +2792,13 @@ int run(const int argc, const char* const* argv) {
               << " fruit_normal_impulse=" << groundFruitImpulse
               << " ground_contact_failure_flags=" << groundContactGPU.failure
               << '\n'
+              << "yarn_ccd_geometry_error=" << yarnCCDGeometryError
+              << " impact_time=" << yarnCCDImpactTime
+              << " removed_advance=" << yarnCCDRemovedAdvance
+              << " current_overlap="
+              << (yarnCCDContact.control.x != 0u)
+              << " swept_impact=" << (yarnCCDContact.control.y != 0u)
+              << " yarn_ccd_failure_flags=" << yarnCCDGPU.failure << '\n'
               << "average_gpu_seconds=" << averageSeconds
               << " state_hash=0x" << std::hex << hashGPUResult(gpu)
               << std::dec << '\n'

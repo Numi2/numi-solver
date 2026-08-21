@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 3u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 4u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
 
 enum NumiClothBagGPUFailure : mr_u32 {
@@ -19,7 +19,7 @@ typedef struct MR_ALIGN16 NumiClothBagGPUConfig {
     // x crossing-angle knot count, y yarn-bend count,
     // z 1 when ground response is active, w fruit count.
     mr_uint4 constraintCounts;
-    // x fruit-pair count, yzw reserved.
+    // x fruit-pair count, y sphere/yarn candidate count, zw reserved.
     mr_uint4 contactCounts;
     // xyz gravitational acceleration, w substep timestep.
     mr_float4 gravityAndTimestep;
@@ -96,6 +96,22 @@ typedef struct MR_ALIGN16 NumiClothBagGPUFruitPair {
     mr_float4 contact;
 } NumiClothBagGPUFruitPair;
 
+typedef struct MR_ALIGN16 NumiClothBagGPUYarnContact {
+    // x fruit, y distance/yarn segment, z first knot, w second knot.
+    mr_uint4 identity;
+    // xyz current normal from fruit toward yarn, w signed surface separation.
+    mr_float4 currentNormalAndSeparation;
+    // xyz swept-impact normal from fruit toward yarn,
+    // w removable post-impact normal advance.
+    mr_float4 sweptNormalAndAdvance;
+    // x current segment weight, y swept-impact segment weight,
+    // z impact time in [0,1], w combined sphere/yarn radius.
+    mr_float4 weightsAndTime;
+    // x current overlap, y swept impact, z degenerate current normal,
+    // w reserved.
+    mr_uint4 control;
+} NumiClothBagGPUYarnContact;
+
 typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
     // x first constraint, y constraint count, z expected graph color,
     // w reserved.
@@ -111,5 +127,6 @@ static_assert(sizeof(NumiClothBagGPUKnot) == 48);
 static_assert(sizeof(NumiClothBagGPUBend) == 32);
 static_assert(sizeof(NumiClothBagGPUFruit) == 96);
 static_assert(sizeof(NumiClothBagGPUFruitPair) == 32);
+static_assert(sizeof(NumiClothBagGPUYarnContact) == 80);
 static_assert(sizeof(NumiClothBagGPUBatch) == 16);
 #endif

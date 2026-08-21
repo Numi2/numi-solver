@@ -1,4 +1,4 @@
-# Metal cloth internal-constraint, fruit, and seam-grip transaction
+# Metal cloth constraints, seam grip, and fruit/yarn contact geometry
 
 ## Qualified scope
 
@@ -12,6 +12,8 @@ versioned ABI in `include/numi/cloth_bag_gpu.h` owns:
 - 2,834 three-knot yarn-bend constraints;
 - twelve fruits with translational, angular, orientation, and contact state;
 - all 66 graph-colored fruit-pair candidates;
+- all 34,848 fruit/yarn candidates with present-time closest geometry and
+  swept conservative-advancement CCD;
 - unilateral cloth/ground and fruit/ground projection;
 - the ten finite-compliance top-seam grips;
 - gravity prediction and symplectic position advance;
@@ -66,12 +68,28 @@ the removed fruit advance as normal impulse. These are the CPU reference's
 normal position transactions; tangential and rolling impulses remain a later
 stage.
 
+For every fruit center `b` and moving yarn segment `[a,c]`, one Metal thread
+writes one deterministic candidate record. Present-time geometry uses
+
+```math
+s=\operatorname{clamp}\left(\frac{(b-a)\cdot(c-a)}{\|c-a\|^2},0,1\right),
+\qquad q=a+s(c-a),
+```
+
+with signed surface separation `||q-b||-(r_f+r_y)`. Swept geometry linearly
+interpolates the fruit and both yarn endpoints and applies the CPU reference's
+80-step conservative advancement. A crossing is published only when the
+remaining relative normal advance after impact is positive. This stage builds
+the complete deterministic contact set; it does not yet apply fruit/yarn
+position or friction response.
+
 ## Independent qualification
 
 The harness reconstructs the reference bag's 48 by 28 wall and 13 by 13
 closed bottom, verifies the exact particle, distance, knot, bend, grip, fruit,
-and pair counts, and rejects any graph color that shares written state. It
-executes 32 internal-constraint/grip/contact iterations and three
+pair, and 34,848 fruit/yarn candidate counts, and rejects any graph color that
+shares written state. It executes 32 internal-constraint/grip/contact
+iterations and three
 extension-limit sweeps on Metal, then compares every particle, fruit, contact,
 and multiplier with an independent FP64 implementation of the same colored
 schedule. Two GPU runs must be byte-identical.
@@ -85,7 +103,10 @@ again matching an independent FP64 active-set solve. A deliberately
 overlapping unequal-mass fruit pair must separate to the exact combined radius
 while preserving center of mass and normal impulse. A separate ground case
 must lift both a yarn particle and fruit to their physical radii and match the
-FP64 normal impulse.
+FP64 normal impulse. A focused tunneling case moves a fruit completely through
+a fixed segment within one 0.01-second substep; Metal must publish the same
+impact time, normal, segment weight, and removable advance as FP64 despite no
+present-time overlap.
 
 Run it with:
 
@@ -97,8 +118,8 @@ Run it with:
 The Apple M4 result measured on 2026-08-21 was:
 
 ```text
-abi=3 particles=1465 distances=2904 grips=10 knots=1369 bends=2834
-fruits=12 fruit_pairs=66
+abi=4 particles=1465 distances=2904 grips=10 knots=1369 bends=2834
+fruits=12 fruit_pairs=66 fruit_yarn_candidates=34848
 distance_colors=5 knot_colors=6 bend_colors=5 fruit_pair_colors=15
 failure_flags=0 deterministic=true
 max_position_error=0.000000339950
@@ -110,6 +131,14 @@ max_bend_lambda_error=0.000000000010
 max_fruit_position_error=0.000000002342
 max_fruit_velocity_error=0.000013488655
 max_fruit_pair_penetration=0.000000000000
+yarn_identity_exact=true yarn_control_exact=true
+current_yarn_overlaps=13 swept_yarn_impacts=7
+max_yarn_separation_error=0.000000359723
+max_yarn_current_normal_error=0.000046017914
+max_yarn_swept_normal_error=0.000000049168
+max_active_yarn_weight_error=0.000008594632
+max_yarn_impact_time_error=0.000050990388
+max_yarn_advance_error=0.000000033537
 max_strain_violation=0.000000000000
 max_displacement=0.003793269600
 grip_force=153.055611476897
@@ -127,14 +156,17 @@ ground_contact_position_error=0.000000000000
 ground_contact_impulse_error=0.000000558794
 cloth_height=0.004000000190 fruit_height=1.000000000000
 fruit_normal_impulse=25.000000000000
-state_hash=0x8ad67bf5714bd987
+yarn_ccd_geometry_error=0.000000011604
+impact_time=0.380000025034 removed_advance=0.123999990523
+current_overlap=false swept_impact=true
+state_hash=0x685692d623d93034
 result=PASS
 ```
 
 GPU time is reported by the executable but is not yet a performance claim:
 this transaction has no complete-trajectory baseline and no profiler trace.
 The qualified combined metallib SHA-256 is
-`8eb95bfbfade065c4d255d4957ee4ed9b8e1348e7ce0a4a753ecff10282f2122`.
+`9253ebe2b6f24475ea1ae8117ef93dbe56e939cd6ae9bd448545bf812647f2cb`.
 
 ## Remaining boundary
 
@@ -142,10 +174,11 @@ This result proves Metal ownership, FP64 equation agreement, deterministic
 replay, and full-topology execution for free motion, axial yarn, strain
 limiting, crossing-angle knots, yarn bending, ground-aware bend response, and
 the ten-knot seam attachment, fruit free translation, fruit-pair normal
-contact, and cloth/fruit ground projection. It does **not** yet include:
+contact, cloth/fruit ground projection, and full fruit/yarn present and swept
+candidate geometry. It does **not** yet include:
 
-- sphere/yarn or yarn/yarn contact;
-- continuous collision detection or contact/strain reconciliation;
+- sphere/yarn contact response or any yarn/yarn contact;
+- contact compaction/solve/reduction or contact/strain reconciliation;
 - friction, rolling resistance, or aerodynamic loads;
 - fruit rotational integration, orientation publication, or release masks; or
 - the complete grounded, spin, or pickup outcome on Metal.
