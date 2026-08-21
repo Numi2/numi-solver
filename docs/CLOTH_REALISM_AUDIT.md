@@ -91,6 +91,16 @@ to a real produce bag.
 
 ## Still open: specimen fidelity
 
+The measurement, fitting, identifiability, held-out, and provenance contract is
+now executable and documented in
+[CLOTH_SPECIMEN_CALIBRATION.md](CLOTH_SPECIMEN_CALIBRATION.md). Its committed
+fixtures are synthetic tests, not specimen measurements. The generated
+material artifact is now a strict runtime input to both CPU and Metal cloth
+trajectories through `--material`. Authored-default parity tests require
+identical physical-state hashes with and without that handoff. No measured
+specimen artifact exists yet, so this closes the calibration plumbing boundary
+but not the physical-calibration boundary.
+
 - Mass distribution, axial and knot compliance, bend compliance,
   aerodynamic coefficients, contact friction, rolling resistance, yarn
   diameter, bag geometry, and grip motion are authored estimates. They are not

@@ -228,9 +228,17 @@ target_compile_definitions(
 )
 
 add_executable(numi-solver-cloth-bag tools/cloth_bag.cpp)
+target_link_libraries(numi-solver-cloth-bag PRIVATE numi_temporal_cone_abi)
 target_compile_features(numi-solver-cloth-bag PRIVATE cxx_std_23)
 target_compile_options(
     numi-solver-cloth-bag
+    PRIVATE -Wall -Wextra -Wpedantic
+)
+
+add_executable(numi-solver-cloth-calibration tools/cloth_calibration.cpp)
+target_compile_features(numi-solver-cloth-calibration PRIVATE cxx_std_23)
+target_compile_options(
+    numi-solver-cloth-calibration
     PRIVATE -Wall -Wextra -Wpedantic
 )
 
@@ -470,6 +478,129 @@ if(BUILD_TESTING)
             --iterations 32
     )
     add_test(
+        NAME cloth_calibration.synthetic
+        COMMAND $<TARGET_FILE:numi-solver-cloth-calibration>
+            --parameters
+            ${CMAKE_CURRENT_SOURCE_DIR}/calibration/synthetic/parameters.csv
+            --observations
+            ${CMAKE_CURRENT_SOURCE_DIR}/calibration/synthetic/qualified-observations.csv
+            --material-output
+            ${CMAKE_CURRENT_BINARY_DIR}/synthetic-cloth-material.txt
+    )
+    set_tests_properties(
+        cloth_calibration.synthetic
+        PROPERTIES
+            LABELS "physics;cloth;calibration;math;heldout"
+            PASS_REGULAR_EXPRESSION "qualified=true"
+            TIMEOUT 30
+    )
+    add_test(
+        NAME cloth_calibration.reject_rank_deficiency
+        COMMAND ${CMAKE_COMMAND}
+            -DEXECUTABLE=$<TARGET_FILE:numi-solver-cloth-calibration>
+            -DPARAMETERS=${CMAKE_CURRENT_SOURCE_DIR}/calibration/synthetic/rank-deficient-parameters.csv
+            -DOBSERVATIONS=${CMAKE_CURRENT_SOURCE_DIR}/calibration/synthetic/rank-deficient-observations.csv
+            -DEXPECT=rank=1
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ExpectCalibrationFailure.cmake
+    )
+    set_tests_properties(
+        cloth_calibration.reject_rank_deficiency
+        PROPERTIES
+            LABELS "physics;cloth;calibration;math;rejection"
+            TIMEOUT 30
+    )
+    add_test(
+        NAME cloth_calibration.reject_heldout_failure
+        COMMAND ${CMAKE_COMMAND}
+            -DEXECUTABLE=$<TARGET_FILE:numi-solver-cloth-calibration>
+            -DPARAMETERS=${CMAKE_CURRENT_SOURCE_DIR}/calibration/synthetic/parameters.csv
+            -DOBSERVATIONS=${CMAKE_CURRENT_SOURCE_DIR}/calibration/synthetic/heldout-failure-observations.csv
+            -DEXPECT=qualified=false
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ExpectCalibrationFailure.cmake
+    )
+    set_tests_properties(
+        cloth_calibration.reject_heldout_failure
+        PROPERTIES
+            LABELS "physics;cloth;calibration;heldout;rejection"
+            TIMEOUT 30
+    )
+    add_test(
+        NAME cloth_calibration.reject_trial_leakage
+        COMMAND ${CMAKE_COMMAND}
+            -DEXECUTABLE=$<TARGET_FILE:numi-solver-cloth-calibration>
+            -DPARAMETERS=${CMAKE_CURRENT_SOURCE_DIR}/calibration/synthetic/parameters.csv
+            -DOBSERVATIONS=${CMAKE_CURRENT_SOURCE_DIR}/calibration/synthetic/trial-leakage-observations.csv
+            -DEXPECT=trial.IDs.may.not.cross
+            -DEXPECTED_RESULT=2
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ExpectCalibrationFailure.cmake
+    )
+    set_tests_properties(
+        cloth_calibration.reject_trial_leakage
+        PROPERTIES
+            LABELS "physics;cloth;calibration;heldout;leakage;rejection"
+            TIMEOUT 30
+    )
+    add_test(
+        NAME cloth_calibration.runtime_pipeline
+        COMMAND ${CMAKE_COMMAND}
+            -DCALIBRATOR=$<TARGET_FILE:numi-solver-cloth-calibration>
+            -DCPU_EXECUTABLE=$<TARGET_FILE:numi-solver-cloth-bag>
+            -DMETAL_EXECUTABLE=$<TARGET_FILE:numi-solver-cloth-metal>
+            -DPARAMETERS=${CMAKE_CURRENT_SOURCE_DIR}/calibration/cloth-parameters-v1.csv
+            -DWORK_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckClothCalibrationRuntime.cmake
+    )
+    set_tests_properties(
+        cloth_calibration.runtime_pipeline
+        PROPERTIES
+            LABELS "metal;physics;cloth;calibration;runtime;pipeline"
+            RUN_SERIAL TRUE
+            TIMEOUT 120
+    )
+    add_test(
+        NAME cloth_material.cpu_default_parity
+        COMMAND ${CMAKE_COMMAND}
+            -DEXECUTABLE=$<TARGET_FILE:numi-solver-cloth-bag>
+            -DMATERIAL=${CMAKE_CURRENT_SOURCE_DIR}/calibration/synthetic/default-material.txt
+            -DKIND=cpu
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckClothMaterialParity.cmake
+    )
+    set_tests_properties(
+        cloth_material.cpu_default_parity
+        PROPERTIES
+            LABELS "physics;cloth;calibration;runtime;parity;cpu"
+            TIMEOUT 60
+    )
+    add_test(
+        NAME cloth_material.metal_default_parity
+        COMMAND ${CMAKE_COMMAND}
+            -DEXECUTABLE=$<TARGET_FILE:numi-solver-cloth-metal>
+            -DMATERIAL=${CMAKE_CURRENT_SOURCE_DIR}/calibration/synthetic/default-material.txt
+            -DKIND=metal
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckClothMaterialParity.cmake
+    )
+    set_tests_properties(
+        cloth_material.metal_default_parity
+        PROPERTIES
+            LABELS "metal;physics;cloth;calibration;runtime;parity"
+            RUN_SERIAL TRUE
+            TIMEOUT 180
+    )
+    add_test(
+        NAME cloth_material.reject_invalid
+        COMMAND ${CMAKE_COMMAND}
+            -DEXECUTABLE=$<TARGET_FILE:numi-solver-cloth-bag>
+            -DMATERIAL=${CMAKE_CURRENT_SOURCE_DIR}/calibration/synthetic/invalid-material.txt
+            -DEXPECT=cloth.material.artifact.is.missing
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ExpectMaterialFailure.cmake
+    )
+    set_tests_properties(
+        cloth_material.reject_invalid
+        PROPERTIES
+            LABELS "physics;cloth;calibration;runtime;rejection"
+            TIMEOUT 30
+    )
+    add_test(
         NAME cloth_bag.metal_internal_contact
         COMMAND $<TARGET_FILE:numi-solver-cloth-metal>
             --replays 2
@@ -692,6 +823,7 @@ install(
         numi-solver-rigid
         numi-solver-braided-bag
         numi-solver-cloth-bag
+        numi-solver-cloth-calibration
         numi-solver-articulated
         numi-solver-articulated-capacity
         numi-solver-articulated-conditioning

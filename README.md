@@ -34,6 +34,14 @@ respectively, and the maximum observed resident set was `914576 KiB`.
 This is executable Metal physics evidence, not a posed animation or a GPU
 performance comparison.
 
+Material calibration remains separate. The executable weighted-fit and
+held-out protocol is documented in
+[Cloth specimen calibration](docs/CLOTH_SPECIMEN_CALIBRATION.md); its committed
+fixtures are synthetic and do not claim a measured physical bag. Both CPU and
+Metal cloth executables accept a complete artifact with `--material FILE`; the
+fitter writes one only after its separate qualification gates pass, and exact
+authored-default parity tests guard the runtime handoff.
+
 | Grounded start | Top-seam lift | Mouth exit | Released descent | Two grounded |
 |:--:|:--:|:--:|:--:|:--:|
 | ![Grounded woven bag before the Metal seam lift](docs/assets/cloth-metal-pickup-0.png) | ![Metal cloth bag hanging from the highlighted top cuff](docs/assets/cloth-metal-pickup-60.png) | ![Fruit crossing the open 48-knot mouth in the Metal replay](docs/assets/cloth-metal-pickup-160.png) | ![Released fruit descending while the Metal handle becomes stationary](docs/assets/cloth-metal-pickup-240.png) | ![Two released fruit physically grounded after the fixed-handle settling tail](docs/assets/cloth-metal-pickup-480.png) |

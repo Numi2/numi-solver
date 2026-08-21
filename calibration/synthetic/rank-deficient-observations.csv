@@ -1,0 +1,5 @@
+trial_id,split,observable,measured,sigma,baseline,dlog_alpha,dlog_beta
+c1,calibration,observable_1,1.1,0.1,1.0,1.0,1.0
+c2,calibration,observable_2,2.2,0.1,2.0,2.0,2.0
+h1,heldout,observable_3,3.3,0.1,3.0,3.0,3.0
+h2,heldout,observable_4,4.4,0.1,4.0,4.0,4.0

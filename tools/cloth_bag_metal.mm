@@ -2,6 +2,7 @@
 #import <Metal/Metal.h>
 
 #include "numi/cloth_bag_gpu.h"
+#include "numi/cloth_material.h"
 
 #include <algorithm>
 #include <array>
@@ -45,17 +46,36 @@ constexpr std::uint32_t kFruitYarnCount = kFruitCount * kDistanceCount;
 constexpr std::uint32_t kReconciliationPasses = 8u;
 constexpr std::uint32_t kFinalContactPasses = 2u;
 constexpr std::uint32_t kCertificatePasses = 8u;
-constexpr float kFruitPairFriction = 0.30f;
-constexpr float kFruitGroundFriction = 0.42f;
-constexpr float kFruitRollingResistance = 0.015f;
-constexpr float kFruitYarnFriction = 0.36f;
-constexpr float kClothGroundFriction = 0.45f;
-constexpr float kClothSelfFriction = 0.34f;
+numi::ClothMaterialArtifact gClothMaterial{};
+float kFruitPairFriction = static_cast<float>(
+    gClothMaterial.values.fruitPairFriction
+);
+float kFruitGroundFriction = static_cast<float>(
+    gClothMaterial.values.fruitGroundFriction
+);
+float kFruitRollingResistance = static_cast<float>(
+    gClothMaterial.values.fruitRollingResistance
+);
+float kFruitYarnFriction = static_cast<float>(
+    gClothMaterial.values.fruitYarnFriction
+);
+float kClothGroundFriction = static_cast<float>(
+    gClothMaterial.values.clothGroundFriction
+);
+float kClothSelfFriction = static_cast<float>(
+    gClothMaterial.values.clothSelfFriction
+);
 constexpr float kAirDensity = 1.225f;
-constexpr float kYarnCrossflowDrag = 1.10f;
-constexpr float kYarnSkinFriction = 0.010f;
-constexpr float kFruitDrag = 0.47f;
-constexpr float kFruitRotationalDrag = 0.010f;
+float kYarnCrossflowDrag = static_cast<float>(
+    gClothMaterial.values.yarnCrossflowDrag
+);
+float kYarnSkinFriction = static_cast<float>(
+    gClothMaterial.values.yarnSkinFriction
+);
+float kFruitDrag = static_cast<float>(gClothMaterial.values.fruitDrag);
+float kFruitRotationalDrag = static_cast<float>(
+    gClothMaterial.values.fruitRotationalDrag
+);
 constexpr std::uint32_t kPickupSubstepsPerFrame = 48u;
 constexpr std::uint32_t kGroundedQualificationFrames = 120u;
 constexpr std::uint32_t kSpinQualificationFrames = 60u;
@@ -84,11 +104,82 @@ std::size_t packedSelfPairIndex(
             (2u * segmentCount - lower - 1u) / 2u +
         (upper - lower - 1u);
 }
-constexpr float kOrdinaryMass = 0.000050f;
-constexpr float kHemMass = 0.000100f;
-constexpr float kGripCompliance = 2.0e-4f;
+float kOrdinaryMass = static_cast<float>(
+    gClothMaterial.values.ordinaryNodeMassKg
+);
+float kHemMass = static_cast<float>(gClothMaterial.values.hemNodeMassKg);
+float kClothRadius = static_cast<float>(gClothMaterial.values.yarnRadiusM);
+float kAxialBodyCompliance = static_cast<float>(
+    gClothMaterial.values.axialBodyComplianceMPerN
+);
+float kAxialCuffCompliance = static_cast<float>(
+    gClothMaterial.values.axialCuffComplianceMPerN
+);
+float kKnotCompliance = static_cast<float>(
+    gClothMaterial.values.knotCompliance
+);
+float kBendBodyCompliance = static_cast<float>(
+    gClothMaterial.values.bendBodyComplianceMPerN
+);
+float kBendCuffCompliance = static_cast<float>(
+    gClothMaterial.values.bendCuffComplianceMPerN
+);
+float kGripCompliance = static_cast<float>(
+    gClothMaterial.values.gripComplianceMPerN
+);
 constexpr float kStrainLimit = 0.285f;
 constexpr float kTimestep = 1.0f / 5760.0f;
+
+void applyClothMaterial(const numi::ClothMaterialArtifact& artifact) {
+    gClothMaterial = artifact;
+    kOrdinaryMass = static_cast<float>(artifact.values.ordinaryNodeMassKg);
+    kHemMass = static_cast<float>(artifact.values.hemNodeMassKg);
+    kClothRadius = static_cast<float>(artifact.values.yarnRadiusM);
+    kAxialBodyCompliance = static_cast<float>(
+        artifact.values.axialBodyComplianceMPerN
+    );
+    kAxialCuffCompliance = static_cast<float>(
+        artifact.values.axialCuffComplianceMPerN
+    );
+    kKnotCompliance = static_cast<float>(artifact.values.knotCompliance);
+    kBendBodyCompliance = static_cast<float>(
+        artifact.values.bendBodyComplianceMPerN
+    );
+    kBendCuffCompliance = static_cast<float>(
+        artifact.values.bendCuffComplianceMPerN
+    );
+    kGripCompliance = static_cast<float>(
+        artifact.values.gripComplianceMPerN
+    );
+    kClothGroundFriction = static_cast<float>(
+        artifact.values.clothGroundFriction
+    );
+    kClothSelfFriction = static_cast<float>(
+        artifact.values.clothSelfFriction
+    );
+    kFruitYarnFriction = static_cast<float>(
+        artifact.values.fruitYarnFriction
+    );
+    kFruitGroundFriction = static_cast<float>(
+        artifact.values.fruitGroundFriction
+    );
+    kFruitPairFriction = static_cast<float>(
+        artifact.values.fruitPairFriction
+    );
+    kFruitRollingResistance = static_cast<float>(
+        artifact.values.fruitRollingResistance
+    );
+    kYarnCrossflowDrag = static_cast<float>(
+        artifact.values.yarnCrossflowDrag
+    );
+    kYarnSkinFriction = static_cast<float>(
+        artifact.values.yarnSkinFriction
+    );
+    kFruitDrag = static_cast<float>(artifact.values.fruitDrag);
+    kFruitRotationalDrag = static_cast<float>(
+        artifact.values.fruitRotationalDrag
+    );
+}
 
 struct DVec3 {
     double x{};
@@ -451,7 +542,9 @@ InitialState makeInitialState() {
             addEdge(
                 nodeIndex(level, ring),
                 nodeIndex(level, ring + 1u),
-                level + 2u >= kLevels ? 1.0e-9f : 1.0e-8f,
+                level + 2u >= kLevels
+                    ? kAxialCuffCompliance
+                    : kAxialBodyCompliance,
                 1u
             );
         }
@@ -461,7 +554,7 @@ InitialState makeInitialState() {
             addEdge(
                 nodeIndex(level, ring),
                 nodeIndex(level + 1u, ring),
-                1.0e-8f,
+                kAxialBodyCompliance,
                 0u
             );
         }
@@ -475,7 +568,7 @@ InitialState makeInitialState() {
                 addEdge(
                     bottomGridIndex(row, column),
                     bottomGridIndex(row, column + 1u),
-                    1.0e-8f,
+                    kAxialBodyCompliance,
                     2u
                 );
             }
@@ -488,7 +581,7 @@ InitialState makeInitialState() {
                 addEdge(
                     bottomGridIndex(row, column),
                     bottomGridIndex(row + 1u, column),
-                    1.0e-8f,
+                    kAxialBodyCompliance,
                     2u
                 );
             }
@@ -639,7 +732,7 @@ InitialState makeInitialState() {
                     warpVector / length(warpVector),
                     weftVector / length(weftVector)
                 )),
-                2.0e-6f,
+                kKnotCompliance,
                 0.0f,
                 0.0f
             );
@@ -667,7 +760,9 @@ InitialState makeInitialState() {
                 nodeIndex(level, ring + kAround - 1u),
                 nodeIndex(level, ring),
                 nodeIndex(level, ring + 1u),
-                level + 2u >= kLevels ? 1.0e-8f : 8.0e-2f
+                level + 2u >= kLevels
+                    ? kBendCuffCompliance
+                    : kBendBodyCompliance
             );
         }
     }
@@ -677,7 +772,7 @@ InitialState makeInitialState() {
                 nodeIndex(level - 1u, ring),
                 nodeIndex(level, ring),
                 nodeIndex(level + 1u, ring),
-                8.0e-2f
+                kBendBodyCompliance
             );
         }
     }
@@ -689,13 +784,13 @@ InitialState makeInitialState() {
                 bottomGridIndex(row, column - 1u),
                 bottomGridIndex(row, column),
                 bottomGridIndex(row, column + 1u),
-                8.0e-2f
+                kBendBodyCompliance
             );
             addBend(
                 bottomGridIndex(column - 1u, row),
                 bottomGridIndex(column, row),
                 bottomGridIndex(column + 1u, row),
-                8.0e-2f
+                kBendBodyCompliance
             );
         }
     }
@@ -791,7 +886,7 @@ InitialState makeInitialState() {
         );
     }
     result.config.clothMaterial = f4(
-        0.004f,
+        kClothRadius,
         std::max(0.1f, maximumLimitedYarnLength + 0.008001f),
         kClothGroundFriction,
         kClothSelfFriction
@@ -1143,7 +1238,7 @@ InitialState makeStrainProbeState() {
     result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
     result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
     result.config.clothMaterial = f4(
-        0.004f, 0.0f, kClothGroundFriction, kClothSelfFriction
+        kClothRadius, 0.0f, kClothGroundFriction, kClothSelfFriction
     );
     const auto particle = [](const float x, const float inverseMass) {
         NumiClothBagGPUParticle value{};
@@ -1180,7 +1275,7 @@ InitialState makeGroundBendProbeState() {
     result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
     result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
     result.config.clothMaterial = f4(
-        0.004f, 0.0f, kClothGroundFriction, kClothSelfFriction
+        kClothRadius, 0.0f, kClothGroundFriction, kClothSelfFriction
     );
     const auto particle = [](const DVec3 position) {
         NumiClothBagGPUParticle value{};
@@ -1247,7 +1342,7 @@ InitialState makeFruitPairProbeState() {
     result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
     result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
     result.config.clothMaterial = f4(
-        0.004f, 0.0f, kClothGroundFriction, kClothSelfFriction
+        kClothRadius, 0.0f, kClothGroundFriction, kClothSelfFriction
     );
     result.config.fruitMaterial = f4(
         kFruitPairFriction,
@@ -1279,7 +1374,7 @@ InitialState makeGroundContactProbeState() {
     result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
     result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
     result.config.clothMaterial = f4(
-        0.004f, 0.0f, kClothGroundFriction, kClothSelfFriction
+        kClothRadius, 0.0f, kClothGroundFriction, kClothSelfFriction
     );
     result.config.fruitMaterial = f4(
         kFruitPairFriction,
@@ -1310,7 +1405,7 @@ InitialState makeYarnCCDProbeState() {
     result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
     result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
     result.config.clothMaterial = f4(
-        0.004f, 0.0f, kClothGroundFriction, kClothSelfFriction
+        kClothRadius, 0.0f, kClothGroundFriction, kClothSelfFriction
     );
     result.config.fruitMaterial = f4(
         kFruitPairFriction,
@@ -1365,7 +1460,10 @@ InitialState makeSelfCCDProbeState() {
     result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
     result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
     result.config.clothMaterial = f4(
-        0.004f, 2.008001f, kClothGroundFriction, kClothSelfFriction
+        kClothRadius,
+        2.0f + 2.0f * kClothRadius + 1.0e-6f,
+        kClothGroundFriction,
+        kClothSelfFriction
     );
     const auto particle = [](
         const DVec3 position,
@@ -1427,7 +1525,7 @@ InitialState makeYarnAerodynamicsProbeState(
     result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
     result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
     result.config.clothMaterial = f4(
-        0.004f, 0.0f, kClothGroundFriction, kClothSelfFriction
+        kClothRadius, 0.0f, kClothGroundFriction, kClothSelfFriction
     );
     result.config.airVelocityAndDensity = coMovingAir
         ? f4(3.0f, 4.0f, 0.0f, kAirDensity)
@@ -1488,7 +1586,7 @@ InitialState makeFruitAerodynamicsProbeState() {
     result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
     result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
     result.config.clothMaterial = f4(
-        0.004f, 0.0f, kClothGroundFriction, kClothSelfFriction
+        kClothRadius, 0.0f, kClothGroundFriction, kClothSelfFriction
     );
     result.config.airVelocityAndDensity = f4(
         0.0f, 0.0f, 0.0f, kAirDensity
@@ -1522,7 +1620,7 @@ InitialState makeMouthReleaseProbeState(
     result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
     result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
     result.config.clothMaterial = f4(
-        0.004f, 0.0f, kClothGroundFriction, kClothSelfFriction
+        kClothRadius, 0.0f, kClothGroundFriction, kClothSelfFriction
     );
     result.config.mouthControl = u4(kAround, bottomCenter, 0u, 0u);
     result.config.mouthMaterial = f4(0.025f, 0.0f, 0.0f, 0.0f);
@@ -5166,6 +5264,7 @@ int run(const int argc, const char* const* argv) {
     std::uint32_t pickupSteps = kPickupQualificationFrames;
     std::uint32_t pickupDumpEvery = 10u;
     std::string pickupPrefix;
+    std::string materialPath;
     std::string metallibPath = NUMI_TEMPORAL_CONE_METALLIB;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string_view value(argv[argument]);
@@ -5183,6 +5282,8 @@ int run(const int argc, const char* const* argv) {
             );
         } else if (value == "--metallib" && argument + 1 < argc) {
             metallibPath = argv[++argument];
+        } else if (value == "--material" && argument + 1 < argc) {
+            materialPath = argv[++argument];
         } else if (value == "--grounded-prefix" && argument + 1 < argc) {
             groundedPrefix = argv[++argument];
         } else if (value == "--grounded-steps" && argument + 1 < argc) {
@@ -5220,7 +5321,8 @@ int run(const int argc, const char* const* argv) {
             std::cout
                 << "usage: numi-solver-cloth-metal [--replays N] "
                    "[--iterations N] [--strain-sweeps N] "
-                   "[--metallib PATH] [--grounded-prefix PATH] "
+                   "[--metallib PATH] [--material FILE] "
+                   "[--grounded-prefix PATH] "
                    "[--grounded-steps N] [--grounded-dump-every N] "
                    "[--spin-prefix PATH] [--spin-steps N] "
                    "[--spin-dump-every N] [--pickup-prefix PATH] "
@@ -5231,6 +5333,9 @@ int run(const int argc, const char* const* argv) {
                 "unknown argument: " + std::string(value)
             );
         }
+    }
+    if (!materialPath.empty()) {
+        applyClothMaterial(numi::loadClothMaterialArtifact(materialPath));
     }
     replays = std::max(replays, 2u);
     if (iterations == 0u || strainSweeps == 0u) {
@@ -7278,6 +7383,12 @@ int run(const int argc, const char* const* argv) {
 
     std::cout << std::fixed << std::setprecision(12)
               << "device=" << device.name.UTF8String << '\n'
+              << "material_schema=" << numi::kClothMaterialSchema
+              << " material_artifact_loaded=" << std::boolalpha
+              << gClothMaterial.loaded
+              << " parameters_hash=" << gClothMaterial.parametersHash
+              << " observations_hash=" << gClothMaterial.observationsHash
+              << '\n'
               << "abi=" << NUMI_CLOTH_BAG_GPU_ABI_VERSION
               << " particles=" << initial.particles.size()
               << " distances=" << initial.distances.size()

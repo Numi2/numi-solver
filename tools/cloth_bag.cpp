@@ -1,3 +1,5 @@
+#include "numi/cloth_material.h"
+
 #include <algorithm>
 #include <array>
 #include <bit>
@@ -22,27 +24,42 @@ constexpr std::uint32_t kLevels = 28;
 constexpr std::uint32_t kBottomGrid = 13;
 constexpr std::uint32_t kBottomInterior = kBottomGrid - 2u;
 constexpr std::size_t kFruitCount = 12;
-constexpr double kClothRadius = 0.004;
 constexpr double kAirborneLift = 0.52;
 constexpr double kInitialGroundLift = 0.009;
-constexpr double kClothNodeMass = 0.000050;
-constexpr double kClothHemNodeMass = 0.000100;
-constexpr double kClothMass =
+numi::ClothMaterialArtifact gClothMaterial{};
+double kClothRadius = gClothMaterial.values.yarnRadiusM;
+double kClothNodeMass = gClothMaterial.values.ordinaryNodeMassKg;
+double kClothHemNodeMass = gClothMaterial.values.hemNodeMassKg;
+double kClothMass =
     static_cast<double>(
         kAround * (kLevels - 2u) + kBottomInterior * kBottomInterior
     ) * kClothNodeMass +
     static_cast<double>(2u * kAround) * kClothHemNodeMass;
-constexpr double kFruitGroundFriction = 0.42;
-constexpr double kClothGroundFriction = 0.45;
-constexpr double kFruitPairFriction = 0.30;
-constexpr double kFruitClothFriction = 0.36;
-constexpr double kClothSelfFriction = 0.34;
-constexpr double kFruitRollingResistanceCoefficient = 0.015;
+double kFruitGroundFriction = gClothMaterial.values.fruitGroundFriction;
+double kClothGroundFriction = gClothMaterial.values.clothGroundFriction;
+double kFruitPairFriction = gClothMaterial.values.fruitPairFriction;
+double kFruitClothFriction = gClothMaterial.values.fruitYarnFriction;
+double kClothSelfFriction = gClothMaterial.values.clothSelfFriction;
+double kFruitRollingResistanceCoefficient =
+    gClothMaterial.values.fruitRollingResistance;
 constexpr double kAirDensity = 1.225;
-constexpr double kYarnCrossflowDragCoefficient = 1.10;
-constexpr double kYarnSkinFrictionCoefficient = 0.010;
-constexpr double kFruitDragCoefficient = 0.47;
-constexpr double kFruitRotationalDragCoefficient = 0.010;
+double kYarnCrossflowDragCoefficient =
+    gClothMaterial.values.yarnCrossflowDrag;
+double kYarnSkinFrictionCoefficient =
+    gClothMaterial.values.yarnSkinFriction;
+double kFruitDragCoefficient = gClothMaterial.values.fruitDrag;
+double kFruitRotationalDragCoefficient =
+    gClothMaterial.values.fruitRotationalDrag;
+double kAxialBodyCompliance =
+    gClothMaterial.values.axialBodyComplianceMPerN;
+double kAxialCuffCompliance =
+    gClothMaterial.values.axialCuffComplianceMPerN;
+double kKnotCompliance = gClothMaterial.values.knotCompliance;
+double kBendBodyCompliance =
+    gClothMaterial.values.bendBodyComplianceMPerN;
+double kBendCuffCompliance =
+    gClothMaterial.values.bendCuffComplianceMPerN;
+double kGripCompliance = gClothMaterial.values.gripComplianceMPerN;
 constexpr double kMouthReleaseHysteresis = 0.025;
 constexpr std::size_t kBallPairCount =
     kFruitCount * (kFruitCount - 1u) / 2u;
@@ -52,6 +69,34 @@ enum class Scenario : std::uint8_t {
     spin,
     pickup,
 };
+
+void applyClothMaterial(const numi::ClothMaterialArtifact& artifact) {
+    gClothMaterial = artifact;
+    kClothRadius = artifact.values.yarnRadiusM;
+    kClothNodeMass = artifact.values.ordinaryNodeMassKg;
+    kClothHemNodeMass = artifact.values.hemNodeMassKg;
+    kClothMass = static_cast<double>(
+        kAround * (kLevels - 2u) + kBottomInterior * kBottomInterior
+    ) * kClothNodeMass +
+        static_cast<double>(2u * kAround) * kClothHemNodeMass;
+    kFruitGroundFriction = artifact.values.fruitGroundFriction;
+    kClothGroundFriction = artifact.values.clothGroundFriction;
+    kFruitPairFriction = artifact.values.fruitPairFriction;
+    kFruitClothFriction = artifact.values.fruitYarnFriction;
+    kClothSelfFriction = artifact.values.clothSelfFriction;
+    kFruitRollingResistanceCoefficient =
+        artifact.values.fruitRollingResistance;
+    kYarnCrossflowDragCoefficient = artifact.values.yarnCrossflowDrag;
+    kYarnSkinFrictionCoefficient = artifact.values.yarnSkinFriction;
+    kFruitDragCoefficient = artifact.values.fruitDrag;
+    kFruitRotationalDragCoefficient = artifact.values.fruitRotationalDrag;
+    kAxialBodyCompliance = artifact.values.axialBodyComplianceMPerN;
+    kAxialCuffCompliance = artifact.values.axialCuffComplianceMPerN;
+    kKnotCompliance = artifact.values.knotCompliance;
+    kBendBodyCompliance = artifact.values.bendBodyComplianceMPerN;
+    kBendCuffCompliance = artifact.values.bendCuffComplianceMPerN;
+    kGripCompliance = artifact.values.gripComplianceMPerN;
+}
 
 struct Vec3 {
     double x{};
@@ -255,7 +300,7 @@ struct YarnBendConstraint {
     std::uint32_t third{};
     double restChord{};
     double restArc{};
-    double compliance{8.0e-2};
+    double compliance{kBendBodyCompliance};
     double lambda{};
 };
 
@@ -265,7 +310,7 @@ struct KnotConstraint {
     std::uint32_t weftFirst{};
     std::uint32_t weftSecond{};
     double restCosine{};
-    double compliance{2.0e-6};
+    double compliance{kKnotCompliance};
     double lambda{};
 };
 
@@ -273,7 +318,7 @@ struct GripConstraint {
     std::uint32_t particle{};
     Vec3 targetOffset{};
     Vec3 lambda{};
-    double compliance{2.0e-4};
+    double compliance{kGripCompliance};
 };
 
 struct ClothModel {
@@ -632,7 +677,9 @@ ClothModel makeCloth(const Scenario scenario) {
             addDistance(
                 nodeIndex(level, ring),
                 nodeIndex(level, ring + 1u),
-                level + 2u >= kLevels ? 1.0e-9 : 1.0e-8,
+                level + 2u >= kLevels
+                    ? kAxialCuffCompliance
+                    : kAxialBodyCompliance,
                 DistanceKind::weft
             );
         }
@@ -642,7 +689,7 @@ ClothModel makeCloth(const Scenario scenario) {
             addDistance(
                 nodeIndex(level, ring),
                 nodeIndex(level + 1u, ring),
-                1.0e-8,
+                kAxialBodyCompliance,
                 DistanceKind::warp
             );
         }
@@ -656,7 +703,7 @@ ClothModel makeCloth(const Scenario scenario) {
                 addDistance(
                     bottomGridIndex(row, column),
                     bottomGridIndex(row, column + 1u),
-                    1.0e-8,
+                    kAxialBodyCompliance,
                     DistanceKind::bottom
                 );
             }
@@ -669,7 +716,7 @@ ClothModel makeCloth(const Scenario scenario) {
                 addDistance(
                     bottomGridIndex(row, column),
                     bottomGridIndex(row + 1u, column),
-                    1.0e-8,
+                    kAxialBodyCompliance,
                     DistanceKind::bottom
                 );
             }
@@ -696,6 +743,7 @@ ClothModel makeCloth(const Scenario scenario) {
             .weftFirst = weftFirst,
             .weftSecond = weftSecond,
             .restCosine = dot(warp, weft),
+            .compliance = kKnotCompliance,
         });
     };
     for (std::uint32_t level = 1u; level + 1u < kLevels; ++level) {
@@ -802,7 +850,9 @@ ClothModel makeCloth(const Scenario scenario) {
                 nodeIndex(level, ring + kAround - 1u),
                 nodeIndex(level, ring),
                 nodeIndex(level, ring + 1u),
-                level + 2u >= kLevels ? 1.0e-8 : 8.0e-2
+                level + 2u >= kLevels
+                    ? kBendCuffCompliance
+                    : kBendBodyCompliance
             );
         }
     }
@@ -812,7 +862,7 @@ ClothModel makeCloth(const Scenario scenario) {
                 nodeIndex(level - 1u, ring),
                 nodeIndex(level, ring),
                 nodeIndex(level + 1u, ring),
-                8.0e-2
+                kBendBodyCompliance
             );
         }
     }
@@ -824,13 +874,13 @@ ClothModel makeCloth(const Scenario scenario) {
                 bottomGridIndex(row, column - 1u),
                 bottomGridIndex(row, column),
                 bottomGridIndex(row, column + 1u),
-                8.0e-2
+                kBendBodyCompliance
             );
             addYarnBend(
                 bottomGridIndex(column - 1u, row),
                 bottomGridIndex(column, row),
                 bottomGridIndex(column + 1u, row),
-                8.0e-2
+                kBendBodyCompliance
             );
         }
     }
@@ -2261,9 +2311,9 @@ bool runDeformableResponseProbe() {
     constexpr double penetration = 0.008;
     constexpr double crossingClearance = 0.001;
     constexpr double ballInverseMass = 1.0 / 0.20;
-    constexpr double clothPointInverseMass =
+    const double clothPointInverseMass =
         1.0 / (2.0 * kClothNodeMass);
-    constexpr double freeBallAdvance = penetration * ballInverseMass /
+    const double freeBallAdvance = penetration * ballInverseMass /
         (ballInverseMass + clothPointInverseMass);
     const DeformableResponseProbeCase free =
         runDeformableResponseProbeCase(false, 0.0);
@@ -3252,7 +3302,7 @@ double solveSweptEdgeEdge(
     SelfEdgeEdgeContactImpulse* contactImpulse,
     const double timestep
 ) {
-    constexpr double target = 2.0 * kClothRadius;
+    const double target = 2.0 * kClothRadius;
     constexpr double tolerance = 1.0e-9;
     const std::array<std::uint32_t, 4> indices{{
         first.first, first.second, second.first, second.second,
@@ -3369,7 +3419,7 @@ double solveEdgeEdge(
     SelfEdgeEdgeContactImpulse* contactImpulse,
     const double timestep
 ) {
-    constexpr double target = 2.0 * kClothRadius;
+    const double target = 2.0 * kClothRadius;
     const SegmentClosest closest = closestPointsOnSegments(
         cloth.particles[first.first].position,
         cloth.particles[first.second].position,
@@ -3679,8 +3729,8 @@ double solvePrimitiveSelfCollision(
     const double timestep,
     SelfContactImpulses* contactImpulses
 ) {
-    constexpr double target = 2.0 * kClothRadius;
-    constexpr double broadphaseExpansion = 0.5 * target;
+    const double target = 2.0 * kClothRadius;
+    const double broadphaseExpansion = 0.5 * target;
     double maximum = 0.0;
     std::vector<std::uint32_t> candidates;
     candidates.reserve(64u);
@@ -3975,8 +4025,8 @@ bool runSelfFrictionProbe() {
 }
 
 double measurePrimitiveSelfPenetration(const ClothModel& cloth) {
-    constexpr double target = 2.0 * kClothRadius;
-    constexpr double broadphaseExpansion = 0.5 * target;
+    const double target = 2.0 * kClothRadius;
+    const double broadphaseExpansion = 0.5 * target;
     double maximumPenetration = 0.0;
     std::vector<std::uint32_t> candidates;
     candidates.reserve(64u);
@@ -4046,8 +4096,8 @@ double solveSelfCollision(
     std::uint64_t& contactCount
 ) {
     std::vector<Particle>& particles = cloth.particles;
-    constexpr double target = 2.0 * kClothRadius;
-    constexpr double inverseCell = 1.0 / target;
+    const double target = 2.0 * kClothRadius;
+    const double inverseCell = 1.0 / target;
     std::unordered_map<std::uint64_t, std::vector<std::uint32_t>> cells;
     cells.reserve(particles.size() * 2u);
     for (std::uint32_t index = 0; index < particles.size(); ++index) {
@@ -5215,6 +5265,7 @@ int main(int argc, char** argv) try {
     double timestep = 1.0 / 120.0;
     std::string dumpPath;
     std::string framePrefix;
+    std::string materialPath;
     std::uint32_t frameStride = 0u;
     bool rollingProbe = false;
     bool selfCCDProbe = false;
@@ -5251,6 +5302,8 @@ int main(int argc, char** argv) try {
             framePrefix = argv[++argument];
         } else if (value == "--dump-every") {
             nextUnsigned(frameStride);
+        } else if (value == "--material" && argument + 1 < argc) {
+            materialPath = argv[++argument];
         } else if (value == "--rolling-probe") {
             rollingProbe = true;
         } else if (value == "--self-ccd-probe") {
@@ -5287,6 +5340,7 @@ int main(int argc, char** argv) try {
                          "[--steps N] [--substeps N] [--iterations N] "
                          "[--replays 1|2] "
                          "[--timestep DT] [--scenario grounded|spin|pickup] "
+                         "[--material FILE] "
                          "[--dump-obj PATH] [--dump-frames PREFIX] "
                          "[--dump-every N] [--rolling-probe] "
                          "[--self-ccd-probe] [--strain-probe] "
@@ -5301,6 +5355,9 @@ int main(int argc, char** argv) try {
         } else {
             throw std::invalid_argument("unknown argument: " + value);
         }
+    }
+    if (!materialPath.empty()) {
+        applyClothMaterial(numi::loadClothMaterialArtifact(materialPath));
     }
     if (rollingProbe) {
         return runRollingProbe() ? 0 : 1;
@@ -5400,6 +5457,12 @@ int main(int argc, char** argv) try {
     std::cout << std::fixed << std::setprecision(9);
     const char* scenarioName = scenario == Scenario::grounded ? "grounded" :
         scenario == Scenario::spin ? "spin" : "pickup";
+    std::cout << "material_schema=" << numi::kClothMaterialSchema
+              << " material_artifact_loaded=" << std::boolalpha
+              << gClothMaterial.loaded
+              << " parameters_hash=" << gClothMaterial.parametersHash
+              << " observations_hash=" << gClothMaterial.observationsHash
+              << '\n';
     std::cout << "model=explicit_yarn_cloth_reference"
               << " scenario=" << scenarioName
               << " nodes=" << first.cloth.particles.size()
