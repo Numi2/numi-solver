@@ -174,6 +174,15 @@ and multiplier with an independent FP64 implementation of the same colored
 schedule. Two GPU runs must be byte-identical. Published yarn/fruit, yarn/yarn,
 ground, and strain residuals are independently measured after the last pass.
 
+A separate transaction check authors three rising top-seam handle targets and
+encodes all three full physics substeps into one command buffer. Cloth, fruit,
+constraint, contact, release, and friction state stays device-resident between
+substeps. Two persistent executions must be byte-identical, and the final
+physical buffers must exactly match the same three substeps submitted as three
+command buffers. The check also gates positive seam lift and finite attachment
+lag. This is a persistence and moving-handle certificate, not a complete Metal
+pickup or spill trajectory.
+
 The focused strain case starts one segment with `0.215 m` excess extension and
 another in compression. One Metal sweep must remove the extension violation,
 leave the compressed length unchanged, preserve the stretched pair's center
@@ -240,6 +249,9 @@ max_yarn_aerodynamic_force=0.000000001152 expected=0.000000001152
 max_fruit_aerodynamic_force=0.000000014756 expected=0.000000014756
 mouth_candidate_mask=3840 expected_candidate_mask=3840
 released_mask=0 expected_released_mask=0
+seam_trajectory_substeps=3 replay_exact=true split_exact=true
+average_lift=0.008440265059 maximum_handle_lag=0.001929601793
+failure_flags=0
 max_fruit_pair_penetration=0.000000000000
 yarn_identity_exact=true yarn_control_qualified=true
 current_yarn_overlaps=0 swept_yarn_impacts=0

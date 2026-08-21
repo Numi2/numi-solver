@@ -3776,6 +3776,7 @@ struct GPUResult {
 };
 
 struct Pipelines {
+    id<MTLComputePipelineState> prepareTrajectorySubstep;
     id<MTLComputePipelineState> begin;
     id<MTLComputePipelineState> yarnAerodynamicsClear;
     id<MTLComputePipelineState> yarnAerodynamicsAccumulate;
@@ -3820,7 +3821,8 @@ GPUResult runGPU(
     const Pipelines& pipelines,
     const InitialState& initial,
     const std::uint32_t iterations,
-    const std::uint32_t strainSweeps
+    const std::uint32_t strainSweeps,
+    const std::vector<NumiClothBagGPUConfig>& requestedTrajectoryConfigs = {}
 ) {
     const auto makeBytes = [device](const auto& values) {
         using Value = typename std::decay_t<decltype(values)>::value_type;
@@ -3843,10 +3845,44 @@ GPUResult runGPU(
         }
         return buffer;
     };
+    const std::vector<NumiClothBagGPUConfig> trajectoryConfigs =
+        requestedTrajectoryConfigs.empty()
+        ? std::vector<NumiClothBagGPUConfig>{initial.config}
+        : requestedTrajectoryConfigs;
+    if (trajectoryConfigs.size() >
+        std::numeric_limits<std::uint32_t>::max()) {
+        throw std::logic_error("Metal cloth trajectory is too long");
+    }
+    for (const NumiClothBagGPUConfig& config : trajectoryConfigs) {
+        if (config.control.x != NUMI_CLOTH_BAG_GPU_ABI_VERSION ||
+            config.control.y != initial.config.control.y ||
+            config.control.z != initial.config.control.z ||
+            config.control.w != initial.config.control.w ||
+            std::memcmp(
+                &config.constraintCounts,
+                &initial.config.constraintCounts,
+                sizeof(config.constraintCounts)
+            ) != 0 ||
+            std::memcmp(
+                &config.contactCounts,
+                &initial.config.contactCounts,
+                sizeof(config.contactCounts)
+            ) != 0 ||
+            std::memcmp(
+                &config.mouthControl,
+                &initial.config.mouthControl,
+                sizeof(config.mouthControl)
+            ) != 0) {
+            throw std::logic_error(
+                "Metal cloth trajectory changes fixed topology"
+            );
+        }
+    }
     id<MTLBuffer> configBuffer = [device
-        newBufferWithBytes:&initial.config
-                   length:sizeof(initial.config)
+        newBufferWithBytes:&trajectoryConfigs.front()
+                   length:sizeof(trajectoryConfigs.front())
                   options:MTLResourceStorageModeShared];
+    id<MTLBuffer> trajectoryConfigBuffer = makeBytes(trajectoryConfigs);
     id<MTLBuffer> particleBuffer = makeBytes(initial.particles);
     id<MTLBuffer> distanceBuffer = makeBytes(initial.distances);
     id<MTLBuffer> gripBuffer = makeBytes(initial.grips);
@@ -3928,7 +3964,8 @@ GPUResult runGPU(
         newBufferWithBytes:&zero
                    length:sizeof(zero)
                   options:MTLResourceStorageModeShared];
-    if (configBuffer == nil || particleBuffer == nil ||
+    if (configBuffer == nil || trajectoryConfigBuffer == nil ||
+        particleBuffer == nil ||
         distanceBuffer == nil || gripBuffer == nil ||
         knotBuffer == nil || bendBuffer == nil ||
         fruitBuffer == nil || fruitPairBuffer == nil ||
@@ -3958,6 +3995,24 @@ GPUResult runGPU(
     if (commandBuffer == nil || encoder == nil) {
         throw std::runtime_error("failed to create Metal cloth encoder");
     }
+    std::uint32_t selfContactEpoch = 0u;
+    for (std::uint32_t trajectorySubstep = 0u;
+         trajectorySubstep < trajectoryConfigs.size();
+         ++trajectorySubstep) {
+    [encoder setComputePipelineState:pipelines.prepareTrajectorySubstep];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:trajectoryConfigBuffer offset:0 atIndex:1];
+    [encoder setBytes:&trajectorySubstep
+                length:sizeof(trajectorySubstep)
+               atIndex:2];
+    [encoder setBuffer:selfImpulseKeyBuffer offset:0 atIndex:3];
+    [encoder setBuffer:selfImpulseCountBuffer offset:0 atIndex:4];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:5];
+    dispatch(
+        encoder,
+        pipelines.prepareTrajectorySubstep,
+        NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY
+    );
     [encoder setBuffer:configBuffer offset:0 atIndex:0];
     [encoder setBuffer:particleBuffer offset:0 atIndex:1];
     [encoder setBuffer:distanceBuffer offset:0 atIndex:2];
@@ -4072,7 +4127,6 @@ GPUResult runGPU(
             dispatch(encoder, pipelines.yarnSolve, initial.fruits.size());
         }
     };
-    std::uint32_t selfContactEpoch = 0u;
     const auto solveSelfContact = [&](const std::uint32_t mode) {
         if (initial.selfBatches.empty()) {
             return;
@@ -4097,6 +4151,7 @@ GPUResult runGPU(
             [encoder setBuffer:failureBuffer offset:0 atIndex:6];
             [encoder setBytes:&mode length:sizeof(mode) atIndex:7];
             [encoder setBuffer:distanceBuffer offset:0 atIndex:8];
+            [encoder setBytes:&epoch length:sizeof(epoch) atIndex:9];
             [encoder dispatchThreadgroups:MTLSizeMake(
                 initial.selfBatches.size(), 1u, 1u
             ) threadsPerThreadgroup:MTLSizeMake(detectionWidth, 1u, 1u)];
@@ -4428,6 +4483,7 @@ GPUResult runGPU(
     [encoder setBuffer:maximumMouthClearanceBuffer offset:0 atIndex:5];
     [encoder setBuffer:failureBuffer offset:0 atIndex:6];
     dispatch(encoder, pipelines.release, initial.fruits.size());
+    }
     [encoder endEncoding];
     [commandBuffer commit];
     [commandBuffer waitUntilCompleted];
@@ -4480,6 +4536,50 @@ GPUResult runGPU(
         result.seconds = commandBuffer.GPUEndTime - commandBuffer.GPUStartTime;
     }
     return result;
+}
+
+InitialState continuedInitialState(
+    const InitialState& source,
+    const GPUResult& result,
+    const NumiClothBagGPUConfig& nextConfig
+) {
+    InitialState next = source;
+    next.config = nextConfig;
+    next.particles = result.particles;
+    next.distances = result.distances;
+    next.grips = result.grips;
+    next.knots = result.knots;
+    next.bends = result.bends;
+    next.fruits = result.fruits;
+    next.fruitPairs = result.fruitPairs;
+    next.yarnContacts = result.yarnContacts;
+    next.initialMouthCandidateMask = result.releaseStatus.masks.x;
+    next.initialReleasedMask = result.releaseStatus.masks.y;
+    return next;
+}
+
+bool bitwiseEqualPhysicalState(
+    const GPUResult& first,
+    const GPUResult& second
+) {
+    const auto equal = [](const auto& left, const auto& right) {
+        using Value = typename std::decay_t<decltype(left)>::value_type;
+        return left.size() == right.size() &&
+            std::memcmp(
+                left.data(), right.data(), left.size() * sizeof(Value)
+            ) == 0;
+    };
+    return first.failure == second.failure &&
+        equal(first.particles, second.particles) &&
+        equal(first.distances, second.distances) &&
+        equal(first.grips, second.grips) &&
+        equal(first.knots, second.knots) &&
+        equal(first.bends, second.bends) &&
+        equal(first.fruits, second.fruits) &&
+        equal(first.fruitPairs, second.fruitPairs) &&
+        equal(first.yarnContacts, second.yarnContacts) &&
+        first.releaseStatus.masks.x == second.releaseStatus.masks.x &&
+        first.releaseStatus.masks.y == second.releaseStatus.masks.y;
 }
 
 template <typename Value>
@@ -4699,6 +4799,11 @@ int run(const int argc, const char* const* argv) {
         );
     }
     const Pipelines pipelines{
+        makePipeline(
+            device,
+            library,
+            @"numi_cloth_bag_prepare_trajectory_substep"
+        ),
         makePipeline(device, library, @"numi_cloth_bag_begin_substep"),
         makePipeline(
             device,
@@ -4935,6 +5040,77 @@ int run(const int argc, const char* const* argv) {
     const auto mouthRotated = runMouthProbe(
         {1.130, 0.0, 0.0}, true
     );
+    std::vector<NumiClothBagGPUConfig> seamTrajectoryConfigs(
+        3u, initial.config
+    );
+    for (std::size_t substep = 0u;
+         substep < seamTrajectoryConfigs.size();
+         ++substep) {
+        seamTrajectoryConfigs[substep].gripTargetAndActive.z =
+            initial.config.gripTargetAndActive.z +
+            0.0005f * static_cast<float>(substep + 1u);
+    }
+    const GPUResult seamTrajectoryGPU = runGPU(
+        device,
+        queue,
+        pipelines,
+        initial,
+        iterations,
+        strainSweeps,
+        seamTrajectoryConfigs
+    );
+    const GPUResult seamTrajectoryReplayGPU = runGPU(
+        device,
+        queue,
+        pipelines,
+        initial,
+        iterations,
+        strainSweeps,
+        seamTrajectoryConfigs
+    );
+    InitialState seamSequentialState = initial;
+    GPUResult seamSequentialGPU;
+    for (const NumiClothBagGPUConfig& config : seamTrajectoryConfigs) {
+        seamSequentialState.config = config;
+        seamSequentialGPU = runGPU(
+            device,
+            queue,
+            pipelines,
+            seamSequentialState,
+            iterations,
+            strainSweeps
+        );
+        seamSequentialState = continuedInitialState(
+            seamSequentialState,
+            seamSequentialGPU,
+            config
+        );
+    }
+    const bool seamTrajectoryReplayExact =
+        hashGPUResult(seamTrajectoryGPU) ==
+            hashGPUResult(seamTrajectoryReplayGPU);
+    const bool seamTrajectorySplitExact = bitwiseEqualPhysicalState(
+        seamTrajectoryGPU, seamSequentialGPU
+    );
+    double seamAverageLift = 0.0;
+    double seamMaximumHandleLag = 0.0;
+    for (const NumiClothBagGPUGrip& grip : initial.grips) {
+        const std::uint32_t particle = grip.particle.x;
+        const DVec3 finalPosition = d3(
+            seamTrajectoryGPU.particles[particle].positionAndInverseMass
+        );
+        const DVec3 initialPosition = d3(
+            initial.particles[particle].positionAndInverseMass
+        );
+        const DVec3 target =
+            d3(seamTrajectoryConfigs.back().gripTargetAndActive) +
+            d3(grip.targetOffsetAndCompliance);
+        seamAverageLift += finalPosition.z - initialPosition.z;
+        seamMaximumHandleLag = std::max(
+            seamMaximumHandleLag, length(finalPosition - target)
+        );
+    }
+    seamAverageLift /= static_cast<double>(initial.grips.size());
     const GPUResult& gpu = gpuResults.front();
     bool deterministic = true;
     for (std::size_t replay = 1u; replay < gpuResults.size(); ++replay) {
@@ -6344,7 +6520,10 @@ int run(const int argc, const char* const* argv) {
         mouthEdgeExit.second.releaseStatus.masks.y == 1u &&
         mouthRotated.second.releaseStatus.masks.y == 1u &&
         std::abs(mouthReleaseClearance - 0.026) <= 2.0e-6 &&
-        std::abs(mouthRotatedClearance - 0.026) <= 2.0e-6;
+        std::abs(mouthRotatedClearance - 0.026) <= 2.0e-6 &&
+        seamTrajectoryGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
+        seamTrajectoryReplayExact && seamTrajectorySplitExact &&
+        seamAverageLift > 0.0 && seamMaximumHandleLag < 0.02;
 
     std::cout << std::fixed << std::setprecision(12)
               << "device=" << device.name.UTF8String << '\n'
@@ -6631,6 +6810,15 @@ int run(const int argc, const char* const* argv) {
               << " clearance=" << mouthReleaseClearance
               << " rotated_clearance=" << mouthRotatedClearance
               << " fp64_qualified=" << mouthFP64Qualified << '\n'
+              << "seam_trajectory_substeps="
+              << seamTrajectoryConfigs.size()
+              << " replay_exact=" << seamTrajectoryReplayExact
+              << " split_exact=" << seamTrajectorySplitExact
+              << " average_lift=" << seamAverageLift
+              << " maximum_handle_lag=" << seamMaximumHandleLag
+              << " failure_flags=" << seamTrajectoryGPU.failure
+              << " state_hash=0x" << std::hex
+              << hashGPUResult(seamTrajectoryGPU) << std::dec << '\n'
               << "average_gpu_seconds=" << averageSeconds
               << " state_hash=0x" << std::hex << hashGPUResult(gpu)
               << std::dec << '\n'

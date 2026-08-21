@@ -279,7 +279,11 @@ compression invariance, ground-supported bending, unequal-mass fruit-pair
 separation, cloth/fruit plane support, and a fruit crossing fully through a
 yarn segment between frame endpoints and being returned to the correct side,
 plus one yarn segment crossing another in a full substep, and requires
-byte-identical replay.
+byte-identical replay. It also executes a three-substep rising top-seam handle
+inside one command buffer, requires byte-identical trajectory replay, and
+requires its final physical state to match three separately submitted
+substeps exactly. This qualifies persistent state and a time-varying seam
+target; it is not yet the complete Metal pickup trajectory.
 See
 [docs/METAL_CLOTH.md](docs/METAL_CLOTH.md) for its exact boundary.
 

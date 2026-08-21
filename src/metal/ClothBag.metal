@@ -441,6 +441,31 @@ inline float applyYarnCorrection(
 
 } // namespace
 
+kernel void numi_cloth_bag_prepare_trajectory_substep(
+    device NumiClothBagGPUConfig* config [[buffer(0)]],
+    device const NumiClothBagGPUConfig* trajectoryConfigs [[buffer(1)]],
+    constant uint& substep [[buffer(2)]],
+    device ulong* selfImpulseKeys [[buffer(3)]],
+    device atomic_uint* selfImpulseCount [[buffer(4)]],
+    device atomic_uint* failure [[buffer(5)]],
+    const uint index [[thread_position_in_grid]]
+) {
+    if (index == 0u) {
+        const NumiClothBagGPUConfig next = trajectoryConfigs[substep];
+        if (next.control.x != NUMI_CLOTH_BAG_GPU_ABI_VERSION) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_ABI);
+        } else {
+            *config = next;
+        }
+        atomic_store_explicit(
+            selfImpulseCount, 0u, memory_order_relaxed
+        );
+    }
+    if (index < NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY) {
+        selfImpulseKeys[index] = 0xfffffffffffffffful;
+    }
+}
+
 kernel void numi_cloth_bag_begin_substep(
     constant NumiClothBagGPUConfig& config [[buffer(0)]],
     device NumiClothBagGPUParticle* particles [[buffer(1)]],
@@ -1903,6 +1928,7 @@ kernel void numi_cloth_bag_detect_self_contact(
     device atomic_uint* failure [[buffer(6)]],
     constant uint& mode [[buffer(7)]],
     device const NumiClothBagGPUDistance* distances [[buffer(8)]],
+    constant uint& epoch [[buffer(9)]],
     const uint localIndex [[thread_position_in_threadgroup]],
     const uint batchIndex [[threadgroup_position_in_grid]]
 ) {
@@ -1955,7 +1981,7 @@ kernel void numi_cloth_bag_detect_self_contact(
                 );
             }
         }
-        activeFlags[pairIndex] = active;
+        activeFlags[pairIndex] = active ? epoch : 0u;
         if (active) {
             atomic_fetch_add_explicit(
                 &groupCount, 1u, memory_order_relaxed

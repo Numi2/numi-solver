@@ -97,9 +97,12 @@ to a real produce bag.
   fruit translational/rotational air decay. That subset passes independent
   FP64 equation comparison and exact replay; see
   [METAL_CLOTH.md](METAL_CLOTH.md). Its topology-aware mouth release masks also
-  match FP64 focused cases. Fruit orientation and release publication in a
-  complete trajectory, complete-trajectory parity, profiler evidence, and
-  matched physical outcomes remain open.
+  match FP64 focused cases. Three moving top-seam substeps now retain all
+  physical state in one Metal command buffer, replay byte-identically, and end
+  in the exact same physical buffers as separately submitted substeps. Fruit
+  orientation and release publication in a complete trajectory,
+  complete-trajectory parity, profiler evidence, and matched physical outcomes
+  remain open.
 
 Completion requires the specimen measurements and held-out replay above.
 Visual plausibility and the current executable certificates are necessary but
