@@ -55,14 +55,20 @@ to a real produce bag.
   hysteresis rejects grazing/re-entry chatter. The focused probe certifies
   contained, grazing, through-cap, edge-exit, far-outside, and rotated-mouth
   cases.
-- The qualified two-second pickup replay lifts the seam patch, snaps it
-  downward, and records four robust sphere exits from the 48-knot mouth; all
+- The qualified two-second CPU FP64 pickup reference lifts the seam patch,
+  snaps it downward, and records four robust sphere exits from the 48-knot mouth; all
   four remain spilled on the plane. It has
   `escaped_mask=0`, sub-micrometer published contact/strain residuals, and a
   bit-identical second replay; no fruit path is prescribed. The same motion
   retains plural release and all physical gates at 96 substeps. The old
   24-substep pickup is explicitly rejected for contact/strain residual and
   single-release outcome, so it is not visual evidence.
+- The complete Apple Metal pickup advances the same 240-frame handle motion at
+  48 device-resident substeps per frame, then holds the handle for a 240-frame
+  settling tail. Two full trajectories match all 480 frame hashes and the
+  final physical buffers exactly. Three fruits clear the top mouth and two end
+  exactly at their ground-contact radii. Final strain violation, ground
+  penetration, and nonlocal yarn self-penetration are all zero.
 - Exported fruit quaternions drive the visible body marks. The rasterizer draws
   only the exported axial yarn graph and grip connectors; it does not pose the
   bag or fruit.
@@ -81,8 +87,7 @@ to a real produce bag.
   friction, drop, seam-pickup, swing, and spill trials. Parameters must be fit
   on calibration trials and then judged on held-out trajectories using measured
   geometry, force, timing, and release outcomes.
-- The complete trajectory evidence remains an FP64 CPU reference. The initial
-  Metal cloth ABI now owns full-topology gravity integration, graph-colored
+- The Metal cloth ABI owns full-topology gravity integration, graph-colored
   axial XPBD, crossing-angle knots, ground-aware yarn bending, the unilateral
   strain ceiling, ten-knot seam grip, twelve-fruit translation, all 66
   fruit-pair normal contacts, cloth/fruit ground projection, all 34,848
@@ -94,15 +99,16 @@ to a real produce bag.
   owns cloth/ground, yarn/yarn, fruit/yarn, fruit/fruit, and fruit/ground
   Coulomb friction plus load-capped fruit rolling resistance and normalized
   fruit orientation integration. It also owns full-yarn cylinder air loads and
-  fruit translational/rotational air decay. That subset passes independent
+  fruit translational/rotational air decay. Those equations pass independent
   FP64 equation comparison and exact replay; see
   [METAL_CLOTH.md](METAL_CLOTH.md). Its topology-aware mouth release masks also
   match FP64 focused cases. Three moving top-seam substeps now retain all
   physical state in one Metal command buffer, replay byte-identically, and end
-  in the exact same physical buffers as separately submitted substeps. Fruit
-  orientation and release publication in a complete trajectory,
-  complete-trajectory parity, profiler evidence, and matched physical outcomes
-  remain open.
+  in the exact same physical buffers as separately submitted substeps. The
+  complete 480-frame pickup now qualifies fruit orientation, release
+  publication, plural ground contact, zero final residuals, and bit-identical
+  Metal replay. Complete standalone grounded/spin Metal trajectories, profiler
+  evidence, and matched physical-specimen outcomes remain open.
 
 Completion requires the specimen measurements and held-out replay above.
 Visual plausibility and the current executable certificates are necessary but

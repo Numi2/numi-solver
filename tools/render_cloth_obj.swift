@@ -250,7 +250,9 @@ private func render(
     cameraProfile: String,
     output: String
 ) throws {
-    let width = cameraProfile == "pickup" ? 960 : (grip == nil ? 1200 : 800)
+    let pickupCamera = cameraProfile == "pickup" ||
+        cameraProfile == "pickup-wide"
+    let width = pickupCamera ? 960 : (grip == nil ? 1200 : 800)
     let height = 800
     let yaw = -0.62
     let pitch = 0.19
@@ -269,7 +271,11 @@ private func render(
     let scale: Double
     let centerX: Double
     let centerY: Double
-    if cameraProfile == "pickup" {
+    if cameraProfile == "pickup-wide" {
+        scale = 400.0
+        centerX = Double(width) * 0.5
+        centerY = 100.0
+    } else if cameraProfile == "pickup" {
         scale = 450.0
         if let grip {
             let transformedGrip = camera(
@@ -611,15 +617,24 @@ private func render(
 }
 
 guard CommandLine.arguments.count == 3 || CommandLine.arguments.count == 4 else {
-    fputs("usage: render_cloth_obj.swift INPUT.obj OUTPUT.png [pickup]\n", stderr)
+    fputs(
+        "usage: render_cloth_obj.swift INPUT.obj OUTPUT.png " +
+        "[pickup|pickup-wide]\n",
+        stderr
+    )
     exit(2)
 }
 
 let cameraProfile = CommandLine.arguments.count == 4
     ? CommandLine.arguments[3]
     : "automatic"
-guard cameraProfile == "automatic" || cameraProfile == "pickup" else {
-    fputs("render_cloth_obj.swift: camera profile must be pickup\n", stderr)
+guard cameraProfile == "automatic" || cameraProfile == "pickup" ||
+      cameraProfile == "pickup-wide" else {
+    fputs(
+        "render_cloth_obj.swift: camera profile must be pickup or " +
+        "pickup-wide\n",
+        stderr
+    )
     exit(2)
 }
 

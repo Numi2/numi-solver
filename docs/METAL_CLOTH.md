@@ -180,8 +180,8 @@ constraint, contact, release, and friction state stays device-resident between
 substeps. Two persistent executions must be byte-identical, and the final
 physical buffers must exactly match the same three substeps submitted as three
 command buffers. The check also gates positive seam lift and finite attachment
-lag. This is a persistence and moving-handle certificate, not a complete Metal
-pickup or spill trajectory.
+lag. By itself this is only a persistence and moving-handle certificate; the
+complete Metal pickup and spill trajectory is qualified separately below.
 
 The focused strain case starts one segment with `0.215 m` excess extension and
 another in compression. One Metal sweep must remove the extension violation,
@@ -228,15 +228,16 @@ Run it with:
 
 The complete pickup is an explicit long-running qualification. It advances
 48 device-resident substeps per 1/120-second frame, follows the 240-frame
-pickup motion, then holds the final handle for a 60-frame settling tail. It
+pickup motion, then holds the final handle for a 240-frame settling tail. It
 publishes only at frame boundaries, exports replay-one states every ten frames,
-and compares all 300 frame hashes plus the final physical buffers with replay
-two. At least two released fruit must physically rest on the plane at the end:
+and compares all 480 frame hashes plus the final physical buffers with replay
+two. At least two released fruit must physically contact the plane at the end;
+the gate does not claim that their rolling velocity is already zero:
 
 ```sh
 ./build/numi-solver-cloth-metal \
   --replays 2 --iterations 32 --strain-sweeps 3 \
-  --pickup-prefix build/metal-pickup --pickup-steps 300 \
+  --pickup-prefix build/metal-pickup --pickup-steps 480 \
   --pickup-dump-every 10
 ```
 
@@ -347,6 +348,26 @@ state_hash=0x2ba7eb3acee2ad58
 result=PASS
 ```
 
+The complete Apple M4 Pro pickup qualification measured on 2026-08-21 was:
+
+```text
+pickup_requested=true complete=true steps=480 motion_frames=240 settling_frames=240
+replay_exact=true released_mask=1537 released_count=3 grounded_released_count=2
+strain_violation=0.000000000000 ground_penetration=0.000000000000
+self_penetration=0.000000000000
+first_gpu_seconds=7086.040673292242 second_gpu_seconds=7085.412014581729
+qualified=true
+result=PASS
+```
+
+Both runs were failure-free. The first release occurred at frame 60, the mask
+became `1537` at frame 150, fruit 9 reached its `0.064000003 m` ground radius
+at frame 440, and fruit 10 reached its `0.0700000003 m` ground radius at frame
+470. The 49-frame, 3.92-second README GIF is rasterized from replay one's
+exported states with a fixed camera. The maximum observed resident set during
+the complete qualification was `914576 KiB`. GPU command time and resident set
+are reported as run evidence, not as a performance comparison.
+
 The eight normal-response-count differences, two fruit/yarn friction-count
 differences, and one yarn/yarn friction-count difference are FP32/FP64
 classifications of
@@ -389,8 +410,9 @@ air loads, plus topology-aware mouth release classification. It does
 **not** yet
 include:
 
-- the complete grounded, spin, or pickup outcome on Metal.
+- the complete standalone grounded and circular-spin outcomes on Metal.
 
-Until those transactions reach Metal and match the FP64 replay, the README GIF
-and its spill certificate remain CPU-reference evidence. Specimen calibration
-is a separate physical-evidence requirement.
+The README pickup GIF and spill certificate are now complete-trajectory Metal
+evidence. The standalone grounded and circular-spin images remain FP64
+reference evidence. Specimen calibration is a separate physical-evidence
+requirement.

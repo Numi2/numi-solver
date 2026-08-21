@@ -11,35 +11,50 @@ application scene.
 
 ## Pick up the bag and spill the fruit
 
-![A deterministic cloth-solver replay lifting a produce bag from a compliant rim patch and spilling fruit onto the ground](docs/assets/cloth-pickup-spill.gif)
+![A deterministic Metal cloth replay lifting a woven produce bag by its reinforced top opening seam and spilling fruit onto the ground](docs/assets/cloth-metal-pickup-spill.gif)
 
-This looping GIF contains 25 handle-following camera frames from one 2.0-second solver
-trajectory. The orange ring is a virtual handle attached through finite
-compliance to ten neighboring knots across the two-row top cuff. Orange connector
-lines expose that small seam-pinch patch and its physical lag: all 1,465 cloth
-particles and all twelve fruits remain dynamic. The bag starts resting on the
-plane, rises under the seam grip, lags and folds under load, then a vertical
-hand snap carries the cuff downward while four inertially lagging fruits
-robustly clear the top mouth and remain spilled on the plane. The small
-body-fixed marks are driven by each fruit's
-exported solver quaternion, so their motion exposes physical rolling and spin.
+This 49-frame GIF is rasterized from one continuous four-second Apple Metal
+solver trajectory. The first two seconds lift, snap, and recover the virtual
+handle; the final two seconds hold it fixed while the released fruit fall and
+reach the plane. The orange ring acts through finite compliance on ten
+neighboring knots across the two-row reinforced top cuff. It is not attached to the bottom,
+and no cloth knot or fruit is prescribed. All 1,465 cloth particles and twelve
+fruits remain dynamic. The fixed wide camera changes no solver state and keeps
+the seam, closed woven bottom, top opening, ground, and spilled fruit visible.
 
-The 48-substep replay passed every mechanics gate with `released_mask=3344`,
-`escaped_mask=0`, `0.206217584` maximum warp extension, `0.089365346`
-maximum weft strain, `0.021853543` maximum woven-bottom extension,
-`237.766842811 N` peak grip force, 103,969 swept sphere/yarn impacts,
-52,768 yarn/yarn friction contacts, `0.002 um` final primitive overlap and zero
-final strain-limit violation, maximum published fruit/yarn penetration
-`0.823 um`, a friction-cone ratio never above `1.0`, and bit-identical state
-hash `0xe6aa91e33438537d`. The same motion retains plural certified release and
-passes every physical gate at 96 substeps; the rejected 24-substep run does
-not. The GIF is rasterized from the 48-substep exported states; it is
-CPU FP64 cloth evidence, not Metal-performance or Temporal Cone cloth-contact
-evidence.
+On an Apple M4 Pro, two complete 480-frame replays each advanced 48
+device-resident substeps per frame. Both were failure-free and bit-identical at
+all 480 published frame hashes and in the final physical buffers.
+`released_mask=1537` records three full-sphere exits through the 48-knot top
+mouth; two released fruits finish with `center.z == radius` on the plane.
+Final strain violation, cloth/fruit ground penetration, and nonlocal yarn
+self-penetration are all `0`. The first and second runs reported
+`7086.040673292242 s` and `7085.412014581729 s` of GPU command time,
+respectively, and the maximum observed resident set was `914576 KiB`.
+This is executable Metal physics evidence, not a posed animation or a GPU
+performance comparison.
+
+| Grounded start | Top-seam lift | Mouth exit | Released descent | Two grounded |
+|:--:|:--:|:--:|:--:|:--:|
+| ![Grounded woven bag before the Metal seam lift](docs/assets/cloth-metal-pickup-0.png) | ![Metal cloth bag hanging from the highlighted top cuff](docs/assets/cloth-metal-pickup-60.png) | ![Fruit crossing the open 48-knot mouth in the Metal replay](docs/assets/cloth-metal-pickup-160.png) | ![Released fruit descending while the Metal handle becomes stationary](docs/assets/cloth-metal-pickup-240.png) | ![Two released fruit physically grounded after the fixed-handle settling tail](docs/assets/cloth-metal-pickup-480.png) |
+
+### Independent FP64 reference
+
+![A deterministic FP64 cloth reference lifting a produce bag from a compliant rim patch and spilling fruit onto the ground](docs/assets/cloth-pickup-spill.gif)
+
+The separate two-second CPU FP64 reference records four robust mouth exits and
+keeps all four spilled fruits on the plane. Its 48-substep replay passed with
+`released_mask=3344`, `escaped_mask=0`, `0.206217584` maximum warp
+extension, `0.089365346` maximum weft strain, `0.021853543` maximum
+woven-bottom extension, `237.766842811 N` peak grip force, `0.002 um` final
+primitive overlap, zero final strain-limit violation, and bit-identical state
+hash `0xe6aa91e33438537d`. It is an independent equation-level and trajectory
+reference; chaotic long-contact trajectories are not required to match the
+Metal state bit for bit.
 
 | Start | Seam lift | Loaded cuff | Mouth exit | Four remain out |
 |:--:|:--:|:--:|:--:|:--:|
-| ![Grounded bag before the seam lift](docs/assets/cloth-pickup-0.png) | ![Bag hanging from the highlighted top cuff](docs/assets/cloth-pickup-60.png) | ![Fruit loading the deforming cuff before the downward snap](docs/assets/cloth-pickup-120.png) | ![Fruit crossing the open 48-knot mouth](docs/assets/cloth-pickup-160.png) | ![Four released fruit contacting and rolling on the plane](docs/assets/cloth-pickup-200.png) |
+| ![Grounded bag before the FP64 seam lift](docs/assets/cloth-pickup-0.png) | ![FP64 bag hanging from the highlighted top cuff](docs/assets/cloth-pickup-60.png) | ![Fruit loading the deforming FP64 cuff before the downward snap](docs/assets/cloth-pickup-120.png) | ![Fruit crossing the open FP64 mouth](docs/assets/cloth-pickup-160.png) | ![Four FP64 released fruit contacting and rolling on the plane](docs/assets/cloth-pickup-200.png) |
 
 ## Grounded cloth produce-bag replay
 
@@ -122,14 +137,28 @@ swift tools/compose_cloth_gif.swift \
 ```
 
 The opt-in Metal trajectory uses the same 240-frame, 48-substep pickup motion,
-holds the final handle for 60 more frames so spilled fruit can settle, executes
-two full replays, and exports every tenth frame from replay one:
+holds the final handle for 240 more frames so spilled fruit can reach the
+plane, executes two full replays, and exports every tenth frame from replay
+one:
 
 ```sh
 ./build/numi-solver-cloth-metal \
   --replays 2 --iterations 32 --strain-sweeps 3 \
-  --pickup-prefix build/metal-pickup --pickup-steps 300 \
+  --pickup-prefix build/metal-pickup --pickup-steps 480 \
   --pickup-dump-every 10
+
+mkdir -p build/metal-pickup-png
+for step in $(seq 0 10 480); do
+  swift tools/render_cloth_obj.swift \
+    "build/metal-pickup-${step}.obj" \
+    "build/metal-pickup-png/frame-${step}.png" pickup-wide
+done
+
+swift tools/compose_cloth_gif.swift \
+  docs/assets/cloth-metal-pickup-spill.gif 0.08 \
+  $(for step in $(seq 0 10 480); do
+    printf '%s ' "build/metal-pickup-png/frame-${step}.png"
+  done)
 ```
 
 ## Solver boundary
@@ -282,9 +311,11 @@ around a smooth orbit, and `pickup` lifts that same grip patch from the grounded
 pours fruit onto the plane. Its FP64 mechanics and evidence boundary are
 separate from the Metal harnesses.
 
-The Metal cloth subset accepts `--replays N`, `--iterations N`, and
-`--strain-sweeps N`. It reconstructs the full cloth internal-constraint/grip
-topology, validates conflict-free graph colors, compares every published value
+The Metal cloth harness accepts `--replays N`, `--iterations N`,
+`--strain-sweeps N`, and the opt-in `--pickup-prefix`, `--pickup-steps`, and
+`--pickup-dump-every` trajectory arguments. It reconstructs the full cloth
+internal-constraint/grip topology, validates conflict-free graph colors,
+compares every published value
 against an independent FP64 oracle, exercises active extension limiting,
 compression invariance, ground-supported bending, unequal-mass fruit-pair
 separation, cloth/fruit plane support, and a fruit crossing fully through a
@@ -294,7 +325,9 @@ byte-identical replay. It also executes a three-substep rising top-seam handle
 inside one command buffer, requires byte-identical trajectory replay, and
 requires its final physical state to match three separately submitted
 substeps exactly. This qualifies persistent state and a time-varying seam
-target; it is not yet the complete Metal pickup trajectory.
+target. The separate 480-frame pickup qualification then proves the complete
+top-seam grab, spill, plural ground contact, zero final residuals, and exact
+trajectory replay.
 See
 [docs/METAL_CLOTH.md](docs/METAL_CLOTH.md) for its exact boundary.
 

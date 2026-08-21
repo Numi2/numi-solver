@@ -56,6 +56,10 @@ constexpr float kYarnCrossflowDrag = 1.10f;
 constexpr float kYarnSkinFriction = 0.010f;
 constexpr float kFruitDrag = 0.47f;
 constexpr float kFruitRotationalDrag = 0.010f;
+constexpr std::uint32_t kPickupSubstepsPerFrame = 48u;
+constexpr std::uint32_t kPickupMotionFrames = 240u;
+constexpr std::uint32_t kPickupQualificationFrames =
+    kPickupMotionFrames + 240u;
 
 std::size_t packedSelfPairIndex(
     const std::uint32_t first,
@@ -4739,7 +4743,6 @@ PickupReplay runPickupReplay(
     const std::uint32_t replayIndex,
     const std::string& dumpPrefix
 ) {
-    constexpr std::uint32_t substepsPerFrame = 48u;
     InitialState state = initial;
     state.config.constraintCounts.z = 1u;
     const DVec3 initialGripTarget = pickupGripTarget(0.0);
@@ -4761,13 +4764,14 @@ PickupReplay runPickupReplay(
     }
     for (std::uint32_t step = 0u; step < steps; ++step) {
         std::vector<NumiClothBagGPUConfig> configs(
-            substepsPerFrame, state.config
+            kPickupSubstepsPerFrame, state.config
         );
         for (std::uint32_t substep = 0u;
-             substep < substepsPerFrame;
+             substep < kPickupSubstepsPerFrame;
              ++substep) {
             const std::uint64_t completedSubsteps =
-                static_cast<std::uint64_t>(step) * substepsPerFrame +
+                static_cast<std::uint64_t>(step) *
+                    kPickupSubstepsPerFrame +
                 substep + 1u;
             const DVec3 target = pickupGripTarget(
                 static_cast<double>(completedSubsteps) * kTimestep
@@ -4928,7 +4932,7 @@ int run(const int argc, const char* const* argv) {
     std::uint32_t replays = 2u;
     std::uint32_t iterations = 32u;
     std::uint32_t strainSweeps = 3u;
-    std::uint32_t pickupSteps = 300u;
+    std::uint32_t pickupSteps = kPickupQualificationFrames;
     std::uint32_t pickupDumpEvery = 10u;
     std::string pickupPrefix;
     std::string metallibPath = NUMI_TEMPORAL_CONE_METALLIB;
@@ -4977,10 +4981,10 @@ int run(const int argc, const char* const* argv) {
         throw std::runtime_error("iterations and strain sweeps must be positive");
     }
     if (!pickupPrefix.empty() &&
-        (pickupSteps == 0u || pickupSteps > 300u ||
+        (pickupSteps == 0u || pickupSteps > kPickupQualificationFrames ||
          pickupDumpEvery == 0u)) {
         throw std::runtime_error(
-            "Metal pickup requires 1..300 steps and positive dump cadence"
+            "Metal pickup requires 1..480 steps and positive dump cadence"
         );
     }
 
@@ -5359,7 +5363,7 @@ int run(const int argc, const char* const* argv) {
             bitwiseEqualPhysicalState(
                 pickupFirst.final, pickupSecond.final
             );
-        pickupComplete = pickupSteps == 300u;
+        pickupComplete = pickupSteps == kPickupQualificationFrames;
         pickupReleasedMask = pickupFirst.final.releaseStatus.masks.y;
         for (std::size_t index = 0u;
              index < pickupFirst.final.fruits.size();
@@ -7112,6 +7116,11 @@ int run(const int argc, const char* const* argv) {
               << "pickup_requested=" << pickupRequested
               << " complete=" << pickupComplete
               << " steps=" << (pickupRequested ? pickupSteps : 0u)
+              << " motion_frames=" << kPickupMotionFrames
+              << " settling_frames="
+              << (pickupRequested && pickupSteps > kPickupMotionFrames
+                      ? pickupSteps - kPickupMotionFrames
+                      : 0u)
               << " replay_exact=" << pickupReplayExact
               << " released_mask=" << pickupReleasedMask
               << " released_count=" << std::popcount(pickupReleasedMask)
