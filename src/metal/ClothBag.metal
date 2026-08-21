@@ -30,7 +30,11 @@ inline bool validConfig(
         !all(isfinite(config.airVelocityAndDensity)) ||
         config.airVelocityAndDensity.w < 0.0f ||
         !all(isfinite(config.aerodynamicCoefficients)) ||
-        any(config.aerodynamicCoefficients < 0.0f)) {
+        any(config.aerodynamicCoefficients < 0.0f) ||
+        config.mouthControl.x > NUMI_CLOTH_BAG_GPU_MOUTH_RIM_CAPACITY ||
+        (config.mouthControl.x != 0u &&
+         config.mouthControl.y >= config.control.y) ||
+        !all(isfinite(config.mouthMaterial)) || config.mouthMaterial.x < 0.0f) {
         recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
         return false;
     }
@@ -785,6 +789,214 @@ kernel void numi_cloth_bag_advance_positions(
             fruit.positionAndInverseMass.xyz
         );
         fruits[index] = fruit;
+    }
+}
+
+inline bool projectedInsideMouth(
+    device const NumiClothBagGPUParticle* particles,
+    device const uint* rimParticles,
+    const uint rimCount,
+    const float3 center,
+    const float3 tangent,
+    const float3 bitangent,
+    const float3 point,
+    const float edgeClearance
+) {
+    const float3 relativePoint = point - center;
+    const float pointX = dot(relativePoint, tangent);
+    const float pointY = dot(relativePoint, bitangent);
+    bool inside = false;
+    float minimumEdgeDistanceSquared = INFINITY;
+    uint second = rimCount - 1u;
+    for (uint first = 0u; first < rimCount; ++first) {
+        const float3 firstRelative = particles[
+            rimParticles[first]
+        ].positionAndInverseMass.xyz - center;
+        const float3 secondRelative = particles[
+            rimParticles[second]
+        ].positionAndInverseMass.xyz - center;
+        const float firstX = dot(firstRelative, tangent);
+        const float firstY = dot(firstRelative, bitangent);
+        const float secondX = dot(secondRelative, tangent);
+        const float secondY = dot(secondRelative, bitangent);
+        const float2 edge = float2(secondX - firstX, secondY - firstY);
+        const float edgeLengthSquared = dot(edge, edge);
+        const float fraction = edgeLengthSquared > 1.0e-20f
+            ? clamp(
+                dot(float2(pointX - firstX, pointY - firstY), edge) /
+                    edgeLengthSquared,
+                0.0f,
+                1.0f
+            )
+            : 0.0f;
+        const float2 separation = float2(pointX, pointY) -
+            (float2(firstX, firstY) + fraction * edge);
+        minimumEdgeDistanceSquared = min(
+            minimumEdgeDistanceSquared, dot(separation, separation)
+        );
+        const bool crosses = (firstY > pointY) != (secondY > pointY);
+        if (crosses) {
+            const float crossingX = firstX +
+                (secondX - firstX) *
+                    (pointY - firstY) / (secondY - firstY);
+            if (pointX < crossingX) {
+                inside = !inside;
+            }
+        }
+        second = first;
+    }
+    return inside || minimumEdgeDistanceSquared <=
+        edgeClearance * edgeClearance;
+}
+
+inline float minimumMouthRimDistance(
+    device const NumiClothBagGPUParticle* particles,
+    device const uint* rimParticles,
+    const uint rimCount,
+    const float3 point
+) {
+    float minimumDistanceSquared = INFINITY;
+    for (uint first = 0u; first < rimCount; ++first) {
+        const float3 start = particles[
+            rimParticles[first]
+        ].positionAndInverseMass.xyz;
+        const float3 edge = particles[
+            rimParticles[(first + 1u) % rimCount]
+        ].positionAndInverseMass.xyz - start;
+        const float edgeLengthSquared = dot(edge, edge);
+        const float fraction = edgeLengthSquared > 1.0e-20f
+            ? clamp(
+                dot(point - start, edge) / edgeLengthSquared,
+                0.0f,
+                1.0f
+            )
+            : 0.0f;
+        const float3 separation = point - (start + fraction * edge);
+        minimumDistanceSquared = min(
+            minimumDistanceSquared, dot(separation, separation)
+        );
+    }
+    return sqrt(minimumDistanceSquared);
+}
+
+kernel void numi_cloth_bag_update_released_fruit(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device const NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device const uint* rimParticles [[buffer(2)]],
+    device const NumiClothBagGPUFruit* fruits [[buffer(3)]],
+    device atomic_uint* status [[buffer(4)]],
+    device atomic_uint* maximumClearance [[buffer(5)]],
+    device atomic_uint* failure [[buffer(6)]],
+    const uint fruitIndex [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) ||
+        fruitIndex >= config.constraintCounts.w ||
+        config.mouthControl.x == 0u) {
+        return;
+    }
+    const uint rimCount = config.mouthControl.x;
+    if (rimCount < 3u || fruitIndex >= 32u) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+        return;
+    }
+    float3 center = float3(0.0f);
+    for (uint index = 0u; index < rimCount; ++index) {
+        if (rimParticles[index] >= config.control.y) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
+            return;
+        }
+        center += particles[
+            rimParticles[index]
+        ].positionAndInverseMass.xyz;
+    }
+    center /= static_cast<float>(rimCount);
+    float3 areaNormal = float3(0.0f);
+    for (uint index = 0u; index < rimCount; ++index) {
+        areaNormal += cross(
+            particles[rimParticles[index]].positionAndInverseMass.xyz -
+                center,
+            particles[
+                rimParticles[(index + 1u) % rimCount]
+            ].positionAndInverseMass.xyz - center
+        );
+    }
+    if (!(length(areaNormal) > 1.0e-8f)) {
+        return;
+    }
+    float3 normal = normalize(areaNormal);
+    const float3 interiorDirection = center - particles[
+        config.mouthControl.y
+    ].positionAndInverseMass.xyz;
+    if (dot(normal, interiorDirection) < 0.0f) {
+        normal *= -1.0f;
+    }
+    float3 tangent = particles[
+        rimParticles[0]
+    ].positionAndInverseMass.xyz - center;
+    tangent -= normal * dot(tangent, normal);
+    if (!(length(tangent) > 1.0e-8f)) {
+        tangent = cross(
+            normal,
+            abs(normal.z) < 0.9f
+                ? float3(0.0f, 0.0f, 1.0f)
+                : float3(1.0f, 0.0f, 0.0f)
+        );
+    }
+    tangent = normalize(tangent);
+    const float3 bitangent = normalize(cross(normal, tangent));
+    const NumiClothBagGPUFruit fruit = fruits[fruitIndex];
+    const float3 fruitPosition = fruit.positionAndInverseMass.xyz;
+    const float requiredClearance =
+        fruit.previousAndRadius.w + config.clothMaterial.x;
+    const bool insideProjection = projectedInsideMouth(
+        particles,
+        rimParticles,
+        rimCount,
+        center,
+        tangent,
+        bitangent,
+        fruitPosition,
+        0.0f
+    );
+    const bool nearProjection = projectedInsideMouth(
+        particles,
+        rimParticles,
+        rimCount,
+        center,
+        tangent,
+        bitangent,
+        fruitPosition,
+        requiredClearance
+    );
+    const float outwardDistance = dot(
+        fruitPosition - center, normal
+    );
+    const uint mask = 1u << fruitIndex;
+    if (insideProjection && outwardDistance > 0.0f) {
+        atomic_fetch_or_explicit(status, mask, memory_order_relaxed);
+    }
+    const float axialClearance = outwardDistance - requiredClearance;
+    const float rimClearance = minimumMouthRimDistance(
+        particles, rimParticles, rimCount, fruitPosition
+    ) - requiredClearance;
+    const bool fullyClearThroughCap = nearProjection &&
+        axialClearance > config.mouthMaterial.x;
+    const uint candidateMask = atomic_load_explicit(
+        status, memory_order_relaxed
+    );
+    const bool fullyClearAroundRim = (candidateMask & mask) != 0u &&
+        !insideProjection && outwardDistance > 0.0f &&
+        rimClearance > config.mouthMaterial.x;
+    const float clearance = fullyClearThroughCap
+        ? axialClearance
+        : (fullyClearAroundRim ? rimClearance : axialClearance);
+    atomic_fetch_max_explicit(
+        maximumClearance + fruitIndex,
+        as_type<uint>(max(0.0f, clearance)),
+        memory_order_relaxed
+    );
+    if (fullyClearThroughCap || fullyClearAroundRim) {
+        atomic_fetch_or_explicit(status + 1u, mask, memory_order_relaxed);
     }
 }
 

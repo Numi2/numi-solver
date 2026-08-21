@@ -316,12 +316,15 @@ struct InitialState {
     std::vector<NumiClothBagGPUYarnContact> yarnContacts;
     std::vector<NumiClothBagGPUSelfPair> selfPairs;
     std::vector<std::uint32_t> selfPairLookup;
+    std::vector<std::uint32_t> mouthRimParticles;
     std::vector<NumiClothBagGPUBatch> distanceBatches;
     std::vector<NumiClothBagGPUBatch> knotBatches;
     std::vector<NumiClothBagGPUBatch> bendBatches;
     std::vector<NumiClothBagGPUBatch> fruitPairBatches;
     std::vector<NumiClothBagGPUBatch> selfBatches;
     std::uint32_t maximumSelfBatchSize{};
+    std::uint32_t initialMouthCandidateMask{};
+    std::uint32_t initialReleasedMask{};
 };
 
 struct EdgeSpec {
@@ -766,6 +769,17 @@ InitialState makeInitialState() {
         kFruitDrag,
         kFruitRotationalDrag
     );
+    result.config.mouthControl = u4(
+        kAround,
+        bottomGridIndex(kBottomGrid / 2u, kBottomGrid / 2u),
+        0u,
+        0u
+    );
+    result.config.mouthMaterial = f4(0.025f, 0.0f, 0.0f, 0.0f);
+    result.mouthRimParticles.reserve(kAround);
+    for (std::uint32_t ring = 0u; ring < kAround; ++ring) {
+        result.mouthRimParticles.push_back(nodeIndex(kLevels - 1u, ring));
+    }
     result.grips.reserve(kGripCount);
     for (std::uint32_t level = kLevels - 2u; level < kLevels; ++level) {
         for (const int offset : {-2, -1, 0, 1, 2}) {
@@ -1452,6 +1466,58 @@ InitialState makeFruitAerodynamicsProbeState() {
     return result;
 }
 
+InitialState makeMouthReleaseProbeState(
+    const DVec3 fruitPosition,
+    const bool rotated,
+    const std::uint32_t initialCandidateMask = 0u
+) {
+    InitialState result;
+    constexpr std::uint32_t bottomCenter = kAround;
+    result.config.control = u4(
+        NUMI_CLOTH_BAG_GPU_ABI_VERSION, kAround + 1u, 0u, 0u
+    );
+    result.config.constraintCounts = u4(0u, 0u, 0u, 1u);
+    result.config.gravityAndTimestep = f4(0.0f, 0.0f, 0.0f, 0.01f);
+    result.config.gripTargetAndActive = f4(0.0f, 0.0f, 0.0f, 0.0f);
+    result.config.clothMaterial = f4(
+        0.004f, 0.0f, kClothGroundFriction, kClothSelfFriction
+    );
+    result.config.mouthControl = u4(kAround, bottomCenter, 0u, 0u);
+    result.config.mouthMaterial = f4(0.025f, 0.0f, 0.0f, 0.0f);
+    result.initialMouthCandidateMask = initialCandidateMask;
+    result.particles.reserve(kAround + 1u);
+    result.mouthRimParticles.reserve(kAround);
+    const auto fixedParticle = [](const DVec3 position) {
+        NumiClothBagGPUParticle particle{};
+        particle.positionAndInverseMass = f4(
+            static_cast<float>(position.x),
+            static_cast<float>(position.y),
+            static_cast<float>(position.z),
+            0.0f
+        );
+        particle.previousAndMass = f4(
+            static_cast<float>(position.x),
+            static_cast<float>(position.y),
+            static_cast<float>(position.z),
+            0.0f
+        );
+        particle.velocity = f4(0.0f, 0.0f, 0.0f, 0.0f);
+        return particle;
+    };
+    for (std::uint32_t ring = 0u; ring < kAround; ++ring) {
+        const double angle = 2.0 * std::numbers::pi *
+            static_cast<double>(ring) / static_cast<double>(kAround);
+        const DVec3 position = rotated
+            ? DVec3{1.0, std::cos(angle), std::sin(angle)}
+            : DVec3{std::cos(angle), std::sin(angle), 1.0};
+        result.particles.push_back(fixedParticle(position));
+        result.mouthRimParticles.push_back(ring);
+    }
+    result.particles.push_back(fixedParticle({0.0, 0.0, 0.0}));
+    result.fruits = {makeProbeFruit(fruitPosition, 1.0f, 0.10f)};
+    return result;
+}
+
 bool verifyColoring(const InitialState& state) {
     for (const NumiClothBagGPUBatch& batch : state.distanceBatches) {
         std::vector<bool> used(state.particles.size(), false);
@@ -1680,6 +1746,9 @@ struct OracleResult {
     double maximumYarnAerodynamicForce{};
     double maximumFruitAerodynamicForce{};
     double maximumFruitAerodynamicTorque{};
+    std::uint32_t mouthCandidateMask{};
+    std::uint32_t releasedMask{};
+    std::vector<double> maximumMouthClearanceByFruit;
 };
 
 struct OraclePointSegmentSample {
@@ -3017,6 +3086,165 @@ void applyOracleAerodynamics(
     }
 }
 
+void updateOracleReleasedFruit(
+    const InitialState& initial,
+    OracleResult& state
+) {
+    const std::uint32_t rimCount = initial.config.mouthControl.x;
+    if (rimCount == 0u) {
+        return;
+    }
+    std::vector<DVec3> ring;
+    ring.reserve(rimCount);
+    DVec3 center{};
+    for (std::uint32_t index = 0u; index < rimCount; ++index) {
+        const DVec3 position = state.particles[
+            initial.mouthRimParticles[index]
+        ].position;
+        ring.push_back(position);
+        center += position;
+    }
+    center = center / static_cast<double>(rimCount);
+    DVec3 areaNormal{};
+    for (std::uint32_t index = 0u; index < rimCount; ++index) {
+        areaNormal += cross(
+            ring[index] - center,
+            ring[(index + 1u) % rimCount] - center
+        );
+    }
+    if (!(length(areaNormal) > 1.0e-8)) {
+        return;
+    }
+    DVec3 normal = normalized(areaNormal);
+    const DVec3 interiorDirection = center - state.particles[
+        initial.config.mouthControl.y
+    ].position;
+    if (dot(normal, interiorDirection) < 0.0) {
+        normal = normal * -1.0;
+    }
+    DVec3 tangent = ring[0] - center;
+    tangent -= normal * dot(tangent, normal);
+    if (!(length(tangent) > 1.0e-8)) {
+        tangent = cross(
+            normal,
+            std::abs(normal.z) < 0.9
+                ? DVec3{0.0, 0.0, 1.0}
+                : DVec3{1.0, 0.0, 0.0}
+        );
+    }
+    tangent = normalized(tangent);
+    const DVec3 bitangent = normalized(cross(normal, tangent));
+    const auto projectedInside = [&] (
+        const DVec3 point,
+        const double edgeClearance
+    ) {
+        const DVec3 relativePoint = point - center;
+        const double pointX = dot(relativePoint, tangent);
+        const double pointY = dot(relativePoint, bitangent);
+        bool inside = false;
+        double minimumEdgeDistanceSquared =
+            std::numeric_limits<double>::infinity();
+        for (std::uint32_t first = 0u, second = rimCount - 1u;
+             first < rimCount;
+             second = first++) {
+            const DVec3 firstRelative = ring[first] - center;
+            const DVec3 secondRelative = ring[second] - center;
+            const double firstX = dot(firstRelative, tangent);
+            const double firstY = dot(firstRelative, bitangent);
+            const double secondX = dot(secondRelative, tangent);
+            const double secondY = dot(secondRelative, bitangent);
+            const double edgeX = secondX - firstX;
+            const double edgeY = secondY - firstY;
+            const double edgeLengthSquared =
+                edgeX * edgeX + edgeY * edgeY;
+            const double fraction = edgeLengthSquared > 1.0e-20
+                ? std::clamp(
+                    ((pointX - firstX) * edgeX +
+                     (pointY - firstY) * edgeY) / edgeLengthSquared,
+                    0.0,
+                    1.0
+                )
+                : 0.0;
+            const double separationX =
+                pointX - (firstX + fraction * edgeX);
+            const double separationY =
+                pointY - (firstY + fraction * edgeY);
+            minimumEdgeDistanceSquared = std::min(
+                minimumEdgeDistanceSquared,
+                separationX * separationX + separationY * separationY
+            );
+            const bool crosses = (firstY > pointY) != (secondY > pointY);
+            if (crosses) {
+                const double crossingX = firstX +
+                    (secondX - firstX) *
+                        (pointY - firstY) / (secondY - firstY);
+                if (pointX < crossingX) {
+                    inside = !inside;
+                }
+            }
+        }
+        return inside || minimumEdgeDistanceSquared <=
+            edgeClearance * edgeClearance;
+    };
+    const auto minimumRimDistance = [&] (const DVec3 point) {
+        double minimumDistanceSquared =
+            std::numeric_limits<double>::infinity();
+        for (std::uint32_t first = 0u; first < rimCount; ++first) {
+            const DVec3 start = ring[first];
+            const DVec3 edge = ring[(first + 1u) % rimCount] - start;
+            const double edgeLengthSquared = dot(edge, edge);
+            const double fraction = edgeLengthSquared > 1.0e-20
+                ? std::clamp(
+                    dot(point - start, edge) / edgeLengthSquared,
+                    0.0,
+                    1.0
+                )
+                : 0.0;
+            const DVec3 separation = point - (start + edge * fraction);
+            minimumDistanceSquared = std::min(
+                minimumDistanceSquared, dot(separation, separation)
+            );
+        }
+        return std::sqrt(minimumDistanceSquared);
+    };
+    for (std::size_t index = 0u; index < state.fruits.size(); ++index) {
+        const OracleFruit& fruit = state.fruits[index];
+        const double requiredClearance =
+            fruit.radius + initial.config.clothMaterial.x;
+        const bool insideProjection = projectedInside(fruit.position, 0.0);
+        const bool nearProjection = projectedInside(
+            fruit.position, requiredClearance
+        );
+        const double outwardDistance = dot(
+            fruit.position - center, normal
+        );
+        const std::uint32_t mask = 1u << index;
+        if (insideProjection && outwardDistance > 0.0) {
+            state.mouthCandidateMask |= mask;
+        }
+        const double axialClearance =
+            outwardDistance - requiredClearance;
+        const double rimClearance =
+            minimumRimDistance(fruit.position) - requiredClearance;
+        const double hysteresis = initial.config.mouthMaterial.x;
+        const bool fullyClearThroughCap = nearProjection &&
+            axialClearance > hysteresis;
+        const bool fullyClearAroundRim =
+            (state.mouthCandidateMask & mask) != 0u &&
+            !insideProjection && outwardDistance > 0.0 &&
+            rimClearance > hysteresis;
+        const double clearance = fullyClearThroughCap
+            ? axialClearance
+            : (fullyClearAroundRim ? rimClearance : axialClearance);
+        state.maximumMouthClearanceByFruit[index] = std::max(
+            state.maximumMouthClearanceByFruit[index], clearance
+        );
+        if (fullyClearThroughCap || fullyClearAroundRim) {
+            state.releasedMask |= mask;
+        }
+    }
+}
+
 OracleResult runOracle(
     const InitialState& initial,
     const std::uint32_t iterations,
@@ -3024,6 +3252,11 @@ OracleResult runOracle(
 ) {
     @autoreleasepool {
     OracleResult result;
+    result.mouthCandidateMask = initial.initialMouthCandidateMask;
+    result.releasedMask = initial.initialReleasedMask;
+    result.maximumMouthClearanceByFruit.assign(
+        initial.fruits.size(), 0.0
+    );
     result.particles.reserve(initial.particles.size());
     for (const auto& source : initial.particles) {
         result.particles.push_back({
@@ -3469,6 +3702,7 @@ OracleResult runOracle(
     applyOracleFruitPairFriction(initial, result);
     applyOracleFruitGroundFriction(initial, result);
     integrateOracleFruitOrientation(initial, result);
+    updateOracleReleasedFruit(initial, result);
     result.yarnContacts = buildOracleYarnContacts(
         initial, result, &result.yarnContacts
     );
@@ -3535,6 +3769,8 @@ struct GPUResult {
     NumiClothBagGPUSelfStatus selfStatus{};
     NumiClothBagGPUFrictionStatus frictionStatus{};
     NumiClothBagGPUAerodynamicsStatus aerodynamicsStatus{};
+    NumiClothBagGPUReleaseStatus releaseStatus{};
+    std::vector<std::uint32_t> maximumMouthClearanceBits;
     std::uint32_t failure{};
     double seconds{};
 };
@@ -3575,6 +3811,7 @@ struct Pipelines {
     id<MTLComputePipelineState> yarnFriction;
     id<MTLComputePipelineState> fruitPairFriction;
     id<MTLComputePipelineState> fruitGroundFriction;
+    id<MTLComputePipelineState> release;
 };
 
 GPUResult runGPU(
@@ -3627,6 +3864,7 @@ GPUResult runGPU(
     id<MTLBuffer> selfPairBuffer = makeBytes(initial.selfPairs);
     id<MTLBuffer> selfBatchBuffer = makeBytes(initial.selfBatches);
     id<MTLBuffer> selfPairLookupBuffer = makeBytes(initial.selfPairLookup);
+    id<MTLBuffer> mouthRimBuffer = makeBytes(initial.mouthRimParticles);
     id<MTLBuffer> selfCellBuffer = makeZeroed(
         4096u * sizeof(std::uint64_t)
     );
@@ -3671,6 +3909,20 @@ GPUResult runGPU(
         newBufferWithBytes:&zeroAerodynamicsStatus
                    length:sizeof(zeroAerodynamicsStatus)
                   options:MTLResourceStorageModeShared];
+    NumiClothBagGPUReleaseStatus initialReleaseStatus{};
+    initialReleaseStatus.masks = u4(
+        initial.initialMouthCandidateMask,
+        initial.initialReleasedMask,
+        0u,
+        0u
+    );
+    id<MTLBuffer> releaseStatusBuffer = [device
+        newBufferWithBytes:&initialReleaseStatus
+                   length:sizeof(initialReleaseStatus)
+                  options:MTLResourceStorageModeShared];
+    id<MTLBuffer> maximumMouthClearanceBuffer = makeZeroed(
+        initial.fruits.size() * sizeof(std::uint32_t)
+    );
     std::uint32_t zero = 0u;
     id<MTLBuffer> failureBuffer = [device
         newBufferWithBytes:&zero
@@ -3683,7 +3935,8 @@ GPUResult runGPU(
         yarnContactBuffer == nil || yarnAerodynamicForceBuffer == nil ||
         yarnAerodynamicReductionBuffer == nil ||
         selfPairBuffer == nil || selfBatchBuffer == nil ||
-        selfPairLookupBuffer == nil || selfCellBuffer == nil ||
+        selfPairLookupBuffer == nil || mouthRimBuffer == nil ||
+        selfCellBuffer == nil ||
         selfActiveFlagBuffer == nil || selfActiveBatchCountBuffer == nil ||
         selfActiveBatchIndexBuffer == nil ||
         activeSelfBatchCountBuffer == nil ||
@@ -3693,6 +3946,8 @@ GPUResult runGPU(
         selfStatusBuffer == nil ||
         frictionStatusBuffer == nil ||
         aerodynamicsStatusBuffer == nil ||
+        releaseStatusBuffer == nil ||
+        maximumMouthClearanceBuffer == nil ||
         failureBuffer == nil) {
         throw std::runtime_error("failed to allocate Metal cloth buffers");
     }
@@ -4164,6 +4419,15 @@ GPUResult runGPU(
     [encoder setBuffer:fruitBuffer offset:0 atIndex:1];
     [encoder setBuffer:failureBuffer offset:0 atIndex:2];
     dispatch(encoder, pipelines.fruitOrientation, initial.fruits.size());
+    [encoder setComputePipelineState:pipelines.release];
+    [encoder setBuffer:configBuffer offset:0 atIndex:0];
+    [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+    [encoder setBuffer:mouthRimBuffer offset:0 atIndex:2];
+    [encoder setBuffer:fruitBuffer offset:0 atIndex:3];
+    [encoder setBuffer:releaseStatusBuffer offset:0 atIndex:4];
+    [encoder setBuffer:maximumMouthClearanceBuffer offset:0 atIndex:5];
+    [encoder setBuffer:failureBuffer offset:0 atIndex:6];
+    dispatch(encoder, pipelines.release, initial.fruits.size());
     [encoder endEncoding];
     [commandBuffer commit];
     [commandBuffer waitUntilCompleted];
@@ -4199,6 +4463,18 @@ GPUResult runGPU(
         *static_cast<const NumiClothBagGPUAerodynamicsStatus*>(
             aerodynamicsStatusBuffer.contents
         );
+    result.releaseStatus =
+        *static_cast<const NumiClothBagGPUReleaseStatus*>(
+            releaseStatusBuffer.contents
+        );
+    const auto* mouthClearanceValues =
+        static_cast<const std::uint32_t*>(
+            maximumMouthClearanceBuffer.contents
+        );
+    result.maximumMouthClearanceBits.assign(
+        mouthClearanceValues,
+        mouthClearanceValues + initial.fruits.size()
+    );
     result.failure = *static_cast<const std::uint32_t*>(failureBuffer.contents);
     if (commandBuffer.GPUEndTime >= commandBuffer.GPUStartTime) {
         result.seconds = commandBuffer.GPUEndTime - commandBuffer.GPUStartTime;
@@ -4250,6 +4526,11 @@ std::uint64_t hashGPUResult(const GPUResult& result) {
     const std::array<NumiClothBagGPUAerodynamicsStatus, 1>
         aerodynamicsStatus{{result.aerodynamicsStatus}};
     append(aerodynamicsStatus);
+    const std::array<NumiClothBagGPUReleaseStatus, 1> releaseStatus{{
+        result.releaseStatus
+    }};
+    append(releaseStatus);
+    append(result.maximumMouthClearanceBits);
     hash ^= result.failure;
     hash *= 1099511628211ull;
     return hash;
@@ -4487,6 +4768,9 @@ int run(const int argc, const char* const* argv) {
         makePipeline(
             device, library, @"numi_cloth_bag_apply_fruit_ground_friction"
         ),
+        makePipeline(
+            device, library, @"numi_cloth_bag_update_released_fruit"
+        ),
     };
 
     std::vector<GPUResult> gpuResults;
@@ -4617,6 +4901,40 @@ int run(const int argc, const char* const* argv) {
         0u,
         0u
     );
+    const auto runMouthProbe = [&] (
+        const DVec3 fruitPosition,
+        const bool rotated,
+        const std::uint32_t initialCandidateMask = 0u
+    ) {
+        const InitialState probe = makeMouthReleaseProbeState(
+            fruitPosition, rotated, initialCandidateMask
+        );
+        return std::pair{
+            runOracle(probe, 0u, 0u),
+            runGPU(device, queue, pipelines, probe, 0u, 0u),
+        };
+    };
+    const auto mouthInside = runMouthProbe(
+        {0.0, 0.0, 0.50}, false
+    );
+    const auto mouthReleased = runMouthProbe(
+        {0.0, 0.0, 1.130}, false
+    );
+    const auto mouthOutside = runMouthProbe(
+        {1.50, 0.0, 1.20}, false
+    );
+    const auto mouthGrazing = runMouthProbe(
+        {0.0, 0.0, 1.114}, false
+    );
+    const auto mouthEdgeClearance = runMouthProbe(
+        {1.05, 0.0, 1.130}, false
+    );
+    const auto mouthEdgeExit = runMouthProbe(
+        {1.30, 0.0, 1.02}, false, 1u
+    );
+    const auto mouthRotated = runMouthProbe(
+        {1.130, 0.0, 0.0}, true
+    );
     const GPUResult& gpu = gpuResults.front();
     bool deterministic = true;
     for (std::size_t replay = 1u; replay < gpuResults.size(); ++replay) {
@@ -4647,7 +4965,14 @@ int run(const int argc, const char* const* argv) {
                 &gpu.aerodynamicsStatus,
                 &gpuResults[replay].aerodynamicsStatus,
                 sizeof(gpu.aerodynamicsStatus)
-            ) == 0;
+            ) == 0 &&
+            std::memcmp(
+                &gpu.releaseStatus,
+                &gpuResults[replay].releaseStatus,
+                sizeof(gpu.releaseStatus)
+            ) == 0 &&
+            gpu.maximumMouthClearanceBits ==
+                gpuResults[replay].maximumMouthClearanceBits;
     }
 
     double maximumPositionError = 0.0;
@@ -5034,6 +5359,28 @@ int run(const int argc, const char* const* argv) {
         gpuMaximumFruitAerodynamicTorque -
         oracle.maximumFruitAerodynamicTorque
     );
+    bool releaseClearanceQualified =
+        gpu.maximumMouthClearanceBits.size() ==
+            oracle.maximumMouthClearanceByFruit.size();
+    double maximumReleaseClearanceError = 0.0;
+    for (std::size_t index = 0u;
+         index < gpu.maximumMouthClearanceBits.size() &&
+             index < oracle.maximumMouthClearanceByFruit.size();
+         ++index) {
+        maximumReleaseClearanceError = std::max(
+            maximumReleaseClearanceError,
+            std::abs(
+                static_cast<double>(std::bit_cast<float>(
+                    gpu.maximumMouthClearanceBits[index]
+                )) - oracle.maximumMouthClearanceByFruit[index]
+            )
+        );
+    }
+    releaseClearanceQualified = releaseClearanceQualified &&
+        maximumReleaseClearanceError <= 2.0e-6;
+    const bool releaseMasksExact =
+        gpu.releaseStatus.masks.x == oracle.mouthCandidateMask &&
+        gpu.releaseStatus.masks.y == oracle.releasedMask;
     for (std::size_t index = 0u; index < gpu.distances.size(); ++index) {
         maximumDistanceLambdaError = std::max(
             maximumDistanceLambdaError,
@@ -5786,6 +6133,36 @@ int run(const int argc, const char* const* argv) {
         fruitAerodynamicsProbeTorque -
         fruitAerodynamicsOracle.maximumFruitAerodynamicTorque
     );
+    const auto mouthClearance = [](const GPUResult& result) {
+        return result.maximumMouthClearanceBits.empty()
+            ? 0.0
+            : static_cast<double>(std::bit_cast<float>(
+                result.maximumMouthClearanceBits[0]
+            ));
+    };
+    const auto mouthMatchesOracle = [&mouthClearance](const auto& result) {
+        return result.second.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
+            result.second.releaseStatus.masks.x ==
+                result.first.mouthCandidateMask &&
+            result.second.releaseStatus.masks.y ==
+                result.first.releasedMask &&
+            std::abs(
+                mouthClearance(result.second) -
+                result.first.maximumMouthClearanceByFruit[0]
+            ) <= 2.0e-6;
+    };
+    const bool mouthFP64Qualified =
+        mouthMatchesOracle(mouthInside) &&
+        mouthMatchesOracle(mouthReleased) &&
+        mouthMatchesOracle(mouthOutside) &&
+        mouthMatchesOracle(mouthGrazing) &&
+        mouthMatchesOracle(mouthEdgeClearance) &&
+        mouthMatchesOracle(mouthEdgeExit) &&
+        mouthMatchesOracle(mouthRotated);
+    const double mouthReleaseClearance =
+        mouthClearance(mouthReleased.second);
+    const double mouthRotatedClearance =
+        mouthClearance(mouthRotated.second);
     const double fruitPairProbeConeRatio = std::bit_cast<float>(
         fruitPairGPU.frictionStatus.metrics.x
     );
@@ -5837,6 +6214,7 @@ int run(const int argc, const char* const* argv) {
         maximumFruitAerodynamicTorqueError <= 2.0e-8 &&
         gpuMaximumYarnAerodynamicForce > 0.0 &&
         gpuMaximumFruitAerodynamicForce > 0.0 &&
+        releaseMasksExact && releaseClearanceQualified &&
         maximumFruitPairContactError <= 2.0e-5 &&
         maximumFruitPairPenetration <= 2.0e-6 &&
         yarnIdentityExact && yarnControlQualified &&
@@ -5956,7 +6334,17 @@ int run(const int argc, const char* const* argv) {
         fruitAerodynamicsProbeTorqueError <= 1.0e-8 &&
         fruitAerodynamicsProbeForce > 0.0 &&
         fruitAerodynamicsProbeTorque > 0.0 &&
-        fruitAerodynamicsEnergyAfter < fruitAerodynamicsEnergyBefore;
+        fruitAerodynamicsEnergyAfter < fruitAerodynamicsEnergyBefore &&
+        mouthFP64Qualified &&
+        mouthInside.second.releaseStatus.masks.y == 0u &&
+        mouthReleased.second.releaseStatus.masks.y == 1u &&
+        mouthOutside.second.releaseStatus.masks.y == 0u &&
+        mouthGrazing.second.releaseStatus.masks.y == 0u &&
+        mouthEdgeClearance.second.releaseStatus.masks.y == 1u &&
+        mouthEdgeExit.second.releaseStatus.masks.y == 1u &&
+        mouthRotated.second.releaseStatus.masks.y == 1u &&
+        std::abs(mouthReleaseClearance - 0.026) <= 2.0e-6 &&
+        std::abs(mouthRotatedClearance - 0.026) <= 2.0e-6;
 
     std::cout << std::fixed << std::setprecision(12)
               << "device=" << device.name.UTF8String << '\n'
@@ -6021,6 +6409,13 @@ int run(const int argc, const char* const* argv) {
               << oracle.maximumFruitAerodynamicTorque
               << " torque_error=" << maximumFruitAerodynamicTorqueError
               << '\n'
+              << "mouth_candidate_mask="
+              << gpu.releaseStatus.masks.x
+              << " expected_candidate_mask=" << oracle.mouthCandidateMask
+              << " released_mask=" << gpu.releaseStatus.masks.y
+              << " expected_released_mask=" << oracle.releasedMask
+              << " max_release_clearance_error="
+              << maximumReleaseClearanceError << '\n'
               << "yarn_identity_exact=" << yarnIdentityExact
               << " yarn_control_exact=" << yarnControlExact
               << " yarn_control_qualified=" << yarnControlQualified
@@ -6219,6 +6614,23 @@ int run(const int argc, const char* const* argv) {
               << " energy_after=" << fruitAerodynamicsEnergyAfter
               << " fruit_aerodynamics_failure_flags="
               << fruitAerodynamicsGPU.failure << '\n'
+              << "mouth_probe_inside_mask="
+              << mouthInside.second.releaseStatus.masks.y
+              << " released_mask="
+              << mouthReleased.second.releaseStatus.masks.y
+              << " outside_mask="
+              << mouthOutside.second.releaseStatus.masks.y
+              << " grazing_mask="
+              << mouthGrazing.second.releaseStatus.masks.y
+              << " edge_clearance_mask="
+              << mouthEdgeClearance.second.releaseStatus.masks.y
+              << " edge_exit_mask="
+              << mouthEdgeExit.second.releaseStatus.masks.y
+              << " rotated_mask="
+              << mouthRotated.second.releaseStatus.masks.y
+              << " clearance=" << mouthReleaseClearance
+              << " rotated_clearance=" << mouthRotatedClearance
+              << " fp64_qualified=" << mouthFP64Qualified << '\n'
               << "average_gpu_seconds=" << averageSeconds
               << " state_hash=0x" << std::hex << hashGPUResult(gpu)
               << std::dec << '\n'

@@ -2,9 +2,10 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 9u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 10u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
 #define NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY 4096u
+#define NUMI_CLOTH_BAG_GPU_MOUTH_RIM_CAPACITY 64u
 
 enum NumiClothBagGPUFailure : mr_u32 {
     NUMI_CLOTH_BAG_GPU_FAILURE_NONE = 0u,
@@ -38,6 +39,11 @@ typedef struct MR_ALIGN16 NumiClothBagGPUConfig {
     // x yarn crossflow drag, y yarn axial skin friction,
     // z fruit translational drag, w fruit rotational drag.
     mr_float4 aerodynamicCoefficients;
+    // x ordered mouth-rim particle count, y bottom-center particle,
+    // zw reserved.
+    mr_uint4 mouthControl;
+    // x release hysteresis, yzw reserved.
+    mr_float4 mouthMaterial;
 } NumiClothBagGPUConfig;
 
 typedef struct MR_ALIGN16 NumiClothBagGPUParticle {
@@ -163,6 +169,11 @@ typedef struct MR_ALIGN16 NumiClothBagGPUAerodynamicsStatus {
     mr_uint4 metrics;
 } NumiClothBagGPUAerodynamicsStatus;
 
+typedef struct MR_ALIGN16 NumiClothBagGPUReleaseStatus {
+    // x mouth-candidate mask, y released mask, zw reserved.
+    mr_uint4 masks;
+} NumiClothBagGPUReleaseStatus;
+
 typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
     // x first constraint, y constraint count, z expected graph color,
     // w reserved.
@@ -170,7 +181,7 @@ typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
 } NumiClothBagGPUBatch;
 
 #ifndef __METAL_VERSION__
-static_assert(sizeof(NumiClothBagGPUConfig) == 144);
+static_assert(sizeof(NumiClothBagGPUConfig) == 176);
 static_assert(sizeof(NumiClothBagGPUParticle) == 48);
 static_assert(sizeof(NumiClothBagGPUDistance) == 32);
 static_assert(sizeof(NumiClothBagGPUGrip) == 48);
@@ -184,5 +195,6 @@ static_assert(sizeof(NumiClothBagGPUSelfStatus) == 16);
 static_assert(sizeof(NumiClothBagGPUSelfImpulse) == 48);
 static_assert(sizeof(NumiClothBagGPUFrictionStatus) == 32);
 static_assert(sizeof(NumiClothBagGPUAerodynamicsStatus) == 16);
+static_assert(sizeof(NumiClothBagGPUReleaseStatus) == 16);
 static_assert(sizeof(NumiClothBagGPUBatch) == 16);
 #endif

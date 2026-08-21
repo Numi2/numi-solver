@@ -191,7 +191,9 @@ The build produces `build/shaders/NumiTemporalCone.metallib` using `-O3` and
   cloth/ground, yarn/yarn, fruit/yarn, fruit/fruit, and fruit/ground Coulomb
   friction plus load-capped fruit rolling resistance and normalized fruit
   orientation integration. Full-yarn cylinder drag and fruit translational and
-  rotational air decay execute before position advance.
+  rotational air decay execute before position advance. Ordered-mouth release
+  classification distinguishes a physical spill through the top cuff from a
+  numerical escape.
   It gates FP64 equation and impulse error, sphere/yarn and yarn/yarn tunneling
   response probes, sub-micrometer final self-overlap, and exact replay;
   the complete bag trajectory remains open.

@@ -31,7 +31,8 @@ versioned ABI in `include/numi/cloth_bag_gpu.h` owns:
 - normalized fruit-orientation integration after contact impulses;
 - cylinder crossflow and axial skin-friction air loads on every yarn segment;
   and
-- exact quadratic translational and rotational air decay for every fruit.
+- exact quadratic translational and rotational air decay for every fruit; and
+- topology-aware release classification through the ordered 48-knot mouth.
 
 The distance, knot, bend, and fruit-pair graphs are greedily colored once into
 five, six, five, and fifteen deterministic batches. No two constraints in a
@@ -204,6 +205,10 @@ Separate air probes require yarn and fruit energy to fall, compare forces,
 torque, linear velocity, and angular velocity with FP64, verify subdivision
 invariance for a uniformly moving yarn, and require a yarn moving with the air
 to receive no physical drag.
+The mouth probe independently checks contained, complete cap crossing,
+far-outside, grazing, edge-clear, prior-candidate edge exit, and rigidly
+rotated openings. Candidate and released masks must match FP64 exactly; full
+clearance must match within `2 um`.
 
 Run it with:
 
@@ -215,7 +220,7 @@ Run it with:
 The Apple M4 result measured on 2026-08-21 was:
 
 ```text
-abi=9 particles=1465 distances=2904 grips=10 knots=1369 bends=2834
+abi=10 particles=1465 distances=2904 grips=10 knots=1369 bends=2834
 fruits=12 fruit_pairs=66 fruit_yarn_candidates=34848
 distance_colors=5 knot_colors=6 bend_colors=5 fruit_pair_colors=15
 self_pairs=4149792 self_batches=29263 max_self_batch=256
@@ -233,6 +238,8 @@ max_fruit_orientation_error=0.000000001746
 max_fruit_orientation_norm_error=0.000000001746
 max_yarn_aerodynamic_force=0.000000001152 expected=0.000000001152
 max_fruit_aerodynamic_force=0.000000014756 expected=0.000000014756
+mouth_candidate_mask=3840 expected_candidate_mask=3840
+released_mask=0 expected_released_mask=0
 max_fruit_pair_penetration=0.000000000000
 yarn_identity_exact=true yarn_control_qualified=true
 current_yarn_overlaps=0 swept_yarn_impacts=0
@@ -306,7 +313,11 @@ fruit_aerodynamics_velocity_error=0.000029432718
 force=0.132944747806 force_error=0.000000004606
 torque=0.000002209812 torque_error=0.000000000000
 energy_before=3.155968230148 energy_after=3.148686517625
-state_hash=0xb76e21e1186b5557
+mouth_probe_inside_mask=0 released_mask=1 outside_mask=0 grazing_mask=0
+edge_clearance_mask=1 edge_exit_mask=1 rotated_mask=1
+clearance=0.025999993086 rotated_clearance=0.025999993086
+fp64_qualified=true
+state_hash=0x2ba7eb3acee2ad58
 result=PASS
 ```
 
@@ -326,15 +337,16 @@ complete-trajectory baseline or profiler trace. Compact segment-pair records,
 the triangular lookup, zeroed device buffers without host mirrors, and scoped
 Metal autorelease pools reduced the executable's measured maximum resident set
 from `401,801,216` to `235,192,320` bytes before the self-friction response
-log; the qualified ABI-8 transaction measured `238,157,824` bytes, and the
-ABI-9 air-load transaction measured `240,222,208` bytes. The memory-layout
-comparison itself
+log; the qualified ABI-8 transaction measured `238,157,824` bytes, the ABI-9
+air-load transaction measured `240,222,208` bytes, and the ABI-10
+release-classification harness, including seven additional focused Metal/FP64
+cases, measured `244,121,600` bytes. The memory-layout comparison itself
 preserved its exact state hash and qualification values; later qualified
 physics transactions intentionally changed the state hash. This is a
 resource-footprint result, not a speed claim. The complete 16-test
 Metal-labelled suite subsequently passed under the same shared-machine load.
 The qualified combined metallib SHA-256 is
-`9554759541ac4cd8230464bbc00111ad0401a8e614d8ef07109cc2ac05fd7850`.
+`bb3e0557983668fd0f69fae05c2ac0f2c4b92daa5255327078fd38844e02f3c5`.
 
 ## Remaining boundary
 
@@ -347,11 +359,10 @@ candidate geometry and normal response, full-topology swept/current yarn
 self-contact with deterministic active-batch compaction, five contact-friction
 families, fruit rolling resistance, and normalized fruit orientation
 integration, full-yarn cylinder air loads, and fruit translational/rotational
-air loads. It does
+air loads, plus topology-aware mouth release classification. It does
 **not** yet
 include:
 
-- release masks; or
 - the complete grounded, spin, or pickup outcome on Metal.
 
 Until those transactions reach Metal and match the FP64 replay, the README GIF
