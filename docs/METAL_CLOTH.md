@@ -22,7 +22,8 @@ versioned ABI in `include/numi/cloth_bag_gpu.h` owns:
 - the ten finite-compliance top-seam grips;
 - gravity prediction and symplectic position advance;
 - XPBD axial-yarn projection;
-- the unilateral 28.5% extension ceiling; and
+- the unilateral 28.5% extension ceiling;
+- deterministic contact/strain reconciliation after that ceiling; and
 - velocity publication from accepted positions.
 
 The distance, knot, bend, and fruit-pair graphs are greedily colored once into
@@ -78,6 +79,14 @@ is
 The post-solve extension limiter is unilateral: it corrects only
 `length > 1.285 restLength`. Compression passes unchanged.
 
+Because a strain projection can reintroduce contact overlap, the transaction
+does not publish immediately after the limiter. It executes eight fixed
+fruit/yarn/strain/ground reconciliation passes, one endpoint yarn-self/strain
+pass, two final fruit/yarn/ground passes, then eight fixed certificate passes
+that repeat endpoint self/strain followed by the two final contact passes. The
+FP64 oracle uses the identical declared order. This schedule has no host
+readback or data-dependent dispatch count.
+
 For overlapping fruits `i,j`, the positional normal solve is
 
 ```math
@@ -117,10 +126,11 @@ pair, and 34,848 fruit/yarn candidate counts, and rejects any graph color that
 shares written state. It also checks all 4,149,792 nonlocal self-pairs and
 every self-contact batch for unique knot writers. It executes 32
 internal-constraint/grip/contact
-iterations and three
-extension-limit sweeps on Metal, then compares every particle, fruit, contact,
+iterations, three extension-limit sweeps, and the fixed reconciliation and
+certificate schedule on Metal, then compares every particle, fruit, contact,
 and multiplier with an independent FP64 implementation of the same colored
-schedule. Two GPU runs must be byte-identical.
+schedule. Two GPU runs must be byte-identical. Published yarn/fruit, yarn/yarn,
+ground, and strain residuals are independently measured after the last pass.
 
 The focused strain case starts one segment with `0.215 m` excess extension and
 another in compression. One Metal sweep must remove the extension violation,
@@ -161,27 +171,29 @@ max_grip_lambda_error=0.000000000009
 max_knot_lambda_error=0.000000000001
 max_bend_lambda_error=0.000000000008
 max_fruit_position_error=0.000000076410
-max_fruit_velocity_error=0.000440123335
+max_fruit_velocity_error=0.000440119349
 max_fruit_pair_penetration=0.000000000000
 yarn_identity_exact=true yarn_control_qualified=true
 current_yarn_overlaps=0 swept_yarn_impacts=0
 max_yarn_separation_error=0.000000563364
 max_yarn_current_normal_error=0.000056231269
-max_active_yarn_weight_error=0.000004120541
+max_active_yarn_weight_error=0.000004242114
 yarn_response_count_exact=false
-accepted_yarn_responses=113 expected_yarn_responses=105
+accepted_yarn_responses=113 expected_yarn_responses=109
 response_count_mismatches=8
 max_yarn_normal_impulse=0.003789614420
 max_yarn_response_error=0.000000055079
 max_yarn_penetration=0.000000000000
-present_self_contacts=122 expected_present_self_contacts=123
+present_self_contacts=124 expected_present_self_contacts=127
 swept_self_contacts=0 expected_swept_self_contacts=0
 max_self_correction=0.003799978178
 max_self_correction_error=0.000000002372
-final_self_penetration=0.000000986641
+final_self_penetration=0.000000009758
+final_ground_penetration=0.000000000000
 max_strain_violation=0.000000000000
 max_displacement=0.006799975103
 grip_force=153.876787384189
+reconciliation_passes=8 final_contact_passes=2 certificate_passes=8
 strain_probe_initial_violation=0.215000003576
 strain_probe_final_violation=0.000000007451
 compression_length_change=0.000000000000
@@ -204,7 +216,7 @@ response_error=0.000000112880
 self_ccd_position_error=0.000000000288
 final_separation=0.000000001311 final_moving_height=0.008000001311
 max_correction=0.087999999523 present_contacts=0 swept_contacts=1
-state_hash=0xecae9af88f4eb569
+state_hash=0x5b5bbc7624d1d251
 result=PASS
 ```
 
@@ -215,12 +227,13 @@ qualified control state, final penetration, accumulated impulse error, and
 byte-identical Metal replay. Response-count equality itself is reported but is
 not an acceptance condition.
 
-GPU time is reported by the executable but is not yet a performance claim. The
-instrumented run above reported `0.162993624981 s`, but the transaction has no
+GPU time is reported by the executable but is not yet a performance claim.
+Direct runs of this reconciled transaction ranged from `0.865220166626 s` to
+`1.708016229153 s` under changing GPU contention, and the transaction has no
 complete-trajectory baseline or profiler trace. Compact segment-pair records,
 the triangular lookup, zeroed device buffers without host mirrors, and scoped
 Metal autorelease pools reduced the executable's measured maximum resident set
-from `401,801,216` to `234,455,040` bytes while preserving the exact state hash
+from `401,801,216` to `235,716,608` bytes while preserving the exact state hash
 and qualification values. This is a resource-footprint result, not a speed
 claim. The complete 16-test Metal-labelled suite subsequently passed under the
 same shared-machine load.
@@ -238,7 +251,6 @@ candidate geometry and normal response, and full-topology swept/current yarn
 self-contact with deterministic active-batch compaction. It does **not** yet
 include:
 
-- contact/strain reconciliation after the final limiter;
 - friction, rolling resistance, or aerodynamic loads;
 - fruit rotational integration, orientation publication, or release masks; or
 - the complete grounded, spin, or pickup outcome on Metal.

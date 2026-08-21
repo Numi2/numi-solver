@@ -40,6 +40,9 @@ constexpr std::uint32_t kFruitCount = 12u;
 constexpr std::uint32_t kFruitPairCount =
     kFruitCount * (kFruitCount - 1u) / 2u;
 constexpr std::uint32_t kFruitYarnCount = kFruitCount * kDistanceCount;
+constexpr std::uint32_t kReconciliationPasses = 8u;
+constexpr std::uint32_t kFinalContactPasses = 2u;
+constexpr std::uint32_t kCertificatePasses = 8u;
 
 std::size_t packedSelfPairIndex(
     const std::uint32_t first,
@@ -1289,6 +1292,7 @@ InitialState makeSelfCCDProbeState() {
     secondDistance.particlesAndColor = u4(2u, 3u, 0u, 0u);
     result.distances = {firstDistance, secondDistance};
     result.selfPairs = {{0u, 1u}};
+    result.selfPairLookup = {0u};
     result.selfBatches = {{u4(0u, 1u, 0u, 0u)}};
     result.maximumSelfBatchSize = 1u;
     return result;
@@ -2197,6 +2201,100 @@ void solveOracleSelfContact(
     }
 }
 
+void solveOracleFruitPairs(
+    const InitialState& initial,
+    OracleResult& state
+) {
+    const double timestep = initial.config.gravityAndTimestep.w;
+    for (const NumiClothBagGPUBatch& batch : initial.fruitPairBatches) {
+        for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
+            OracleFruitPair& pair =
+                state.fruitPairs[batch.control.x + local];
+            OracleFruit& first = state.fruits[pair.first];
+            OracleFruit& second = state.fruits[pair.second];
+            const DVec3 difference = second.position - first.position;
+            const double currentLength = length(difference);
+            const double target = first.radius + second.radius;
+            if (!(currentLength < target) ||
+                !(currentLength > 1.0e-12)) {
+                continue;
+            }
+            const double denominator =
+                first.inverseMass + second.inverseMass;
+            if (!(denominator > 0.0)) {
+                continue;
+            }
+            const double lambda = (target - currentLength) / denominator;
+            const DVec3 normal = difference / currentLength;
+            const DVec3 correction = normal * lambda;
+            first.position -= correction * first.inverseMass;
+            second.position += correction * second.inverseMass;
+            const double impulseMagnitude = lambda / timestep;
+            pair.weightedNormal += normal * impulseMagnitude;
+            pair.normalImpulse += impulseMagnitude;
+        }
+    }
+}
+
+void solveOracleGround(
+    const InitialState& initial,
+    OracleResult& state
+) {
+    if (initial.config.constraintCounts.z == 0u) {
+        return;
+    }
+    const double timestep = initial.config.gravityAndTimestep.w;
+    const double clothRadius = initial.config.clothMaterial.x;
+    for (OracleParticle& particle : state.particles) {
+        particle.position.z = std::max(particle.position.z, clothRadius);
+    }
+    for (OracleFruit& fruit : state.fruits) {
+        const double penetration = fruit.radius - fruit.position.z;
+        if (penetration > 0.0) {
+            fruit.groundNormalImpulse += penetration /
+                (fruit.inverseMass * timestep);
+            fruit.position.z = fruit.radius;
+        }
+    }
+}
+
+void solveOracleStrainLimits(
+    const InitialState& initial,
+    OracleResult& state,
+    const std::uint32_t sweeps
+) {
+    for (std::uint32_t sweep = 0u; sweep < sweeps; ++sweep) {
+        for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
+            for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
+                const OracleDistance& constraint =
+                    state.distances[batch.control.x + local];
+                OracleParticle& first = state.particles[constraint.first];
+                OracleParticle& second = state.particles[constraint.second];
+                const DVec3 difference = second.position - first.position;
+                const double currentLength = length(difference);
+                const double maximumLength = constraint.restLength *
+                    (1.0 + constraint.extensionLimit);
+                if (!(currentLength > maximumLength) ||
+                    !(currentLength > 1.0e-12)) {
+                    continue;
+                }
+                const double denominator =
+                    first.inverseMass + second.inverseMass;
+                if (!(denominator > 0.0)) {
+                    continue;
+                }
+                const double correctionMagnitude =
+                    currentLength - maximumLength;
+                const DVec3 direction = difference / currentLength;
+                first.position += direction *
+                    (first.inverseMass * correctionMagnitude / denominator);
+                second.position -= direction *
+                    (second.inverseMass * correctionMagnitude / denominator);
+            }
+        }
+    }
+}
+
 OracleResult runOracle(
     const InitialState& initial,
     const std::uint32_t iterations,
@@ -2575,33 +2673,37 @@ OracleResult runOracle(
             }
         }
     }
-    for (std::uint32_t sweep = 0u; sweep < strainSweeps; ++sweep) {
-        for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
-            for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
-                const OracleDistance& constraint =
-                    result.distances[batch.control.x + local];
-                OracleParticle& first = result.particles[constraint.first];
-                OracleParticle& second = result.particles[constraint.second];
-                const DVec3 difference = second.position - first.position;
-                const double currentLength = length(difference);
-                const double maximumLength = constraint.restLength *
-                    (1.0 + constraint.extensionLimit);
-                if (!(currentLength > maximumLength) ||
-                    !(currentLength > 1.0e-12)) {
-                    continue;
-                }
-                const double denominator =
-                    first.inverseMass + second.inverseMass;
-                if (!(denominator > 0.0)) {
-                    continue;
-                }
-                const double correctionMagnitude =
-                    currentLength - maximumLength;
-                const DVec3 direction = difference / currentLength;
-                first.position += direction *
-                    (first.inverseMass * correctionMagnitude / denominator);
-                second.position -= direction *
-                    (second.inverseMass * correctionMagnitude / denominator);
+    solveOracleStrainLimits(initial, result, strainSweeps);
+    const auto solveFinalContacts = [&] {
+        solveOracleFruitPairs(initial, result);
+        solveOracleYarnBatches(initial, result, false);
+        solveOracleGround(initial, result);
+    };
+    const auto solveEndpointSelfAndStrain = [&] {
+        solveOracleSelfContact(initial, result, false);
+        solveOracleStrainLimits(initial, result, strainSweeps);
+    };
+    if (strainSweeps != 0u) {
+        for (std::uint32_t pass = 0u;
+             pass < kReconciliationPasses;
+             ++pass) {
+            solveOracleFruitPairs(initial, result);
+            solveOracleYarnBatches(initial, result, false);
+            solveOracleStrainLimits(initial, result, strainSweeps);
+            solveOracleGround(initial, result);
+        }
+        solveEndpointSelfAndStrain();
+        for (std::uint32_t pass = 0u; pass < kFinalContactPasses; ++pass) {
+            solveFinalContacts();
+        }
+        for (std::uint32_t certificate = 0u;
+             certificate < kCertificatePasses;
+             ++certificate) {
+            solveEndpointSelfAndStrain();
+            for (std::uint32_t pass = 0u;
+                 pass < kFinalContactPasses;
+                 ++pass) {
+                solveFinalContacts();
             }
         }
     }
@@ -3004,15 +3106,77 @@ GPUResult runGPU(
             );
         }
     }
-    for (std::uint32_t sweep = 0u; sweep < strainSweeps; ++sweep) {
-        for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
-            [encoder setComputePipelineState:pipelines.strain];
+    const auto solveFruitPairs = [&] {
+        for (const NumiClothBagGPUBatch& batch : initial.fruitPairBatches) {
+            [encoder setComputePipelineState:pipelines.fruitPair];
             [encoder setBuffer:configBuffer offset:0 atIndex:0];
-            [encoder setBuffer:particleBuffer offset:0 atIndex:1];
-            [encoder setBuffer:distanceBuffer offset:0 atIndex:2];
+            [encoder setBuffer:fruitBuffer offset:0 atIndex:1];
+            [encoder setBuffer:fruitPairBuffer offset:0 atIndex:2];
             [encoder setBytes:&batch length:sizeof(batch) atIndex:3];
             [encoder setBuffer:failureBuffer offset:0 atIndex:4];
-            dispatch(encoder, pipelines.strain, batch.control.y);
+            dispatch(encoder, pipelines.fruitPair, batch.control.y);
+        }
+    };
+    const auto solveGround = [&] {
+        if (initial.config.constraintCounts.z == 0u) {
+            return;
+        }
+        [encoder setComputePipelineState:pipelines.ground];
+        [encoder setBuffer:configBuffer offset:0 atIndex:0];
+        [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+        [encoder setBuffer:fruitBuffer offset:0 atIndex:2];
+        [encoder setBuffer:failureBuffer offset:0 atIndex:3];
+        dispatch(
+            encoder,
+            pipelines.ground,
+            std::max(initial.particles.size(), initial.fruits.size())
+        );
+    };
+    const auto solveStrainLimits = [&] {
+        for (std::uint32_t sweep = 0u; sweep < strainSweeps; ++sweep) {
+            for (const NumiClothBagGPUBatch& batch : initial.distanceBatches) {
+                [encoder setComputePipelineState:pipelines.strain];
+                [encoder setBuffer:configBuffer offset:0 atIndex:0];
+                [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+                [encoder setBuffer:distanceBuffer offset:0 atIndex:2];
+                [encoder setBytes:&batch length:sizeof(batch) atIndex:3];
+                [encoder setBuffer:failureBuffer offset:0 atIndex:4];
+                dispatch(encoder, pipelines.strain, batch.control.y);
+            }
+        }
+    };
+    solveStrainLimits();
+    const auto solveFinalContacts = [&] {
+        solveFruitPairs();
+        solveYarnBatches(0u);
+        solveGround();
+    };
+    const auto solveEndpointSelfAndStrain = [&] {
+        solveSelfContact(0u);
+        solveStrainLimits();
+    };
+    if (strainSweeps != 0u) {
+        for (std::uint32_t pass = 0u;
+             pass < kReconciliationPasses;
+             ++pass) {
+            solveFruitPairs();
+            solveYarnBatches(0u);
+            solveStrainLimits();
+            solveGround();
+        }
+        solveEndpointSelfAndStrain();
+        for (std::uint32_t pass = 0u; pass < kFinalContactPasses; ++pass) {
+            solveFinalContacts();
+        }
+        for (std::uint32_t certificate = 0u;
+             certificate < kCertificatePasses;
+             ++certificate) {
+            solveEndpointSelfAndStrain();
+            for (std::uint32_t pass = 0u;
+                 pass < kFinalContactPasses;
+                 ++pass) {
+                solveFinalContacts();
+            }
         }
     }
     buildYarnContacts();
@@ -3115,6 +3279,29 @@ double maximumStrainViolation(
         const double limit = static_cast<double>(constraint.material.x) *
             (1.0 + static_cast<double>(constraint.material.w));
         maximum = std::max(maximum, currentLength - limit);
+    }
+    return maximum;
+}
+
+double maximumGroundPenetration(
+    const std::vector<NumiClothBagGPUParticle>& particles,
+    const std::vector<NumiClothBagGPUFruit>& fruits,
+    const double clothRadius
+) {
+    double maximum = 0.0;
+    for (const NumiClothBagGPUParticle& particle : particles) {
+        maximum = std::max(
+            maximum,
+            clothRadius -
+                static_cast<double>(particle.positionAndInverseMass.z)
+        );
+    }
+    for (const NumiClothBagGPUFruit& fruit : fruits) {
+        maximum = std::max(
+            maximum,
+            static_cast<double>(fruit.previousAndRadius.w) -
+                static_cast<double>(fruit.positionAndInverseMass.z)
+        );
     }
     return maximum;
 }
@@ -3652,6 +3839,11 @@ int run(const int argc, const char* const* argv) {
         initial.selfPairs,
         initial.config.clothMaterial.x
     );
+    const double finalGroundPenetration = maximumGroundPenetration(
+        gpu.particles,
+        gpu.fruits,
+        initial.config.clothMaterial.x
+    );
     for (std::size_t index = 0u; index < gpu.distances.size(); ++index) {
         maximumDistanceLambdaError = std::max(
             maximumDistanceLambdaError,
@@ -3958,6 +4150,7 @@ int run(const int argc, const char* const* argv) {
         sweptSelfContactCountDifference <= 4u &&
         maximumSelfCorrectionError <= 2.0e-5 &&
         finalSelfPenetration <= 2.0e-6 &&
+        finalGroundPenetration <= 1.0e-9 &&
         gpuPresentSelfContacts + gpuSweptSelfContacts > 0u &&
         strainViolation <= 2.0e-6 &&
         maximumDisplacement > 1.0e-4 && gripForce > 1.0 &&
@@ -4078,10 +4271,15 @@ int run(const int argc, const char* const* argv) {
               << " max_self_correction=" << gpuMaximumSelfCorrection
               << " max_self_correction_error="
               << maximumSelfCorrectionError
-              << " final_self_penetration=" << finalSelfPenetration << '\n'
+              << " final_self_penetration=" << finalSelfPenetration
+              << " final_ground_penetration="
+              << finalGroundPenetration << '\n'
               << "max_strain_violation=" << strainViolation
               << " max_displacement=" << maximumDisplacement
               << " grip_force=" << gripForce << '\n'
+              << "reconciliation_passes=" << kReconciliationPasses
+              << " final_contact_passes=" << kFinalContactPasses
+              << " certificate_passes=" << kCertificatePasses << '\n'
               << "strain_probe_initial_violation=" << probeInitialViolation
               << " strain_probe_final_violation=" << probeFinalViolation
               << " strain_probe_position_error=" << probePositionError
