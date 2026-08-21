@@ -69,6 +69,22 @@ to a real produce bag.
   final physical buffers exactly. Three fruits clear the top mouth and two end
   exactly at their ground-contact radii. Final strain violation, ground
   penetration, and nonlocal yarn self-penetration are all zero.
+- The complete Apple Metal grounded trajectory disables the seam grip and
+  advances 120 frames at 48 substeps per frame. Two trajectories match every
+  frame hash and the final physical buffers. The final state has 42 cloth
+  particles supported at the yarn radius, no released or escaped fruit, zero
+  strain and ground residual, `1.08e-8 m` maximum nonlocal yarn overlap, and
+  `0.091619409 m` maximum sampled internal-distance change. Its `0.336875938 J`
+  kinetic energy is reported rather than hidden; this is a grounded one-second
+  outcome, not a perfectly static-rest claim.
+- The complete Apple Metal circular-seam trajectory lifts the authored state,
+  disables the plane, and drives the same finite-compliance ten-knot cuff patch
+  for 60 frames at 48 substeps per frame. Two trajectories match every frame
+  hash and final physical buffer. No fruit releases or escapes; final strain
+  violation and nonlocal yarn overlap are zero. The handle travels
+  `0.400488745 m`, the cloth lags it by up to `0.011406752 m`, and sampled
+  internal distances change by up to `0.275368664 m`, excluding rigid-body
+  motion as the explanation for the exported shape.
 - Exported fruit quaternions drive the visible body marks. The rasterizer draws
   only the exported axial yarn graph and grip connectors; it does not pose the
   bag or fruit.
@@ -107,8 +123,11 @@ to a real produce bag.
   in the exact same physical buffers as separately submitted substeps. The
   complete 480-frame pickup now qualifies fruit orientation, release
   publication, plural ground contact, zero final residuals, and bit-identical
-  Metal replay. Complete standalone grounded/spin Metal trajectories, profiler
-  evidence, and matched physical-specimen outcomes remain open.
+  Metal replay. Complete standalone grounded and circular-seam Metal
+  trajectories now qualify contact support, containment, seam lag, non-rigid
+  deformation, final residuals, and bit-identical replay. Profiler-based
+  performance characterization and matched physical-specimen outcomes remain
+  open and separate from these physics certificates.
 
 Completion requires the specimen measurements and held-out replay above.
 Visual plausibility and the current executable certificates are necessary but

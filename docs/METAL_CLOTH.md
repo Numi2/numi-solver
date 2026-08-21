@@ -241,6 +241,26 @@ the gate does not claim that their rolling velocity is already zero:
   --pickup-dump-every 10
 ```
 
+The standalone grounded and circular-seam trajectories use the same persistent
+Metal state and 48-substep frame cadence. Grounded disables the seam grip and
+requires real cloth/plane support, zero release/escape, bounded residuals,
+non-rigid shape change, and exact 120-frame replay. Spin disables the plane,
+lifts the authored state, drives the same compliant ten-knot cuff patch through
+a smooth orbit, and requires handle travel and lag, non-rigid shape change,
+zero release/escape, bounded residuals, and exact 60-frame replay:
+
+```sh
+./build/numi-solver-cloth-metal \
+  --replays 2 --iterations 32 --strain-sweeps 3 \
+  --grounded-prefix build/metal-grounded --grounded-steps 120 \
+  --grounded-dump-every 10
+
+./build/numi-solver-cloth-metal \
+  --replays 2 --iterations 32 --strain-sweeps 3 \
+  --spin-prefix build/metal-spin --spin-steps 60 \
+  --spin-dump-every 5
+```
+
 The Apple M4 result measured on 2026-08-21 was:
 
 ```text
@@ -360,6 +380,37 @@ qualified=true
 result=PASS
 ```
 
+The complete Apple M4 Pro standalone grounded and circular-seam qualifications
+measured on 2026-08-21 were:
+
+```text
+grounded_requested=true complete=true steps=120 replay_exact=true
+released_mask=0 escape_mask=0 grounded_cloth_count=42
+grounded_fruit_count=0 minimum_cloth_height=0.004000000190
+minimum_fruit_clearance=0.004927597940
+strain_violation=0.000000000000 ground_penetration=0.000000000000
+self_penetration=0.000000010782 shape_change=0.091619409327
+kinetic_energy=0.336875938004
+first_gpu_seconds=1690.944573249551 second_gpu_seconds=1697.970638375264
+qualified=true result=PASS
+
+spin_requested=true complete=true steps=60 replay_exact=true
+released_mask=0 released_count=0 escape_mask=0
+minimum_cloth_height=0.173617452383
+minimum_fruit_clearance=0.205283746123
+strain_violation=0.000000000000 self_penetration=0.000000000000
+handle_travel=0.400488744947 maximum_handle_lag=0.011406752162
+shape_change=0.275368663917 kinetic_energy=4.920874434177
+first_gpu_seconds=766.298843374941 second_gpu_seconds=766.806226958637
+qualified=true result=PASS
+```
+
+Both results are complete Metal trajectory evidence, not performance
+comparisons. Shape change is the largest change among sampled internal
+particle-pair distances, which is invariant under rigid translation and
+rotation. The grounded result retains `0.336875938004 J` after one second, so
+it is described as a grounded trajectory rather than a fully static rest state.
+
 Both runs were failure-free. The first release occurred at frame 60, the mask
 became `1537` at frame 150, fruit 9 reached its `0.064000003 m` ground radius
 at frame 440, and fruit 10 reached its `0.0700000003 m` ground radius at frame
@@ -407,12 +458,8 @@ self-contact with deterministic active-batch compaction, five contact-friction
 families, fruit rolling resistance, and normalized fruit orientation
 integration, full-yarn cylinder air loads, and fruit translational/rotational
 air loads, plus topology-aware mouth release classification. It does
-**not** yet
-include:
-
-- the complete standalone grounded and circular-spin outcomes on Metal.
-
-The README pickup GIF and spill certificate are now complete-trajectory Metal
-evidence. The standalone grounded and circular-spin images remain FP64
-reference evidence. Specimen calibration is a separate physical-evidence
+also include complete standalone grounded, circular-seam, pickup, and spill
+trajectory evidence on Metal. The README GIFs are rasterized from those
+exported states. They do **not** calibrate this model to a physical cotton-net
+produce bag. Specimen calibration remains a separate physical-evidence
 requirement.

@@ -58,6 +58,21 @@ Metal state bit for bit.
 
 ## Grounded cloth produce-bag replay
 
+![The complete Metal cloth produce bag after one second of free gravity, cloth, fruit, and plane contact](docs/assets/cloth-metal-grounded-120.png)
+
+This frame is rasterized from the complete one-second Apple Metal grounded
+trajectory. The seam grip is inactive: all 1,465 cloth particles and twelve
+fruits move only through gravity, the woven constraints, contact, friction, and
+air loads. Two 120-frame replays, each with 48 device-resident substeps per
+frame, matched all frame hashes and final physical buffers exactly. The final
+state had 42 cloth particles supported at `z=0.004000000190 m`, no released or
+escaped fruit, `0` strain violation, `0` ground penetration, `1.08e-8 m`
+maximum nonlocal yarn overlap, and `0.091619409 m` maximum sampled
+internal-distance change. Its `0.336875938 J` final kinetic energy means this
+is a grounded one-second trajectory, not a claim of perfect rest.
+
+### Independent FP64 grounded reference
+
 ![A low cotton-net produce bag with a folded cuff, scalloped ground skirt, and twelve fruit spheres after one simulated second](docs/assets/cloth-produce-bag.png)
 
 This PNG is rasterized directly from the actual deterministic FP64 solver state;
@@ -78,28 +93,43 @@ cloth-contact evidence.
 
 ### Grab a compliant rim patch and spin
 
-The orange ring marks the target of the same compliant ten-knot, two-row cuff
-attachment. All cloth nodes and all twelve fruits remain dynamic. These five fixed-camera frames come from one
-0.5-second trajectory; they are not separately posed simulations.
+![A deterministic Apple Metal cloth bag deforming while its compliant top-opening seam patch follows a circular trajectory](docs/assets/cloth-metal-spin.gif)
+
+The orange ring marks the target of the compliant ten-knot, two-row cuff
+attachment. All cloth nodes and all twelve fruits remain dynamic. These five
+fixed-camera frames come from one continuous 0.5-second Apple Metal trajectory;
+they are not separately posed simulations.
 
 | `t=0.000 s` | `t=0.125 s` | `t=0.250 s` |
 |:--:|:--:|:--:|
-| ![Initial airborne cloth bag](docs/assets/cloth-spin-0.png) | ![Cloth bag beginning to lag behind its moving grip](docs/assets/cloth-spin-15.png) | ![Cloth bag twisting around the compliant grip patch](docs/assets/cloth-spin-30.png) |
+| ![Initial airborne Metal cloth bag](docs/assets/cloth-metal-spin-0.png) | ![Metal cloth bag beginning to lag behind its moving seam grip](docs/assets/cloth-metal-spin-15.png) | ![Metal cloth bag folding around the compliant top-cuff patch](docs/assets/cloth-metal-spin-30.png) |
 
 | `t=0.375 s` | `t=0.500 s` |
 |:--:|:--:|
-| ![Open cloth bag deforming under circular seam motion](docs/assets/cloth-spin-45.png) | ![Vertically lagging cloth bag at the end of the spin](docs/assets/cloth-spin-60.png) |
+| ![Open Metal cloth bag twisting under circular seam motion](docs/assets/cloth-metal-spin-45.png) | ![Metal cloth bag lagging below the seam at the end of the orbit](docs/assets/cloth-metal-spin-60.png) |
 
-The 48-substep spin replay passed with `0.158858687` maximum warp extension,
-`0.030219467` maximum weft strain, zero numerical escapes or robust releases,
-`157.431556610 N` peak attachment force, maximum published yarn overlap
-`0.990 um`, and bit-identical hash `0xc0eb9fe5dd84d638`. Explicit air loads
+Two complete 60-frame Metal replays matched every frame hash and the final
+physical buffers exactly. No fruit released or escaped. Final strain violation
+and nonlocal yarn overlap were both `0`; the seam traveled `0.400488745 m`
+end-to-end with `0.011406752 m` maximum cloth lag. The cloth's maximum sampled
+internal-distance change was `0.275368664 m`, which cannot come from rigid-body
+motion. The first and second runs reported `766.298843375 s` and
+`766.806226959 s` of GPU command time. This is executable Metal physics
+evidence, not an interactive mouse-grab UI or a posed animation.
+
+#### Independent FP64 spin reference
+
+The separate 48-substep FP64 spin replay passed with `0.158858687` maximum
+warp extension, `0.030219467` maximum weft strain, zero numerical escapes or
+robust releases, `157.431556610 N` peak attachment force, maximum published
+yarn overlap `0.990 um`, and bit-identical hash `0xc0eb9fe5dd84d638`.
+Explicit air loads
 reached `0.142724430 N` on a yarn segment and `0.027419964 N` on a fruit while
 removing `0.734375455 J` of relative kinetic energy. The contents press into
 the deforming bag during this half-second orbit; the separate pickup replay
 contains the spill.
 
-Reproduce the README image from the executable state:
+Reproduce the FP64 reference images from executable state:
 
 ```sh
 ./build/numi-solver-cloth-bag \
@@ -133,6 +163,34 @@ swift tools/compose_cloth_gif.swift \
   docs/assets/cloth-pickup-spill.gif 0.08 \
   $(for step in $(seq 0 10 240); do
     printf '%s ' "build/cloth-pickup-png/frame-${step}.png"
+  done)
+```
+
+The complete Metal grounded and circular-seam trajectories run two exact
+replays and export replay one's states:
+
+```sh
+./build/numi-solver-cloth-metal \
+  --replays 2 --iterations 32 --strain-sweeps 3 \
+  --grounded-prefix build/metal-grounded --grounded-steps 120 \
+  --grounded-dump-every 10
+
+./build/numi-solver-cloth-metal \
+  --replays 2 --iterations 32 --strain-sweeps 3 \
+  --spin-prefix build/metal-spin --spin-steps 60 \
+  --spin-dump-every 5
+
+mkdir -p build/metal-spin-png
+for step in $(seq 0 5 60); do
+  swift tools/render_cloth_obj.swift \
+    "build/metal-spin-${step}.obj" \
+    "build/metal-spin-png/frame-${step}.png"
+done
+
+swift tools/compose_cloth_gif.swift \
+  docs/assets/cloth-metal-spin.gif 0.08 \
+  $(for step in $(seq 0 5 60); do
+    printf '%s ' "build/metal-spin-png/frame-${step}.png"
   done)
 ```
 
@@ -312,7 +370,9 @@ pours fruit onto the plane. Its FP64 mechanics and evidence boundary are
 separate from the Metal harnesses.
 
 The Metal cloth harness accepts `--replays N`, `--iterations N`,
-`--strain-sweeps N`, and the opt-in `--pickup-prefix`, `--pickup-steps`, and
+`--strain-sweeps N`, and opt-in `--grounded-prefix`, `--grounded-steps`,
+`--grounded-dump-every`, `--spin-prefix`, `--spin-steps`,
+`--spin-dump-every`, `--pickup-prefix`, `--pickup-steps`, and
 `--pickup-dump-every` trajectory arguments. It reconstructs the full cloth
 internal-constraint/grip topology, validates conflict-free graph colors,
 compares every published value

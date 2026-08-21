@@ -57,9 +57,18 @@ constexpr float kYarnSkinFriction = 0.010f;
 constexpr float kFruitDrag = 0.47f;
 constexpr float kFruitRotationalDrag = 0.010f;
 constexpr std::uint32_t kPickupSubstepsPerFrame = 48u;
+constexpr std::uint32_t kGroundedQualificationFrames = 120u;
+constexpr std::uint32_t kSpinQualificationFrames = 60u;
 constexpr std::uint32_t kPickupMotionFrames = 240u;
 constexpr std::uint32_t kPickupQualificationFrames =
     kPickupMotionFrames + 240u;
+constexpr double kSpinAirborneLift = 0.52;
+
+enum class TrajectoryScenario : std::uint8_t {
+    grounded,
+    spin,
+    pickup,
+};
 
 std::size_t packedSelfPairIndex(
     const std::uint32_t first,
@@ -235,6 +244,22 @@ DVec3 pickupGripTarget(const double time) {
         -0.10 * firstSnap,
         0.04 * std::sin(std::numbers::pi * firstSnap),
         1.25 * lift - 0.85 * firstSnap + 0.75 * firstRecovery,
+    };
+}
+
+DVec3 spinGripTarget(const double time) {
+    DVec3 base = authoredPosition(kLevels - 1u, 0u);
+    base.z += kSpinAirborneLift;
+    constexpr double radius = 0.28;
+    constexpr double angularSpeed = 4.8;
+    constexpr double rampTime = 0.18;
+    const double angle = angularSpeed * (
+        time - rampTime * (1.0 - std::exp(-time / rampTime))
+    );
+    return base + DVec3{
+        radius * (std::cos(angle) - 1.0),
+        radius * std::sin(angle),
+        0.035 * std::sin(0.5 * angle),
     };
 }
 
@@ -4724,18 +4749,78 @@ void dumpGPUOBJ(
     }
 }
 
-struct PickupReplay {
+struct TrajectoryReplay {
     GPUResult final;
     std::vector<std::uint64_t> frameHashes;
     bool failureFree{true};
     double gpuSeconds{};
+    double maximumHandleLag{};
 };
 
-PickupReplay runPickupReplay(
+const char* trajectoryName(const TrajectoryScenario scenario) {
+    switch (scenario) {
+        case TrajectoryScenario::grounded:
+            return "grounded";
+        case TrajectoryScenario::spin:
+            return "spin";
+        case TrajectoryScenario::pickup:
+            return "pickup";
+    }
+    throw std::logic_error("unknown cloth trajectory scenario");
+}
+
+DVec3 trajectoryGripTarget(
+    const TrajectoryScenario scenario,
+    const double time
+) {
+    switch (scenario) {
+        case TrajectoryScenario::grounded:
+            return authoredPosition(kLevels - 1u, 0u);
+        case TrajectoryScenario::spin:
+            return spinGripTarget(time);
+        case TrajectoryScenario::pickup:
+            return pickupGripTarget(time);
+    }
+    throw std::logic_error("unknown cloth trajectory scenario");
+}
+
+InitialState makeTrajectoryInitialState(
+    const InitialState& initial,
+    const TrajectoryScenario scenario
+) {
+    InitialState state = initial;
+    if (scenario == TrajectoryScenario::spin) {
+        for (NumiClothBagGPUParticle& particle : state.particles) {
+            particle.positionAndInverseMass.z +=
+                static_cast<float>(kSpinAirborneLift);
+            particle.previousAndMass.z +=
+                static_cast<float>(kSpinAirborneLift);
+        }
+        for (NumiClothBagGPUFruit& fruit : state.fruits) {
+            fruit.positionAndInverseMass.z +=
+                static_cast<float>(kSpinAirborneLift);
+            fruit.previousAndRadius.z +=
+                static_cast<float>(kSpinAirborneLift);
+        }
+    }
+    state.config.constraintCounts.z =
+        scenario == TrajectoryScenario::spin ? 0u : 1u;
+    const DVec3 target = trajectoryGripTarget(scenario, 0.0);
+    state.config.gripTargetAndActive = f4(
+        static_cast<float>(target.x),
+        static_cast<float>(target.y),
+        static_cast<float>(target.z),
+        scenario == TrajectoryScenario::grounded ? 0.0f : 1.0f
+    );
+    return state;
+}
+
+TrajectoryReplay runTrajectoryReplay(
     id<MTLDevice> device,
     id<MTLCommandQueue> queue,
     const Pipelines& pipelines,
     const InitialState& initial,
+    const TrajectoryScenario scenario,
     const std::uint32_t iterations,
     const std::uint32_t strainSweeps,
     const std::uint32_t steps,
@@ -4743,16 +4828,8 @@ PickupReplay runPickupReplay(
     const std::uint32_t replayIndex,
     const std::string& dumpPrefix
 ) {
-    InitialState state = initial;
-    state.config.constraintCounts.z = 1u;
-    const DVec3 initialGripTarget = pickupGripTarget(0.0);
-    state.config.gripTargetAndActive = f4(
-        static_cast<float>(initialGripTarget.x),
-        static_cast<float>(initialGripTarget.y),
-        static_cast<float>(initialGripTarget.z),
-        1.0f
-    );
-    PickupReplay replay;
+    InitialState state = makeTrajectoryInitialState(initial, scenario);
+    TrajectoryReplay replay;
     replay.frameHashes.reserve(steps);
     if (!dumpPrefix.empty()) {
         dumpGPUOBJ(
@@ -4773,14 +4850,15 @@ PickupReplay runPickupReplay(
                 static_cast<std::uint64_t>(step) *
                     kPickupSubstepsPerFrame +
                 substep + 1u;
-            const DVec3 target = pickupGripTarget(
+            const DVec3 target = trajectoryGripTarget(
+                scenario,
                 static_cast<double>(completedSubsteps) * kTimestep
             );
             configs[substep].gripTargetAndActive = f4(
                 static_cast<float>(target.x),
                 static_cast<float>(target.y),
                 static_cast<float>(target.z),
-                1.0f
+                scenario == TrajectoryScenario::grounded ? 0.0f : 1.0f
             );
         }
         @autoreleasepool {
@@ -4798,6 +4876,21 @@ PickupReplay runPickupReplay(
             replay.final.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE;
         replay.gpuSeconds += replay.final.seconds;
         replay.frameHashes.push_back(hashGPUResult(replay.final));
+        if (scenario != TrajectoryScenario::grounded) {
+            for (const NumiClothBagGPUGrip& grip : replay.final.grips) {
+                const DVec3 position = d3(
+                    replay.final.particles[grip.particle.x]
+                        .positionAndInverseMass
+                );
+                const DVec3 target =
+                    d3(configs.back().gripTargetAndActive) +
+                    d3(grip.targetOffsetAndCompliance);
+                replay.maximumHandleLag = std::max(
+                    replay.maximumHandleLag,
+                    length(position - target)
+                );
+            }
+        }
         state = continuedInitialState(
             state, replay.final, configs.back()
         );
@@ -4813,7 +4906,11 @@ PickupReplay runPickupReplay(
             );
         }
         if (completedSteps % dumpEvery == 0u || completedSteps == steps) {
-            std::cout << "pickup_progress replay=" << replayIndex
+            std::cout << (scenario == TrajectoryScenario::pickup
+                              ? "pickup_progress"
+                              : "trajectory_progress")
+                      << " scenario=" << trajectoryName(scenario)
+                      << " replay=" << replayIndex
                       << " step=" << completedSteps << '/' << steps
                       << " released_mask="
                       << replay.final.releaseStatus.masks.y
@@ -4928,10 +5025,144 @@ double maximumSelfPenetration(
     return maximum;
 }
 
+double minimumClothHeight(const GPUResult& result) {
+    double minimum = std::numeric_limits<double>::infinity();
+    for (const NumiClothBagGPUParticle& particle : result.particles) {
+        minimum = std::min(
+            minimum,
+            static_cast<double>(particle.positionAndInverseMass.z)
+        );
+    }
+    return minimum;
+}
+
+double minimumFruitClearance(const GPUResult& result) {
+    double minimum = std::numeric_limits<double>::infinity();
+    for (const NumiClothBagGPUFruit& fruit : result.fruits) {
+        minimum = std::min(
+            minimum,
+            static_cast<double>(
+                fruit.positionAndInverseMass.z -
+                fruit.previousAndRadius.w
+            )
+        );
+    }
+    return minimum;
+}
+
+std::uint32_t groundedClothCount(
+    const GPUResult& result,
+    const double yarnRadius
+) {
+    std::uint32_t count = 0u;
+    for (const NumiClothBagGPUParticle& particle : result.particles) {
+        if (std::abs(
+            static_cast<double>(particle.positionAndInverseMass.z) -
+            yarnRadius
+        ) <= 2.0e-6) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+std::uint32_t groundedFruitCount(const GPUResult& result) {
+    std::uint32_t count = 0u;
+    for (const NumiClothBagGPUFruit& fruit : result.fruits) {
+        if (std::abs(static_cast<double>(
+            fruit.positionAndInverseMass.z - fruit.previousAndRadius.w
+        )) <= 2.0e-6) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+std::uint32_t trajectoryEscapeMask(
+    const GPUResult& result,
+    const TrajectoryScenario scenario
+) {
+    std::uint32_t mask = 0u;
+    for (std::size_t index = 0u; index < result.fruits.size(); ++index) {
+        const DVec3 position = d3(
+            result.fruits[index].positionAndInverseMass
+        );
+        const double radial = std::hypot(position.x, position.y);
+        const bool outside = scenario == TrajectoryScenario::grounded
+            ? position.z > 0.90 || position.z < 0.0 || radial > 0.75
+            : position.z > 5.0 || position.z < -5.0 || radial > 5.0;
+        if (!std::isfinite(position.x) || !std::isfinite(position.y) ||
+            !std::isfinite(position.z) || outside) {
+            mask |= 1u << index;
+        }
+    }
+    return mask;
+}
+
+double maximumShapeDistanceChange(
+    const InitialState& initial,
+    const GPUResult& result
+) {
+    double maximum = 0.0;
+    for (std::size_t first = 0u;
+         first < result.particles.size();
+         first += 8u) {
+        const DVec3 initialFirst = d3(
+            initial.particles[first].positionAndInverseMass
+        );
+        const DVec3 finalFirst = d3(
+            result.particles[first].positionAndInverseMass
+        );
+        for (std::size_t second = first + 8u;
+             second < result.particles.size();
+             second += 8u) {
+            const double initialDistance = length(
+                d3(initial.particles[second].positionAndInverseMass) -
+                initialFirst
+            );
+            const double finalDistance = length(
+                d3(result.particles[second].positionAndInverseMass) -
+                finalFirst
+            );
+            maximum = std::max(
+                maximum,
+                std::abs(finalDistance - initialDistance)
+            );
+        }
+    }
+    return maximum;
+}
+
+double kineticEnergy(const GPUResult& result) {
+    double energy = 0.0;
+    for (const NumiClothBagGPUParticle& particle : result.particles) {
+        const DVec3 velocity = d3(particle.velocity);
+        energy += 0.5 * static_cast<double>(particle.previousAndMass.w) *
+            dot(velocity, velocity);
+    }
+    for (const NumiClothBagGPUFruit& fruit : result.fruits) {
+        const double mass = 1.0 /
+            static_cast<double>(fruit.positionAndInverseMass.w);
+        const double radius = static_cast<double>(fruit.previousAndRadius.w);
+        const DVec3 linearVelocity = d3(fruit.velocityAndGroundImpulse);
+        const DVec3 angularVelocity = d3(fruit.angularVelocity);
+        energy += 0.5 * mass * dot(linearVelocity, linearVelocity);
+        energy += 0.2 * mass * radius * radius *
+            dot(angularVelocity, angularVelocity);
+    }
+    return energy;
+}
+
 int run(const int argc, const char* const* argv) {
     std::uint32_t replays = 2u;
     std::uint32_t iterations = 32u;
     std::uint32_t strainSweeps = 3u;
+    std::uint32_t groundedSteps = kGroundedQualificationFrames;
+    std::uint32_t groundedDumpEvery = 10u;
+    std::string groundedPrefix;
+    std::uint32_t spinSteps = kSpinQualificationFrames;
+    std::uint32_t spinDumpEvery = 5u;
+    std::string spinPrefix;
     std::uint32_t pickupSteps = kPickupQualificationFrames;
     std::uint32_t pickupDumpEvery = 10u;
     std::string pickupPrefix;
@@ -4952,6 +5183,28 @@ int run(const int argc, const char* const* argv) {
             );
         } else if (value == "--metallib" && argument + 1 < argc) {
             metallibPath = argv[++argument];
+        } else if (value == "--grounded-prefix" && argument + 1 < argc) {
+            groundedPrefix = argv[++argument];
+        } else if (value == "--grounded-steps" && argument + 1 < argc) {
+            groundedSteps = static_cast<std::uint32_t>(
+                std::stoul(argv[++argument])
+            );
+        } else if (value == "--grounded-dump-every" &&
+                   argument + 1 < argc) {
+            groundedDumpEvery = static_cast<std::uint32_t>(
+                std::stoul(argv[++argument])
+            );
+        } else if (value == "--spin-prefix" && argument + 1 < argc) {
+            spinPrefix = argv[++argument];
+        } else if (value == "--spin-steps" && argument + 1 < argc) {
+            spinSteps = static_cast<std::uint32_t>(
+                std::stoul(argv[++argument])
+            );
+        } else if (value == "--spin-dump-every" &&
+                   argument + 1 < argc) {
+            spinDumpEvery = static_cast<std::uint32_t>(
+                std::stoul(argv[++argument])
+            );
         } else if (value == "--pickup-prefix" && argument + 1 < argc) {
             pickupPrefix = argv[++argument];
         } else if (value == "--pickup-steps" && argument + 1 < argc) {
@@ -4967,7 +5220,10 @@ int run(const int argc, const char* const* argv) {
             std::cout
                 << "usage: numi-solver-cloth-metal [--replays N] "
                    "[--iterations N] [--strain-sweeps N] "
-                   "[--metallib PATH] [--pickup-prefix PATH] "
+                   "[--metallib PATH] [--grounded-prefix PATH] "
+                   "[--grounded-steps N] [--grounded-dump-every N] "
+                   "[--spin-prefix PATH] [--spin-steps N] "
+                   "[--spin-dump-every N] [--pickup-prefix PATH] "
                    "[--pickup-steps N] [--pickup-dump-every N]\n";
             return 0;
         } else {
@@ -4979,6 +5235,21 @@ int run(const int argc, const char* const* argv) {
     replays = std::max(replays, 2u);
     if (iterations == 0u || strainSweeps == 0u) {
         throw std::runtime_error("iterations and strain sweeps must be positive");
+    }
+    if (!groundedPrefix.empty() &&
+        (groundedSteps == 0u ||
+         groundedSteps > kGroundedQualificationFrames ||
+         groundedDumpEvery == 0u)) {
+        throw std::runtime_error(
+            "Metal grounded requires 1..120 steps and positive dump cadence"
+        );
+    }
+    if (!spinPrefix.empty() &&
+        (spinSteps == 0u || spinSteps > kSpinQualificationFrames ||
+         spinDumpEvery == 0u)) {
+        throw std::runtime_error(
+            "Metal spin requires 1..60 steps and positive dump cadence"
+        );
     }
     if (!pickupPrefix.empty() &&
         (pickupSteps == 0u || pickupSteps > kPickupQualificationFrames ||
@@ -5323,9 +5594,193 @@ int run(const int argc, const char* const* argv) {
         );
     }
     seamAverageLift /= static_cast<double>(initial.grips.size());
+    const bool groundedRequested = !groundedPrefix.empty();
+    TrajectoryReplay groundedFirst;
+    TrajectoryReplay groundedSecond;
+    bool groundedReplayExact = true;
+    bool groundedComplete = false;
+    std::uint32_t groundedReleasedMask = 0u;
+    std::uint32_t groundedEscapeMask = 0u;
+    std::uint32_t groundedClothContacts = 0u;
+    std::uint32_t groundedFruitContacts = 0u;
+    double groundedMinimumClothHeight = 0.0;
+    double groundedMinimumFruitClearance = 0.0;
+    double groundedStrainViolation = 0.0;
+    double groundedGroundPenetration = 0.0;
+    double groundedSelfPenetration = 0.0;
+    double groundedShapeChange = 0.0;
+    double groundedKineticEnergy = 0.0;
+    if (groundedRequested) {
+        groundedFirst = runTrajectoryReplay(
+            device,
+            queue,
+            pipelines,
+            initial,
+            TrajectoryScenario::grounded,
+            iterations,
+            strainSweeps,
+            groundedSteps,
+            groundedDumpEvery,
+            1u,
+            groundedPrefix
+        );
+        groundedSecond = runTrajectoryReplay(
+            device,
+            queue,
+            pipelines,
+            initial,
+            TrajectoryScenario::grounded,
+            iterations,
+            strainSweeps,
+            groundedSteps,
+            groundedDumpEvery,
+            2u,
+            {}
+        );
+        groundedReplayExact = groundedFirst.frameHashes ==
+                groundedSecond.frameHashes &&
+            bitwiseEqualPhysicalState(
+                groundedFirst.final, groundedSecond.final
+            );
+        groundedComplete = groundedSteps ==
+            kGroundedQualificationFrames;
+        groundedReleasedMask =
+            groundedFirst.final.releaseStatus.masks.y;
+        groundedEscapeMask = trajectoryEscapeMask(
+            groundedFirst.final, TrajectoryScenario::grounded
+        );
+        groundedClothContacts = groundedClothCount(
+            groundedFirst.final,
+            initial.config.clothMaterial.x
+        );
+        groundedFruitContacts = groundedFruitCount(groundedFirst.final);
+        groundedMinimumClothHeight = minimumClothHeight(
+            groundedFirst.final
+        );
+        groundedMinimumFruitClearance = minimumFruitClearance(
+            groundedFirst.final
+        );
+        groundedStrainViolation = maximumStrainViolation(
+            groundedFirst.final.particles,
+            groundedFirst.final.distances
+        );
+        groundedGroundPenetration = maximumGroundPenetration(
+            groundedFirst.final.particles,
+            groundedFirst.final.fruits,
+            initial.config.clothMaterial.x
+        );
+        groundedSelfPenetration = maximumSelfPenetration(
+            groundedFirst.final.particles,
+            groundedFirst.final.distances,
+            initial.selfPairs,
+            initial.config.clothMaterial.x
+        );
+        groundedShapeChange = maximumShapeDistanceChange(
+            makeTrajectoryInitialState(
+                initial, TrajectoryScenario::grounded
+            ),
+            groundedFirst.final
+        );
+        groundedKineticEnergy = kineticEnergy(groundedFirst.final);
+    }
+    const bool groundedQualified = !groundedRequested ||
+        (groundedComplete && groundedFirst.failureFree &&
+         groundedSecond.failureFree && groundedReplayExact &&
+         groundedReleasedMask == 0u && groundedEscapeMask == 0u &&
+         groundedClothContacts > 0u &&
+         groundedMinimumClothHeight >=
+            static_cast<double>(initial.config.clothMaterial.x) - 1.0e-6 &&
+         groundedMinimumFruitClearance >= -1.0e-6 &&
+         groundedStrainViolation <= 2.0e-6 &&
+         groundedGroundPenetration <= 1.0e-6 &&
+         groundedSelfPenetration <= 2.0e-6 &&
+         groundedShapeChange > 1.0e-3);
+
+    const bool spinRequested = !spinPrefix.empty();
+    TrajectoryReplay spinFirst;
+    TrajectoryReplay spinSecond;
+    bool spinReplayExact = true;
+    bool spinComplete = false;
+    std::uint32_t spinReleasedMask = 0u;
+    std::uint32_t spinEscapeMask = 0u;
+    double spinMinimumClothHeight = 0.0;
+    double spinMinimumFruitClearance = 0.0;
+    double spinStrainViolation = 0.0;
+    double spinSelfPenetration = 0.0;
+    double spinShapeChange = 0.0;
+    double spinKineticEnergy = 0.0;
+    double spinHandleTravel = 0.0;
+    if (spinRequested) {
+        spinFirst = runTrajectoryReplay(
+            device,
+            queue,
+            pipelines,
+            initial,
+            TrajectoryScenario::spin,
+            iterations,
+            strainSweeps,
+            spinSteps,
+            spinDumpEvery,
+            1u,
+            spinPrefix
+        );
+        spinSecond = runTrajectoryReplay(
+            device,
+            queue,
+            pipelines,
+            initial,
+            TrajectoryScenario::spin,
+            iterations,
+            strainSweeps,
+            spinSteps,
+            spinDumpEvery,
+            2u,
+            {}
+        );
+        spinReplayExact = spinFirst.frameHashes == spinSecond.frameHashes &&
+            bitwiseEqualPhysicalState(spinFirst.final, spinSecond.final);
+        spinComplete = spinSteps == kSpinQualificationFrames;
+        spinReleasedMask = spinFirst.final.releaseStatus.masks.y;
+        spinEscapeMask = trajectoryEscapeMask(
+            spinFirst.final, TrajectoryScenario::spin
+        );
+        spinMinimumClothHeight = minimumClothHeight(spinFirst.final);
+        spinMinimumFruitClearance = minimumFruitClearance(spinFirst.final);
+        spinStrainViolation = maximumStrainViolation(
+            spinFirst.final.particles,
+            spinFirst.final.distances
+        );
+        spinSelfPenetration = maximumSelfPenetration(
+            spinFirst.final.particles,
+            spinFirst.final.distances,
+            initial.selfPairs,
+            initial.config.clothMaterial.x
+        );
+        spinShapeChange = maximumShapeDistanceChange(
+            makeTrajectoryInitialState(initial, TrajectoryScenario::spin),
+            spinFirst.final
+        );
+        spinKineticEnergy = kineticEnergy(spinFirst.final);
+        spinHandleTravel = length(
+            spinGripTarget(
+                static_cast<double>(spinSteps) *
+                kPickupSubstepsPerFrame * kTimestep
+            ) - spinGripTarget(0.0)
+        );
+    }
+    const bool spinQualified = !spinRequested ||
+        (spinComplete && spinFirst.failureFree && spinSecond.failureFree &&
+         spinReplayExact && spinReleasedMask == 0u && spinEscapeMask == 0u &&
+         spinMinimumClothHeight > -5.0 &&
+         spinMinimumFruitClearance > -5.0 &&
+         spinStrainViolation <= 2.0e-6 &&
+         spinSelfPenetration <= 2.0e-6 && spinHandleTravel > 0.20 &&
+         spinFirst.maximumHandleLag > 1.0e-3 &&
+         spinFirst.maximumHandleLag < 0.25 && spinShapeChange > 0.01);
+
     const bool pickupRequested = !pickupPrefix.empty();
-    PickupReplay pickupFirst;
-    PickupReplay pickupSecond;
+    TrajectoryReplay pickupFirst;
+    TrajectoryReplay pickupSecond;
     bool pickupReplayExact = true;
     bool pickupComplete = false;
     double pickupStrainViolation = 0.0;
@@ -5334,11 +5789,12 @@ int run(const int argc, const char* const* argv) {
     std::uint32_t pickupReleasedMask = 0u;
     std::uint32_t pickupGroundedReleasedCount = 0u;
     if (pickupRequested) {
-        pickupFirst = runPickupReplay(
+        pickupFirst = runTrajectoryReplay(
             device,
             queue,
             pipelines,
             initial,
+            TrajectoryScenario::pickup,
             iterations,
             strainSweeps,
             pickupSteps,
@@ -5346,11 +5802,12 @@ int run(const int argc, const char* const* argv) {
             1u,
             pickupPrefix
         );
-        pickupSecond = runPickupReplay(
+        pickupSecond = runTrajectoryReplay(
             device,
             queue,
             pipelines,
             initial,
+            TrajectoryScenario::pickup,
             iterations,
             strainSweeps,
             pickupSteps,
@@ -6817,7 +7274,7 @@ int run(const int argc, const char* const* argv) {
         seamTrajectoryGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&
         seamTrajectoryReplayExact && seamTrajectorySplitExact &&
         seamAverageLift > 0.0 && seamMaximumHandleLag < 0.02 &&
-        pickupQualified;
+        groundedQualified && spinQualified && pickupQualified;
 
     std::cout << std::fixed << std::setprecision(12)
               << "device=" << device.name.UTF8String << '\n'
@@ -7113,6 +7570,43 @@ int run(const int argc, const char* const* argv) {
               << " failure_flags=" << seamTrajectoryGPU.failure
               << " state_hash=0x" << std::hex
               << hashGPUResult(seamTrajectoryGPU) << std::dec << '\n'
+              << "grounded_requested=" << groundedRequested
+              << " complete=" << groundedComplete
+              << " steps=" << (groundedRequested ? groundedSteps : 0u)
+              << " replay_exact=" << groundedReplayExact
+              << " released_mask=" << groundedReleasedMask
+              << " escape_mask=" << groundedEscapeMask
+              << " grounded_cloth_count=" << groundedClothContacts
+              << " grounded_fruit_count=" << groundedFruitContacts
+              << " minimum_cloth_height=" << groundedMinimumClothHeight
+              << " minimum_fruit_clearance="
+              << groundedMinimumFruitClearance
+              << " strain_violation=" << groundedStrainViolation
+              << " ground_penetration=" << groundedGroundPenetration
+              << " self_penetration=" << groundedSelfPenetration
+              << " shape_change=" << groundedShapeChange
+              << " kinetic_energy=" << groundedKineticEnergy
+              << " first_gpu_seconds=" << groundedFirst.gpuSeconds
+              << " second_gpu_seconds=" << groundedSecond.gpuSeconds
+              << " qualified=" << groundedQualified << '\n'
+              << "spin_requested=" << spinRequested
+              << " complete=" << spinComplete
+              << " steps=" << (spinRequested ? spinSteps : 0u)
+              << " replay_exact=" << spinReplayExact
+              << " released_mask=" << spinReleasedMask
+              << " released_count=" << std::popcount(spinReleasedMask)
+              << " escape_mask=" << spinEscapeMask
+              << " minimum_cloth_height=" << spinMinimumClothHeight
+              << " minimum_fruit_clearance=" << spinMinimumFruitClearance
+              << " strain_violation=" << spinStrainViolation
+              << " self_penetration=" << spinSelfPenetration
+              << " handle_travel=" << spinHandleTravel
+              << " maximum_handle_lag=" << spinFirst.maximumHandleLag
+              << " shape_change=" << spinShapeChange
+              << " kinetic_energy=" << spinKineticEnergy
+              << " first_gpu_seconds=" << spinFirst.gpuSeconds
+              << " second_gpu_seconds=" << spinSecond.gpuSeconds
+              << " qualified=" << spinQualified << '\n'
               << "pickup_requested=" << pickupRequested
               << " complete=" << pickupComplete
               << " steps=" << (pickupRequested ? pickupSteps : 0u)
