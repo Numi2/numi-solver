@@ -271,8 +271,18 @@ private func render(
     let centerY: Double
     if cameraProfile == "pickup" {
         scale = 450.0
-        centerX = 560.0
-        centerY = 160.0
+        if let grip {
+            let transformedGrip = camera(
+                grip.center,
+                yaw: yaw,
+                pitch: pitch
+            )
+            centerX = Double(width) * 0.5 - transformedGrip.x * scale
+            centerY = 500.0 - transformedGrip.y * scale
+        } else {
+            centerX = Double(width) * 0.5
+            centerY = 160.0
+        }
     } else if grip != nil {
         scale = 650.0
         centerX = Double(width) * 0.5

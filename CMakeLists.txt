@@ -568,7 +568,7 @@ if(BUILD_TESTING)
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
             --scenario pickup
             --steps 240
-            --substeps 24
+            --substeps 48
             --iterations 32
             --dump-frames ${CMAKE_CURRENT_BINARY_DIR}/cloth-pickup-test
             --dump-every 10
@@ -578,7 +578,7 @@ if(BUILD_TESTING)
         PROPERTIES
             LABELS "physics;cloth;reference;contact;determinism;pickup"
             RUN_SERIAL TRUE
-            TIMEOUT 600
+            TIMEOUT 900
     )
     set_tests_properties(
         temporal_cone.rigid

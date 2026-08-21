@@ -147,11 +147,14 @@ F_f=-\frac12\rho C_{d,f}\pi r^2\|v\|v,
 \qquad C_\omega=0.010.
 ```
 
-Every explicit drag impulse is capped before it can reverse its relative
-velocity in one substep. The run reports peak yarn force, peak fruit force and
-torque, and the exact discrete relative kinetic energy removed by air loads.
-`--aerodynamics-probe` checks the analytic forces, energy reduction,
-subdivision invariance, a zero-force co-moving-air case, and replay.
+Yarn forces are accumulated before a global dissipative attenuation; isolated
+fruit translation and rotation use the exact time-integrated quadratic decay.
+These updates cannot add relative kinetic energy or reverse relative velocity
+in one substep. The run reports peak yarn force, peak fruit force and torque,
+and the exact discrete relative kinetic energy removed by air loads.
+`--aerodynamics-probe` checks analytic forces, energy reduction, spatial
+subdivision invariance, exact isolated temporal refinement, a zero-force
+co-moving-air case, and replay.
 
 Cloth/plane motion uses load-dependent maximum-dissipation Coulomb friction,
 not a fixed horizontal decay. The normal impulse is reconstructed from the
@@ -182,30 +185,33 @@ slower recovery. With
 `s(x)=clamp(x,0,1)^2(3-2clamp(x,0,1))`, its target is
 
 ```math
-u(t)=s(t/0.80),\qquad d(t)=s((t-1.00)/0.25),
+u(t)=s(t/0.80),\qquad d(t)=s((t-1.00)/0.23),
 \qquad r(t)=s((t-1.45)/0.50),
 ```
 
 ```math
 g(t)=g_0+
 \begin{bmatrix}
--0.10d & 0.04\sin(\pi d) & 1.15u-0.75d+0.65r
+-0.10d & 0.04\sin(\pi d) & 1.25u-0.85d+0.75r
 \end{bmatrix}.
 ```
 
 Only this seam target is authored. Every bag knot and fruit remains dynamic;
 gravity, inertia, capsule contact, the open mouth, and the ground determine
 the response. The downward cuff motion does not prescribe a fruit trajectory:
-four fruits lag inertially, cross the top opening, fall, and resolve ground
-contact. `released_mask` latches fruit that leave the mouth region and is
-kept separate from `escaped_mask`, which denotes numerical divergence.
+four fruits lag inertially, robustly exit the top opening, and remain spilled
+on the ground. `released_mask` latches complete exit events and is kept
+separate from `escaped_mask`, which denotes
+numerical divergence.
 
 Release is not inferred from distance to one bottom particle. Every substep
 constructs an outward-oriented frame from all 48 upper-rim knots, projects the
-ordered rim into that frame, and requires the fruit center to lie inside the
-opening polygon while the complete sphere clears the rim plane by more than
-the yarn radius. `--mouth-release-probe` checks contained, valid crossing,
-outside-projection, and rigidly rotated opening cases with exact replay.
+ordered rim into that frame, and first records a sphere intersecting the mouth
+region. Release requires the complete sphere to clear either through the cap or
+around every 3D rim segment on the outward side by a further `25 mm`; this
+hysteresis rejects grazing/re-entry chatter. `--mouth-release-probe` checks
+contained, grazing, through-cap, edge-exit, far-outside, and rigidly rotated
+opening cases with exact replay.
 
 ## Qualification
 
@@ -216,7 +222,7 @@ fruit/yarn or yarn/yarn overlap, excessive speed, grip force above `500 N`, a
 friction-cone violation, or a completed-frame certificate above `2 um`.
 Grounded runs additionally require `spilled_mask=0` and bounded plane
 correction. Pickup additionally requires at least two released fruits; the
-qualified replay releases four.
+qualified replay certifies four robust exits.
 
 Run the three load cases and focused mechanics probes:
 
@@ -230,7 +236,7 @@ Run the three load cases and focused mechanics probes:
   --dump-frames spin
 
 ./build/numi-solver-cloth-bag \
-  --scenario pickup --steps 240 --substeps 24 --iterations 32 --replays 2 \
+  --scenario pickup --steps 240 --substeps 48 --iterations 32 --replays 2 \
   --dump-frames pickup --dump-every 10
 
 ./build/numi-solver-cloth-bag --rolling-probe
@@ -249,15 +255,23 @@ The qualified 2026-08-21 checkpoints are:
 
 | Scenario | Physical outcome | Published certificate | State hash |
 |---|---|---|---|
-| Grounded, `1.0 s` | no spill or escape | fruit/yarn `0`; final yarn overlap `0.743 um`; strain residual `0` | `0xbe244ce43db42aca` |
-| Spin, `0.5 s`, 48 substeps | visible lag/folding; no release or escape | fruit/yarn `0.646 um`; published yarn overlap `0.342 um`; strain residual `0` | `0xee2d0f53fddd96c9` |
-| Pickup, `2.0 s` | four fruits released; no escape | fruit/yarn `0.504 um`; published yarn overlap `0.967 um`; final overlap `0`; strain residual `0` | `0x3452eeca5b4c1c9` |
+| Grounded, `1.0 s` | no spill or escape | fruit/yarn `0.001 um`; final yarn overlap `0.934 um`; strain residual `0` | `0x58bbb2338d1a5369` |
+| Spin, `0.5 s`, 48 substeps | visible lag/folding; no robust release or escape | fruit/yarn `0`; published yarn overlap `0.990 um`; strain residual `0` | `0xc0eb9fe5dd84d638` |
+| Pickup, `2.0 s`, 48 substeps | four robust exits remain out; no escape | fruit/yarn `0.823 um`; published yarn overlap `0.937 um`; final overlap `0.002 um`; strain residual `0` | `0xe6aa91e33438537d` |
 
-The pickup run reached `0.285000000` maximum axial warp extension,
-`0.084238155` maximum bottom extension, `116.933051607 N` peak ten-knot grip
-force, 61,592 swept fruit/yarn hits, 6,836 swept yarn/yarn hits, and 25,202
-yarn/yarn friction contacts. `released_mask=3089`, `escaped_mask=0`, and the
+The pickup run reached `0.206217584` maximum axial warp extension,
+`0.021853543` maximum bottom extension, `237.766842811 N` peak ten-knot grip
+force, 103,969 swept fruit/yarn hits, 14,224 swept yarn/yarn hits, and 52,768
+yarn/yarn friction contacts. `released_mask=3344`, `escaped_mask=0`, and the
 friction-cone ratio never exceeded `1.0`.
+
+Temporal refinement is an explicit boundary. At 48 substeps the two-replay
+run above passes. At 96 substeps the same motion retains plural certified
+release and every physical gate in the 1.5-second crossing window. At 24
+substeps it produces only one release plus `2.160 mm` published fruit/yarn
+overlap and `0.884 mm` published strain residual, so that resolution is
+rejected. This is outcome-class refinement evidence, not equality of every
+instantaneous peak or contact count across discretizations.
 
 The direct deformable-response probe independently certifies true endpoint-mass
 coupling: a free yarn and sphere preserve center of mass during separation; a

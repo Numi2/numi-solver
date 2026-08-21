@@ -13,30 +13,33 @@ application scene.
 
 ![A deterministic cloth-solver replay lifting a produce bag from a compliant rim patch and spilling fruit onto the ground](docs/assets/cloth-pickup-spill.gif)
 
-This looping GIF contains 25 fixed-camera frames from one 2.0-second solver
+This looping GIF contains 25 handle-following camera frames from one 2.0-second solver
 trajectory. The orange ring is a virtual handle attached through finite
 compliance to ten neighboring knots across the two-row top cuff. Orange connector
 lines expose that small seam-pinch patch and its physical lag: all 1,465 cloth
 particles and all twelve fruits remain dynamic. The bag starts resting on the
 plane, rises under the seam grip, lags and folds under load, then a vertical
-hand snap carries the cuff downward while four inertially lagging fruits cross
-the top mouth and fall onto the plane. The small body-fixed marks are driven by each fruit's
+hand snap carries the cuff downward while four inertially lagging fruits
+robustly clear the top mouth and remain spilled on the plane. The small
+body-fixed marks are driven by each fruit's
 exported solver quaternion, so their motion exposes physical rolling and spin.
 
-The replay passed every mechanics gate with `released_mask=3089`,
-`escaped_mask=0`, `0.285000000` maximum warp extension, `0.069321382`
-maximum weft strain, `0.084238155` maximum woven-bottom extension,
-`116.933051607 N` peak grip force, 61,592 swept sphere/yarn impacts,
-25,202 yarn/yarn friction contacts, zero final primitive overlap and zero
+The 48-substep replay passed every mechanics gate with `released_mask=3344`,
+`escaped_mask=0`, `0.206217584` maximum warp extension, `0.089365346`
+maximum weft strain, `0.021853543` maximum woven-bottom extension,
+`237.766842811 N` peak grip force, 103,969 swept sphere/yarn impacts,
+52,768 yarn/yarn friction contacts, `0.002 um` final primitive overlap and zero
 final strain-limit violation, maximum published fruit/yarn penetration
-`0.504 um`, a friction-cone ratio never above `1.0`, and bit-identical state
-hash `0x3452eeca5b4c1c9`. The GIF is rasterized from those exported states; it is
+`0.823 um`, a friction-cone ratio never above `1.0`, and bit-identical state
+hash `0xe6aa91e33438537d`. The same motion retains plural certified release and
+passes every physical gate at 96 substeps; the rejected 24-substep run does
+not. The GIF is rasterized from the 48-substep exported states; it is
 CPU FP64 cloth evidence, not Metal-performance or Temporal Cone cloth-contact
 evidence.
 
-| Start | Seam lift | Loaded cuff | Four-fruit exit | Ground contact |
+| Start | Seam lift | Loaded cuff | Mouth exit | Four remain out |
 |:--:|:--:|:--:|:--:|:--:|
-| ![Grounded bag before the seam lift](docs/assets/cloth-pickup-0.png) | ![Bag hanging from the highlighted top cuff](docs/assets/cloth-pickup-60.png) | ![Fruit loading the deforming cuff before the downward snap](docs/assets/cloth-pickup-120.png) | ![Four fruit crossing the top mouth](docs/assets/cloth-pickup-160.png) | ![Released fruit contacting and rolling on the plane](docs/assets/cloth-pickup-200.png) |
+| ![Grounded bag before the seam lift](docs/assets/cloth-pickup-0.png) | ![Bag hanging from the highlighted top cuff](docs/assets/cloth-pickup-60.png) | ![Fruit loading the deforming cuff before the downward snap](docs/assets/cloth-pickup-120.png) | ![Fruit crossing the open 48-knot mouth](docs/assets/cloth-pickup-160.png) | ![Four released fruit contacting and rolling on the plane](docs/assets/cloth-pickup-200.png) |
 
 ## Grounded cloth produce-bag replay
 
@@ -51,10 +54,10 @@ move the exported state.
 
 The qualified replay passed with no escaped or spilled fruit, no collapsed
 render triangles, `0.004774618 m` maximum fruit/yarn contact correction,
-`0.104838336` maximum warp extension, zero maximum published
-fruit/yarn penetration, `0.743 um` final nonlocal yarn overlap, zero final
+`0.114696768` maximum warp extension, `0.001 um` maximum published
+fruit/yarn penetration, `0.934 um` final nonlocal yarn overlap, zero final
 strain-limit violation, and bit-identical replay hash
-`0xbe244ce43db42aca`. Every resolved tangent impulse remained inside its Coulomb
+`0x58bbb2338d1a5369`. Every resolved tangent impulse remained inside its Coulomb
 cone. This is CPU FP64 cloth evidence, not Metal-performance or Temporal Cone
 cloth-contact evidence.
 
@@ -72,12 +75,12 @@ attachment. All cloth nodes and all twelve fruits remain dynamic. These five fix
 |:--:|:--:|
 | ![Open cloth bag deforming under circular seam motion](docs/assets/cloth-spin-45.png) | ![Vertically lagging cloth bag at the end of the spin](docs/assets/cloth-spin-60.png) |
 
-The 48-substep spin replay passed with `0.273327554` maximum warp extension,
-`0.037261709` maximum weft strain, zero numerical escapes or releases,
-`147.388618414 N` peak attachment force, maximum published yarn overlap
-`0.342 um`, and bit-identical hash `0xee2d0f53fddd96c9`. Explicit air loads
-reached `0.142724430 N` on a yarn segment and `0.028645775 N` on a fruit while
-removing `0.738167581 J` of relative kinetic energy. The contents press into
+The 48-substep spin replay passed with `0.158858687` maximum warp extension,
+`0.030219467` maximum weft strain, zero numerical escapes or robust releases,
+`157.431556610 N` peak attachment force, maximum published yarn overlap
+`0.990 um`, and bit-identical hash `0xc0eb9fe5dd84d638`. Explicit air loads
+reached `0.142724430 N` on a yarn segment and `0.027419964 N` on a fruit while
+removing `0.734375455 J` of relative kinetic energy. The contents press into
 the deforming bag during this half-second orbit; the separate pickup replay
 contains the spill.
 
@@ -101,7 +104,7 @@ for step in 0 15 30 45 60; do
 done
 
 ./build/numi-solver-cloth-bag \
-  --scenario pickup --steps 240 --substeps 24 --iterations 32 --replays 2 \
+  --scenario pickup --steps 240 --substeps 48 --iterations 32 --replays 2 \
   --dump-frames build/cloth-pickup --dump-every 10
 
 mkdir -p build/cloth-pickup-png
@@ -230,7 +233,8 @@ The explicit-yarn cloth reference accepts `--steps N`, `--substeps N`,
 two replays. `--rolling-probe` executes the analytic solid-sphere slide-to-roll
 oracle; `--rolling-resistance-probe` checks load-capped rolling torque without
 damping vertical spin; `--aerodynamics-probe` checks analytic yarn/fruit drag,
-energy removal, subdivision invariance, and co-moving air;
+energy removal, spatial subdivision invariance, exact isolated temporal
+refinement, and co-moving air;
 `--yarn-mechanics-probe` certifies swept sphere/yarn contact and a
 finite-compliance knot-angle solve; `--self-ccd-probe` certifies continuous
 yarn/yarn contact; and `--strain-probe` certifies the unilateral extension

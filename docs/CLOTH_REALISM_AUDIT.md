@@ -28,8 +28,10 @@ to a real produce bag.
 - Air loads replace the former global linear and angular velocity dampers.
   Yarn drag resolves cylinder crossflow and axial skin friction from segment
   length and orientation; fruit drag resolves projected area and rotational
-  surface drag. The probe matches the analytic force and torque, verifies
-  kinetic-energy removal, subdivision invariance, a zero-force co-moving case,
+  surface drag. A dissipative time-integrated quadratic update replaces the
+  timestep-dependent force cutoff. The probe matches analytic force and
+  torque, verifies kinetic-energy removal, spatial subdivision invariance,
+  exact isolated coarse-versus-refined velocity, a zero-force co-moving case,
   and exact replay.
 - Cloth/plane friction replaces the former fixed horizontal decay with a
   maximum-dissipation Coulomb impulse capped by the reconstructed normal
@@ -47,14 +49,20 @@ to a real produce bag.
   reinforcement while the body yarn remains soft.
 - Release masks latch across the trajectory and are distinct from numerical
   escape. Classification uses all 48 top-rim knots, an outward-oriented mouth
-  plane, the projected opening polygon, and full-sphere clearance; it no longer
-  relies on distance to one bottom particle. The focused probe certifies
-  contained, crossing, outside-projection, and rotated-mouth cases.
+  frame, the projected opening polygon, and full-sphere clearance through the
+  cap or around every 3D rim segment after a mouth-crossing candidate. It no
+  longer relies on distance to one bottom particle. A `25 mm` clearance
+  hysteresis rejects grazing/re-entry chatter. The focused probe certifies
+  contained, grazing, through-cap, edge-exit, far-outside, and rotated-mouth
+  cases.
 - The qualified two-second pickup replay lifts the seam patch, snaps it
-  downward, and records four complete sphere crossings of the 48-knot mouth,
-  followed by plane contact. It has `escaped_mask=0`, sub-micrometer published
-  contact/strain residuals, and a bit-identical second replay; no fruit path is
-  prescribed.
+  downward, and records four robust sphere exits from the 48-knot mouth; all
+  four remain spilled on the plane. It has
+  `escaped_mask=0`, sub-micrometer published contact/strain residuals, and a
+  bit-identical second replay; no fruit path is prescribed. The same motion
+  retains plural release and all physical gates at 96 substeps. The old
+  24-substep pickup is explicitly rejected for contact/strain residual and
+  single-release outcome, so it is not visual evidence.
 - Exported fruit quaternions drive the visible body marks. The rasterizer draws
   only the exported axial yarn graph and grip connectors; it does not pose the
   bag or fruit.
