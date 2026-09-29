@@ -3549,6 +3549,14 @@ OracleResult runOracle(
     for (OracleFruit& fruit : result.fruits) {
         fruit.position += fruit.velocity * timestep;
     }
+    std::vector<DVec3> predictedParticlePositions;
+    std::vector<DVec3> predictedFruitPositions;
+    for (const OracleParticle& particle : result.particles) {
+        predictedParticlePositions.push_back(particle.position);
+    }
+    for (const OracleFruit& fruit : result.fruits) {
+        predictedFruitPositions.push_back(fruit.position);
+    }
     solveOracleSelfContact(initial, result, true);
     result.yarnContacts = buildOracleYarnContacts(initial, result);
     solveOracleYarnBatches(initial, result, true);
@@ -3869,9 +3877,16 @@ OracleResult runOracle(
             }
         }
     }
-    for (OracleParticle& particle : result.particles) {
-        particle.velocity =
-            (particle.position - particle.previous) / timestep;
+    for (std::size_t index = 0; index < result.particles.size(); ++index) {
+        OracleParticle& particle = result.particles[index];
+        particle.velocity +=
+            (particle.position - predictedParticlePositions[index]) / timestep;
+        if (initial.config.constraintCounts.z != 0u &&
+            particle.position.z == initial.config.clothMaterial.x &&
+            particle.previous.z >= initial.config.clothMaterial.x &&
+            particle.predictedVerticalVelocity < 0.0) {
+            particle.velocity.z = 0.0;
+        }
         particle.groundNormalImpulse = 0.0;
         if (initial.config.constraintCounts.z != 0u &&
             particle.inverseMass > 0.0 &&
@@ -3884,8 +3899,18 @@ OracleResult runOracle(
             );
         }
     }
-    for (OracleFruit& fruit : result.fruits) {
-        fruit.velocity = (fruit.position - fruit.previous) / timestep;
+    for (std::size_t index = 0; index < result.fruits.size(); ++index) {
+        OracleFruit& fruit = result.fruits[index];
+        fruit.velocity +=
+            (fruit.position - predictedFruitPositions[index]) / timestep;
+        if (initial.config.constraintCounts.z != 0u &&
+            fruit.position.z == fruit.radius && fruit.previous.z >= fruit.radius &&
+            fruit.groundNormalImpulse > 0.0) {
+            fruit.groundNormalImpulse = std::max(
+                0.0, fruit.groundNormalImpulse - fruit.velocity.z / fruit.inverseMass
+            );
+            fruit.velocity.z = 0.0;
+        }
     }
     applyOracleClothGroundFriction(initial, result);
     applyOracleSelfFriction(initial, result);
@@ -4933,7 +4958,10 @@ void dumpGPUOBJ(
                << fruit.orientation.y << ' ' << fruit.orientation.z
                << " angular_velocity " << fruit.angularVelocity.x << ' '
                << fruit.angularVelocity.y << ' '
-               << fruit.angularVelocity.z << '\n';
+               << fruit.angularVelocity.z << " linear_velocity "
+               << fruit.velocityAndGroundImpulse.x << ' '
+               << fruit.velocityAndGroundImpulse.y << ' '
+               << fruit.velocityAndGroundImpulse.z << '\n';
     }
 }
 
@@ -5066,6 +5094,36 @@ TrajectoryReplay runTrajectoryReplay(
     );
     TrajectoryReplay replay;
     replay.frameHashes.reserve(steps);
+    std::ofstream fruitTrace;
+    if (!dumpPrefix.empty()) {
+        fruitTrace.open(dumpPrefix + "-fruits.csv");
+        if (!fruitTrace) {
+            throw std::runtime_error("failed to open fruit trajectory trace");
+        }
+        fruitTrace << "frame,time_s,fruit,x_m,y_m,z_m,radius_m,vx_m_s,vy_m_s,vz_m_s,"
+                      "wx_rad_s,wy_rad_s,wz_rad_s,last_substep_ground_impulse_Ns,released\n";
+        fruitTrace << std::setprecision(12);
+    }
+    const auto traceFruits = [&](const std::uint32_t frame,
+                                  const auto& fruits,
+                                  const std::uint32_t releasedMask) {
+        if (!fruitTrace.is_open()) {
+            return;
+        }
+        for (std::size_t index = 0; index < fruits.size(); ++index) {
+            const auto& fruit = fruits[index];
+            fruitTrace << frame << ',' << static_cast<double>(frame) *
+                    kPickupSubstepsPerFrame * kTimestep << ',' << index << ','
+                << fruit.positionAndInverseMass.x << ',' << fruit.positionAndInverseMass.y << ','
+                << fruit.positionAndInverseMass.z << ',' << fruit.previousAndRadius.w << ','
+                << fruit.velocityAndGroundImpulse.x << ',' << fruit.velocityAndGroundImpulse.y << ','
+                << fruit.velocityAndGroundImpulse.z << ',' << fruit.angularVelocity.x << ','
+                << fruit.angularVelocity.y << ',' << fruit.angularVelocity.z << ','
+                << fruit.velocityAndGroundImpulse.w << ',' << ((releasedMask >> index) & 1u) << '\n';
+        }
+        fruitTrace.flush();
+    };
+    traceFruits(0u, state.fruits, state.initialReleasedMask);
     if (!dumpPrefix.empty()) {
         dumpGPUOBJ(
             dumpPrefix + "-0.obj",
@@ -5144,6 +5202,7 @@ TrajectoryReplay runTrajectoryReplay(
             state, replay.final, configs.back()
         );
         const std::uint32_t completedSteps = step + 1u;
+        traceFruits(completedSteps, replay.final.fruits, replay.final.releaseStatus.masks.y);
         if (!dumpPrefix.empty() &&
             (completedSteps % dumpEvery == 0u ||
              completedSteps == steps)) {
@@ -5403,7 +5462,97 @@ double kineticEnergy(const GPUResult& result) {
     return energy;
 }
 
+int runFruitFlightProbe(
+    id<MTLDevice> device,
+    id<MTLCommandQueue> queue,
+    const Pipelines& pipelines
+) {
+    bool passed = true;
+    // The same kernels and 48-substep timestep as the bag, without a
+    // collision partner. Translation must not change gravitational motion.
+    for (const float height : {1.0f, 8.0f}) {
+        for (const std::uint32_t refinement : {1u, 2u}) {
+            InitialState initial;
+            initial.config.control = u4(
+                NUMI_CLOTH_BAG_GPU_ABI_VERSION, 1u, 0u, 0u
+            );
+            initial.config.constraintCounts = u4(0u, 0u, 0u, 1u);
+            const float timestep = kTimestep / refinement;
+            initial.config.gravityAndTimestep = f4(0, 0, -9.81f, timestep);
+            NumiClothBagGPUParticle particle{};
+            particle.positionAndInverseMass = f4(height, height, height, 1);
+            particle.previousAndMass = f4(height, height, height, 1);
+            particle.velocity = f4(0.001f, -0.002f, 0, 0);
+            initial.particles = {particle};
+            initial.fruits = {makeProbeFruit({height, height, height}, 5, 0.05f)};
+            initial.fruits[0].velocityAndGroundImpulse = particle.velocity;
+            const std::uint32_t steps = 576u * refinement;
+            const std::vector<NumiClothBagGPUConfig> configs(steps, initial.config);
+            const GPUResult first = runGPU(device, queue, pipelines, initial, 0, 0, configs);
+            const GPUResult second = runGPU(device, queue, pipelines, initial, 0, 0, configs);
+            const double time = static_cast<double>(steps) * timestep;
+            const DVec3 expectedVelocity{0.001, -0.002, -9.81f * time};
+            const DVec3 expectedPosition{
+                height + 0.001 * time,
+                height - 0.002 * time,
+                height - 0.5 * 9.81f * time * (time + timestep)
+            };
+            const double velocityError = std::max(
+                length(d3(first.fruits[0].velocityAndGroundImpulse) - expectedVelocity),
+                length(d3(first.particles[0].velocity) - expectedVelocity)
+            );
+            const double positionError = std::max(
+                length(d3(first.fruits[0].positionAndInverseMass) - expectedPosition),
+                length(d3(first.particles[0].positionAndInverseMass) - expectedPosition)
+            );
+            const bool exact = bitwiseEqualPhysicalState(first, second);
+            const bool valid = first.failure == 0 && second.failure == 0 &&
+                exact && velocityError < 2e-5 && positionError < 5e-4;
+            passed = passed && valid;
+            std::cout << "fruit_flight height=" << height
+                      << " refinement=" << refinement
+                      << " simulated_seconds=" << time
+                      << " vertical_velocity=" << first.fruits[0].velocityAndGroundImpulse.z
+                      << " expected_vertical_velocity=" << expectedVelocity.z
+                      << " velocity_error=" << velocityError
+                      << " position_error=" << positionError
+                      << " replay_exact=" << exact << " passed=" << valid << '\n';
+        }
+    }
+    for (const std::uint32_t refinement : {1u, 2u}) {
+        InitialState initial;
+        initial.config.control = u4(NUMI_CLOTH_BAG_GPU_ABI_VERSION, 0, 0, 0);
+        initial.config.constraintCounts = u4(0, 0, 1, 1);
+        const float timestep = kTimestep / refinement;
+        initial.config.gravityAndTimestep = f4(0, 0, -9.81f, timestep);
+        initial.fruits = {makeProbeFruit({0, 0, 0.2}, 5, 0.05f)};
+        const std::vector<NumiClothBagGPUConfig> configs(1800u * refinement, initial.config);
+        const GPUResult first = runGPU(device, queue, pipelines, initial, 1, 0, configs);
+        const GPUResult second = runGPU(device, queue, pipelines, initial, 1, 0, configs);
+        const auto& fruit = first.fruits[0];
+        const double velocity = length(d3(fruit.velocityAndGroundImpulse));
+        const double clearance = fruit.positionAndInverseMass.z - fruit.previousAndRadius.w;
+        const double expectedImpulse = 9.81f * timestep / fruit.positionAndInverseMass.w;
+        const double impulseError = std::abs(fruit.velocityAndGroundImpulse.w - expectedImpulse);
+        const bool exact = bitwiseEqualPhysicalState(first, second);
+        const bool valid = first.failure == 0 && second.failure == 0 && exact &&
+            std::abs(clearance) < 1e-7 && velocity < 1e-7 && impulseError < 1e-7;
+        passed = passed && valid;
+        std::cout << "fruit_drop refinement=" << refinement
+                  << " simulated_seconds=" << configs.size() * timestep
+                  << " clearance=" << clearance << " speed=" << velocity
+                  << " support_impulse=" << fruit.velocityAndGroundImpulse.w
+                  << " expected_support_impulse=" << expectedImpulse
+                  << " support_impulse_error=" << impulseError
+                  << " replay_exact=" << exact << " passed=" << valid << '\n';
+    }
+    std::cout << "device=" << device.name.UTF8String
+              << " fruit_flight_probe_passed=" << passed << '\n';
+    return passed ? 0 : 1;
+}
+
 int run(const int argc, const char* const* argv) {
+    bool fruitFlightProbe = false;
     std::uint32_t replays = 2u;
     std::uint32_t iterations = 32u;
     std::uint32_t strainSweeps = 3u;
@@ -5424,7 +5573,9 @@ int run(const int argc, const char* const* argv) {
     std::string metallibPath = NUMI_TEMPORAL_CONE_METALLIB;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string_view value(argv[argument]);
-        if (value == "--replays" && argument + 1 < argc) {
+        if (value == "--fruit-flight-probe") {
+            fruitFlightProbe = true;
+        } else if (value == "--replays" && argument + 1 < argc) {
             replays = static_cast<std::uint32_t>(
                 std::stoul(argv[++argument])
             );
@@ -5498,7 +5649,8 @@ int run(const int argc, const char* const* argv) {
                    "[--grounded-steps N] [--grounded-dump-every N] "
                    "[--spin-prefix PATH] [--spin-steps N] "
                    "[--spin-dump-every N] [--pickup-prefix PATH] "
-                   "[--pickup-steps N] [--pickup-dump-every N]\n";
+                   "[--pickup-steps N] [--pickup-dump-every N] "
+                   "[--fruit-flight-probe]\n";
             return 0;
         } else {
             throw std::runtime_error(
@@ -5559,10 +5711,6 @@ int run(const int argc, const char* const* argv) {
             "cadence"
         );
     }
-
-    const InitialState initial = makeInitialState();
-    const bool coloringExact = verifyColoring(initial);
-    const OracleResult oracle = runOracle(initial, iterations, strainSweeps);
 
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
     if (device == nil) {
@@ -5666,6 +5814,13 @@ int run(const int argc, const char* const* argv) {
             device, library, @"numi_cloth_bag_update_released_fruit"
         ),
     };
+
+    if (fruitFlightProbe) {
+        return runFruitFlightProbe(device, queue, pipelines);
+    }
+    const InitialState initial = makeInitialState();
+    const bool coloringExact = verifyColoring(initial);
+    const OracleResult oracle = runOracle(initial, iterations, strainSweeps);
 
     std::vector<GPUResult> gpuResults;
     gpuResults.reserve(replays);

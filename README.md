@@ -11,6 +11,12 @@ application scene.
 
 ## Pick up the bag and spill the fruit
 
+The committed images and full-trajectory measurements below precede the
+September 29 [fruit free-flight and bench-support correction](docs/FRUIT_FALL.md).
+Its native gravity, refinement, and landing checks pass; replacement full-spill
+qualification is in progress. The historical GIF does not qualify the changed
+source.
+
 ![A deterministic Metal cloth replay lifting a woven produce bag by its reinforced top opening seam and spilling fruit onto the ground](docs/assets/cloth-metal-pickup-spill.gif)
 
 This 49-frame GIF is rasterized from one continuous four-second Apple Metal

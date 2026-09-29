@@ -354,16 +354,47 @@ private func render(
     context.setFillColor(color(250, 249, 246))
     context.fill(CGRect(x: 0, y: 0, width: width, height: height))
 
-    let ground = project(Vec3(x: 0, y: 0, z: 0)).point
-    context.saveGState()
-    context.setFillColor(color(69, 52, 34, 0.12))
-    context.fillEllipse(in: CGRect(
-        x: ground.x - CGFloat(0.52 * scale),
-        y: ground.y - CGFloat(0.065 * scale),
-        width: CGFloat(1.04 * scale),
-        height: CGFloat(0.13 * scale)
-    ))
-    context.restoreGState()
+    // Draw the solver's z=0 support plane in the same world projection as
+    // the fruit. A fixed screen-space oval gave no visible landing surface
+    // and made grounded fruit away from the origin look suspended.
+    context.setFillColor(color(232, 225, 211))
+    let benchCorners = [
+        Vec3(x: -4, y: -4, z: 0), Vec3(x: 4, y: -4, z: 0),
+        Vec3(x: 4, y: 4, z: 0), Vec3(x: -4, y: 4, z: 0)
+    ].map { project($0).point }
+    context.move(to: benchCorners[0])
+    for corner in benchCorners.dropFirst() { context.addLine(to: corner) }
+    context.closePath()
+    context.fillPath()
+    context.setStrokeColor(color(152, 130, 101, 0.18))
+    context.setLineWidth(0.7)
+    for line in -16...16 {
+        let coordinate = Double(line) * 0.25
+        for (first, second) in [
+            (Vec3(x: coordinate, y: -4, z: 0), Vec3(x: coordinate, y: 4, z: 0)),
+            (Vec3(x: -4, y: coordinate, z: 0), Vec3(x: 4, y: coordinate, z: 0))
+        ] {
+            context.move(to: project(first).point)
+            context.addLine(to: project(second).point)
+            context.strokePath()
+        }
+    }
+    for fruit in fruits {
+        let clearance = max(0, fruit.center.z - fruit.radius)
+        let shadowRadius = fruit.radius * 1.1 + 0.08 * clearance
+        context.setFillColor(color(69, 52, 34, 0.24 / (1 + 4 * clearance)))
+        for sample in 0...40 {
+            let angle = 2 * Double.pi * Double(sample) / 40
+            let point = project(Vec3(
+                x: fruit.center.x + shadowRadius * cos(angle),
+                y: fruit.center.y + shadowRadius * sin(angle), z: 0
+            )).point
+            if sample == 0 { context.move(to: point) }
+            else { context.addLine(to: point) }
+        }
+        context.closePath()
+        context.fillPath()
+    }
 
     var primitives: [Primitive] = []
     primitives.reserveCapacity(6_900)

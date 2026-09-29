@@ -661,6 +661,14 @@ if(BUILD_TESTING)
             TIMEOUT 30
     )
     add_test(
+        NAME cloth_bag.metal_fruit_flight
+        COMMAND $<TARGET_FILE:numi-solver-cloth-metal> --fruit-flight-probe
+    )
+    set_tests_properties(
+        cloth_bag.metal_fruit_flight
+        PROPERTIES LABELS "metal;physics;cloth;fruit;gravity;ground;refinement" TIMEOUT 60
+    )
+    add_test(
         NAME cloth_bag.metal_internal_contact
         COMMAND $<TARGET_FILE:numi-solver-cloth-metal>
             --replays 2

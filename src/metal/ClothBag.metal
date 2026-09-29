@@ -2899,9 +2899,23 @@ kernel void numi_cloth_bag_finalize_substep(
     NumiClothBagGPUParticle particle = particles[index];
     const float inverseTimestep = 1.0f / config.gravityAndTimestep.w;
     const float predictedVerticalVelocity = particle.velocity.w;
-    particle.velocity.xyz =
-        (particle.positionAndInverseMass.xyz - particle.previousAndMass.xyz) *
-        inverseTimestep;
+    // Keep the force-integrated velocity. Reconstruct only constraint motion,
+    // relative to the identically rounded free prediction from advance_positions.
+    // Differencing absolute endpoints feeds FP32 position quantization back
+    // into velocity and can erase gravity at small substeps.
+    const float3 prediction = fma(
+        particle.velocity.xyz,
+        float3(config.gravityAndTimestep.w),
+        particle.previousAndMass.xyz
+    );
+    particle.velocity.xyz +=
+        (particle.positionAndInverseMass.xyz - prediction) * inverseTimestep;
+    if (config.constraintCounts.z != 0u &&
+        particle.positionAndInverseMass.z == config.clothMaterial.x &&
+        particle.previousAndMass.z >= config.clothMaterial.x &&
+        predictedVerticalVelocity < 0.0f) {
+        particle.velocity.z = 0.0f;
+    }
     particle.velocity.w = 0.0f;
     if (config.constraintCounts.z != 0u &&
         particle.positionAndInverseMass.w > 0.0f &&
@@ -2931,9 +2945,30 @@ kernel void numi_cloth_bag_finalize_fruit(
         return;
     }
     NumiClothBagGPUFruit fruit = fruits[index];
-    fruit.velocityAndGroundImpulse.xyz =
-        (fruit.positionAndInverseMass.xyz - fruit.previousAndRadius.xyz) /
+    const float3 prediction = fma(
+        fruit.velocityAndGroundImpulse.xyz,
+        float3(config.gravityAndTimestep.w),
+        fruit.previousAndRadius.xyz
+    );
+    fruit.velocityAndGroundImpulse.xyz +=
+        (fruit.positionAndInverseMass.xyz - prediction) /
         config.gravityAndTimestep.w;
+    // This plane is inelastic. A fruit accepted exactly on it has no normal
+    // motion, including the fractional impact substep. Publish the matching
+    // velocity impulse rather than a quantized positional reaction; otherwise
+    // support and load-dependent friction chatter as the timestep is refined.
+    if (config.constraintCounts.z != 0u &&
+        fruit.positionAndInverseMass.z == fruit.previousAndRadius.w &&
+        fruit.previousAndRadius.z >= fruit.previousAndRadius.w &&
+        fruit.velocityAndGroundImpulse.w > 0.0f) {
+        fruit.velocityAndGroundImpulse.w = max(
+            0.0f,
+            fruit.velocityAndGroundImpulse.w -
+                fruit.velocityAndGroundImpulse.z /
+                    fruit.positionAndInverseMass.w
+        );
+        fruit.velocityAndGroundImpulse.z = 0.0f;
+    }
     if (!all(isfinite(fruit.velocityAndGroundImpulse))) {
         recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
         return;

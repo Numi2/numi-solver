@@ -4741,6 +4741,8 @@ SimulationResult simulate(
     std::vector<Vec3> predictedClothVelocities(
         result.cloth.particles.size()
     );
+    std::vector<Vec3> predictedClothPositions(result.cloth.particles.size());
+    std::vector<Vec3> predictedFruitPositions(result.balls.size());
     std::vector<double> clothGroundNormalImpulses(
         result.cloth.particles.size()
     );
@@ -4811,6 +4813,9 @@ SimulationResult simulate(
                 }
                 particle.position += particle.velocity * timestep;
             }
+            for (std::size_t index = 0; index < result.cloth.particles.size(); ++index) {
+                predictedClothPositions[index] = result.cloth.particles[index].position;
+            }
             for (Ball& ball : result.balls) {
                 ball.previous = ball.position;
                 ball.velocity += gravity * timestep;
@@ -4823,6 +4828,9 @@ SimulationResult simulate(
             );
             for (Ball& ball : result.balls) {
                 ball.position += ball.velocity * timestep;
+            }
+            for (std::size_t index = 0; index < result.balls.size(); ++index) {
+                predictedFruitPositions[index] = result.balls[index].position;
             }
             if (scenario != Scenario::spin) {
                 result.metrics.maximumSweptGroundAdvance = std::max(
@@ -5192,8 +5200,14 @@ SimulationResult simulate(
                     particle.velocity =
                         (particle.position - particle.previous) / timestep;
                 } else {
-                    particle.velocity =
-                        (particle.position - particle.previous) / timestep;
+                    particle.velocity +=
+                        (particle.position - predictedClothPositions[index]) / timestep;
+                    if (scenario != Scenario::spin &&
+                        particle.position.z == kClothRadius &&
+                        particle.previous.z >= kClothRadius &&
+                        predictedClothVelocities[index].z < 0.0) {
+                        particle.velocity.z = 0.0;
+                    }
                     if (scenario != Scenario::spin &&
                         particle.position.z <= kClothRadius + 1.0e-6) {
                         const double normalVelocityChange =
@@ -5206,8 +5220,16 @@ SimulationResult simulate(
                     }
                 }
             }
-            for (Ball& ball : result.balls) {
-                ball.velocity = (ball.position - ball.previous) / timestep;
+            for (std::size_t index = 0; index < result.balls.size(); ++index) {
+                Ball& ball = result.balls[index];
+                ball.velocity += (ball.position - predictedFruitPositions[index]) / timestep;
+                if (scenario != Scenario::spin && ball.position.z == ball.radius &&
+                    ball.previous.z >= ball.radius && groundNormalImpulses[index] > 0.0) {
+                    groundNormalImpulses[index] = std::max(
+                        0.0, groundNormalImpulses[index] - ball.velocity.z / ball.inverseMass
+                    );
+                    ball.velocity.z = 0.0;
+                }
             }
             applyClothGroundFriction(
                 result.cloth.particles,
