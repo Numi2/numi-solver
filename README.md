@@ -11,6 +11,36 @@ application scene.
 
 ## Pick up the bag and spill the fruit
 
+### Latest qualified replay · September 29, 2026
+
+[![Watch the latest CPU FP64 replay: fruit leave the deformable bag, fall, and land on the support plane](docs/assets/cloth-pickup-spill.gif)](docs/assets/cloth-pickup-spill.mp4)
+
+The corrected four-second CPU FP64 reference lifts, snaps, and recovers the
+compliant seam grip, then holds it for two seconds. Two full 48-substep,
+32-iteration replays pass with identical physical hash `0x23465c2d4a1627f4`.
+Its full-sphere mouth exits are fruits 0, 4, 10, and 11 (`released_mask=3089`);
+all four finish at their contact radii with zero vertical velocity. They still
+roll tangentially. Peak grip force is `143.545322797 N`; maximum published
+fruit/yarn and nonlocal yarn overlaps are `0.200 um` and `0.960 um`, with
+zero published ground penetration and strain-limit violation.
+
+The support plane is unbounded. Two released fruits legitimately roll beyond
+five metres (`outside_diagnostic_bounds_mask=2064`), while numerical escape is
+zero. The display covers the complete plane and all 49 exported states share
+one fixed camera. An independent geometric audit passes every supplied state.
+No bag or fruit path is prescribed. This CPU result is distinct from the
+pending full Metal replay and from physical material calibration.
+
+[Watch the video](docs/assets/cloth-pickup-spill.mp4),
+[inspect the qualification log](docs/assets/cloth-pickup-qualified.log), or
+[check source, binary, state and frame fingerprints](docs/assets/cloth-pickup-evidence.json).
+
+| Start | Seam lift | Loaded cuff | Mouth exit | Four grounded after settling |
+|:--:|:--:|:--:|:--:|:--:|
+| ![Grounded bag before the FP64 seam lift](docs/assets/cloth-pickup-0.png) | ![FP64 bag hanging from the highlighted top cuff](docs/assets/cloth-pickup-60.png) | ![Fruit loading the deforming FP64 cuff before the downward snap](docs/assets/cloth-pickup-120.png) | ![Fruit crossing the open FP64 mouth](docs/assets/cloth-pickup-160.png) | ![Four FP64 released fruits grounded and rolling after the settling tail](docs/assets/cloth-pickup-480.png) |
+
+### Earlier Apple Metal replay
+
 The Metal images and full-trajectory measurements in this section precede the
 September 29 [fruit free-flight, bench-support, and packing fixes](docs/FRUIT_FALL.md).
 Native gravity, refinement, and landing checks pass; replacement full Metal
@@ -72,34 +102,6 @@ from those selected indices rather than a fixed rendering location.
 | Grounded start | Top-seam lift | Mouth exit | Released descent | Two grounded |
 |:--:|:--:|:--:|:--:|:--:|
 | ![Grounded woven bag before the Metal seam lift](docs/assets/cloth-metal-pickup-0.png) | ![Metal cloth bag hanging from the highlighted top cuff](docs/assets/cloth-metal-pickup-60.png) | ![Fruit crossing the open 48-knot mouth in the Metal replay](docs/assets/cloth-metal-pickup-160.png) | ![Released fruit descending while the Metal handle becomes stationary](docs/assets/cloth-metal-pickup-240.png) | ![Two released fruit physically grounded after the fixed-handle settling tail](docs/assets/cloth-metal-pickup-480.png) |
-
-### Independent FP64 reference
-
-![A deterministic FP64 cloth reference lifting a produce bag from a compliant rim patch and spilling fruit onto the ground](docs/assets/cloth-pickup-spill.gif)
-
-The corrected four-second CPU FP64 reference lifts, snaps, and recovers the
-compliant seam grip, then holds it for two seconds. Two full 48-substep,
-32-iteration replays pass with identical physical hash `0x23465c2d4a1627f4`.
-Its full-sphere mouth exits are fruits 0, 4, 10, and 11 (`released_mask=3089`);
-all four finish at their contact radii with zero vertical velocity. They still
-roll tangentially. Peak grip force is `143.545322797 N`; maximum published
-fruit/yarn and nonlocal yarn overlaps are `0.200 um` and `0.960 um`, with
-zero published ground penetration and strain-limit violation.
-
-The support plane is unbounded. Two released fruits legitimately roll beyond
-five metres (`outside_diagnostic_bounds_mask=2064`), while numerical escape is
-zero. The display covers the complete plane and all 49 exported states share
-one fixed camera. An independent geometric audit passes every supplied state.
-No bag or fruit path is prescribed. This CPU result is distinct from the
-pending full Metal replay and from physical material calibration.
-
-[Watch the video](docs/assets/cloth-pickup-spill.mp4),
-[inspect the qualification log](docs/assets/cloth-pickup-qualified.log), or
-[check source, binary, state and frame fingerprints](docs/assets/cloth-pickup-evidence.json).
-
-| Start | Seam lift | Loaded cuff | Mouth exit | Four grounded after settling |
-|:--:|:--:|:--:|:--:|:--:|
-| ![Grounded bag before the FP64 seam lift](docs/assets/cloth-pickup-0.png) | ![FP64 bag hanging from the highlighted top cuff](docs/assets/cloth-pickup-60.png) | ![Fruit loading the deforming FP64 cuff before the downward snap](docs/assets/cloth-pickup-120.png) | ![Fruit crossing the open FP64 mouth](docs/assets/cloth-pickup-160.png) | ![Four FP64 released fruits grounded and rolling after the settling tail](docs/assets/cloth-pickup-480.png) |
 
 ## Grounded cloth produce-bag replay
 
