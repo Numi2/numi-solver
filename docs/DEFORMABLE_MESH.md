@@ -85,6 +85,30 @@ python3 tools/audit_deformable_mesh_refinement.py \
   build/deformable-mesh-level-2 --output build/deformable-mesh-refinement-audit.json
 ```
 
+## Next native spatial refinement
+
+A third uniform refinement adds a fourth resolution: **2,057 shared nodes,
+10,240 tetrahedra and 1,280 boundary triangles**. It preserves the same
+piecewise-flat body, material and pre-existing rest nodes. Construction now
+builds incidence once per element and gathers by owning node; the deterministic
+element/corner order remains byte-identical to the previous full scan at all
+four resolutions. The [CPU topology probe](assets/deformable-mesh-topology-3-evidence.json)
+passes without occupying the GPU used by the full cloth replay.
+
+This is construction evidence. The new native resolution still requires its
+complete 0.5-second run, two exact replays, half timestep, five transactional
+rejections and independent topology/trajectory audit before publication as
+qualified media. The existing 36.39 mm spatial comparison remains FAIL until
+a new matched-node comparison establishes otherwise. Higher element count
+alone is not convergence.
+
+```sh
+./build/numi-solver-deformable-mesh --topology-probe
+./build/numi-solver-deformable-mesh --mesh-refinement 3 \
+  --trajectory build/deformable-mesh-level-3
+python3 tools/audit_deformable_mesh_trajectory.py build/deformable-mesh-level-3
+```
+
 ## Original 20-element M4 qualification
 
 The [original coarse video](assets/deformable-mesh-drop.mp4) remains available.

@@ -422,6 +422,9 @@ if(BUILD_TESTING)
         PROPERTIES LABELS "physics;cloth;contact;ccd;finite_bench" TIMEOUT 30)
     add_test(NAME deformable_tet.constitutive COMMAND $<TARGET_FILE:numi-solver-deformable-tet>)
     set_tests_properties(deformable_tet.constitutive PROPERTIES LABELS "metal;physics;deformable" TIMEOUT 30)
+    add_test(NAME deformable_mesh.topology COMMAND $<TARGET_FILE:numi-solver-deformable-mesh> --topology-probe)
+    set_tests_properties(deformable_mesh.topology
+        PROPERTIES LABELS "cpu;geometry;deformable;mesh_refinement" TIMEOUT 30)
     add_test(NAME deformable_mesh.drop COMMAND $<TARGET_FILE:numi-solver-deformable-mesh>)
     set_tests_properties(deformable_mesh.drop PROPERTIES LABELS "metal;physics;deformable;contact" TIMEOUT 60)
     add_test(NAME deformable_mesh.refined_drop
@@ -432,6 +435,10 @@ if(BUILD_TESTING)
         COMMAND $<TARGET_FILE:numi-solver-deformable-mesh> --mesh-refinement 2)
     set_tests_properties(deformable_mesh.refined_drop_1280
         PROPERTIES LABELS "metal;physics;deformable;contact;mesh_refinement" TIMEOUT 180)
+    add_test(NAME deformable_mesh.refined_drop_10240
+        COMMAND $<TARGET_FILE:numi-solver-deformable-mesh> --mesh-refinement 3)
+    set_tests_properties(deformable_mesh.refined_drop_10240
+        PROPERTIES LABELS "metal;physics;deformable;contact;mesh_refinement" TIMEOUT 300)
     add_test(
         NAME temporal_cone.math
         COMMAND $<TARGET_FILE:numi-solver-math>

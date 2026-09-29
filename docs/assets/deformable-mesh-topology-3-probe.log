@@ -1,0 +1,6 @@
+----------------------------------------------------------
+mesh_topology_refinement=0 shared_nodes=13 tetrahedra=20 boundary_triangles=20 sorted_incidence_byte_identical_to_legacy=1 expected_counts=1
+mesh_topology_refinement=1 shared_nodes=55 tetrahedra=160 boundary_triangles=80 sorted_incidence_byte_identical_to_legacy=1 expected_counts=1
+mesh_topology_refinement=2 shared_nodes=309 tetrahedra=1280 boundary_triangles=320 sorted_incidence_byte_identical_to_legacy=1 expected_counts=1
+mesh_topology_refinement=3 shared_nodes=2057 tetrahedra=10240 boundary_triangles=1280 sorted_incidence_byte_identical_to_legacy=1 expected_counts=1
+mesh_topology_probe_qualified=1

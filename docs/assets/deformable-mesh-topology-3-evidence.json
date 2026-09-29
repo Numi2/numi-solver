@@ -1,0 +1,40 @@
+{
+  "schema": "numi.deformable-mesh.refinement3-topology.v1",
+  "source_sha256": {
+    "tools/deformable_mesh.mm": "23520b8203969c1daf1f5944fae083396d175e27289b7b211fa134d2556a6d74",
+    "CMakeLists.txt": "6cbcced7a175e1de1574d19a38e572a61cbf43d00c3ad792809e33e36e88e738"
+  },
+  "topology_probe_executable_sha256": "e775247bc1c3884a80fb88294f4f8535c86d77a026eccfd19abdb5b0f1964a26",
+  "probe_log_sha256": "d2fdf3106bc859c158495dfd6159358b99c0371e45c9119edb5df6e9ec30b75b",
+  "refinements": [
+    {
+      "level": 0,
+      "nodes": 13,
+      "tetrahedra": 20,
+      "boundary_triangles": 20,
+      "sorted_incidence_byte_identity_with_previous_enumerator": true
+    },
+    {
+      "level": 1,
+      "nodes": 55,
+      "tetrahedra": 160,
+      "boundary_triangles": 80,
+      "sorted_incidence_byte_identity_with_previous_enumerator": true
+    },
+    {
+      "level": 2,
+      "nodes": 309,
+      "tetrahedra": 1280,
+      "boundary_triangles": 320,
+      "sorted_incidence_byte_identity_with_previous_enumerator": true
+    },
+    {
+      "level": 3,
+      "nodes": 2057,
+      "tetrahedra": 10240,
+      "boundary_triangles": 1280,
+      "sorted_incidence_byte_identity_with_previous_enumerator": true
+    }
+  ],
+  "boundary": "CPU topology/construction and incidence ordering only. Shader, authored body and material unchanged. Actual complete native 10240-element execution, timestep check, invalid-candidate transaction checks and spatial comparison remain required."
+}

@@ -103,10 +103,16 @@ Mesh makeMesh(const uint32_t refinement=0){
         for(int n=0;n<4;++n)masses[corner(element.nodes,n)]+=1000*element.inverseRestRows[0].w/4;
     }
     for(double mass:masses)mesh.velocityAndMass.push_back({0,0,0,float(mass)});
+    std::vector<std::vector<mr_uint4>> nodeIncidence(mesh.positions.size());
+    for(uint32_t element=0;element<mesh.elements.size();++element)for(uint32_t n=0;n<4;++n){
+        const uint32_t node=corner(mesh.elements[element].nodes,n);
+        nodeIncidence[node].push_back({element,n,node,0});
+    }
     for(uint32_t node=0;node<mesh.positions.size();++node){
         mesh.offsets.push_back(uint32_t(mesh.incidence.size()));
-        for(uint32_t element=0;element<mesh.elements.size();++element)for(uint32_t n=0;n<4;++n)
-            if(corner(mesh.elements[element].nodes,n)==node)mesh.incidence.push_back({element,n,node,0});
+        // Appending in element/corner order preserves the previous sorted
+        // gather exactly, without rescanning every element for every node.
+        mesh.incidence.insert(mesh.incidence.end(),nodeIncidence[node].begin(),nodeIncidence[node].end());
     }
     mesh.offsets.push_back(uint32_t(mesh.incidence.size()));
     if(mesh.incidence.size()!=4*mesh.elements.size())throw std::runtime_error("incorrect incidence count");
@@ -229,6 +235,32 @@ void exportFrames(const std::string& prefix,const Mesh& mesh,const std::vector<F
         for(auto face:mesh.faces)obj<<"f "<<face[0]+1<<' '<<face[1]+1<<' '<<face[2]+1<<'\n';
     }
 }
+int topologyProbe(){
+    bool pass=true;
+    const std::array<uint32_t,4> expectedNodes{13,55,309,2057};
+    for(uint32_t level=0;level<4;++level){
+        const auto mesh=makeMesh(level);
+        std::vector<mr_uint4> legacy;
+        std::vector<uint32_t> offsets;
+        for(uint32_t node=0;node<mesh.positions.size();++node){
+            offsets.push_back(uint32_t(legacy.size()));
+            for(uint32_t element=0;element<mesh.elements.size();++element)for(uint32_t n=0;n<4;++n)
+                if(corner(mesh.elements[element].nodes,n)==node)legacy.push_back({element,n,node,0});
+        }
+        offsets.push_back(uint32_t(legacy.size()));
+        const bool exact=offsets==mesh.offsets&&legacy.size()==mesh.incidence.size()&&
+            std::memcmp(legacy.data(),mesh.incidence.data(),legacy.size()*sizeof(mr_uint4))==0;
+        const bool counts=mesh.positions.size()==expectedNodes[level]&&
+            mesh.elements.size()==(20u<<(3*level))&&mesh.faces.size()==(20u<<(2*level));
+        pass&=exact&&counts;
+        std::cout<<"mesh_topology_refinement="<<level<<" shared_nodes="<<mesh.positions.size()
+            <<" tetrahedra="<<mesh.elements.size()<<" boundary_triangles="<<mesh.faces.size()
+            <<" sorted_incidence_byte_identical_to_legacy="<<exact<<" expected_counts="<<counts<<'\n';
+    }
+    std::cout<<"mesh_topology_probe_qualified="<<pass<<'\n';
+    return pass?0:1;
+}
+
 int run(const std::string& prefix,const uint32_t refinement){
     auto device=MTLCreateSystemDefaultDevice();if(!device)throw std::runtime_error("Metal device unavailable");
     NSError* error=nil;
@@ -300,15 +332,17 @@ int run(const std::string& prefix,const uint32_t refinement){
 }
 }
 int main(int argc,const char* const* argv){@autoreleasepool{try{
-    std::string prefix;uint32_t refinement=0;
+    std::string prefix;uint32_t refinement=0;bool topologyOnly=false;
     for(int argument=1;argument<argc;++argument){
         std::string option=argv[argument];
         if(option=="--trajectory"&&argument+1<argc)prefix=argv[++argument];
+        else if(option=="--topology-probe")topologyOnly=true;
         else if(option=="--mesh-refinement"&&argument+1<argc){
             std::string value=argv[++argument];
-            if(value!="0"&&value!="1"&&value!="2")throw std::runtime_error("mesh refinement must be 0, 1, or 2");
+            if(value!="0"&&value!="1"&&value!="2"&&value!="3")throw std::runtime_error("mesh refinement must be 0, 1, 2, or 3");
             refinement=uint32_t(std::stoul(value));
-        } else throw std::runtime_error("usage: numi-solver-deformable-mesh [--trajectory PREFIX] [--mesh-refinement 0|1|2]");
+        } else throw std::runtime_error("usage: numi-solver-deformable-mesh [--trajectory PREFIX] [--mesh-refinement 0|1|2|3] [--topology-probe]");
     }
+    if(topologyOnly)return topologyProbe();
     return run(prefix,refinement);
 }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 2;}}}
