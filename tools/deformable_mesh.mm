@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <cstddef>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -134,7 +135,8 @@ struct Pipelines {
     id<MTLComputePipelineState> evaluate,predict,validate,commit;
 };
 std::vector<Frame> simulate(id<MTLDevice> device,Pipelines pipelines,const Mesh& mesh,float dt,bool plane=true,
-                          uint32_t stepLimit=0,uint32_t abi=NUMI_DEFORMABLE_MESH_ABI_VERSION){
+                          uint32_t stepLimit=0,uint32_t abi=NUMI_DEFORMABLE_MESH_ABI_VERSION,
+                          Frame* lastFreePrediction=nullptr){
     auto buffer=[&](const void* data,size_t bytes){
         id<MTLBuffer> result=data?[device newBufferWithBytes:data length:bytes options:MTLResourceStorageModeShared]:
             [device newBufferWithLength:bytes options:MTLResourceStorageModeShared];
@@ -146,10 +148,13 @@ std::vector<Frame> simulate(id<MTLDevice> device,Pipelines pipelines,const Mesh&
     auto velocities=buffer(mesh.velocityAndMass.data(),mesh.velocityAndMass.size()*sizeof(mr_float4));
     auto previous=buffer(nullptr,mesh.elements.size()*sizeof(NumiDeformableTetOutput));
     auto candidate=buffer(nullptr,mesh.elements.size()*sizeof(NumiDeformableTetOutput));
+    auto freeOutputs=buffer(nullptr,mesh.elements.size()*sizeof(NumiDeformableTetOutput));
     auto offsets=buffer(mesh.offsets.data(),mesh.offsets.size()*sizeof(uint32_t));
     auto incidence=buffer(mesh.incidence.data(),mesh.incidence.size()*sizeof(mr_uint4));
     auto candidatePositions=buffer(nullptr,mesh.positions.size()*sizeof(mr_float4));
     auto candidateVelocities=buffer(nullptr,mesh.positions.size()*sizeof(mr_float4));
+    auto freePositions=buffer(nullptr,mesh.positions.size()*sizeof(mr_float4));
+    auto freeVelocities=buffer(nullptr,mesh.positions.size()*sizeof(mr_float4));
     auto contact=buffer(nullptr,mesh.positions.size()*sizeof(mr_float4));
     NumiDeformableMeshStatus initial{};initial.ledger.y=1;
     auto status=buffer(&initial,sizeof(initial));
@@ -171,12 +176,16 @@ std::vector<Frame> simulate(id<MTLDevice> device,Pipelines pipelines,const Mesh&
         [encoder setBuffer:candidatePositions offset:0 atIndex:7];[encoder setBuffer:candidateVelocities offset:0 atIndex:8];
         [encoder setBuffer:contact offset:0 atIndex:9];[encoder setBuffer:status offset:0 atIndex:10];
         [encoder setBuffer:candidate offset:0 atIndex:11];
+        [encoder setBuffer:freePositions offset:0 atIndex:12];[encoder setBuffer:freeVelocities offset:0 atIndex:13];
+        [encoder setBuffer:freeOutputs offset:0 atIndex:14];
         auto dispatch=[&](id<MTLComputePipelineState> pipeline,uint32_t count){
             [encoder setComputePipelineState:pipeline];
             [encoder dispatchThreads:MTLSizeMake(count,1,1) threadsPerThreadgroup:MTLSizeMake(std::min<NSUInteger>(64,pipeline.maxTotalThreadsPerThreadgroup),1,1)];
             [encoder memoryBarrierWithScope:MTLBarrierScopeBuffers];};
         for(uint32_t step=0;step<batch;++step){
             dispatch(pipelines.evaluate,config.counts.y);dispatch(pipelines.predict,config.counts.x);
+            [encoder setBuffer:freePositions offset:0 atIndex:2];[encoder setBuffer:freeOutputs offset:0 atIndex:4];
+            dispatch(pipelines.evaluate,config.counts.y);
             [encoder setBuffer:candidatePositions offset:0 atIndex:2];[encoder setBuffer:candidate offset:0 atIndex:4];
             dispatch(pipelines.evaluate,config.counts.y);
             [encoder setBuffer:positions offset:0 atIndex:2];[encoder setBuffer:previous offset:0 atIndex:4];
@@ -185,6 +194,12 @@ std::vector<Frame> simulate(id<MTLDevice> device,Pipelines pipelines,const Mesh&
         [encoder endEncoding];[command commit];[command waitUntilCompleted];
         if(command.status!=MTLCommandBufferStatusCompleted)throw std::runtime_error(command.error.localizedDescription.UTF8String);
         capture();
+    }
+    if(lastFreePrediction){
+        lastFreePrediction->positions.resize(mesh.positions.size());
+        lastFreePrediction->velocities.resize(mesh.positions.size());
+        std::memcpy(lastFreePrediction->positions.data(),freePositions.contents,freePositions.length);
+        std::memcpy(lastFreePrediction->velocities.data(),freeVelocities.contents,freeVelocities.length);
     }
     return frames;
 }
@@ -223,10 +238,18 @@ void exportFrames(const std::string& prefix,const Mesh& mesh,const std::vector<F
     std::ofstream csv(prefix+".csv");if(!csv)throw std::runtime_error("cannot write mesh trajectory");
     csv<<"frame,time_s,node,x_m,y_m,z_m,vx_m_s,vy_m_s,vz_m_s,mass_kg\n"<<std::setprecision(12);
     std::ofstream topology(prefix+"-topology.csv");if(!topology)throw std::runtime_error("cannot write mesh topology");
+    std::ofstream energy(prefix+"-energy.csv");if(!energy)throw std::runtime_error("cannot write mesh energy ledger");
+    energy<<"frame,time_s,accepted_steps,rejected_steps,normal_kinetic_loss_J,contact_elastic_change_J,contact_gravity_change_J,contact_mechanical_change_J,maximum_positive_contact_step_J,free_integration_change_J,absolute_free_integration_change_J,maximum_absolute_free_step_J,elastic_force_work_J,absolute_position_projection_work_J,maximum_position_projection_step_J,maximum_absolute_contact_step_J,positive_contact_work_J,independent_mechanical_energy_J\n"<<std::setprecision(12);
     topology<<"element,node0,node1,node2,node3,rest_volume_m3,mu_Pa,lambda_Pa\n"<<std::setprecision(12);
     for(size_t e=0;e<mesh.elements.size();++e){auto tet=mesh.elements[e];
         topology<<e<<','<<tet.nodes.x<<','<<tet.nodes.y<<','<<tet.nodes.z<<','<<tet.nodes.w<<','<<tet.inverseRestRows[0].w<<','<<tet.material.x<<','<<tet.material.y<<'\n';}
     for(size_t f=0;f<frames.size();++f){
+        const auto& s=frames[f].status;
+        energy<<f<<','<<f*.005<<','<<s.control.w<<','<<s.control.z<<','<<s.ledger.w<<','
+            <<s.contactWork.x<<','<<s.contactWork.y<<','<<s.contactWork.z<<','<<s.contactWork.w<<','
+            <<s.integration.x<<','<<s.integration.y<<','<<s.integration.z<<','<<s.integration.w<<','
+            <<s.projectionBounds.x<<','<<s.projectionBounds.y<<','<<s.projectionBounds.z<<','<<s.projectionBounds.w<<','
+            <<mechanicalEnergy(mesh,frames[f])<<'\n';
         std::ofstream obj(prefix+"-"+std::to_string(f)+".obj");if(!obj)throw std::runtime_error("cannot write mesh OBJ");
         obj<<"# Native shared-node nonlinear elastic mesh and frictionless inelastic plane\n"<<std::setprecision(12);
         for(size_t n=0;n<frames[f].positions.size();++n){auto p=frames[f].positions[n],v=frames[f].velocities[n];
@@ -261,7 +284,7 @@ int topologyProbe(){
     return pass?0:1;
 }
 
-int run(const std::string& prefix,const uint32_t refinement){
+int run(const std::string& prefix,const uint32_t refinement,const float timestep){
     auto device=MTLCreateSystemDefaultDevice();if(!device)throw std::runtime_error("Metal device unavailable");
     NSError* error=nil;
     auto library=[device newLibraryWithURL:[NSURL fileURLWithPath:@NUMI_DEFORMABLE_MESH_METALLIB] error:&error];
@@ -270,7 +293,7 @@ int run(const std::string& prefix,const uint32_t refinement){
         if(!result)throw std::runtime_error(error.localizedDescription.UTF8String);return result;};
     Pipelines pipelines{pipeline(@"numi_deformable_mesh_evaluate"),pipeline(@"numi_deformable_mesh_predict"),
         pipeline(@"numi_deformable_mesh_validate"),pipeline(@"numi_deformable_mesh_commit")};
-    auto mesh=makeMesh(refinement);auto motion=simulate(device,pipelines,mesh,1e-4f),replay=simulate(device,pipelines,mesh,1e-4f),fine=simulate(device,pipelines,mesh,5e-5f);
+    auto mesh=makeMesh(refinement);auto motion=simulate(device,pipelines,mesh,timestep),replay=simulate(device,pipelines,mesh,timestep),fine=simulate(device,pipelines,mesh,timestep/2);
     bool rollbackExact=true;uint32_t rejectedCases=0;
     auto reject=[&](Mesh malformed,uint32_t bit,uint32_t abi=NUMI_DEFORMABLE_MESH_ABI_VERSION){
         auto states=simulate(device,pipelines,malformed,1e-4f,true,1,abi);
@@ -278,7 +301,8 @@ int run(const std::string& prefix,const uint32_t refinement){
         bool valid=(last.status.control.y&bit)!=0&&last.status.control.w==0&&last.status.control.z==1&&
             std::memcmp(states[0].positions.data(),last.positions.data(),mesh.positions.size()*sizeof(mr_float4))==0&&
             std::memcmp(states[0].velocities.data(),last.velocities.data(),mesh.positions.size()*sizeof(mr_float4))==0&&
-            std::memcmp(&states[0].status.ledger,&last.status.ledger,sizeof(mr_float4))==0;
+            std::memcmp(&states[0].status.ledger,&last.status.ledger,
+                sizeof(NumiDeformableMeshStatus)-offsetof(NumiDeformableMeshStatus,ledger))==0;
         rollbackExact=rollbackExact&&valid;rejectedCases+=valid;
     };
     auto malformed=mesh;malformed.velocityAndMass[3].w=0;reject(malformed,NUMI_DEFORMABLE_MESH_FAILURE_STATE);
@@ -286,8 +310,29 @@ int run(const std::string& prefix,const uint32_t refinement){
     malformed=mesh;malformed.elements[0].nodes.x=999;reject(malformed,NUMI_DEFORMABLE_MESH_FAILURE_TOPOLOGY);
     malformed=mesh;malformed.incidence[1]=malformed.incidence[0];reject(malformed,NUMI_DEFORMABLE_MESH_FAILURE_TOPOLOGY);
     reject(mesh,NUMI_DEFORMABLE_TET_FAILURE_ABI,0);
+    // Independent FP64 reconstruction from the actual pre-projection buffers
+    // distinguishes elastic/gravity position work from velocity-only loss.
+    auto supported=mesh;float low=1;for(auto p:supported.positions)low=std::min(low,p.z);
+    for(auto& p:supported.positions)p.z-=low;
+    for(auto& v:supported.velocityAndMass)v.z=-1;
+    Frame freePrediction;
+    auto contactProbe=simulate(device,pipelines,supported,1e-4f,true,1,NUMI_DEFORMABLE_MESH_ABI_VERSION,&freePrediction);
+    const auto& probe=contactProbe.back();
+    double probeElastic=elasticEnergy(supported,probe)-elasticEnergy(supported,freePrediction);
+    double probeGravity=0,probeKinetic=0;
+    for(size_t n=0;n<supported.positions.size();++n){
+        auto a=probe.velocities[n],b=freePrediction.velocities[n];
+        probeGravity+=a.w*9.81f*(probe.positions[n].z-freePrediction.positions[n].z);
+        probeKinetic+=.5*a.w*(dot(xyz(a),xyz(a))-dot(xyz(b),xyz(b)));
+    }
+    double probeError=std::max({std::abs(probeElastic-probe.status.contactWork.x),
+        std::abs(probeGravity-probe.status.contactWork.y),std::abs(probeKinetic+probe.status.ledger.w),
+        std::abs(mechanicalEnergy(supported,probe)-mechanicalEnergy(supported,freePrediction)-probe.status.contactWork.z)});
+    bool probeValid=probe.status.control.w==1&&probe.status.control.y==0&&probeGravity>0&&
+        std::abs(probeElastic)>1e-7&&probeKinetic<0&&probeError<1e-5;
     bool exact=true,allValid=true;double difference=0,energyIncrease=0,maximumElastic=0,maximumShape=0,minimumHeight=height(motion[0]),minimumClearance=1e30;
     double initialEnergy=mechanicalEnergy(mesh,motion[0]),freeFallError=0,maximumMomentumError=0;
+    double maximumEnergyAccountingError=0,maximumContactComponentsError=0;
     double mass=0;for(auto v:mesh.velocityAndMass)mass+=v.w;
     V initialCenter=center(motion[0]);double finalHeight=height(motion.back());
     for(size_t f=0;f<motion.size();++f){
@@ -295,12 +340,16 @@ int run(const std::string& prefix,const uint32_t refinement){
             std::memcmp(motion[f].velocities.data(),replay[f].velocities.data(),mesh.positions.size()*sizeof(mr_float4))==0&&
             std::memcmp(&motion[f].status,&replay[f].status,sizeof(NumiDeformableMeshStatus))==0;
         for(const auto* state:{&motion[f],&fine[f]}){
+            maximumEnergyAccountingError=std::max(maximumEnergyAccountingError,std::abs(
+                mechanicalEnergy(mesh,*state)-initialEnergy-state->status.integration.x-state->status.contactWork.z));
+            maximumContactComponentsError=std::max(maximumContactComponentsError,std::abs(double(
+                state->status.contactWork.x)+state->status.contactWork.y-state->status.ledger.w-state->status.contactWork.z));
             allValid=allValid&&state->status.control.y==0&&state->status.control.z==0;
             energyIncrease=std::max(energyIncrease,mechanicalEnergy(mesh,*state)-initialEnergy);
             maximumElastic=std::max(maximumElastic,elasticEnergy(mesh,*state));
             double momentum=0;for(auto v:state->velocities)momentum+=v.w*v.z;
             maximumMomentumError=std::max(maximumMomentumError,std::abs(momentum-(-mass*9.81f*f*.005+state->status.ledger.x)));
-            if(state->status.ledger.x==0){double dt=state==&motion[f]?1e-4f:5e-5f,t=f*.005;
+            if(state->status.ledger.x==0){double dt=state==&motion[f]?timestep:timestep/2,t=f*.005;
                 freeFallError=std::max(freeFallError,std::abs(center(*state)[2]-(initialCenter[2]-.5*9.81f*t*(t+dt))));}
         }
         minimumHeight=std::min(minimumHeight,height(motion[f]));
@@ -311,13 +360,17 @@ int run(const std::string& prefix,const uint32_t refinement){
         }
     }
     auto final=motion.back().status;auto finalFine=fine.back().status;
-    bool qualified=exact&&allValid&&rollbackExact&&final.control.w==5000&&finalFine.control.w==10000&&final.ledger.x>0&&
+    bool accountingValid=probeValid&&maximumEnergyAccountingError<1e-4&&maximumContactComponentsError<1e-5;
+    const uint32_t steps=uint32_t(std::lround(.5/timestep));
+    bool qualified=exact&&allValid&&rollbackExact&&accountingValid&&final.control.w==steps&&finalFine.control.w==2*steps&&final.ledger.x>0&&
         final.ledger.y>0&&minimumClearance>=0&&maximumShape>.001&&height(motion[0])-minimumHeight>.001&&
         finalHeight-minimumHeight>.001&&difference<.001&&energyIncrease<.001&&freeFallError<2e-5&&maximumMomentumError<2e-4;
     exportFrames(prefix,mesh,motion);
+    if(!prefix.empty())exportFrames(prefix+"-half",mesh,fine);
     std::cout<<std::setprecision(12)<<"device="<<device.name.UTF8String<<" backend=Apple_Metal\n"
         <<"shared_nodes="<<mesh.positions.size()<<" tetrahedra="<<mesh.elements.size()<<" boundary_triangles="<<mesh.faces.size()<<" mesh_refinement="<<refinement<<" density_kg_m3=1000 mass_kg="<<mass<<'\n'
-        <<"simulated_seconds=.5 steps=5000 refined_steps=10000 captured_frames="<<motion.size()<<" replay_exact="<<exact<<" all_candidates_valid="<<allValid<<'\n'
+        <<"simulated_seconds=.5 steps="<<steps<<" refined_steps="<<2*steps<<" timestep_s="<<timestep
+        <<" captured_frames="<<motion.size()<<" replay_exact="<<exact<<" all_candidates_valid="<<allValid<<'\n'
         <<"maximum_nodal_refinement_difference_m="<<difference<<" maximum_relative_shape_change_m="<<maximumShape<<'\n'
         <<"initial_height_m="<<height(motion[0])<<" minimum_height_m="<<minimumHeight<<" final_height_m="<<finalHeight<<'\n'
         <<"minimum_clearance_m="<<minimumClearance<<" minimum_all_step_volume_ratio="<<final.ledger.y
@@ -327,22 +380,46 @@ int run(const std::string& prefix,const uint32_t refinement){
         <<"maximum_mechanical_energy_increase_J="<<energyIncrease<<" maximum_elastic_energy_J="<<maximumElastic
         <<" maximum_free_fall_COM_error_m="<<freeFallError<<'\n'
         <<"rejected_cases="<<rejectedCases<<" rejected_mesh_state_and_ledger_exact="<<rollbackExact<<'\n'
+        <<"mesh_ABI="<<NUMI_DEFORMABLE_MESH_ABI_VERSION<<" projection_work_probe_pass="<<probeValid
+        <<" projection_work_probe_maximum_error_J="<<probeError<<'\n'
+        <<"contact_elastic_change_J="<<final.contactWork.x<<" contact_gravity_change_J="<<final.contactWork.y
+        <<" contact_mechanical_change_J="<<final.contactWork.z<<" maximum_positive_contact_step_J="<<final.contactWork.w<<'\n'
+        <<"free_integration_change_J="<<final.integration.x<<" absolute_free_integration_change_J="<<final.integration.y
+        <<" maximum_absolute_free_step_J="<<final.integration.z<<" elastic_force_work_J="<<final.integration.w<<'\n'
+        <<"half_step_free_integration_change_J="<<finalFine.integration.x
+        <<" half_step_absolute_free_integration_change_J="<<finalFine.integration.y
+        <<" half_step_contact_mechanical_change_J="<<finalFine.contactWork.z<<'\n'
+        <<"absolute_position_projection_work_J="<<final.projectionBounds.x
+        <<" half_step_absolute_position_projection_work_J="<<finalFine.projectionBounds.x
+        <<" positive_contact_work_J="<<final.projectionBounds.w<<'\n'
+        <<"maximum_independent_energy_accounting_error_J="<<maximumEnergyAccountingError
+        <<" maximum_contact_component_sum_error_J="<<maximumContactComponentsError
+        <<" energy_accounting_valid="<<accountingValid<<'\n'
+        <<"energy_defect_qualification=OPEN spatial_convergence=OPEN material_calibration=OPEN\n"
         <<"deformable_mesh_drop_qualified="<<qualified<<'\n';
     return qualified?0:1;
 }
 }
 int main(int argc,const char* const* argv){@autoreleasepool{try{
-    std::string prefix;uint32_t refinement=0;bool topologyOnly=false;
+    std::string prefix;uint32_t refinement=0;bool topologyOnly=false;float timestep=1e-4f;
     for(int argument=1;argument<argc;++argument){
         std::string option=argv[argument];
         if(option=="--trajectory"&&argument+1<argc)prefix=argv[++argument];
         else if(option=="--topology-probe")topologyOnly=true;
+        else if(option=="--timestep"&&argument+1<argc){
+            std::string value=argv[++argument];size_t parsed=0;double requested=std::stod(value,&parsed);
+            bool supported=false;
+            for(uint32_t half=0;half<=5;++half){double dt=1e-4/std::pow(2.,half);
+                if(parsed==value.size()&&std::isfinite(requested)&&std::abs(requested-dt)<1e-15){
+                    timestep=float(dt);supported=true;break;}}
+            if(!supported)throw std::runtime_error("timestep must be 100 microseconds divided by 2^k, k=0..5");
+        }
         else if(option=="--mesh-refinement"&&argument+1<argc){
             std::string value=argv[++argument];
             if(value!="0"&&value!="1"&&value!="2"&&value!="3")throw std::runtime_error("mesh refinement must be 0, 1, 2, or 3");
             refinement=uint32_t(std::stoul(value));
-        } else throw std::runtime_error("usage: numi-solver-deformable-mesh [--trajectory PREFIX] [--mesh-refinement 0|1|2|3] [--topology-probe]");
+        } else throw std::runtime_error("usage: numi-solver-deformable-mesh [--trajectory PREFIX] [--mesh-refinement 0|1|2|3] [--timestep DT] [--topology-probe]");
     }
     if(topologyOnly)return topologyProbe();
-    return run(prefix,refinement);
+    return run(prefix,refinement,timestep);
 }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 2;}}}
