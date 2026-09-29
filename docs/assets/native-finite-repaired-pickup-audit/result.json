@@ -1,0 +1,374 @@
+{
+  "schema": "numi.native-finite-repaired-pickup-independent-cpu-audit.v1",
+  "actual_program_exit": 1,
+  "native_result": "FAIL",
+  "launch_sha256": "f3c699ba022b025c3395b1ef1e2947f200d66b36229c38747d159367a78b4c17",
+  "manifest_sha256": "ed1586dfd08a0da12e7b0b1c2d908178955da00e1af92ec7debd08d451a66a11",
+  "frozen_binary_sha256": "e8982e690fbee8f137bdbb432ca7375627be2122340fd91d4adfed7491a75260",
+  "frozen_metallib_sha256": "a8335409a0d0c279e1ffbad854ec5e164fc72baa898aa68d78e38b0ca476cb21",
+  "log_sha256": "f1e9c3862b938c9cdfb8f2cb4eb0aac8e535408bfeb4d1746a381b949c649b38",
+  "combined_csv_sha256": "21ce6ad16e382850249766ebc316afac4c5673c261040ce4c205d1200bebedfd",
+  "native_pickup_summary": {
+    "pickup_requested": "true",
+    "complete": "true",
+    "first_captured_frames": "480",
+    "second_captured_frames": "480",
+    "first_failure_flags": "0",
+    "second_failure_flags": "0",
+    "steps": "480",
+    "motion_frames": "240",
+    "settling_frames": "240",
+    "replay_exact": "true",
+    "released_mask": "768",
+    "released_count": "2",
+    "grounded_released_count": "0",
+    "strain_violation": "0.000000000000",
+    "ground_penetration": "0.000000000000",
+    "self_penetration": "0.000000005021",
+    "max_local_node_overlap_m": "0.000000061250",
+    "first_gpu_seconds": "8152.900781074539",
+    "second_gpu_seconds": "8116.403525923379",
+    "qualified": "false"
+  },
+  "per_replay_csv": [
+    {
+      "sha256": "c7045bbaf1c956e4bd4f9997941aa31b0079c2fb147d98a692568a444f3ab21a",
+      "rows": 5772,
+      "minimum_independent_static_gap_m": 0.005335316061973572,
+      "maximum_exported_gap_discrepancy_m": 5.551115123125783e-17,
+      "released_fruits": [
+        8,
+        9
+      ],
+      "first_release_frame": {
+        "8": 139,
+        "9": 176
+      },
+      "grounded_released_fruits": [],
+      "lower_room_floor_released_fruits": []
+    },
+    {
+      "sha256": "831b21bbe82efb0aac85e63293fbef39ac39ea8ad55c722a3e770561176ce348",
+      "rows": 5772,
+      "minimum_independent_static_gap_m": 0.005335316061973572,
+      "maximum_exported_gap_discrepancy_m": 5.551115123125783e-17,
+      "released_fruits": [
+        8,
+        9
+      ],
+      "first_release_frame": {
+        "8": 139,
+        "9": 176
+      },
+      "grounded_released_fruits": [],
+      "lower_room_floor_released_fruits": []
+    }
+  ],
+  "all_481_exported_fruit_frames_exact": true,
+  "all_49_sampled_obj_pairs_exact": true,
+  "snapshots": [
+    {
+      "frame": 0,
+      "sha256": "c06e8d202f2391214eb62ee1b1a65b4e424a8e32a36f541eef38cc0a0b71dbaa",
+      "bytes": 102354,
+      "minimum_vertex_z_m": 0.00435733795
+    },
+    {
+      "frame": 10,
+      "sha256": "bef064c5a9b69cc897002f0e349ee4fb908caf6729a4ec25754ff082573e0ee2",
+      "bytes": 103802,
+      "minimum_vertex_z_m": 0.00400000019
+    },
+    {
+      "frame": 20,
+      "sha256": "d0bdc5638573263789c36c4efbd454f46d553b954418fb22a535a9841cd714ed",
+      "bytes": 103801,
+      "minimum_vertex_z_m": 0.00400000019
+    },
+    {
+      "frame": 30,
+      "sha256": "e613197a1a60293c828a2160be1168c203667cd464c232ba1682a0769037b864",
+      "bytes": 103460,
+      "minimum_vertex_z_m": 0.00400000019
+    },
+    {
+      "frame": 40,
+      "sha256": "97e8cce4898e91c2d7dfd0a865a43ec4598e26308769ea788c4f75284635a6a4",
+      "bytes": 103037,
+      "minimum_vertex_z_m": 0.075528875
+    },
+    {
+      "frame": 50,
+      "sha256": "eed17a087ee582095fc160a5d686b4845a78bda2626b386afe51f2e9cd4d593b",
+      "bytes": 102364,
+      "minimum_vertex_z_m": 0.207625061
+    },
+    {
+      "frame": 60,
+      "sha256": "ff73649f98a8a5e9d9c22bf4e9a349b7443fdb5c547a290bb0db36e225b288e8",
+      "bytes": 101917,
+      "minimum_vertex_z_m": 0.391461581
+    },
+    {
+      "frame": 70,
+      "sha256": "ee06986aa188736a06cc78ea021c5d9ed78947b676d00ed21ec5ba95a13d957e",
+      "bytes": 101511,
+      "minimum_vertex_z_m": 0.574594498
+    },
+    {
+      "frame": 80,
+      "sha256": "d6f767b5918c68e9e4119e1a3eab717aa2420bc424c108b582b866d73a5dae9b",
+      "bytes": 101201,
+      "minimum_vertex_z_m": 0.721375525
+    },
+    {
+      "frame": 90,
+      "sha256": "8f05612300266c6af4872a87b9fc4e8e4eaf4d9c26967fde5f6bab82b6031716",
+      "bytes": 100998,
+      "minimum_vertex_z_m": 0.811359465
+    },
+    {
+      "frame": 100,
+      "sha256": "c596b7de0e850a5fa71476d56f6a865a932b693c351fb41bc9e34bda01b22e48",
+      "bytes": 101187,
+      "minimum_vertex_z_m": 0.843129814
+    },
+    {
+      "frame": 110,
+      "sha256": "3084f60be45fd8fb959326acb67726b26fac4fb2bb562737d6672a148028b138",
+      "bytes": 101483,
+      "minimum_vertex_z_m": 0.843378127
+    },
+    {
+      "frame": 120,
+      "sha256": "ec47df7041e54e4cf94ff4e7d0da0dd2239b326edd2382d0d1df4b7bc116400d",
+      "bytes": 101769,
+      "minimum_vertex_z_m": 0.82529819
+    },
+    {
+      "frame": 130,
+      "sha256": "404377cc1e0fca6d843466d47f53dbec742ff834b0521c7f5001ae9225c5932e",
+      "bytes": 102035,
+      "minimum_vertex_z_m": 0.742621124
+    },
+    {
+      "frame": 140,
+      "sha256": "83b7d411053f8fc5db32e2d507bfea3c73c8ca6f76304d0149e36a9ce7dd8f17",
+      "bytes": 103420,
+      "minimum_vertex_z_m": 0.509679019
+    },
+    {
+      "frame": 150,
+      "sha256": "8b48f0f0a1f5f48d31a2e05faa896521d760dd4fb7b031e3865b409aa20b1bbc",
+      "bytes": 103856,
+      "minimum_vertex_z_m": 0.100992724
+    },
+    {
+      "frame": 160,
+      "sha256": "266e34c606f72953b1af6df46d78513211cb886e0cc1f7168f016ed8fad434a1",
+      "bytes": 103775,
+      "minimum_vertex_z_m": 0.00400000019
+    },
+    {
+      "frame": 170,
+      "sha256": "2e5c4e0be851feb6dd8c89654fe0ef4556af697a4b9173d4a53ced6988917dcd",
+      "bytes": 103259,
+      "minimum_vertex_z_m": 0.00400000019
+    },
+    {
+      "frame": 180,
+      "sha256": "a05ab6185f54c10d58774176af1fc50cec29e7bac864ed4b7c1967a636c5aed4",
+      "bytes": 103160,
+      "minimum_vertex_z_m": 0.00400000019
+    },
+    {
+      "frame": 190,
+      "sha256": "894135534f615a18d96caa2e714efb08a24315bb4215c0f6ed2b37917a7d24ee",
+      "bytes": 102863,
+      "minimum_vertex_z_m": 0.127984866
+    },
+    {
+      "frame": 200,
+      "sha256": "b1152f75bcc9358434e9b58a02a4ee4215d6292da8b3812bcb2f3d906f8a1088",
+      "bytes": 102891,
+      "minimum_vertex_z_m": 0.312696636
+    },
+    {
+      "frame": 210,
+      "sha256": "dbd9bf09d2b37cf4bc70c377b5e28af509e4031bc5485b0927d93c33688bc8cf",
+      "bytes": 102732,
+      "minimum_vertex_z_m": 0.491048425
+    },
+    {
+      "frame": 220,
+      "sha256": "b2119c7bd4fbe0c43f33ec506b1807c81a5895e396c9ba5b0145df03d3f2ad3a",
+      "bytes": 102382,
+      "minimum_vertex_z_m": 0.649737
+    },
+    {
+      "frame": 230,
+      "sha256": "9fb297e43a2df577d9830f9e8f97a71c8bc9c0d06a30f89778f6c3ce775b6aab",
+      "bytes": 102201,
+      "minimum_vertex_z_m": 0.749900758
+    },
+    {
+      "frame": 240,
+      "sha256": "dc6ba62683ad108af6ceacfcc573873c4a5951769cf1f58f83d8fee3f7bf84ee",
+      "bytes": 102235,
+      "minimum_vertex_z_m": 0.780295253
+    },
+    {
+      "frame": 250,
+      "sha256": "45b7152bc8ef043f3ea7315345771262edd01a72b60a93115a745d0352e5c00c",
+      "bytes": 102241,
+      "minimum_vertex_z_m": 0.75590384
+    },
+    {
+      "frame": 260,
+      "sha256": "ca920e40a51ecca80c188033a9da65e18d60012b46f5a2eeb53fe44a6117abd3",
+      "bytes": 102185,
+      "minimum_vertex_z_m": 0.751595259
+    },
+    {
+      "frame": 270,
+      "sha256": "d18df6550079947fa77f2e28a639c7b81e49e25837cbc148d0af06665bb5d971",
+      "bytes": 102116,
+      "minimum_vertex_z_m": 0.745241106
+    },
+    {
+      "frame": 280,
+      "sha256": "92e43acdfe8080d4f17d0072a2ad227152e62cf6867abe525b37829b4a1ea94c",
+      "bytes": 102021,
+      "minimum_vertex_z_m": 0.740977466
+    },
+    {
+      "frame": 290,
+      "sha256": "2db913f78487c574ca7ead3c969fb850f5d130d3aeac150fa2324df7d099ae3e",
+      "bytes": 102068,
+      "minimum_vertex_z_m": 0.734461367
+    },
+    {
+      "frame": 300,
+      "sha256": "8ad379d9dfacd88439b5d16b473a35a84c68a1e329e319638d86d9d73c62b1a7",
+      "bytes": 102197,
+      "minimum_vertex_z_m": 0.728221893
+    },
+    {
+      "frame": 310,
+      "sha256": "518552808e9faff68ef02277b60bb02d20c97c4e4914dc336c5fd4a1374c0e59",
+      "bytes": 102263,
+      "minimum_vertex_z_m": 0.722281098
+    },
+    {
+      "frame": 320,
+      "sha256": "48a9484bd56cd358e5d9d9af5c746d64d729c7ea16fbc843af8a97c09e22dc22",
+      "bytes": 102403,
+      "minimum_vertex_z_m": 0.718220413
+    },
+    {
+      "frame": 330,
+      "sha256": "f54e6251a9623bf857fffbb2404d2ec9d5fca2c2b38968ae1aab5b6e3fdeae6d",
+      "bytes": 102288,
+      "minimum_vertex_z_m": 0.717240393
+    },
+    {
+      "frame": 340,
+      "sha256": "cf599da37fae407e6aeb1948cb3cffc972913159fb96decc3d0e0fa7ef7781ce",
+      "bytes": 102261,
+      "minimum_vertex_z_m": 0.716987133
+    },
+    {
+      "frame": 350,
+      "sha256": "e6848175f943664ff75e2331343b1fd6f8cbab4b177dd77b86d86041f63b0bb5",
+      "bytes": 102305,
+      "minimum_vertex_z_m": 0.720218241
+    },
+    {
+      "frame": 360,
+      "sha256": "a2fc3fb26623b501f66384993f19c20b9e13f0e5897d04d618ce35102c88c71b",
+      "bytes": 102323,
+      "minimum_vertex_z_m": 0.722123444
+    },
+    {
+      "frame": 370,
+      "sha256": "df3584c057598d00ca2596388aeccdd026d30957c30aae19e0b50ee85ebc9d6a",
+      "bytes": 102415,
+      "minimum_vertex_z_m": 0.721231997
+    },
+    {
+      "frame": 380,
+      "sha256": "2d04a9e0339ff65d4aac40c99886500875faf9b94bc86a388485e1aaa3d14c22",
+      "bytes": 102402,
+      "minimum_vertex_z_m": 0.718670845
+    },
+    {
+      "frame": 390,
+      "sha256": "af1ed2206ab0605913cc79e4e09689bba4f5e5d51ead910c89c4f8fdba5fa159",
+      "bytes": 102377,
+      "minimum_vertex_z_m": 0.711061597
+    },
+    {
+      "frame": 400,
+      "sha256": "d29a4252e03677f42753e6a93dd0cdf6f4e3d1b131ce264a8300f654fb5ea244",
+      "bytes": 102395,
+      "minimum_vertex_z_m": 0.71089071
+    },
+    {
+      "frame": 410,
+      "sha256": "d897c774390491045992b7411adb75b585310759267ff1bc46db8b19a3aaca06",
+      "bytes": 102396,
+      "minimum_vertex_z_m": 0.71067822
+    },
+    {
+      "frame": 420,
+      "sha256": "1015e43840d8e8e1731bb0d9d0160c132643977d672b06f482614669a1a7fcf6",
+      "bytes": 102429,
+      "minimum_vertex_z_m": 0.713894069
+    },
+    {
+      "frame": 430,
+      "sha256": "75092c9931b5d950dbf811e1f554809694e4e432f0ed4304c5d2e782af33123e",
+      "bytes": 102398,
+      "minimum_vertex_z_m": 0.714649975
+    },
+    {
+      "frame": 440,
+      "sha256": "9fddbfddf9ad0b0c4362dee5db53951c3856273a583b60b9c2e405a49e5ece68",
+      "bytes": 102386,
+      "minimum_vertex_z_m": 0.713785589
+    },
+    {
+      "frame": 450,
+      "sha256": "421697a03863ee544daa86e29d4ba5887dc173590659c0c23d16e8db7e69e191",
+      "bytes": 102417,
+      "minimum_vertex_z_m": 0.715014815
+    },
+    {
+      "frame": 460,
+      "sha256": "59412b6aaf74c26bb3554bd551467b7884f4d36cad27e49595d9cbf99f704260",
+      "bytes": 102358,
+      "minimum_vertex_z_m": 0.715744376
+    },
+    {
+      "frame": 470,
+      "sha256": "c28d666b23788a9559d2f8a9eb023711a07aa48b8cc8f89854cc25a8a973f119",
+      "bytes": 102380,
+      "minimum_vertex_z_m": 0.716840029
+    },
+    {
+      "frame": 480,
+      "sha256": "a7208f5573e6ea571d539d9eef0bf3690462618b8e180879ce987de9e4d663f8",
+      "bytes": 102373,
+      "minimum_vertex_z_m": 0.717907429
+    }
+  ],
+  "progress_lines_verified": 96,
+  "minimum_sampled_cloth_vertex_z_m": 0.00400000019,
+  "scope": [
+    "Native internal 480-frame hash equality is reported by the frozen binary; hash lists are not exported for independent recomputation.",
+    "Every exported fruit frame and 10-frame-cadence OBJ pair is independently compared.",
+    "Independent fruit-to-finite-box/room-floor static gaps and CSV consistency are checked.",
+    "OBJ snapshots do not expose all yarn/contact pairs, per-substep contact, strain, or a physical energy/work ledger.",
+    "Terminal native overlap/strain fields are reported, not promoted to independently established whole-trajectory contact or energy closure."
+  ]
+}

@@ -34,7 +34,7 @@ references, not implementation claims for Numi.
 | Capability | Current evidence | Required next evidence |
 | --- | --- | --- |
 | Loaded woven bag and finite tabletop | New source `bbf111a`: full CPU96 pickup passes, five released fruit settle on the lower floor, both complete fruit traces match, all 51 saved states pass contacts | Same-source timestep comparison, full native spill, whole-yarn/static contacts throughout the trajectory |
-| Native finite contact | Source `a427ef0`: 104 focused response cases pass; a ghost-impulse fix passes the former frame-4 failure and a new full candidate is live | Complete both 480-frame trajectories and audit all retained evidence; qualify continuous whole-yarn collision separately |
+| Native finite contact | Source `a427ef0`: 104 focused response cases pass. The repaired Metal candidate completes both 480-frame replays with native-reported exact internal replay and matching exported fruit/OBJ states, but **FAILS** pickup: two fruits release and neither finishes grounded. All 49 sampled states pass independent contact audits | Repair the released-fruit landing outcome, rerun both complete native trajectories, and qualify continuous whole-yarn collision separately |
 | Elastic fruit | Standalone 81,920-tet native volume completes exact replay and half-timestep checks with 0.254%/0.122% independent numerical energy bounds. A reviewed two-row, five-owner CPU normal block advances all 10,240 elements for 1 µs and removes the prior endpoint closing mode; exact fixed-plane grazing passes 150 cases | Sustained common FEM/yarn advancement, general rotating/incoming CCD, finite-bench contact, native reciprocal coupling and complete force/work receipts |
 | Mesh and time convergence | Matched 25 µs 10,240-to-81,920 volume comparison still fails the 1 mm target at 9.34 mm. Complete repaired six-second CPU48 passes; CPU96 fails its triangle-area gate despite passing saved contacts. Release sets differ; corresponding fruit positions differ by 1.6745 m and saved cloth nodes by 315.9 mm | Complete the running shortest-diagonal native pair and audit its spatial error; repair incident cloth area/work ownership, then rerun same-source bag timestep qualification |
 | Contact/friction consistency | CPU shared-yarn contact block and passive velocity helper pass tested mechanics; two retained energy-injection regressions now dissipate energy | Joint contact, static support, strain and friction residuals; friction-free slide, oblique impact, sliding-to-rolling and separation tests |
@@ -46,6 +46,13 @@ budgets, not thresholds borrowed from the cited papers. Cross-engine comparisons
 must bind geometry, mass, constitutive law, thickness, friction, timestep,
 controller, tolerance, capture cadence and hardware. Aggregate concurrency,
 more tetrahedra or smoother rendering cannot substitute for those comparisons.
+
+The [native pickup terminal audit](assets/native-finite-repaired-pickup-audit/README.md)
+binds the frozen source, binary, launch, actual exit and omitted raw evidence by
+SHA-256. The failed landing gate is independent of the matching replays and
+sampled contact checks. Native internal per-frame hash lists and per-substep
+physical energy/work were not exported, so neither whole-state independent
+replay reconstruction nor energy closure follows from this run.
 
 Implementation proceeds from the actual failing native case, then continuous
 whole-yarn bench support and shared contact complementarity, then elastic-fruit

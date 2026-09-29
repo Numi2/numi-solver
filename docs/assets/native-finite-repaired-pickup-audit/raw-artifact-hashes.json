@@ -1,0 +1,411 @@
+{
+  "schema": "numi.native-finite-repaired-pickup.local-raw-artifact-hashes.v1",
+  "evidence_boundary": "Local ignored raw CSV and OBJ evidence, omitted from public asset. Hashes bind the terminal files, not internal per-frame state hashes or per-substep energy closure.",
+  "local_original_prefix": "/Users/home/numi-solver/build/native-finite-repaired-pickup-20260929",
+  "files": {
+    "build/native-finite-repaired-pickup-20260929-fruits.csv": {
+      "sha256": "21ce6ad16e382850249766ebc316afac4c5673c261040ce4c205d1200bebedfd",
+      "bytes": 2937562
+    },
+    "build/native-finite-repaired-pickup-20260929-r1-fruits.csv": {
+      "sha256": "c7045bbaf1c956e4bd4f9997941aa31b0079c2fb147d98a692568a444f3ab21a",
+      "bytes": 1468858
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-fruits.csv": {
+      "sha256": "831b21bbe82efb0aac85e63293fbef39ac39ea8ad55c722a3e770561176ce348",
+      "bytes": 1468858
+    },
+    "build/native-finite-repaired-pickup-20260929-0.obj": {
+      "sha256": "c06e8d202f2391214eb62ee1b1a65b4e424a8e32a36f541eef38cc0a0b71dbaa",
+      "bytes": 102354
+    },
+    "build/native-finite-repaired-pickup-20260929-10.obj": {
+      "sha256": "bef064c5a9b69cc897002f0e349ee4fb908caf6729a4ec25754ff082573e0ee2",
+      "bytes": 103802
+    },
+    "build/native-finite-repaired-pickup-20260929-20.obj": {
+      "sha256": "d0bdc5638573263789c36c4efbd454f46d553b954418fb22a535a9841cd714ed",
+      "bytes": 103801
+    },
+    "build/native-finite-repaired-pickup-20260929-30.obj": {
+      "sha256": "e613197a1a60293c828a2160be1168c203667cd464c232ba1682a0769037b864",
+      "bytes": 103460
+    },
+    "build/native-finite-repaired-pickup-20260929-40.obj": {
+      "sha256": "97e8cce4898e91c2d7dfd0a865a43ec4598e26308769ea788c4f75284635a6a4",
+      "bytes": 103037
+    },
+    "build/native-finite-repaired-pickup-20260929-50.obj": {
+      "sha256": "eed17a087ee582095fc160a5d686b4845a78bda2626b386afe51f2e9cd4d593b",
+      "bytes": 102364
+    },
+    "build/native-finite-repaired-pickup-20260929-60.obj": {
+      "sha256": "ff73649f98a8a5e9d9c22bf4e9a349b7443fdb5c547a290bb0db36e225b288e8",
+      "bytes": 101917
+    },
+    "build/native-finite-repaired-pickup-20260929-70.obj": {
+      "sha256": "ee06986aa188736a06cc78ea021c5d9ed78947b676d00ed21ec5ba95a13d957e",
+      "bytes": 101511
+    },
+    "build/native-finite-repaired-pickup-20260929-80.obj": {
+      "sha256": "d6f767b5918c68e9e4119e1a3eab717aa2420bc424c108b582b866d73a5dae9b",
+      "bytes": 101201
+    },
+    "build/native-finite-repaired-pickup-20260929-90.obj": {
+      "sha256": "8f05612300266c6af4872a87b9fc4e8e4eaf4d9c26967fde5f6bab82b6031716",
+      "bytes": 100998
+    },
+    "build/native-finite-repaired-pickup-20260929-100.obj": {
+      "sha256": "c596b7de0e850a5fa71476d56f6a865a932b693c351fb41bc9e34bda01b22e48",
+      "bytes": 101187
+    },
+    "build/native-finite-repaired-pickup-20260929-110.obj": {
+      "sha256": "3084f60be45fd8fb959326acb67726b26fac4fb2bb562737d6672a148028b138",
+      "bytes": 101483
+    },
+    "build/native-finite-repaired-pickup-20260929-120.obj": {
+      "sha256": "ec47df7041e54e4cf94ff4e7d0da0dd2239b326edd2382d0d1df4b7bc116400d",
+      "bytes": 101769
+    },
+    "build/native-finite-repaired-pickup-20260929-130.obj": {
+      "sha256": "404377cc1e0fca6d843466d47f53dbec742ff834b0521c7f5001ae9225c5932e",
+      "bytes": 102035
+    },
+    "build/native-finite-repaired-pickup-20260929-140.obj": {
+      "sha256": "83b7d411053f8fc5db32e2d507bfea3c73c8ca6f76304d0149e36a9ce7dd8f17",
+      "bytes": 103420
+    },
+    "build/native-finite-repaired-pickup-20260929-150.obj": {
+      "sha256": "8b48f0f0a1f5f48d31a2e05faa896521d760dd4fb7b031e3865b409aa20b1bbc",
+      "bytes": 103856
+    },
+    "build/native-finite-repaired-pickup-20260929-160.obj": {
+      "sha256": "266e34c606f72953b1af6df46d78513211cb886e0cc1f7168f016ed8fad434a1",
+      "bytes": 103775
+    },
+    "build/native-finite-repaired-pickup-20260929-170.obj": {
+      "sha256": "2e5c4e0be851feb6dd8c89654fe0ef4556af697a4b9173d4a53ced6988917dcd",
+      "bytes": 103259
+    },
+    "build/native-finite-repaired-pickup-20260929-180.obj": {
+      "sha256": "a05ab6185f54c10d58774176af1fc50cec29e7bac864ed4b7c1967a636c5aed4",
+      "bytes": 103160
+    },
+    "build/native-finite-repaired-pickup-20260929-190.obj": {
+      "sha256": "894135534f615a18d96caa2e714efb08a24315bb4215c0f6ed2b37917a7d24ee",
+      "bytes": 102863
+    },
+    "build/native-finite-repaired-pickup-20260929-200.obj": {
+      "sha256": "b1152f75bcc9358434e9b58a02a4ee4215d6292da8b3812bcb2f3d906f8a1088",
+      "bytes": 102891
+    },
+    "build/native-finite-repaired-pickup-20260929-210.obj": {
+      "sha256": "dbd9bf09d2b37cf4bc70c377b5e28af509e4031bc5485b0927d93c33688bc8cf",
+      "bytes": 102732
+    },
+    "build/native-finite-repaired-pickup-20260929-220.obj": {
+      "sha256": "b2119c7bd4fbe0c43f33ec506b1807c81a5895e396c9ba5b0145df03d3f2ad3a",
+      "bytes": 102382
+    },
+    "build/native-finite-repaired-pickup-20260929-230.obj": {
+      "sha256": "9fb297e43a2df577d9830f9e8f97a71c8bc9c0d06a30f89778f6c3ce775b6aab",
+      "bytes": 102201
+    },
+    "build/native-finite-repaired-pickup-20260929-240.obj": {
+      "sha256": "dc6ba62683ad108af6ceacfcc573873c4a5951769cf1f58f83d8fee3f7bf84ee",
+      "bytes": 102235
+    },
+    "build/native-finite-repaired-pickup-20260929-250.obj": {
+      "sha256": "45b7152bc8ef043f3ea7315345771262edd01a72b60a93115a745d0352e5c00c",
+      "bytes": 102241
+    },
+    "build/native-finite-repaired-pickup-20260929-260.obj": {
+      "sha256": "ca920e40a51ecca80c188033a9da65e18d60012b46f5a2eeb53fe44a6117abd3",
+      "bytes": 102185
+    },
+    "build/native-finite-repaired-pickup-20260929-270.obj": {
+      "sha256": "d18df6550079947fa77f2e28a639c7b81e49e25837cbc148d0af06665bb5d971",
+      "bytes": 102116
+    },
+    "build/native-finite-repaired-pickup-20260929-280.obj": {
+      "sha256": "92e43acdfe8080d4f17d0072a2ad227152e62cf6867abe525b37829b4a1ea94c",
+      "bytes": 102021
+    },
+    "build/native-finite-repaired-pickup-20260929-290.obj": {
+      "sha256": "2db913f78487c574ca7ead3c969fb850f5d130d3aeac150fa2324df7d099ae3e",
+      "bytes": 102068
+    },
+    "build/native-finite-repaired-pickup-20260929-300.obj": {
+      "sha256": "8ad379d9dfacd88439b5d16b473a35a84c68a1e329e319638d86d9d73c62b1a7",
+      "bytes": 102197
+    },
+    "build/native-finite-repaired-pickup-20260929-310.obj": {
+      "sha256": "518552808e9faff68ef02277b60bb02d20c97c4e4914dc336c5fd4a1374c0e59",
+      "bytes": 102263
+    },
+    "build/native-finite-repaired-pickup-20260929-320.obj": {
+      "sha256": "48a9484bd56cd358e5d9d9af5c746d64d729c7ea16fbc843af8a97c09e22dc22",
+      "bytes": 102403
+    },
+    "build/native-finite-repaired-pickup-20260929-330.obj": {
+      "sha256": "f54e6251a9623bf857fffbb2404d2ec9d5fca2c2b38968ae1aab5b6e3fdeae6d",
+      "bytes": 102288
+    },
+    "build/native-finite-repaired-pickup-20260929-340.obj": {
+      "sha256": "cf599da37fae407e6aeb1948cb3cffc972913159fb96decc3d0e0fa7ef7781ce",
+      "bytes": 102261
+    },
+    "build/native-finite-repaired-pickup-20260929-350.obj": {
+      "sha256": "e6848175f943664ff75e2331343b1fd6f8cbab4b177dd77b86d86041f63b0bb5",
+      "bytes": 102305
+    },
+    "build/native-finite-repaired-pickup-20260929-360.obj": {
+      "sha256": "a2fc3fb26623b501f66384993f19c20b9e13f0e5897d04d618ce35102c88c71b",
+      "bytes": 102323
+    },
+    "build/native-finite-repaired-pickup-20260929-370.obj": {
+      "sha256": "df3584c057598d00ca2596388aeccdd026d30957c30aae19e0b50ee85ebc9d6a",
+      "bytes": 102415
+    },
+    "build/native-finite-repaired-pickup-20260929-380.obj": {
+      "sha256": "2d04a9e0339ff65d4aac40c99886500875faf9b94bc86a388485e1aaa3d14c22",
+      "bytes": 102402
+    },
+    "build/native-finite-repaired-pickup-20260929-390.obj": {
+      "sha256": "af1ed2206ab0605913cc79e4e09689bba4f5e5d51ead910c89c4f8fdba5fa159",
+      "bytes": 102377
+    },
+    "build/native-finite-repaired-pickup-20260929-400.obj": {
+      "sha256": "d29a4252e03677f42753e6a93dd0cdf6f4e3d1b131ce264a8300f654fb5ea244",
+      "bytes": 102395
+    },
+    "build/native-finite-repaired-pickup-20260929-410.obj": {
+      "sha256": "d897c774390491045992b7411adb75b585310759267ff1bc46db8b19a3aaca06",
+      "bytes": 102396
+    },
+    "build/native-finite-repaired-pickup-20260929-420.obj": {
+      "sha256": "1015e43840d8e8e1731bb0d9d0160c132643977d672b06f482614669a1a7fcf6",
+      "bytes": 102429
+    },
+    "build/native-finite-repaired-pickup-20260929-430.obj": {
+      "sha256": "75092c9931b5d950dbf811e1f554809694e4e432f0ed4304c5d2e782af33123e",
+      "bytes": 102398
+    },
+    "build/native-finite-repaired-pickup-20260929-440.obj": {
+      "sha256": "9fddbfddf9ad0b0c4362dee5db53951c3856273a583b60b9c2e405a49e5ece68",
+      "bytes": 102386
+    },
+    "build/native-finite-repaired-pickup-20260929-450.obj": {
+      "sha256": "421697a03863ee544daa86e29d4ba5887dc173590659c0c23d16e8db7e69e191",
+      "bytes": 102417
+    },
+    "build/native-finite-repaired-pickup-20260929-460.obj": {
+      "sha256": "59412b6aaf74c26bb3554bd551467b7884f4d36cad27e49595d9cbf99f704260",
+      "bytes": 102358
+    },
+    "build/native-finite-repaired-pickup-20260929-470.obj": {
+      "sha256": "c28d666b23788a9559d2f8a9eb023711a07aa48b8cc8f89854cc25a8a973f119",
+      "bytes": 102380
+    },
+    "build/native-finite-repaired-pickup-20260929-480.obj": {
+      "sha256": "a7208f5573e6ea571d539d9eef0bf3690462618b8e180879ce987de9e4d663f8",
+      "bytes": 102373
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-0.obj": {
+      "sha256": "c06e8d202f2391214eb62ee1b1a65b4e424a8e32a36f541eef38cc0a0b71dbaa",
+      "bytes": 102354
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-10.obj": {
+      "sha256": "bef064c5a9b69cc897002f0e349ee4fb908caf6729a4ec25754ff082573e0ee2",
+      "bytes": 103802
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-20.obj": {
+      "sha256": "d0bdc5638573263789c36c4efbd454f46d553b954418fb22a535a9841cd714ed",
+      "bytes": 103801
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-30.obj": {
+      "sha256": "e613197a1a60293c828a2160be1168c203667cd464c232ba1682a0769037b864",
+      "bytes": 103460
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-40.obj": {
+      "sha256": "97e8cce4898e91c2d7dfd0a865a43ec4598e26308769ea788c4f75284635a6a4",
+      "bytes": 103037
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-50.obj": {
+      "sha256": "eed17a087ee582095fc160a5d686b4845a78bda2626b386afe51f2e9cd4d593b",
+      "bytes": 102364
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-60.obj": {
+      "sha256": "ff73649f98a8a5e9d9c22bf4e9a349b7443fdb5c547a290bb0db36e225b288e8",
+      "bytes": 101917
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-70.obj": {
+      "sha256": "ee06986aa188736a06cc78ea021c5d9ed78947b676d00ed21ec5ba95a13d957e",
+      "bytes": 101511
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-80.obj": {
+      "sha256": "d6f767b5918c68e9e4119e1a3eab717aa2420bc424c108b582b866d73a5dae9b",
+      "bytes": 101201
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-90.obj": {
+      "sha256": "8f05612300266c6af4872a87b9fc4e8e4eaf4d9c26967fde5f6bab82b6031716",
+      "bytes": 100998
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-100.obj": {
+      "sha256": "c596b7de0e850a5fa71476d56f6a865a932b693c351fb41bc9e34bda01b22e48",
+      "bytes": 101187
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-110.obj": {
+      "sha256": "3084f60be45fd8fb959326acb67726b26fac4fb2bb562737d6672a148028b138",
+      "bytes": 101483
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-120.obj": {
+      "sha256": "ec47df7041e54e4cf94ff4e7d0da0dd2239b326edd2382d0d1df4b7bc116400d",
+      "bytes": 101769
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-130.obj": {
+      "sha256": "404377cc1e0fca6d843466d47f53dbec742ff834b0521c7f5001ae9225c5932e",
+      "bytes": 102035
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-140.obj": {
+      "sha256": "83b7d411053f8fc5db32e2d507bfea3c73c8ca6f76304d0149e36a9ce7dd8f17",
+      "bytes": 103420
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-150.obj": {
+      "sha256": "8b48f0f0a1f5f48d31a2e05faa896521d760dd4fb7b031e3865b409aa20b1bbc",
+      "bytes": 103856
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-160.obj": {
+      "sha256": "266e34c606f72953b1af6df46d78513211cb886e0cc1f7168f016ed8fad434a1",
+      "bytes": 103775
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-170.obj": {
+      "sha256": "2e5c4e0be851feb6dd8c89654fe0ef4556af697a4b9173d4a53ced6988917dcd",
+      "bytes": 103259
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-180.obj": {
+      "sha256": "a05ab6185f54c10d58774176af1fc50cec29e7bac864ed4b7c1967a636c5aed4",
+      "bytes": 103160
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-190.obj": {
+      "sha256": "894135534f615a18d96caa2e714efb08a24315bb4215c0f6ed2b37917a7d24ee",
+      "bytes": 102863
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-200.obj": {
+      "sha256": "b1152f75bcc9358434e9b58a02a4ee4215d6292da8b3812bcb2f3d906f8a1088",
+      "bytes": 102891
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-210.obj": {
+      "sha256": "dbd9bf09d2b37cf4bc70c377b5e28af509e4031bc5485b0927d93c33688bc8cf",
+      "bytes": 102732
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-220.obj": {
+      "sha256": "b2119c7bd4fbe0c43f33ec506b1807c81a5895e396c9ba5b0145df03d3f2ad3a",
+      "bytes": 102382
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-230.obj": {
+      "sha256": "9fb297e43a2df577d9830f9e8f97a71c8bc9c0d06a30f89778f6c3ce775b6aab",
+      "bytes": 102201
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-240.obj": {
+      "sha256": "dc6ba62683ad108af6ceacfcc573873c4a5951769cf1f58f83d8fee3f7bf84ee",
+      "bytes": 102235
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-250.obj": {
+      "sha256": "45b7152bc8ef043f3ea7315345771262edd01a72b60a93115a745d0352e5c00c",
+      "bytes": 102241
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-260.obj": {
+      "sha256": "ca920e40a51ecca80c188033a9da65e18d60012b46f5a2eeb53fe44a6117abd3",
+      "bytes": 102185
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-270.obj": {
+      "sha256": "d18df6550079947fa77f2e28a639c7b81e49e25837cbc148d0af06665bb5d971",
+      "bytes": 102116
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-280.obj": {
+      "sha256": "92e43acdfe8080d4f17d0072a2ad227152e62cf6867abe525b37829b4a1ea94c",
+      "bytes": 102021
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-290.obj": {
+      "sha256": "2db913f78487c574ca7ead3c969fb850f5d130d3aeac150fa2324df7d099ae3e",
+      "bytes": 102068
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-300.obj": {
+      "sha256": "8ad379d9dfacd88439b5d16b473a35a84c68a1e329e319638d86d9d73c62b1a7",
+      "bytes": 102197
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-310.obj": {
+      "sha256": "518552808e9faff68ef02277b60bb02d20c97c4e4914dc336c5fd4a1374c0e59",
+      "bytes": 102263
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-320.obj": {
+      "sha256": "48a9484bd56cd358e5d9d9af5c746d64d729c7ea16fbc843af8a97c09e22dc22",
+      "bytes": 102403
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-330.obj": {
+      "sha256": "f54e6251a9623bf857fffbb2404d2ec9d5fca2c2b38968ae1aab5b6e3fdeae6d",
+      "bytes": 102288
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-340.obj": {
+      "sha256": "cf599da37fae407e6aeb1948cb3cffc972913159fb96decc3d0e0fa7ef7781ce",
+      "bytes": 102261
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-350.obj": {
+      "sha256": "e6848175f943664ff75e2331343b1fd6f8cbab4b177dd77b86d86041f63b0bb5",
+      "bytes": 102305
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-360.obj": {
+      "sha256": "a2fc3fb26623b501f66384993f19c20b9e13f0e5897d04d618ce35102c88c71b",
+      "bytes": 102323
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-370.obj": {
+      "sha256": "df3584c057598d00ca2596388aeccdd026d30957c30aae19e0b50ee85ebc9d6a",
+      "bytes": 102415
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-380.obj": {
+      "sha256": "2d04a9e0339ff65d4aac40c99886500875faf9b94bc86a388485e1aaa3d14c22",
+      "bytes": 102402
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-390.obj": {
+      "sha256": "af1ed2206ab0605913cc79e4e09689bba4f5e5d51ead910c89c4f8fdba5fa159",
+      "bytes": 102377
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-400.obj": {
+      "sha256": "d29a4252e03677f42753e6a93dd0cdf6f4e3d1b131ce264a8300f654fb5ea244",
+      "bytes": 102395
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-410.obj": {
+      "sha256": "d897c774390491045992b7411adb75b585310759267ff1bc46db8b19a3aaca06",
+      "bytes": 102396
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-420.obj": {
+      "sha256": "1015e43840d8e8e1731bb0d9d0160c132643977d672b06f482614669a1a7fcf6",
+      "bytes": 102429
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-430.obj": {
+      "sha256": "75092c9931b5d950dbf811e1f554809694e4e432f0ed4304c5d2e782af33123e",
+      "bytes": 102398
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-440.obj": {
+      "sha256": "9fddbfddf9ad0b0c4362dee5db53951c3856273a583b60b9c2e405a49e5ece68",
+      "bytes": 102386
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-450.obj": {
+      "sha256": "421697a03863ee544daa86e29d4ba5887dc173590659c0c23d16e8db7e69e191",
+      "bytes": 102417
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-460.obj": {
+      "sha256": "59412b6aaf74c26bb3554bd551467b7884f4d36cad27e49595d9cbf99f704260",
+      "bytes": 102358
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-470.obj": {
+      "sha256": "c28d666b23788a9559d2f8a9eb023711a07aa48b8cc8f89854cc25a8a973f119",
+      "bytes": 102380
+    },
+    "build/native-finite-repaired-pickup-20260929-r2-480.obj": {
+      "sha256": "a7208f5573e6ea571d539d9eef0bf3690462618b8e180879ce987de9e4d663f8",
+      "bytes": 102373
+    }
+  }
+}

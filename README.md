@@ -87,11 +87,15 @@ Separately, native Metal finite-bench geometry passes **1,714** cases twice,
 with maximum impact-position error below **0.4 µm**. These focused checks do
 not qualify the complete native bag. The native finite-bench response now also
 passes **104 focused cases twice**, covering impact, support, friction, rolling
-and supported fruit pairs. The first full candidate stops at frame 4; a ghost
-support impulse repair now passes that point and a new complete replay is running.
-Native spill qualification remains open.
+and supported fruit pairs. The first full candidate stopped at frame 4. The
+repaired native run completes two 480-frame replays with native-reported exact
+internal replay and identical exported fruit traces and sampled OBJs, but exits
+**FAIL**: fruits 8 and 9 are released and neither finishes grounded. All 49
+saved states pass independent contact audits; no per-substep energy/work ledger
+was retained. Native spill qualification remains open.
 [Contact repair and actual finer results](docs/COUPLED_YARN_CONTACT.md) ·
-[Native finite-bench response and qualification boundary](docs/NATIVE_FINITE_BENCH.md).
+[Native finite-bench response and qualification boundary](docs/NATIVE_FINITE_BENCH.md) ·
+[Native terminal audit and exact receipt](docs/assets/native-finite-repaired-pickup-audit/README.md).
 
 The CPU impact/departure repair now passes **16 exact replay cases**, removing
 pre-impact velocity reconstruction and stale friction after separation. The

@@ -1,0 +1,50 @@
+{
+  "schema": "numi.native-finite-repaired-pickup.cpu-audit-receipt.v1",
+  "native_exit": 1,
+  "independent_audit_exit": 0,
+  "strict_fruit_trace_exit": 1,
+  "sampled_snapshot_audit_exit": 0,
+  "terminal_snapshot_audit_exit": 0,
+  "files": {
+    "build/native-finite-repaired-cpu-audit-20260929/audit.py": {
+      "sha256": "f531b6000a59789ea1b16ad25f4b051d40dd6ed9bf4a292c42383751c1b9475d",
+      "bytes": 13951
+    },
+    "build/native-finite-repaired-cpu-audit-20260929/result.json": {
+      "sha256": "8763154c1873c89037b67f4fba18265228131f85560ed4f5a68b13b4c1765cee",
+      "bytes": 11971
+    },
+    "build/native-finite-repaired-cpu-audit-20260929/strict-fruit-trace.json": {
+      "sha256": "c3186ee55742b18cb14e4485212f0330eded0e3a178b1696daf72a376388f6fe",
+      "bytes": 17380
+    },
+    "build/native-finite-repaired-cpu-audit-20260929/terminal-snapshot.json": {
+      "sha256": "138ac594a6fbc6b87d3512833d76de5bcf5bb92660bd3b535d95a22f93ab7669",
+      "bytes": 2622
+    },
+    "build/native-finite-repaired-cpu-audit-20260929/all-sampled-snapshots.json": {
+      "sha256": "f1c253295fe841acf32da28c87592172a3e94f313fc9f668b6cddadc247d64e7",
+      "bytes": 50585
+    },
+    "tools/audit_replayed_finite_fruit_trace.py": {
+      "sha256": "4ceee6a669b99a4ff7d8885ceed6927cd42822e551d592db9eb21d95f02c999b",
+      "bytes": 7485
+    },
+    "tools/audit_cloth_snapshot.py": {
+      "sha256": "465e30940458a80a42d47bcb4575b39940a037b0aa8b2e01aa80ff84235dbb3e",
+      "bytes": 15834
+    },
+    "build/native-finite-repaired-pickup-20260929.launch.json": {
+      "sha256": "f3c699ba022b025c3395b1ef1e2947f200d66b36229c38747d159367a78b4c17",
+      "bytes": 1401
+    },
+    "build/native-finite-repaired-pickup-20260929.exit": {
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "bytes": 2
+    },
+    "build/native-finite-repaired-pickup-20260929.log": {
+      "sha256": "f1e9c3862b938c9cdfb8f2cb4eb0aac8e535408bfeb4d1746a381b949c649b38",
+      "bytes": 23468
+    }
+  }
+}
