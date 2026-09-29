@@ -18,6 +18,9 @@ FIELDS = ['frame', 'time_s', 'accepted_steps', 'rejected_steps',
           'elastic_force_work_J', 'absolute_position_projection_work_J',
           'maximum_position_projection_step_J', 'maximum_absolute_contact_step_J',
           'positive_contact_work_J', 'independent_mechanical_energy_J']
+VERLET_FIELDS = FIELDS[:-1] + ['contact_kinetic_change_J',
+    'contact_force_response_change_J', 'absolute_contact_force_response_change_J',
+    'maximum_contact_force_response_step_J', 'integrator', FIELDS[-1]]
 
 
 def sub(a, b):
@@ -79,7 +82,8 @@ def audit(prefix, steps=5000):
     payload = path.read_bytes()
     with path.open() as f:
         reader = csv.DictReader(f)
-        if reader.fieldnames != FIELDS:
+        fields = reader.fieldnames
+        if fields not in (FIELDS, VERLET_FIELDS):
             raise ValueError('unexpected energy ledger schema')
         rows = list(reader)
     if len(rows) != 101 or steps not in tuple(5000*2**k for k in range(7)):
@@ -91,17 +95,28 @@ def audit(prefix, steps=5000):
                  'maximum_position_projection_step_J', 'maximum_absolute_contact_step_J',
                  'positive_contact_work_J']
     previous = {k: 0. for k in monotonic}
+    extended = fields == VERLET_FIELDS
+    integrator = int(rows[0]['integrator']) if extended else 0
+    if integrator not in (0, 1):
+        raise ValueError('unsupported integrator')
+    ledger_fields = [k for k in fields[4:-1] if k != 'integrator']
+    if extended:
+        monotonic += ['absolute_contact_force_response_change_J',
+                      'maximum_contact_force_response_step_J']
+        previous.update({k: 0. for k in monotonic})
     for frame, row in enumerate(rows):
-        if set(row) != set(FIELDS) or any(v is None for v in row.values()):
+        if set(row) != set(fields) or any(v is None for v in row.values()):
             raise ValueError('malformed energy row')
-        values = {k: float(row[k]) for k in FIELDS}
+        values = {k: float(row[k]) for k in fields}
         if not all(math.isfinite(v) for v in values.values()):
             raise ValueError('nonfinite energy ledger')
         if (int(row['frame']), int(row['accepted_steps']), int(row['rejected_steps'])) != (frame, frame*steps//100, 0):
             raise ValueError('nonconsecutive frame or incorrect accepted/rejected step count')
         if abs(values['time_s'] - frame*.005) > 1e-12:
             raise ValueError('energy time does not match nodal trace')
-        if frame == 0 and any(values[k] != 0 for k in FIELDS[4:-1]):
+        if extended and values['integrator'] != integrator:
+            raise ValueError('integrator changes within trace')
+        if frame == 0 and any(values[k] != 0 for k in ledger_fields):
             raise ValueError('initial work ledger is not zero')
         for key in monotonic:
             if values[key] < previous[key] or values[key] < 0:
@@ -111,17 +126,26 @@ def audit(prefix, steps=5000):
             raise ValueError('signed integration change exceeds absolute ledger')
         if abs(values['contact_elastic_change_J'])+values['contact_gravity_change_J'] > values['absolute_position_projection_work_J']+1e-6:
             raise ValueError('signed position work exceeds absolute bound')
+        kinetic_change = values['contact_kinetic_change_J'] if extended else -values['normal_kinetic_loss_J']
+        if extended:
+            response = values['contact_force_response_change_J']
+            if abs(response-kinetic_change-values['normal_kinetic_loss_J']) > 1e-5:
+                raise ValueError('inconsistent contact force response')
+            if abs(response) > values['absolute_contact_force_response_change_J']+1e-6:
+                raise ValueError('signed force response exceeds absolute bound')
         maximum_reconstruction = max(maximum_reconstruction,
             abs(energies[frame]-values['independent_mechanical_energy_J']))
         maximum_balance = max(maximum_balance, abs(energies[frame]-energies[0]
             -values['free_integration_change_J']-values['contact_mechanical_change_J']))
         maximum_components = max(maximum_components, abs(values['contact_elastic_change_J']
-            +values['contact_gravity_change_J']-values['normal_kinetic_loss_J']
+            +values['contact_gravity_change_J']+kinetic_change
             -values['contact_mechanical_change_J']))
     passed = maximum_reconstruction < 1e-5 and maximum_balance < 1e-4 and maximum_components < 1e-5
-    final = {key: float(rows[-1][key]) for key in FIELDS[4:]}
+    final = {key: float(rows[-1][key]) for key in fields[4:] if key != 'integrator'}
     defect = final['absolute_free_integration_change_J']+final['absolute_position_projection_work_J']
-    return {'result': 'PASS' if passed else 'FAIL', 'qualification_kind': 'energy accounting consistency', 'captured_frames': 101,
+    if extended:
+        defect += final['absolute_contact_force_response_change_J']
+    result = {'result': 'PASS' if passed else 'FAIL', 'qualification_kind': 'energy accounting consistency', 'captured_frames': 101,
             'steps': steps, 'nodes': nodes, 'tetrahedra': geometry['tetrahedra'],
             'maximum_FP64_reconstruction_error_J': maximum_reconstruction,
             'maximum_energy_accounting_residual_J': maximum_balance,
@@ -132,6 +156,10 @@ def audit(prefix, steps=5000):
             'final_work_ledger': final, 'energy_trace_sha256': hashlib.sha256(payload).hexdigest(),
             'nodal_trace_sha256': geometry['trace_sha256'], 'topology_sha256': geometry['topology_sha256'],
             'evidence_boundary': 'Independent captured-state constitutive/kinetic/gravity energy and cumulative ledger consistency. Free integration change is a measured numerical defect, not physical dissipation. Position projection work is reported separately from kinetic loss. Does not certify zero integration error, spatial convergence, calibrated material, reciprocal cloth contact or whole-scene energy closure.'}
+    if extended:
+        result['integrator'] = ('euler', 'support-verlet')[integrator]
+        result['evidence_boundary'] += ' Support-Verlet uses a support-consistent pre-impact baseline; its post-impact force response is included in the numerical error bound.' if integrator else ' The Euler contact kinetic change equals explicit normal kinetic loss.'
+    return result
 
 
 def main():

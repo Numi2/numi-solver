@@ -132,11 +132,12 @@ struct Frame {
     NumiDeformableMeshStatus status;
 };
 struct Pipelines {
-    id<MTLComputePipelineState> evaluate,predict,validate,commit;
+    id<MTLComputePipelineState> evaluate,predict,finishVerlet,validate,commit;
 };
 std::vector<Frame> simulate(id<MTLDevice> device,Pipelines pipelines,const Mesh& mesh,float dt,bool plane=true,
                           uint32_t stepLimit=0,uint32_t abi=NUMI_DEFORMABLE_MESH_ABI_VERSION,
-                          Frame* lastFreePrediction=nullptr){
+                          Frame* lastFreePrediction=nullptr,
+                          uint32_t integrator=NUMI_DEFORMABLE_MESH_INTEGRATOR_EULER){
     auto buffer=[&](const void* data,size_t bytes){
         id<MTLBuffer> result=data?[device newBufferWithBytes:data length:bytes options:MTLResourceStorageModeShared]:
             [device newBufferWithLength:bytes options:MTLResourceStorageModeShared];
@@ -160,7 +161,7 @@ std::vector<Frame> simulate(id<MTLDevice> device,Pipelines pipelines,const Mesh&
     auto status=buffer(&initial,sizeof(initial));
     auto queue=[device newCommandQueue];if(!queue)throw std::runtime_error("mesh command queue failed");
     NumiDeformableMeshConfig config{{uint32_t(mesh.positions.size()),uint32_t(mesh.elements.size()),uint32_t(mesh.incidence.size()),abi},
-        {0,0,-9.81f,dt},{0,plane?1.0f:0.0f,0,0}};
+        {0,0,-9.81f,dt},{0,plane?1.0f:0.0f,0,0},{integrator,0,0,0}};
     std::vector<Frame> frames;
     auto capture=[&]{Frame frame{std::vector<mr_float4>(mesh.positions.size()),std::vector<mr_float4>(mesh.positions.size()),{}};
         std::memcpy(frame.positions.data(),positions.contents,positions.length);
@@ -189,6 +190,8 @@ std::vector<Frame> simulate(id<MTLDevice> device,Pipelines pipelines,const Mesh&
             [encoder setBuffer:candidatePositions offset:0 atIndex:2];[encoder setBuffer:candidate offset:0 atIndex:4];
             dispatch(pipelines.evaluate,config.counts.y);
             [encoder setBuffer:positions offset:0 atIndex:2];[encoder setBuffer:previous offset:0 atIndex:4];
+            if(integrator==NUMI_DEFORMABLE_MESH_INTEGRATOR_SUPPORT_VERLET)
+                dispatch(pipelines.finishVerlet,config.counts.x);
             dispatch(pipelines.validate,1);dispatch(pipelines.commit,config.counts.x);
         }
         [encoder endEncoding];[command commit];[command waitUntilCompleted];
@@ -233,13 +236,13 @@ V center(const Frame& frame){
 double height(const Frame& frame){
     double low=1e30,high=-1e30;for(auto p:frame.positions){low=std::min(low,double(p.z));high=std::max(high,double(p.z));}return high-low;
 }
-void exportFrames(const std::string& prefix,const Mesh& mesh,const std::vector<Frame>& frames){
+void exportFrames(const std::string& prefix,const Mesh& mesh,const std::vector<Frame>& frames,uint32_t integrator){
     if(prefix.empty())return;
     std::ofstream csv(prefix+".csv");if(!csv)throw std::runtime_error("cannot write mesh trajectory");
     csv<<"frame,time_s,node,x_m,y_m,z_m,vx_m_s,vy_m_s,vz_m_s,mass_kg\n"<<std::setprecision(12);
     std::ofstream topology(prefix+"-topology.csv");if(!topology)throw std::runtime_error("cannot write mesh topology");
     std::ofstream energy(prefix+"-energy.csv");if(!energy)throw std::runtime_error("cannot write mesh energy ledger");
-    energy<<"frame,time_s,accepted_steps,rejected_steps,normal_kinetic_loss_J,contact_elastic_change_J,contact_gravity_change_J,contact_mechanical_change_J,maximum_positive_contact_step_J,free_integration_change_J,absolute_free_integration_change_J,maximum_absolute_free_step_J,elastic_force_work_J,absolute_position_projection_work_J,maximum_position_projection_step_J,maximum_absolute_contact_step_J,positive_contact_work_J,independent_mechanical_energy_J\n"<<std::setprecision(12);
+    energy<<"frame,time_s,accepted_steps,rejected_steps,normal_kinetic_loss_J,contact_elastic_change_J,contact_gravity_change_J,contact_mechanical_change_J,maximum_positive_contact_step_J,free_integration_change_J,absolute_free_integration_change_J,maximum_absolute_free_step_J,elastic_force_work_J,absolute_position_projection_work_J,maximum_position_projection_step_J,maximum_absolute_contact_step_J,positive_contact_work_J,contact_kinetic_change_J,contact_force_response_change_J,absolute_contact_force_response_change_J,maximum_contact_force_response_step_J,integrator,independent_mechanical_energy_J\n"<<std::setprecision(12);
     topology<<"element,node0,node1,node2,node3,rest_volume_m3,mu_Pa,lambda_Pa\n"<<std::setprecision(12);
     for(size_t e=0;e<mesh.elements.size();++e){auto tet=mesh.elements[e];
         topology<<e<<','<<tet.nodes.x<<','<<tet.nodes.y<<','<<tet.nodes.z<<','<<tet.nodes.w<<','<<tet.inverseRestRows[0].w<<','<<tet.material.x<<','<<tet.material.y<<'\n';}
@@ -249,6 +252,7 @@ void exportFrames(const std::string& prefix,const Mesh& mesh,const std::vector<F
             <<s.contactWork.x<<','<<s.contactWork.y<<','<<s.contactWork.z<<','<<s.contactWork.w<<','
             <<s.integration.x<<','<<s.integration.y<<','<<s.integration.z<<','<<s.integration.w<<','
             <<s.projectionBounds.x<<','<<s.projectionBounds.y<<','<<s.projectionBounds.z<<','<<s.projectionBounds.w<<','
+            <<s.contactKinetic.x<<','<<s.contactKinetic.y<<','<<s.contactKinetic.z<<','<<s.contactKinetic.w<<','<<integrator<<','
             <<mechanicalEnergy(mesh,frames[f])<<'\n';
         std::ofstream obj(prefix+"-"+std::to_string(f)+".obj");if(!obj)throw std::runtime_error("cannot write mesh OBJ");
         obj<<"# Native shared-node nonlinear elastic mesh and frictionless inelastic plane\n"<<std::setprecision(12);
@@ -284,7 +288,7 @@ int topologyProbe(){
     return pass?0:1;
 }
 
-int run(const std::string& prefix,const uint32_t refinement,const float timestep){
+int run(const std::string& prefix,const uint32_t refinement,const float timestep,const uint32_t integrator){
     auto device=MTLCreateSystemDefaultDevice();if(!device)throw std::runtime_error("Metal device unavailable");
     NSError* error=nil;
     auto library=[device newLibraryWithURL:[NSURL fileURLWithPath:@NUMI_DEFORMABLE_MESH_METALLIB] error:&error];
@@ -292,11 +296,15 @@ int run(const std::string& prefix,const uint32_t refinement,const float timestep
     auto pipeline=[&](NSString* name){auto result=[device newComputePipelineStateWithFunction:[library newFunctionWithName:name] error:&error];
         if(!result)throw std::runtime_error(error.localizedDescription.UTF8String);return result;};
     Pipelines pipelines{pipeline(@"numi_deformable_mesh_evaluate"),pipeline(@"numi_deformable_mesh_predict"),
+        pipeline(@"numi_deformable_mesh_finish_verlet"),
         pipeline(@"numi_deformable_mesh_validate"),pipeline(@"numi_deformable_mesh_commit")};
-    auto mesh=makeMesh(refinement);auto motion=simulate(device,pipelines,mesh,timestep),replay=simulate(device,pipelines,mesh,timestep),fine=simulate(device,pipelines,mesh,timestep/2);
+    auto mesh=makeMesh(refinement);
+    auto motion=simulate(device,pipelines,mesh,timestep,true,0,NUMI_DEFORMABLE_MESH_ABI_VERSION,nullptr,integrator),
+         replay=simulate(device,pipelines,mesh,timestep,true,0,NUMI_DEFORMABLE_MESH_ABI_VERSION,nullptr,integrator),
+         fine=simulate(device,pipelines,mesh,timestep/2,true,0,NUMI_DEFORMABLE_MESH_ABI_VERSION,nullptr,integrator);
     bool rollbackExact=true;uint32_t rejectedCases=0;
-    auto reject=[&](Mesh malformed,uint32_t bit,uint32_t abi=NUMI_DEFORMABLE_MESH_ABI_VERSION){
-        auto states=simulate(device,pipelines,malformed,1e-4f,true,1,abi);
+    auto reject=[&](Mesh malformed,uint32_t bit,uint32_t abi=NUMI_DEFORMABLE_MESH_ABI_VERSION,bool invalidIntegrator=false){
+        auto states=simulate(device,pipelines,malformed,1e-4f,true,1,abi,nullptr,invalidIntegrator?2:integrator);
         auto last=states.back();
         bool valid=(last.status.control.y&bit)!=0&&last.status.control.w==0&&last.status.control.z==1&&
             std::memcmp(states[0].positions.data(),last.positions.data(),mesh.positions.size()*sizeof(mr_float4))==0&&
@@ -307,16 +315,17 @@ int run(const std::string& prefix,const uint32_t refinement,const float timestep
     };
     auto malformed=mesh;malformed.velocityAndMass[3].w=0;reject(malformed,NUMI_DEFORMABLE_MESH_FAILURE_STATE);
     malformed=mesh;malformed.velocityAndMass[0].x=2000;reject(malformed,NUMI_DEFORMABLE_TET_FAILURE_INVERSION);
-    malformed=mesh;malformed.elements[0].nodes.x=999;reject(malformed,NUMI_DEFORMABLE_MESH_FAILURE_TOPOLOGY);
+    malformed=mesh;malformed.elements[0].nodes.x=uint32_t(mesh.positions.size());reject(malformed,NUMI_DEFORMABLE_MESH_FAILURE_TOPOLOGY);
     malformed=mesh;malformed.incidence[1]=malformed.incidence[0];reject(malformed,NUMI_DEFORMABLE_MESH_FAILURE_TOPOLOGY);
     reject(mesh,NUMI_DEFORMABLE_TET_FAILURE_ABI,0);
+    reject(mesh,NUMI_DEFORMABLE_MESH_FAILURE_STATE,NUMI_DEFORMABLE_MESH_ABI_VERSION,true);
     // Independent FP64 reconstruction from the actual pre-projection buffers
     // distinguishes elastic/gravity position work from velocity-only loss.
     auto supported=mesh;float low=1;for(auto p:supported.positions)low=std::min(low,p.z);
     for(auto& p:supported.positions)p.z-=low;
     for(auto& v:supported.velocityAndMass)v.z=-1;
     Frame freePrediction;
-    auto contactProbe=simulate(device,pipelines,supported,1e-4f,true,1,NUMI_DEFORMABLE_MESH_ABI_VERSION,&freePrediction);
+    auto contactProbe=simulate(device,pipelines,supported,1e-4f,true,1,NUMI_DEFORMABLE_MESH_ABI_VERSION,&freePrediction,integrator);
     const auto& probe=contactProbe.back();
     double probeElastic=elasticEnergy(supported,probe)-elasticEnergy(supported,freePrediction);
     double probeGravity=0,probeKinetic=0;
@@ -326,10 +335,19 @@ int run(const std::string& prefix,const uint32_t refinement,const float timestep
         probeKinetic+=.5*a.w*(dot(xyz(a),xyz(a))-dot(xyz(b),xyz(b)));
     }
     double probeError=std::max({std::abs(probeElastic-probe.status.contactWork.x),
-        std::abs(probeGravity-probe.status.contactWork.y),std::abs(probeKinetic+probe.status.ledger.w),
+        std::abs(probeGravity-probe.status.contactWork.y),std::abs(probeKinetic-probe.status.contactKinetic.x),
         std::abs(mechanicalEnergy(supported,probe)-mechanicalEnergy(supported,freePrediction)-probe.status.contactWork.z)});
     bool probeValid=probe.status.control.w==1&&probe.status.control.y==0&&probeGravity>0&&
         std::abs(probeElastic)>1e-7&&probeKinetic<0&&probeError<1e-5;
+    bool restingSupportValid=true;double restingImpulse=0,restingKineticLoss=0,restingPositionWork=0;
+    if(integrator==NUMI_DEFORMABLE_MESH_INTEGRATOR_SUPPORT_VERLET){
+        for(auto& v:supported.velocityAndMass)v.z=0;
+        auto rest=simulate(device,pipelines,supported,1e-4f,true,1,NUMI_DEFORMABLE_MESH_ABI_VERSION,nullptr,integrator).back();
+        restingImpulse=rest.status.ledger.x;restingKineticLoss=rest.status.ledger.w;
+        restingPositionWork=rest.status.projectionBounds.x;
+        restingSupportValid=rest.status.control.w==1&&rest.status.control.y==0&&restingImpulse>0&&
+            restingKineticLoss==0&&restingPositionWork==0&&rest.status.contactKinetic.x==0;
+    }
     bool exact=true,allValid=true;double difference=0,energyIncrease=0,maximumElastic=0,maximumShape=0,minimumHeight=height(motion[0]),minimumClearance=1e30;
     double initialEnergy=mechanicalEnergy(mesh,motion[0]),freeFallError=0,maximumMomentumError=0;
     double maximumEnergyAccountingError=0,maximumContactComponentsError=0;
@@ -343,14 +361,15 @@ int run(const std::string& prefix,const uint32_t refinement,const float timestep
             maximumEnergyAccountingError=std::max(maximumEnergyAccountingError,std::abs(
                 mechanicalEnergy(mesh,*state)-initialEnergy-state->status.integration.x-state->status.contactWork.z));
             maximumContactComponentsError=std::max(maximumContactComponentsError,std::abs(double(
-                state->status.contactWork.x)+state->status.contactWork.y-state->status.ledger.w-state->status.contactWork.z));
+                state->status.contactWork.x)+state->status.contactWork.y+state->status.contactKinetic.x-state->status.contactWork.z));
             allValid=allValid&&state->status.control.y==0&&state->status.control.z==0;
             energyIncrease=std::max(energyIncrease,mechanicalEnergy(mesh,*state)-initialEnergy);
             maximumElastic=std::max(maximumElastic,elasticEnergy(mesh,*state));
             double momentum=0;for(auto v:state->velocities)momentum+=v.w*v.z;
             maximumMomentumError=std::max(maximumMomentumError,std::abs(momentum-(-mass*9.81f*f*.005+state->status.ledger.x)));
             if(state->status.ledger.x==0){double dt=state==&motion[f]?timestep:timestep/2,t=f*.005;
-                freeFallError=std::max(freeFallError,std::abs(center(*state)[2]-(initialCenter[2]-.5*9.81f*t*(t+dt))));}
+                double offset=integrator==NUMI_DEFORMABLE_MESH_INTEGRATOR_EULER?dt:0;
+                freeFallError=std::max(freeFallError,std::abs(center(*state)[2]-(initialCenter[2]-.5*9.81f*t*(t+offset))));}
         }
         minimumHeight=std::min(minimumHeight,height(motion[f]));
         for(size_t n=0;n<mesh.positions.size();++n){
@@ -360,13 +379,13 @@ int run(const std::string& prefix,const uint32_t refinement,const float timestep
         }
     }
     auto final=motion.back().status;auto finalFine=fine.back().status;
-    bool accountingValid=probeValid&&maximumEnergyAccountingError<1e-4&&maximumContactComponentsError<1e-5;
+    bool accountingValid=probeValid&&restingSupportValid&&maximumEnergyAccountingError<1e-4&&maximumContactComponentsError<1e-5;
     const uint32_t steps=uint32_t(std::lround(.5/timestep));
     bool qualified=exact&&allValid&&rollbackExact&&accountingValid&&final.control.w==steps&&finalFine.control.w==2*steps&&final.ledger.x>0&&
         final.ledger.y>0&&minimumClearance>=0&&maximumShape>.001&&height(motion[0])-minimumHeight>.001&&
         finalHeight-minimumHeight>.001&&difference<.001&&energyIncrease<.001&&freeFallError<2e-5&&maximumMomentumError<2e-4;
-    exportFrames(prefix,mesh,motion);
-    if(!prefix.empty())exportFrames(prefix+"-half",mesh,fine);
+    exportFrames(prefix,mesh,motion,integrator);
+    if(!prefix.empty())exportFrames(prefix+"-half",mesh,fine,integrator);
     std::cout<<std::setprecision(12)<<"device="<<device.name.UTF8String<<" backend=Apple_Metal\n"
         <<"shared_nodes="<<mesh.positions.size()<<" tetrahedra="<<mesh.elements.size()<<" boundary_triangles="<<mesh.faces.size()<<" mesh_refinement="<<refinement<<" density_kg_m3=1000 mass_kg="<<mass<<'\n'
         <<"simulated_seconds=.5 steps="<<steps<<" refined_steps="<<2*steps<<" timestep_s="<<timestep
@@ -380,8 +399,11 @@ int run(const std::string& prefix,const uint32_t refinement,const float timestep
         <<"maximum_mechanical_energy_increase_J="<<energyIncrease<<" maximum_elastic_energy_J="<<maximumElastic
         <<" maximum_free_fall_COM_error_m="<<freeFallError<<'\n'
         <<"rejected_cases="<<rejectedCases<<" rejected_mesh_state_and_ledger_exact="<<rollbackExact<<'\n'
-        <<"mesh_ABI="<<NUMI_DEFORMABLE_MESH_ABI_VERSION<<" projection_work_probe_pass="<<probeValid
+        <<"mesh_ABI="<<NUMI_DEFORMABLE_MESH_ABI_VERSION<<" integrator="<<(integrator==0?"euler":"support_verlet")
+        <<" projection_work_probe_pass="<<probeValid
         <<" projection_work_probe_maximum_error_J="<<probeError<<'\n'
+        <<"resting_support_probe_pass="<<restingSupportValid<<" resting_support_impulse_Ns="<<restingImpulse
+        <<" resting_support_kinetic_loss_J="<<restingKineticLoss<<" resting_support_position_work_J="<<restingPositionWork<<'\n'
         <<"contact_elastic_change_J="<<final.contactWork.x<<" contact_gravity_change_J="<<final.contactWork.y
         <<" contact_mechanical_change_J="<<final.contactWork.z<<" maximum_positive_contact_step_J="<<final.contactWork.w<<'\n'
         <<"free_integration_change_J="<<final.integration.x<<" absolute_free_integration_change_J="<<final.integration.y
@@ -392,6 +414,8 @@ int run(const std::string& prefix,const uint32_t refinement,const float timestep
         <<"absolute_position_projection_work_J="<<final.projectionBounds.x
         <<" half_step_absolute_position_projection_work_J="<<finalFine.projectionBounds.x
         <<" positive_contact_work_J="<<final.projectionBounds.w<<'\n'
+        <<"contact_kinetic_change_J="<<final.contactKinetic.x<<" contact_force_response_change_J="<<final.contactKinetic.y
+        <<" absolute_contact_force_response_change_J="<<final.contactKinetic.z<<'\n'
         <<"maximum_independent_energy_accounting_error_J="<<maximumEnergyAccountingError
         <<" maximum_contact_component_sum_error_J="<<maximumContactComponentsError
         <<" energy_accounting_valid="<<accountingValid<<'\n'
@@ -401,11 +425,18 @@ int run(const std::string& prefix,const uint32_t refinement,const float timestep
 }
 }
 int main(int argc,const char* const* argv){@autoreleasepool{try{
-    std::string prefix;uint32_t refinement=0;bool topologyOnly=false;float timestep=1e-4f;
+    std::string prefix;uint32_t refinement=0,integrator=NUMI_DEFORMABLE_MESH_INTEGRATOR_EULER;
+    bool topologyOnly=false;float timestep=1e-4f;
     for(int argument=1;argument<argc;++argument){
         std::string option=argv[argument];
         if(option=="--trajectory"&&argument+1<argc)prefix=argv[++argument];
         else if(option=="--topology-probe")topologyOnly=true;
+        else if(option=="--integrator"&&argument+1<argc){
+            std::string value=argv[++argument];
+            if(value=="euler")integrator=NUMI_DEFORMABLE_MESH_INTEGRATOR_EULER;
+            else if(value=="support-verlet")integrator=NUMI_DEFORMABLE_MESH_INTEGRATOR_SUPPORT_VERLET;
+            else throw std::runtime_error("integrator must be euler or support-verlet");
+        }
         else if(option=="--timestep"&&argument+1<argc){
             std::string value=argv[++argument];size_t parsed=0;double requested=std::stod(value,&parsed);
             bool supported=false;
@@ -418,8 +449,8 @@ int main(int argc,const char* const* argv){@autoreleasepool{try{
             std::string value=argv[++argument];
             if(value!="0"&&value!="1"&&value!="2"&&value!="3")throw std::runtime_error("mesh refinement must be 0, 1, 2, or 3");
             refinement=uint32_t(std::stoul(value));
-        } else throw std::runtime_error("usage: numi-solver-deformable-mesh [--trajectory PREFIX] [--mesh-refinement 0|1|2|3] [--timestep DT] [--topology-probe]");
+        } else throw std::runtime_error("usage: numi-solver-deformable-mesh [--trajectory PREFIX] [--mesh-refinement 0|1|2|3] [--timestep DT] [--integrator euler|support-verlet] [--topology-probe]");
     }
     if(topologyOnly)return topologyProbe();
-    return run(prefix,refinement,timestep);
+    return run(prefix,refinement,timestep,integrator);
 }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 2;}}}

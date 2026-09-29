@@ -46,6 +46,8 @@ kernel void numi_deformable_mesh_predict(
     bool valid = config.counts.w == NUMI_DEFORMABLE_MESH_ABI_VERSION &&
         all(isfinite(config.gravityAndTimestep)) && config.gravityAndTimestep.w > 0 &&
         all(isfinite(config.plane)) && (config.plane.y == 0 || config.plane.y == 1) &&
+        config.integration.x <= NUMI_DEFORMABLE_MESH_INTEGRATOR_SUPPORT_VERLET &&
+        all(config.integration.yzw == 0) &&
         all(isfinite(p)) && all(isfinite(v)) && v.w > 0;
     uint first = offsets[node], end = offsets[node + 1];
     valid = valid && first < end && end <= config.counts.z;
@@ -61,7 +63,18 @@ kernel void numi_deformable_mesh_predict(
         force += forces[entry.x].forces[entry.y].xyz;
     }
     if (valid) {
-        v.xyz += (force / v.w + config.gravityAndTimestep.xyz) * config.gravityAndTimestep.w;
+        float3 acceleration = force / v.w + config.gravityAndTimestep.xyz;
+        float kick = config.gravityAndTimestep.w;
+        if (config.integration.x == NUMI_DEFORMABLE_MESH_INTEGRATOR_SUPPORT_VERLET) {
+            kick *= 0.5f;
+            // A resting contact supplies its reaction before velocity/position
+            // integration. It does zero work and removes no incoming energy.
+            if (config.plane.y == 1 && p.z == config.plane.x && v.z == 0 && acceleration.z < 0) {
+                contact.z = -v.w * acceleration.z * kick;
+                acceleration.z = 0;
+            }
+        }
+        v.xyz += acceleration * kick;
         p.xyz = fma(v.xyz, float3(config.gravityAndTimestep.w), p.xyz);
         // Retain the exact pre-projection prediction. Its elastic energy must
         // be evaluated separately; kinetic removal alone omits position work.
@@ -70,7 +83,7 @@ kernel void numi_deformable_mesh_predict(
         if (config.plane.y == 1 && p.z < config.plane.x) {
             p.z = config.plane.x;
             if (v.z < 0) {
-                contact.z = -v.w * v.z;
+                contact.z += -v.w * v.z;
                 contact.w = 0.5f * v.w * v.z * v.z;
                 v.z = 0;
             }
@@ -84,6 +97,61 @@ kernel void numi_deformable_mesh_predict(
     candidatePositions[node] = p;
     candidateVelocityAndMass[node] = v;
     contactImpulseAndKineticLoss[node] = contact;
+}
+
+// The second kick uses each branch's own evaluated elastic forces. Candidate
+// and pre-impact predictions share the old-position half kick, but a newly
+// contacted plane changes the second force evaluation. Account for that
+// kinetic difference instead of treating it as normal impact dissipation.
+kernel void numi_deformable_mesh_finish_verlet(
+    constant NumiDeformableMeshConfig& config [[buffer(0)]],
+    device const NumiDeformableMeshElement* elements [[buffer(1)]],
+    device const uint* offsets [[buffer(5)]],
+    device const uint4* incidence [[buffer(6)]],
+    device const float4* candidatePositions [[buffer(7)]],
+    device float4* candidateVelocityAndMass [[buffer(8)]],
+    device float4* contactImpulseAndKineticLoss [[buffer(9)]],
+    device const NumiDeformableTetOutput* candidateOutputs [[buffer(11)]],
+    device const float4* freePositions [[buffer(12)]],
+    device float4* freeVelocityAndMass [[buffer(13)]],
+    device const NumiDeformableTetOutput* freeOutputs [[buffer(14)]],
+    uint node [[thread_position_in_grid]]
+) {
+    if (node >= config.counts.x || config.integration.x != NUMI_DEFORMABLE_MESH_INTEGRATOR_SUPPORT_VERLET) return;
+    float4 v = candidateVelocityAndMass[node], fv = freeVelocityAndMass[node];
+    uint first = offsets[node], end = offsets[node + 1];
+    bool valid = v.w > 0 && fv.w > 0 && first < end && end <= config.counts.z;
+    float3 force = 0, freeForce = 0;
+    if (valid) for (uint i = first; i < end; ++i) {
+        uint4 entry = incidence[i];
+        if (entry.x >= config.counts.y || entry.y >= 4 || entry.z != node) { valid = false; break; }
+        if (elements[entry.x].nodes[entry.y] != node || candidateOutputs[entry.x].control.x != 0 ||
+            freeOutputs[entry.x].control.x != 0) { valid = false; break; }
+        force += candidateOutputs[entry.x].forces[entry.y].xyz;
+        freeForce += freeOutputs[entry.x].forces[entry.y].xyz;
+    }
+    if (valid) {
+        float kick = 0.5f * config.gravityAndTimestep.w;
+        float3 acceleration = force / v.w + config.gravityAndTimestep.xyz;
+        float3 freeAcceleration = freeForce / fv.w + config.gravityAndTimestep.xyz;
+        float4 contact = contactImpulseAndKineticLoss[node];
+        if (config.plane.y == 1 && candidatePositions[node].z == config.plane.x && v.z == 0 && acceleration.z < 0) {
+            contact.z += -v.w * acceleration.z * kick;
+            acceleration.z = 0;
+        }
+        if (config.plane.y == 1 && freePositions[node].z == config.plane.x && fv.z == 0 && freeAcceleration.z < 0)
+            freeAcceleration.z = 0;
+        v.xyz += acceleration * kick;
+        fv.xyz += freeAcceleration * kick;
+        if (config.plane.y == 1 && candidatePositions[node].z == config.plane.x && v.z < 0) {
+            contact.z += -v.w * v.z;
+            contact.w += 0.5f * v.w * v.z * v.z;
+            v.z = 0;
+        }
+        contactImpulseAndKineticLoss[node] = contact;
+    } else { v.w = 0; fv.w = 0; }
+    candidateVelocityAndMass[node] = v;
+    freeVelocityAndMass[node] = fv;
 }
 
 kernel void numi_deformable_mesh_validate(
@@ -107,6 +175,8 @@ kernel void numi_deformable_mesh_validate(
     if (index != 0) return;
     uint failure = config.counts.w == NUMI_DEFORMABLE_MESH_ABI_VERSION
         ? 0 : NUMI_DEFORMABLE_TET_FAILURE_ABI;
+    if (config.integration.x > NUMI_DEFORMABLE_MESH_INTEGRATOR_SUPPORT_VERLET || any(config.integration.yzw != 0))
+        failure |= NUMI_DEFORMABLE_MESH_FAILURE_STATE;
     if (config.counts.z != 4 * config.counts.y || offsets[0] != 0 ||
         offsets[config.counts.x] != config.counts.z)
         failure |= NUMI_DEFORMABLE_MESH_FAILURE_TOPOLOGY;
@@ -115,6 +185,7 @@ kernel void numi_deformable_mesh_validate(
     float impulse = 0, loss = 0;
     float elasticProjection = 0, gravityProjection = 0;
     float freeEnergyChange = 0, elasticForceWork = 0;
+    float kineticProjection = 0;
     for (uint e = 0; e < config.counts.y; ++e) {
         failure |= previousOutputs[e].control.x | candidateOutputs[e].control.x | freeOutputs[e].control.x;
         elasticProjection += candidateOutputs[e].energyAndVolumeRatio.x - freeOutputs[e].energyAndVolumeRatio.x;
@@ -148,10 +219,17 @@ kernel void numi_deformable_mesh_validate(
             failure |= NUMI_DEFORMABLE_MESH_FAILURE_STATE;
         impulse += contact.z; loss += contact.w;
         gravityProjection -= v.w * dot(config.gravityAndTimestep.xyz, p.xyz - fp.xyz);
+        kineticProjection += 0.5f * v.w * dot(v.xyz - fv.xyz, v.xyz + fv.xyz);
         freeEnergyChange += 0.5f * fv.w * dot(fv.xyz - oldV.xyz, fv.xyz + oldV.xyz)
             - fv.w * dot(config.gravityAndTimestep.xyz, fp.xyz - positions[n].xyz);
     }
-    float contactEnergyChange = elasticProjection + gravityProjection - loss;
+    // Retain the exact legacy decomposition for Euler; Verlet's two force
+    // branches require a separately measured projected kinetic change.
+    if (config.integration.x == NUMI_DEFORMABLE_MESH_INTEGRATOR_EULER) kineticProjection = -loss;
+    float forceResponse = kineticProjection + loss;
+    float4 nextKinetic = status.contactKinetic + float4(kineticProjection, forceResponse, abs(forceResponse), 0);
+    nextKinetic.w = max(status.contactKinetic.w, abs(forceResponse));
+    float contactEnergyChange = elasticProjection + gravityProjection + kineticProjection;
     float4 nextContact = status.contactWork + float4(elasticProjection, gravityProjection, contactEnergyChange, 0);
     nextContact.w = max(status.contactWork.w, contactEnergyChange);
     float4 nextIntegration = status.integration + float4(freeEnergyChange, abs(freeEnergyChange), 0, elasticForceWork);
@@ -163,7 +241,8 @@ kernel void numi_deformable_mesh_validate(
     nextBounds.z = max(nextBounds.z, abs(contactEnergyChange));
     nextBounds.w += max(0.0f, contactEnergyChange);
     if (!all(isfinite(netForce)) || !isfinite(impulse) || !isfinite(loss) ||
-        !all(isfinite(nextContact)) || !all(isfinite(nextIntegration)) || !all(isfinite(nextBounds)))
+        !all(isfinite(nextContact)) || !all(isfinite(nextIntegration)) || !all(isfinite(nextBounds)) ||
+        !all(isfinite(nextKinetic)))
         failure |= NUMI_DEFORMABLE_MESH_FAILURE_STATE;
     status.control.x = failure;
     status.control.y |= failure;
@@ -176,6 +255,7 @@ kernel void numi_deformable_mesh_validate(
         status.contactWork = nextContact;
         status.integration = nextIntegration;
         status.projectionBounds = nextBounds;
+        status.contactKinetic = nextKinetic;
     } else ++status.control.z;
 }
 
