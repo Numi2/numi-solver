@@ -161,3 +161,35 @@ corrected cold seed. Corrected native frames 10 and 20 are within tolerance
 (under 14 nm fruit/yarn overlap). These are sampled published states; the
 auditor does not certify intervening substeps, strain, or dynamics. The full
 trajectory and the native solver's failure/replay/strain gates remain required.
+
+## Settling beyond the presentation and diagnostic bounds
+
+The first corrected four-second FP64 run matched two exact replays
+(`state_hash=0x23465c2d4a1627f4`). Fruits 0, 4, 10, and 11 all finished
+with `center.z == radius` and zero vertical velocity. All 49 exported states
+pass the independent contact audit; maximum sampled fruit/yarn, fruit/fruit,
+and nonlocal yarn overlaps are below 8 nm, and sampled ground overlap is zero.
+The native reference's published-state certificate has maximum sphere/yarn
+overlap 0.200 um, nonlocal yarn overlap 0.960 um, and zero ground/strain
+violation. These are rolling landings, not zero-total-speed rest.
+
+That run still returned FAIL: the old numerical-escape classifier flagged
+fruits 4 and 11 solely for travelling beyond five metres during the longer
+settling interval (`escaped_mask=2064`). This was an arbitrary diagnostic
+box, while the collision plane and free space are unbounded. The reference
+now separately reports `outside_diagnostic_bounds_mask`. A finite fruit with
+a classified mouth exit in pickup/recorded scenarios may travel outside that
+box. Unreleased fruit retains the original containment bounds. Nonfinite state,
+invalid radius, below-plane positions, and the existing independent contact,
+strain, speed, orientation and force gates still reject invalid runs. Focused
+checks retain those rejections and accept valid far-field rolling and flight.
+A fresh source/binary-bound four-second replay is running to verify the final
+classification and unchanged physical state; the earlier FAIL is retained.
+
+The completed trajectory also exposed a display mismatch: the renderer drew
+a finite +/-4 m square over the unbounded collision plane. Landed fruit beyond
+that square appeared to float above the background. The rasterizer now draws
+the support plane across the complete orthographic viewport, inverts the world
+projection to cover the visible grid, and retains the world-position shadows.
+Grid density is bounded; with a shared trajectory framing list the grid and
+camera stay fixed for every frame. It changes no simulated positions.

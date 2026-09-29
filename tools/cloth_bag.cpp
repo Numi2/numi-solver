@@ -426,6 +426,7 @@ struct Metrics {
     std::uint64_t ballGroundFrictionContacts{};
     std::uint64_t ballRollingResistanceContacts{};
     std::uint32_t escapedMask{};
+    std::uint32_t outsideDiagnosticBoundsMask{};
     std::uint32_t spilledMask{};
     std::uint32_t mouthCandidateMask{};
     std::uint32_t releasedMask{};
@@ -4714,6 +4715,72 @@ bool runMouthReleaseProbe() {
     return pass;
 }
 
+bool outsideFruitDiagnosticBounds(const Ball& ball, const Scenario scenario) {
+    const double radial = std::hypot(ball.position.x, ball.position.y);
+    return scenario == Scenario::grounded
+        ? ball.position.z > 0.90 || ball.position.z < 0.0 || radial > 0.75
+        : ball.position.z > 5.0 || ball.position.z < -5.0 || radial > 5.0;
+}
+
+bool fruitNumericallyEscaped(
+    const Ball& ball,
+    const Scenario scenario,
+    const bool mouthReleased
+) {
+    if (!finite(ball.position) || !finite(ball.velocity) ||
+        !finite(ball.angularVelocity) || !finite(ball.orientation) ||
+        !std::isfinite(ball.radius) || ball.radius <= 0.0) {
+        return true;
+    }
+    if (scenario != Scenario::spin && ball.position.z < ball.radius - 2.0e-6) {
+        return true;
+    }
+    // The support plane and free space are unbounded. A classified mouth exit
+    // can legitimately travel beyond the old diagnostic box during settling.
+    // Unreleased fruit retains the existing containment bound; all trajectories
+    // still have the independent speed, contact, strain and finiteness gates.
+    if (mouthReleased &&
+        (scenario == Scenario::pickup || scenario == Scenario::recorded)) {
+        return false;
+    }
+    return outsideFruitDiagnosticBounds(ball, scenario);
+}
+
+bool runEscapeClassificationProbe() {
+    Ball rolling{};
+    rolling.position = {-8.65, 1.36, 0.067};
+    rolling.radius = 0.067;
+    rolling.velocity = {-2.93, 0.45, 0.0};
+    const bool legitimateRoll = outsideFruitDiagnosticBounds(rolling, Scenario::pickup) &&
+        !fruitNumericallyEscaped(rolling, Scenario::pickup, true);
+    Ball flying = rolling;
+    flying.position.z = 1.0;
+    flying.velocity.z = -3.0;
+    const bool legitimateFlight = !fruitNumericallyEscaped(flying, Scenario::pickup, true);
+    const bool unreleasedRejected = fruitNumericallyEscaped(rolling, Scenario::pickup, false);
+    Ball penetrating = rolling;
+    penetrating.position.z -= 0.001;
+    const bool groundRejected = fruitNumericallyEscaped(penetrating, Scenario::pickup, true);
+    Ball invalid = rolling;
+    invalid.velocity.x = std::numeric_limits<double>::quiet_NaN();
+    const bool invalidRejected = fruitNumericallyEscaped(invalid, Scenario::pickup, true);
+    const bool otherScenariosRetained =
+        fruitNumericallyEscaped(rolling, Scenario::grounded, true) &&
+        fruitNumericallyEscaped(rolling, Scenario::spin, true) &&
+        !fruitNumericallyEscaped(rolling, Scenario::recorded, true);
+    const bool pass = legitimateRoll && legitimateFlight && unreleasedRejected &&
+        groundRejected && invalidRejected && otherScenariosRetained;
+    std::cout << "probe=release_aware_numerical_escape"
+              << " legitimate_far_roll=" << legitimateRoll
+              << " legitimate_far_flight=" << legitimateFlight
+              << " unreleased_rejected=" << unreleasedRejected
+              << " ground_violation_rejected=" << groundRejected
+              << " nonfinite_rejected=" << invalidRejected
+              << " other_scenarios_retained=" << otherScenariosRetained << '\n'
+              << "result=" << (pass ? "PASS" : "FAIL") << '\n';
+    return pass;
+}
+
 SimulationResult simulate(
     const std::uint32_t steps,
     const double frameTimestep,
@@ -5315,13 +5382,15 @@ SimulationResult simulate(
 
     for (std::size_t ballIndex = 0; ballIndex < result.balls.size(); ++ballIndex) {
         const Ball& ball = result.balls[ballIndex];
-        const double radial = std::hypot(ball.position.x, ball.position.y);
-        const bool outsideScenarioBounds = scenario == Scenario::grounded
-            ? ball.position.z > 0.90 || ball.position.z < 0.0 || radial > 0.75
-            : ball.position.z > 5.0 || ball.position.z < -5.0 || radial > 5.0;
-        if (!finite(ball.position) || outsideScenarioBounds) {
-            result.metrics.escapedMask |= 1u << ballIndex;
+        const std::uint32_t mask = 1u << ballIndex;
+        if (outsideFruitDiagnosticBounds(ball, scenario)) {
+            result.metrics.outsideDiagnosticBoundsMask |= mask;
         }
+        if (fruitNumericallyEscaped(ball, scenario,
+                (result.metrics.releasedMask & mask) != 0u)) {
+            result.metrics.escapedMask |= mask;
+        }
+        const double radial = std::hypot(ball.position.x, ball.position.y);
         if (scenario == Scenario::grounded &&
             (ball.position.z > 0.45 || radial > 0.48)) {
             result.metrics.spilledMask |= 1u << ballIndex;
@@ -5548,6 +5617,7 @@ int main(int argc, char** argv) try {
     bool clothGroundFrictionProbe = false;
     bool rollingResistanceProbe = false;
     bool mouthReleaseProbe = false;
+    bool escapeClassificationProbe = false;
     Scenario scenario = Scenario::grounded;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string value = argv[argument];
@@ -5595,6 +5665,8 @@ int main(int argc, char** argv) try {
             clothGroundFrictionProbe = true;
         } else if (value == "--rolling-resistance-probe") {
             rollingResistanceProbe = true;
+        } else if (value == "--escape-classification-probe") {
+            escapeClassificationProbe = true;
         } else if (value == "--mouth-release-probe") {
             mouthReleaseProbe = true;
         } else if (value == "--scenario" && argument + 1 < argc) {
@@ -5626,7 +5698,8 @@ int main(int argc, char** argv) try {
                          "[--aerodynamics-probe] "
                          "[--cloth-ground-friction-probe] "
                          "[--rolling-resistance-probe] "
-                         "[--mouth-release-probe]\n";
+                         "[--mouth-release-probe] "
+                         "[--escape-classification-probe]\n";
             return 0;
         } else {
             throw std::invalid_argument("unknown argument: " + value);
@@ -5673,6 +5746,9 @@ int main(int argc, char** argv) try {
     }
     if (rollingResistanceProbe) {
         return runRollingResistanceProbe() ? 0 : 1;
+    }
+    if (escapeClassificationProbe) {
+        return runEscapeClassificationProbe() ? 0 : 1;
     }
     if (mouthReleaseProbe) {
         return runMouthReleaseProbe() ? 0 : 1;
@@ -5831,6 +5907,7 @@ int main(int argc, char** argv) try {
               << " max_self_penetration=" << metrics.maximumSelfPenetration
               << " ball_yarn_contacts=" << metrics.ballYarnContacts
               << " self_contacts=" << metrics.selfContacts
+              << " outside_diagnostic_bounds_mask=" << metrics.outsideDiagnosticBoundsMask
               << " escaped_mask=" << metrics.escapedMask
               << " spilled_mask=" << metrics.spilledMask
               << " mouth_candidate_mask="

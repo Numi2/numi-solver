@@ -410,30 +410,48 @@ private func render(
     context.setFillColor(color(250, 249, 246))
     context.fill(CGRect(x: 0, y: 0, width: width, height: height))
 
-    // Draw the solver's z=0 support plane in the same world projection as
-    // the fruit. A fixed screen-space oval gave no visible landing surface
-    // and made grounded fruit away from the origin look suspended.
+    // The solver's support plane is unbounded. In this orthographic view it
+    // covers the whole viewport; a finite +/-4 m patch makes grounded fruit
+    // look suspended once they roll beyond its presentation-only edge.
     context.setFillColor(color(232, 225, 211))
-    let benchCorners = [
-        Vec3(x: -4, y: -4, z: 0), Vec3(x: 4, y: -4, z: 0),
-        Vec3(x: 4, y: 4, z: 0), Vec3(x: -4, y: 4, z: 0)
-    ].map { project($0).point }
-    context.move(to: benchCorners[0])
-    for corner in benchCorners.dropFirst() { context.addLine(to: corner) }
-    context.closePath()
-    context.fillPath()
+    context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+    func groundPoint(screenX: Double, screenY: Double) -> Vec3 {
+        let side = (screenX - centerX) / scale
+        let forward = -(screenY - centerY) / (scale * sin(pitch))
+        return Vec3(
+            x: cos(yaw) * side + sin(yaw) * forward,
+            y: -sin(yaw) * side + cos(yaw) * forward,
+            z: 0
+        )
+    }
+    let visibleGround = [
+        groundPoint(screenX: 0, screenY: 0),
+        groundPoint(screenX: Double(width), screenY: 0),
+        groundPoint(screenX: Double(width), screenY: Double(height)),
+        groundPoint(screenX: 0, screenY: Double(height))
+    ]
+    let groundMinimumX = visibleGround.map(\.x).min()!
+    let groundMaximumX = visibleGround.map(\.x).max()!
+    let groundMinimumY = visibleGround.map(\.y).min()!
+    let groundMaximumY = visibleGround.map(\.y).max()!
+    // Quantize grid spacing and cap its density. With fixed trajectory framing
+    // these bounds and the grid remain identical throughout the animation.
+    let groundSpan = max(groundMaximumX - groundMinimumX,
+                         groundMaximumY - groundMinimumY)
+    let gridSpacing = 0.25 * pow(2.0, max(0.0, ceil(log2(groundSpan / 32.0))))
     context.setStrokeColor(color(152, 130, 101, 0.18))
     context.setLineWidth(0.7)
-    for line in -16...16 {
-        let coordinate = Double(line) * 0.25
-        for (first, second) in [
-            (Vec3(x: coordinate, y: -4, z: 0), Vec3(x: coordinate, y: 4, z: 0)),
-            (Vec3(x: -4, y: coordinate, z: 0), Vec3(x: 4, y: coordinate, z: 0))
-        ] {
-            context.move(to: project(first).point)
-            context.addLine(to: project(second).point)
-            context.strokePath()
-        }
+    for line in Int(floor(groundMinimumX / gridSpacing))...Int(ceil(groundMaximumX / gridSpacing)) {
+        let coordinate = Double(line) * gridSpacing
+        context.move(to: project(Vec3(x: coordinate, y: groundMinimumY, z: 0)).point)
+        context.addLine(to: project(Vec3(x: coordinate, y: groundMaximumY, z: 0)).point)
+        context.strokePath()
+    }
+    for line in Int(floor(groundMinimumY / gridSpacing))...Int(ceil(groundMaximumY / gridSpacing)) {
+        let coordinate = Double(line) * gridSpacing
+        context.move(to: project(Vec3(x: groundMinimumX, y: coordinate, z: 0)).point)
+        context.addLine(to: project(Vec3(x: groundMaximumX, y: coordinate, z: 0)).point)
+        context.strokePath()
     }
     for fruit in fruits {
         let clearance = max(0, fruit.center.z - fruit.radius)

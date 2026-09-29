@@ -731,6 +731,14 @@ if(BUILD_TESTING)
             --rolling-resistance-probe
     )
     add_test(
+        NAME cloth_bag.release_aware_escape
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --escape-classification-probe
+    )
+    set_tests_properties(
+        cloth_bag.release_aware_escape
+        PROPERTIES LABELS "physics;cloth;fruit;release;ground;classification" TIMEOUT 30
+    )
+    add_test(
         NAME cloth_bag.mouth_release
         COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
             --mouth-release-probe
