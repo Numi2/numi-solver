@@ -299,6 +299,14 @@ overlap and `0.884 mm` published strain residual, so that resolution is
 rejected. This is outcome-class refinement evidence, not equality of every
 instantaneous peak or contact count across discretizations.
 
+That August result applies to its earlier source and packing. The September
+29 gravity/cold-packing correction passes the full four-second CPU run at
+48 substeps, but its full 96-substep run fails the unchanged knot-angle
+gate (`0.818173682 rad` versus `<0.80 rad`). See the current
+[failed refinement record](FRUIT_FALL.md#full-scene-half-timestep-qualification-remains-failed).
+The earlier shorter crossing window does not qualify this longer corrected
+scene.
+
 The direct deformable-response probe independently certifies true endpoint-mass
 coupling: a free yarn and sphere preserve center of mass during separation; a
 plane-supported yarn transfers the full `8 mm` to the sphere; and a yarn `1 mm`

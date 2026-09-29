@@ -221,3 +221,20 @@ The corrected four-second FP64 GIF, video, log, and source/binary/frame
 fingerprints are now published in `docs/assets/cloth-pickup-*`. They qualify
 the CPU reference described above. The full Metal pickup and settling run
 remains live and requires its own complete outcome and two-replay agreement.
+
+## Full-scene half-timestep qualification remains failed
+
+The September 29 four-second CPU run at 96 substeps has now completed two
+exact final-state replays (`state_hash=0xdf5b1f22c35cf526`). It returns FAIL:
+maximum knot-angle error is `0.818173682 rad`, above the unchanged strict
+`0.80 rad` gate. The [failed log](assets/cloth-pickup-refined-failed.log) and
+[source, binary and exported-state receipt](assets/cloth-pickup-refined-failed-evidence.json)
+retain that result. This does not qualify full-scene temporal convergence.
+
+All 49 exported states independently pass the 2 µm contact tolerance.
+Published sphere/yarn overlap is `0.047 µm`, nonlocal yarn overlap
+`0.432 µm`, and ground/strain violation is zero. Fruits 4, 9, 10, and 11 end
+outside the virtually capped render mesh at their ground radii with zero
+vertical velocity. Those landing and sampled-contact observations do not
+erase the knot failure. The maximum knot peak requires further diagnosis;
+the material coefficients and acceptance threshold remain unchanged.
