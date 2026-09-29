@@ -463,7 +463,28 @@ inline NumiStaticSegmentSample numiStaticSegmentSceneVelocitySample(NumiStaticVe
     if(!best.valid)return best;
     float bestClosing=best.feature?numiStaticDot(numiStaticSegmentPoint(va,numiStaticSub(vb,va),best.parameter),best.normal):3.402823466e38f;
     float candidates[3]={0,1,2};
-    if(b.z!=a.z)candidates[2]=(numiStaticFloorHeight()+radius+tolerance-a.z)/(b.z-a.z);
+    const float floorSupport=numiStaticFloorHeight()+radius;
+    const float firstGap=a.z-floorSupport,secondGap=b.z-floorSupport;
+    if(!numiStaticFinite(floorSupport)||!numiStaticFinite(firstGap)||!numiStaticFinite(secondGap)) {
+        best.valid=false;return best;
+    }
+    const bool firstSupported=firstGap<=tolerance,secondSupported=secondGap<=tolerance;
+    if(firstSupported!=secondSupported) {
+        // Adding a small tolerance to the world-space floor coordinate can
+        // round the nominal root OUTSIDE the supported interval. Isolate the
+        // accepted boundary using the same rounded FMA/gap evaluation as the
+        // contact query, and retain its supported side. A positive endpoint
+        // velocity must not hide closing velocity at that interior boundary.
+        float inside=firstSupported?0:1,outside=firstSupported?1:0;
+        for(unsigned iteration=0;iteration<32;++iteration) {
+            float u=outside+(inside-outside)*.5f;
+            if(u==outside||u==inside)break;
+            float gap=numiStaticFma(b.z-a.z,u,a.z)-floorSupport;
+            if(!numiStaticFinite(gap)){best.valid=false;return best;}
+            if(gap<=tolerance)inside=u;else outside=u;
+        }
+        candidates[2]=inside;
+    }
     for(unsigned i=0;i<3;++i) {
         float u=candidates[i];if(!(u>=0&&u<=1))continue;
         auto p=u==0?a:u==1?b:numiStaticSegmentPoint(a,numiStaticSub(b,a),u);

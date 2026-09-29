@@ -1,25 +1,25 @@
 {
   "schema": "numi.whole-yarn-static-math.cpu-qualified.v1",
-  "timestamp_utc": "2026-09-29T14:17:31.016337+00:00",
-  "base_source_commit": "af79e57a0f652e5b93bce269624ef702b2574e0f",
-  "source_binding": "Named source and helper-header hashes from the current working tree; CPU CMake binaries rerun with byte-identical qualification output. Native files are not part of this CPU receipt.",
+  "timestamp_utc": "2026-09-29T14:27:53.749380+00:00",
+  "base_source_commit": "bbaab978d8a2c1493c2c8cf17c283030491d2360",
+  "source_binding": "Named current working-tree source and helper-header hashes; both exact-flag CPU CMake binaries rerun after the floor-boundary repair. Native files are not part of this CPU receipt.",
   "source_sha256": {
     "include/numi/static_contact_geometry.h": "7d288795b0e382ee50baf9ae407e3ef97803a8c40152a09606afb7f2133908a4",
     "include/numi/finite_bench_geometry.h": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade",
-    "include/numi/static_segment_geometry.h": "ac0e1b70617b5fcafd77fab9b5197334e1350c17a495446d3e5972a5880454fe",
+    "include/numi/static_segment_geometry.h": "fabde362d99c3cf98d545eaa387a64d3b2d2203c1018229e934701bde6786a0f",
     "include/numi/static_velocity_contact.h": "54cfb932e12df1b9e3153c6dbc16d2f8948ab862cf1ffe4ac38130f548dde65c",
-    "tools/static_segment_geometry.cpp": "88a6f34b38d8bd68bc72c36bfe4c7f9920d742f2325396deb34452e7fc371928",
+    "tools/static_segment_geometry.cpp": "3897e555210f2c1e0b1e7c732763cf306e693eecddd9eb2462274408b2ffaac3",
     "tools/static_velocity_contact.cpp": "6eb1c5c678fa2cdad2732e899d4640c26e63ae145ab1cb943d099bc83d9289c8"
   },
   "CMakeLists_observed_sha256": "4a7caa602e9fb2c2f9d1bc12562a4aa3017a3e0687bc3f1a7c54edd413314bf2",
   "CMake_cpu_binaries_sha256": {
-    "build/numi-solver-static-segment": "81ae11f8ddf45d1dbed80b6848398d5a6b9ada9da6cd1b905e2f7aee17ef012e",
+    "build/numi-solver-static-segment": "b4394ab86309e10a3789fb352d1b8f1fb3cb48fb783e082af618c9c3a182c899",
     "build/numi-solver-static-velocity": "41a95cef158558615d8ac9a7410b9dedadf50f930ab3fb64eb88d457d7e8438c"
   },
   "qualification_artifacts_sha256": {
-    "docs/assets/whole-yarn-static-geometry-host.log": "2162935d24142b7d40f25f4b3fac0bcfc0cd283c0a6bb6beb72c572559324990",
+    "docs/assets/whole-yarn-static-geometry-host.log": "11f180896d99ac82065c6602cc9fe5de8d61c06f4012d60151b71d77d9171c9f",
     "docs/assets/whole-yarn-static-velocity-host.log": "89eb6d8833fb459bbbe40478856221da9d36561b14b4a4c734da23e40e70cb01",
-    "docs/assets/whole-yarn-static-math-ctest.log": "239a148b9e2c6991f5480ca63e7a5383c2f647cab21a90a6420c41e665ddac5c"
+    "docs/assets/whole-yarn-static-math-ctest.log": "9525807849105bedc907baac1218b8bb7a331a266c0273b35ba753675577f322"
   },
   "geometry": {
     "backend": "CPU shared production FP32 segment geometry",
@@ -48,10 +48,12 @@
       "endpoint_only_negative_controls": 21,
       "tangent_outward_departures": 12,
       "rejected_invalid_or_exhausted": 7,
-      "velocity_queries": 1004,
+      "velocity_queries": 1008,
       "velocity_failures": 0,
       "solid_interior_velocity_rejected": 26,
       "velocity_max_suboptimality_m_per_s": 2.0925863039700232e-05,
+      "floor_velocity_regressions": 4,
+      "floor_nominal_root_negative_controls": 4,
       "deforming_sweeps": 518,
       "deforming_misses": 0,
       "deforming_FP64_oracle_unresolved": 0,
@@ -65,12 +67,28 @@
     "general_deforming_sweep_completeness_qualified": false,
     "positive_arrival_gap_is_early_conservative_contact": true,
     "native_Metal_execution": "NOT_EXECUTED",
-    "maximum_positive_arrival_gap_scope": "Primary 781-sweep set; general deforming sweep positive-gap maximum is not reported."
+    "maximum_positive_arrival_gap_scope": "Primary 781-sweep set; general deforming sweep positive-gap maximum is not reported.",
+    "floor_boundary_repair": {
+      "algorithm": "Bracket a supported and unsupported endpoint and bisect using the actual rounded FMA/floor-gap predicate, retaining the supported side instead of discarding a rounded nominal root.",
+      "regressions": 4,
+      "nominal_root_negative_controls": 4,
+      "cases": "Both axial orientations, requested 1e-7m and native position-scaled support tolerances. An outward +0.01m/s endpoint must not hide supported interior closing toward -20m/s endpoint velocity.",
+      "tolerances_changed": false,
+      "native_execution": "NOT_EXECUTED"
+    },
+    "Metal_compile": {
+      "command": "xcrun -sdk macosx metal -std=metal4.0 -O3 -fno-fast-math -I include -c build/StaticSegmentFloorBoundarySmoke.metal -o build/StaticSegmentFloorBoundarySmoke.air",
+      "compile_actual_exit_code": 0,
+      "execution": "NOT_EXECUTED; compile only",
+      "sha256": {
+        "build/StaticSegmentFloorBoundarySmoke.metal": "c4fb663292e5146ee660a40abac26438eb3e29f73c2fe7baffa6beb0da2f7d7c",
+        "build/StaticSegmentFloorBoundarySmoke.air": "4b0967a496fd6992451150776d2d9d58deabb25723fe2cf6ad25334f0bd55ce8"
+      }
+    }
   },
   "velocity_pair": {
     "backend": "CPU actual shared production FP32 helper",
     "host_actual_exit_code": 0,
-    "retained_receipt_all13_hashes_verified": true,
     "retained_log_byte_identical_to_CMake_binary_rerun": true,
     "api": "numiStaticResolveVelocityPair(first,second,gradientA,gradientB,requestedMaximumImpulse,uncappedNormal)",
     "qualification": {
@@ -102,13 +120,34 @@
     "Metal_compile_source_and_air_sha256": {
       "build/loaded-drop-investigation-static-velocity-contact.metal": "98ca0994a50ece863dafcf5978f82bc69e3526b67fa779fb07314ed64119fd07",
       "build/loaded-drop-investigation-static-velocity-contact.air": "9a195554d895bf99f04c30a49bca783d7748ce72e26e8d3ec1ba59ac0acc5ca4"
+    },
+    "historical_binding": {
+      "original_receipt_sha256": "4e5589eeb10744fc984c90537b812d256d68d322fb60b5075cbb016c53dfaf11",
+      "original_receipt_retained_unchanged": true,
+      "original_named_hashes": 13,
+      "currently_matching_named_hashes": 12,
+      "current_tree_mismatches": {
+        "include/numi/static_segment_geometry.h": {
+          "historical_sha256": "ac0e1b70617b5fcafd77fab9b5197334e1350c17a495446d3e5972a5880454fe",
+          "current_sha256": "fabde362d99c3cf98d545eaa387a64d3b2d2203c1018229e934701bde6786a0f"
+        }
+      },
+      "scope": "The historical velocity receipt used the preceding geometry header for geometry-derived tests. It is retained unchanged; its direct velocity API and other twelve named paths remain byte-identical."
+    },
+    "current_rerun": {
+      "command": "build/numi-solver-static-velocity",
+      "actual_exit_code": 0,
+      "binary_sha256": "41a95cef158558615d8ac9a7410b9dedadf50f930ab3fb64eb88d457d7e8438c",
+      "log_sha256": "89eb6d8833fb459bbbe40478856221da9d36561b14b4a4c734da23e40e70cb01",
+      "log_byte_identical_to_historical_velocity_qualification": true,
+      "source_binding": "Current sources and both geometry/velocity helper headers are bound by the source_sha256 map in this receipt."
     }
   },
   "CMake_checks": {
     "build_command": "cmake --build build --target numi-solver-static-segment numi-solver-static-velocity",
     "build_actual_exit_code": 0,
-    "build_output": "ninja: no work to do.",
-    "test_command": "ctest --test-dir build -R '^static_contact\\.(whole_yarn_host|velocity_slack_host)$' --output-on-failure",
+    "build_output": "[1/2] Building CXX object CMakeFiles/numi-solver-static-velocity.dir/tools/static_velocity_contact.cpp.o\n[2/2] Linking CXX executable numi-solver-static-velocity",
+    "test_command": "ctest --test-dir build -R '^static_contact\\.(whole_yarn_host|velocity_slack_host)$' --output-on-failure -V",
     "test_actual_exit_code": 0,
     "tests_passed": 2,
     "tests_failed": 0,
@@ -119,7 +158,11 @@
       "-fno-fast-math",
       "-ffp-contract=off"
     ],
-    "native_gpu_jobs_launched": 0
+    "native_gpu_jobs_launched": 0,
+    "observed_exact_CPU_compile_flags": {
+      "static-segment": "-O3 -DNDEBUG -std=gnu++2b -arch arm64 -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off",
+      "static-velocity": "-O3 -DNDEBUG -std=gnu++2b -arch arm64 -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off"
+    }
   },
   "open_gates": [
     "129 of 518 general FP32 deforming sweeps remain unresolved although the FP64 oracle resolved all 518.",
@@ -132,5 +175,5 @@
   ],
   "boundary": "Completed CPU geometry/status and passive velocity-helper test cases only. Compile success, unresolved-safe status handling and sampled oracle agreement do not establish full sweep completeness, native execution or physical whole-scene qualification.",
   "published_CPU_CMake_sha256": "c3ff80a50c230abfb7e57411426b7f0a42227b2cc71f0877a7c757faa990d087",
-  "CMake_binding_note": "Observed working-tree CMake includes unpublished native dependencies; published index retains identical CPU targets and test flags only."
+  "CMake_binding_note": "Observed working-tree CMake and published HEAD CMake hashes are recorded separately; the CPU target flags above come from the actual current Ninja build."
 }

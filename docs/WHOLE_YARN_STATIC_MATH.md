@@ -27,7 +27,7 @@ They must not be accepted as collision-free motion.
 | General deforming sweeps | 518; zero observed misses, FP64 oracle unresolved zero, **FP32 unresolved 129** |
 | Maximum positive arrival gap in the primary sweep set | **2.976 micrometres** |
 | Analytic impact position error | Maximum 0.160 micrometres in the analytic cases |
-| Whole-interval closing-velocity queries | 1,004; zero failures; 26 solid-interior queries rejected |
+| Whole-interval closing-velocity queries | 1,008; zero failures; 26 solid-interior queries rejected |
 
 The general sweeps use independently moving endpoints and an independent FP64
 interval oracle. Safe unresolved classification passes the host test; it does
@@ -43,6 +43,13 @@ endpoint while another supported portion closes. Rounded-feature comparisons
 use dense independent FP64 sampling; maximum observed velocity suboptimality
 is 0.02093 mm/s. This sampled comparison is not a proof of every possible
 contact manifold or feature transition.
+
+Four floor regressions reproduce a rounded nominal boundary falling outside
+the supported interval. The former query then selected an outward endpoint
+while a supported interior point closed. The repaired query brackets the
+supported interval with the actual rounded FMA/gap predicate and retains its
+supported side. Both axial orientations pass at the requested 0.1-micrometre
+and native support tolerances; no contact or error budget changed.
 
 ## Velocity slack and represented kinetic energy
 
@@ -68,8 +75,13 @@ All 16 physical cases, 10 invalid controls and two exact named-field replays
 pass. Both old-algebra controls fail the independent energy oracle. Maximum
 velocity error is 1.907 micrometres/s; maximum impulse, support-reaction and
 mass-momentum closure errors are 19.87, 23.84 and 23.89 nNs. Maximum observed
-kinetic-energy gain is zero. A separate Metal compilation succeeds; execution
-was not performed.
+kinetic-energy gain is zero. Both current CMake binaries and host tests pass
+after the floor repair; the velocity result remains byte-identical. The
+original velocity receipt is retained as a historical binding: its geometry
+header hash predates this repair, while the direct velocity API and other twelve
+named paths remain identical. The combined receipt binds the current rerun to
+the new geometry header. Separate Metal compilations succeed; execution was
+not performed.
 
 The pair helper uses point support at each body's position. It does not
 assemble the full yarn/static manifold, a simultaneous normal/friction solve,

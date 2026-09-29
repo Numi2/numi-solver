@@ -111,7 +111,7 @@ double pointGap(D3 p,double radius,DBox box) {
 }
 struct Test {
     unsigned samples{},sampleFailures{},certificates{},certificateFailures{},sweeps{},sweepFailures{},
-        clear{},contact{},unresolved{},rejected{},adversarial{},negativeControls{},tangentDepartures{},velocityQueries{},velocityFailures{},velocityRejected{},deformingSweeps{},deformingOracleUnresolved{},deformingSweepUnresolved{},deformingMisses{};
+        clear{},contact{},unresolved{},rejected{},adversarial{},negativeControls{},tangentDepartures{},velocityQueries{},velocityFailures{},velocityRejected{},floorVelocityRegressions{},floorVelocityNegativeControls{},deformingSweeps{},deformingOracleUnresolved{},deformingSweepUnresolved{},deformingMisses{};
     double maxGapError{},maxWitnessError{},maxLowerBoundExcess{},maxImpactGap{},maxImpactPositionError{},maxVelocitySuboptimality{};
     unsigned maximumIterations{};
     void require(bool condition,const char* what) {
@@ -309,6 +309,32 @@ int main() {
             {0,0,-1},{0,0,1},.004f,1e-7f);
         test.require(floorVelocity.valid&&floorVelocity.feature==5&&floorVelocity.parameter==0,
                      "floor contact velocity endpoint was missed");++test.velocityQueries;
+        // Floor boundary regression: the old world-space root rounds beyond
+        // tolerance and gets discarded, hiding a closing interior witness
+        // behind an outward-moving supported endpoint. Check both orientations
+        // and two contact tolerances without changing any production budget.
+        for(bool reverse:{false,true})for(float requestedTolerance:{1e-7f,0.f}) {
+            const float radius=.004f,support=-.75f+radius;
+            NumiStaticVec3 a{1,0,support},b{1.2f,0,support+.0001f};
+            NumiStaticVec3 va{0,0,.01f},vb{0,0,-20};
+            float tolerance=requestedTolerance>0?requestedTolerance:numiStaticTolerance(a,b);
+            const auto oldBoundary=(support+tolerance-a.z)/(b.z-a.z);
+            const float oldGap=numiStaticFma(b.z-a.z,oldBoundary,a.z)-support;
+            test.require(oldGap>tolerance,"floor root negative control did not reproduce its rounding failure");
+            ++test.floorVelocityNegativeControls;
+            if(reverse){std::swap(a,b);std::swap(va,vb);}
+            auto actual=numiStaticSegmentSceneVelocitySample(a,b,va,vb,radius,tolerance);
+            float closing=numiStaticFma(vb.z-va.z,actual.parameter,va.z);
+            test.require(actual.valid&&actual.feature==5&&actual.gap<=tolerance&&closing<-.005f,
+                         "floor boundary rounding hid closing interior velocity");
+            // Independently sample represented geometry with ordinary FP64
+            // interpolation and the authored floor. The repair must select a
+            // real nearby floor witness, not invent a distant contact.
+            auto point=wide(a)+(wide(b)-wide(a))*actual.parameter;
+            test.require(point.z+.75-radius<=tolerance+1e-7,
+                         "floor repaired boundary is outside the independent geometry error budget");
+            ++test.velocityQueries;++test.floorVelocityRegressions;
+        }
         // Seeded rounded-feature queries compare with dense independent FP64
         // feature sampling. These include nonconstant normals and arbitrary
         // endpoint velocities, rather than just planar velocity gradients.
@@ -379,6 +405,8 @@ int main() {
             <<"adversarial_cases="<<test.adversarial<<" endpoint_only_negative_controls="<<test.negativeControls
             <<" tangent_outward_departures="<<test.tangentDepartures<<" rejected_invalid_or_exhausted="<<test.rejected<<'\n'
             <<"velocity_queries="<<test.velocityQueries<<" velocity_failures="<<test.velocityFailures<<" solid_interior_velocity_rejected="<<test.velocityRejected<<" velocity_max_suboptimality_m_per_s="<<test.maxVelocitySuboptimality<<'\n'
+            <<"floor_velocity_regressions="<<test.floorVelocityRegressions
+            <<" floor_nominal_root_negative_controls="<<test.floorVelocityNegativeControls<<'\n'
             <<"deforming_sweeps="<<test.deformingSweeps<<" deforming_misses="<<test.deformingMisses
             <<" deforming_FP64_oracle_unresolved="<<test.deformingOracleUnresolved<<" deforming_FP32_sweep_unresolved="<<test.deformingSweepUnresolved<<'\n'
             <<"static_segment_host_probe_pass="<<pass<<'\n';
