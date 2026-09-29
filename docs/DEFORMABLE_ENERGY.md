@@ -13,9 +13,12 @@ The device now evaluates the exact unconstrained prediction, then the projected 
 | 25.000 us | 20,000 | -0.036789 J | 0.073786 J | 22.67% |
 | 12.500 us | 40,000 | -0.018405 J | 0.036886 J | 11.35% |
 
-All four complete level-2 timestep traces pass accounting consistency. Each coarse configuration also passes two native replays, its full half-timestep comparison, the independent projection-work probe and five rejected-candidate rollback checks. The largest independent captured-state accounting residual is below 1 microjoule. Four negative controls reject missing frames, altered elastic projection work, omitted kinetic loss and nonfinite ledger values.
+| 6.250 us | 80,000 | -0.009203 J | 0.018449 J | 5.71% |
+| 3.125 us | 160,000 | -0.004610 J | 0.009225 J | 2.92% |
 
-**The new 1 percent numerical energy budget remains FAIL.** Its conservative bound adds absolute free-integration error and absolute elastic/gravity projection work across steps; it is not the net energy lost by the body. Reducing timestep reduces these errors, but the original energy-increase bound and exact replay do not establish a small energy error. Finer pairs at 6.25/3.125 us and 3.125/1.5625 us are running from the same frozen source, followed by the 10,240-tetrahedron energy case. They remain pending until their actual terminal results and independent audits.
+All six complete level-2 timestep traces pass accounting consistency. Each coarse configuration also passes two native replays, its full half-timestep comparison, the independent projection-work probe and five rejected-candidate rollback checks. The largest independent captured-state accounting residual is below 1 microjoule. Four negative controls reject missing frames, altered elastic projection work, omitted kinetic loss and nonfinite ledger values.
+
+**The new 1 percent numerical energy budget remains FAIL.** Its conservative bound adds absolute free-integration error and absolute elastic/gravity projection work across steps; it is not the net energy lost by the body. Reducing timestep reduces these errors, but the original energy-increase bound and exact replay do not establish a small energy error. The finer pair at 3.125/1.5625 us is running from the same frozen source, followed by the 10,240-tetrahedron energy case. They remain pending until their actual terminal results and independent audits.
 
 [Complete source, binary, traces and audit receipt](assets/deformable-energy-evidence.json).
 

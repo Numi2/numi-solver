@@ -170,6 +170,6 @@ also remains open.
 The newer [native energy accounting study](DEFORMABLE_ENERGY.md) measures
 substantial integration defects and projection potential changes even when
 the original energy-increase gate passes. Its 1 percent numerical budget is
-not satisfied by the completed 100-to-12.5 us level-2 study. The media above
+not satisfied by the completed 100-to-3.125 us level-2 study. The media above
 remain bound to their original ABI-1 source; accounting consistency does not
 qualify energy closure.
