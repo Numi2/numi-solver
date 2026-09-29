@@ -1,0 +1,30 @@
+Test project /Users/home/numi-solver/build
+    Start 42: cloth_bag.metal_internal_contact
+1/1 Test #42: cloth_bag.metal_internal_contact ...   Passed    4.38 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Label Time Summary:
+aerodynamics      =   4.38 sec*proc (1 test)
+bend              =   4.38 sec*proc (1 test)
+ccd               =   4.38 sec*proc (1 test)
+cloth             =   4.38 sec*proc (1 test)
+contact           =   4.38 sec*proc (1 test)
+friction          =   4.38 sec*proc (1 test)
+fruit             =   4.38 sec*proc (1 test)
+ground            =   4.38 sec*proc (1 test)
+knot              =   4.38 sec*proc (1 test)
+metal             =   4.38 sec*proc (1 test)
+mouth             =   4.38 sec*proc (1 test)
+physics           =   4.38 sec*proc (1 test)
+pickup            =   4.38 sec*proc (1 test)
+reconciliation    =   4.38 sec*proc (1 test)
+reference         =   4.38 sec*proc (1 test)
+release           =   4.38 sec*proc (1 test)
+rolling           =   4.38 sec*proc (1 test)
+self_contact      =   4.38 sec*proc (1 test)
+self_friction     =   4.38 sec*proc (1 test)
+strain            =   4.38 sec*proc (1 test)
+yarn              =   4.38 sec*proc (1 test)
+
+Total Test time (real) =   4.39 sec

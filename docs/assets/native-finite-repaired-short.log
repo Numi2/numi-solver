@@ -1,0 +1,54 @@
+trajectory_static_contact=finite_bench box_min_m=-.75,-.5,-.08 box_max_m=.75,.5,0 room_floor_height_m=-.75 native_ABI=15
+initial_geometry backend=host_authored_float_tables fruit_yarn_overlap_m=0 fruit_pair_overlap_m=0 nonlocal_yarn_overlap_m=0 local_node_overlap_m=0 local_node_pairs=5754 local_node_batches=12 ground_overlap_m=0 passed=1
+pickup_progress scenario=pickup replay=1 step=1/5 released_mask=0 max_local_node_overlap_m=0 failure_flags=0 gpu_seconds=9.95072
+pickup_progress scenario=pickup replay=1 step=2/5 released_mask=0 max_local_node_overlap_m=0 failure_flags=0 gpu_seconds=19.8843
+pickup_progress scenario=pickup replay=1 step=3/5 released_mask=0 max_local_node_overlap_m=0 failure_flags=0 gpu_seconds=29.8598
+pickup_progress scenario=pickup replay=1 step=4/5 released_mask=0 max_local_node_overlap_m=0 failure_flags=0 gpu_seconds=39.841
+pickup_progress scenario=pickup replay=1 step=5/5 released_mask=0 max_local_node_overlap_m=0 failure_flags=0 gpu_seconds=49.9204
+pickup_progress scenario=pickup replay=2 step=1/5 released_mask=0 max_local_node_overlap_m=0 failure_flags=0 gpu_seconds=9.93966
+pickup_progress scenario=pickup replay=2 step=2/5 released_mask=0 max_local_node_overlap_m=0 failure_flags=0 gpu_seconds=19.9185
+pickup_progress scenario=pickup replay=2 step=3/5 released_mask=0 max_local_node_overlap_m=0 failure_flags=0 gpu_seconds=29.9167
+pickup_progress scenario=pickup replay=2 step=4/5 released_mask=0 max_local_node_overlap_m=0 failure_flags=0 gpu_seconds=39.9194
+pickup_progress scenario=pickup replay=2 step=5/5 released_mask=0 max_local_node_overlap_m=0 failure_flags=0 gpu_seconds=50.0451
+device=Apple M4
+material_schema=numi.cloth.material.v1 material_artifact_loaded=false parameters_hash=authored-defaults observations_hash=none
+grip_trajectory_loaded=false schema=none content_fingerprint=none poses=0 duration_seconds=0.000000000000 maximum_rotation_radians=0.000000000000 attachment_generations=0 selection_mode=fixed_patch
+abi=15 particles=1465 distances=2904 grips=10 knots=1369 bends=2834 fruits=12 fruit_pairs=66 fruit_yarn_candidates=34848
+distance_colors=5 knot_colors=6 bend_colors=5 fruit_pair_colors=15
+self_pairs=4149792 self_batches=29263 max_self_batch=256
+iterations=32 strain_sweeps=3 replays=2
+coloring_exact=true failure_flags=0 deterministic=true
+max_position_error=0.000000284474 max_velocity_error=0.001638567799
+max_distance_lambda_error=0.000000000025 max_grip_lambda_error=0.000000000007
+max_knot_lambda_error=0.000000000001 max_bend_lambda_error=0.000000000010 max_knot_lambda=0.000000009751 max_bend_lambda=0.000000268215
+max_fruit_position_error=0.000000002342 max_fruit_velocity_error=0.000000000029 max_fruit_angular_velocity_error=0.000000000000 max_fruit_orientation_error=0.000000000000 max_fruit_orientation_norm_error=0.000000000000 max_fruit_pair_contact_error=0.000000000000 max_fruit_pair_impulse=0.000000000000 max_fruit_pair_penetration=0.000000000000
+max_yarn_aerodynamic_force=0.000000001152 expected=0.000000001152 error=0.000000000000 max_fruit_aerodynamic_force=0.000000014756 expected_fruit=0.000000014756 fruit_error=0.000000000000 max_fruit_aerodynamic_torque=0.000000000000 expected_torque=0.000000000000 torque_error=0.000000000000
+mouth_candidate_mask=3840 expected_candidate_mask=3840 released_mask=0 expected_released_mask=0 max_release_clearance_error=0.000000000000
+yarn_identity_exact=true yarn_control_exact=true yarn_control_qualified=true current_yarn_overlaps=0 swept_yarn_impacts=0
+max_yarn_separation_error=0.000000316666 max_yarn_current_normal_error=0.000040095056 max_yarn_swept_normal_error=0.000000000000
+max_yarn_weight_error=0.001897898636 max_active_yarn_weight_error=0.000000000000 max_yarn_impact_time_error=0.000003108659 max_yarn_advance_error=0.000000000000
+yarn_response_count_exact=true accepted_yarn_responses=0 expected_yarn_responses=0 response_count_mismatches=0 max_yarn_normal_impulse=0.000000000000 max_yarn_response_error=0.000000000000 max_yarn_penetration=0.000000000000
+present_self_contacts=0 expected_present_self_contacts=0 swept_self_contacts=0 expected_swept_self_contacts=0
+present_self_count_difference=0 swept_self_count_difference=0 max_self_correction=0.000000000000 max_self_correction_error=0.000000000000 final_self_penetration=0.000000000000 final_local_node_overlap_m=0.000000000000 final_ground_penetration=0.000000000000
+max_strain_violation=0.000000000000 max_displacement=0.003793492186 grip_force=153.045061729878
+reconciliation_passes=8 final_contact_passes=2 certificate_passes=8
+friction_contacts_pair=0 expected_pair=0 yarn=0 expected_yarn=0 cloth_ground=0 expected_cloth_ground=0 fruit_ground=0 expected_fruit_ground=0 self=0 expected_self=0 count_exact=true max_count_difference=0 self_count_difference=0
+max_friction_cone_ratio=0.000000000000 expected=0.000000000000 error=0.000000000000 max_rolling_ratio=0.000000000000 expected_rolling=0.000000000000 rolling_error=0.000000000000 rolling_contacts=0 expected_rolling_contacts=0
+strain_probe_initial_violation=0.215000003576 strain_probe_final_violation=0.000000007451 strain_probe_position_error=0.000000019868 compression_length_change=0.000000000000 strain_probe_com_error=0.000000014901 strain_probe_failure_flags=0
+ground_bend_position_error=0.000000056670 supported_height=0.004000000190 free_endpoint_rise=0.009750500321 ground_bend_failure_flags=0
+fruit_pair_probe_position_error=0.000000044763 separation=1.999999962672 center_error=0.000000019868 impulse_error=0.000001577480 normal_impulse=16.656669616699 velocity_error=0.000003250339 angular_velocity_error=0.000000037189 orientation_error=0.000000011760 orientation_change=0.007141246926 friction_contacts=1 cone_ratio=0.057165719569 slip_before=2.999400344361 slip_after=0.000000173872 energy_before=418.666023350611 energy_after=418.237667563337 momentum_error=0.000000834465 fruit_pair_probe_failure_flags=0
+ground_contact_position_error=0.000000000000 ground_contact_impulse_error=0.000000558794 cloth_impulse_error=0.000000021979 cloth_height=0.004000000190 fruit_height=1.000000000000 fruit_normal_impulse=25.000000000000 friction_velocity_error=0.000001117587 cloth_friction_contacts=1 fruit_friction_contacts=1 rolling_contacts=1 cone_ratio=1.000000000000 rolling_ratio=1.000000000000 cloth_slip_before=1.000000000000 cloth_slip_after=0.819999992847 fruit_slip_before=3.605551275464 fruit_slip_after=1.875000083742 rolling_speed_before=2.000000000000 rolling_speed_after=0.342739083985 ground_contact_failure_flags=0
+yarn_ccd_geometry_error=0.000000232831 impact_time=0.380000025034 removed_advance=0.123999990523 current_overlap=true swept_impact=true response_count=1 normal_impulse=12.399999618530 final_separation=-0.000000003725 final_fruit_x=-0.023999996483 response_error=0.000001202958 friction_velocity_error=0.000069247825 friction_contacts=1 cone_ratio=0.128008306026 slip_before=2.000001854884 slip_after=0.000000017553 yarn_ccd_failure_flags=0
+self_ccd_position_error=0.000000357628 final_separation=0.000004277196 final_moving_height=-0.036001820117 max_correction=0.087999925017 present_contacts=0 swept_contacts=1 friction_velocity_error=0.000027455503 friction_contacts=1 cone_ratio=0.668487787247 slip_before=2.000063489379 slip_after=0.000050152179 energy_before=157.924313130071 energy_after=155.924183726179 momentum_error=0.000001431210 self_ccd_failure_flags=0
+yarn_aerodynamics_velocity_error=0.000000094747 force=0.172502279282 force_error=0.000000008350 energy_before=25.000000000000 energy_after=24.993020801123 refinement_error=0.000000000000 co_moving_delta=0.000000000000 yarn_aerodynamics_failure_flags=0
+fruit_aerodynamics_velocity_error=0.000000176026 force=0.132944747806 force_error=0.000000004606 torque=0.000002209812 torque_error=0.000000000000 energy_before=3.155968230148 energy_after=3.148698820019 fruit_aerodynamics_failure_flags=0
+mouth_probe_inside_mask=0 released_mask=1 outside_mask=0 grazing_mask=0 edge_clearance_mask=1 edge_exit_mask=1 rotated_mask=1 clearance=0.025999993086 rotated_clearance=0.025999993086 fp64_qualified=true
+seam_trajectory_substeps=3 replay_exact=true split_exact=true average_lift=0.008456829190 maximum_handle_lag=0.001894179796 failure_flags=0 state_hash=0x42907b0a4089d7ce
+grip_rotation_angle_radians=0.034906585040 position_error=0.000000062901 seam_displacement=0.003592522322 replay_exact=true failure_flags=0 state_hash=0x488c97e9a9e86728
+distant_regrab_rejected=true failure_flags=16
+grounded_requested=false complete=false first_captured_frames=0 second_captured_frames=0 first_failure_flags=0 second_failure_flags=0 steps=0 replay_exact=true released_mask=0 escape_mask=0 grounded_cloth_count=0 grounded_fruit_count=0 minimum_cloth_height=0.000000000000 minimum_fruit_clearance=0.000000000000 strain_violation=0.000000000000 ground_penetration=0.000000000000 self_penetration=0.000000000000 max_local_node_overlap_m=0.000000000000 shape_change=0.000000000000 kinetic_energy=0.000000000000 first_gpu_seconds=0.000000000000 second_gpu_seconds=0.000000000000 qualified=true
+spin_requested=false complete=false first_captured_frames=0 second_captured_frames=0 first_failure_flags=0 second_failure_flags=0 steps=0 replay_exact=true released_mask=0 released_count=0 escape_mask=0 minimum_cloth_height=0.000000000000 minimum_fruit_clearance=0.000000000000 strain_violation=0.000000000000 self_penetration=0.000000000000 max_local_node_overlap_m=0.000000000000 handle_travel=0.000000000000 maximum_handle_lag=0.000000000000 shape_change=0.000000000000 kinetic_energy=0.000000000000 first_gpu_seconds=0.000000000000 second_gpu_seconds=0.000000000000 qualified=true
+pickup_requested=true complete=false first_captured_frames=5 second_captured_frames=5 first_failure_flags=0 second_failure_flags=0 steps=5 motion_frames=240 settling_frames=0 replay_exact=true released_mask=0 released_count=0 grounded_released_count=0 strain_violation=0.000000000000 ground_penetration=0.000000000000 self_penetration=0.000000000000 max_local_node_overlap_m=0.000000000000 first_gpu_seconds=49.920412251726 second_gpu_seconds=50.045052333735 qualified=false
+recorded_requested=false first_captured_frames=0 second_captured_frames=0 first_failure_flags=0 second_failure_flags=0 steps=0 replay_exact=true released_mask=0 released_count=0 escape_mask=0 strain_violation=0.000000000000 ground_penetration=0.000000000000 self_penetration=0.000000000000 max_local_node_overlap_m=0.000000000000 maximum_handle_lag=0.000000000000 regrab_count=0 inactive_grip_substeps=0 attachment_generations_exact=true maximum_regrab_capture_distance=0.000000000000 maximum_regrab_capture_error=0.000000000000 patch_selection_count=0 selected_patch_center_ring=0 patch_center_exact=true patch_topology_exact=true shape_change=0.000000000000 first_gpu_seconds=0.000000000000 second_gpu_seconds=0.000000000000 qualified=true state_hash=0x0
+average_gpu_seconds=0.208143521100 state_hash=0x780b2905069f2b42
+result=FAIL

@@ -1,0 +1,47 @@
+{
+  "schema": "numi.native-finite-bench.pickup-launch.v1",
+  "status": "COMPLETE",
+  "pid": 94697,
+  "source_commit": "ed7fc1db88d3c9899720ac95743e6af70c7b50e5",
+  "frozen_manifest": "/Users/home/numi-solver/build/native-finite-bench-launch/manifest.json",
+  "manifest_sha256": "33f32ce800eb255963bd8e93cf62357b79b249b66108712df9e6cdcb33b3f947",
+  "command": [
+    "/Users/home/numi-solver/build/native-finite-bench-launch/build/numi-solver-cloth-metal",
+    "--metallib",
+    "/Users/home/numi-solver/build/native-finite-bench-launch/build/shaders/NumiTemporalCone.metallib",
+    "--finite-bench",
+    "--pickup-prefix",
+    "/Users/home/numi-solver/build/native-finite-pickup-20260929",
+    "--pickup-steps",
+    "480",
+    "--pickup-dump-every",
+    "10",
+    "--iterations",
+    "32",
+    "--strain-sweeps",
+    "3",
+    "--replays",
+    "2"
+  ],
+  "started_unix": 1790687232.2987,
+  "requested_simulated_seconds": 4,
+  "requested_frames_per_replay": 480,
+  "requested_replays": 2,
+  "substeps_per_frame": 48,
+  "iterations": 32,
+  "strain_sweeps": 3,
+  "static_box_min_m": [
+    -0.75,
+    -0.5,
+    -0.08
+  ],
+  "static_box_max_m": [
+    0.75,
+    0.5,
+    0
+  ],
+  "room_floor_height_m": -0.75,
+  "evidence_boundary": "Full native candidate in progress, not qualification. No competing local scientific GPU job.",
+  "exit_code": 1,
+  "elapsed_seconds": 85.68658304214478
+}

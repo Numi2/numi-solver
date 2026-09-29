@@ -1,0 +1,11 @@
+--- a/src/metal/ClothBag.metal
++++ b/src/metal/ClothBag.metal
+@@ -226,7 +226,7 @@
+     fruit.velocityAndGroundImpulse.xyz += response * impulseMagnitude;
+     if (inverseMass > 0.0f) {
+         fruit.velocityAndGroundImpulse.w +=
+-            length((response - freeResponse) * impulseMagnitude) / inverseMass;
++            length(response * impulseMagnitude - impulse * inverseMass) / inverseMass;
+     }
+     fruit.angularVelocity.xyz +=
+         cross(contactOffset, impulse) * fruitInverseInertia(fruit);

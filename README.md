@@ -11,6 +11,27 @@ application scene.
 
 ## Pick up the bag and spill the fruit
 
+### Newest pickup · coupled yarn contacts · September 29, 2026
+
+[![Five released fruits reach the lower floor after leaving the deformable bag](docs/assets/coupled-bench-pickup-96-poster.png)](docs/assets/coupled-bench-pickup-96.mp4)
+
+The new full four-second CPU FP64 pickup passes both 96-substep replays.
+All **five released fruits** finish on the lower floor with zero vertical
+velocity. Both complete 481-frame fruit sequences match, and all **51 saved
+states**, including both peak-contact snapshots, pass independent audits.
+Simultaneous fruit/yarn response lowers worst accepted fruit/yarn overlap from
+the previous finer run's **56.7 µm failure to 0.080 µm**. Maximum speed is
+**14.07 m/s**, below the unchanged 30 m/s limit; the certificate uses at most
+three passes. The video shows every regular saved state from one fixed camera.
+
+[Watch the newest video](docs/assets/coupled-bench-pickup-96.mp4) ·
+[Inspect the complete source-bound result](docs/assets/coupled-bench-pickup-96-evidence.json) ·
+[Deformable research targets and measured gaps](docs/DEFORMABLE_FRONTIER.md).
+Fruit geometry remains rigid spheres. Same-source timestep convergence,
+elastic-fruit/bag coupling, calibrated materials, native full spill and
+whole-scene work/reaction closure remain open.
+
+
 ### Newest loaded release · finite tabletop and lower floor · September 29, 2026
 
 [![Watch the repaired loaded cloth release, impact the floor and spill two fruits](docs/assets/finite-bench-loaded-drop-repaired-floor-impact.png)](docs/assets/finite-bench-loaded-drop-repaired.mp4)
@@ -34,10 +55,16 @@ The same-source 96-substep drop now completes **FAIL**: all saved contact
 states pass, but maximum speed reaches **35.93 m/s**, above the unchanged
 30 m/s gate. The finer four-second pickup also fails, with **56.7 µm** of
 fruit/yarn overlap. A new simultaneous contact solve brings that saved peak
-to **0.851 µm** in one certificate pass; its full new-source replay is running.
+to **0.851 µm** in one certificate pass; its new full replay now passes, shown above.
 Separately, native Metal finite-bench geometry passes **1,714** cases twice,
 with maximum impact-position error below **0.4 µm**. These focused checks do
-not qualify the complete native bag. [Contact repair and actual finer results](docs/COUPLED_YARN_CONTACT.md).
+not qualify the complete native bag. The native finite-bench response now also
+passes **104 focused cases twice**, covering impact, support, friction, rolling
+and supported fruit pairs. The first full candidate stops at frame 4; a ghost
+support impulse repair now passes that point and a new complete replay is running.
+Native spill qualification remains open.
+[Contact repair and actual finer results](docs/COUPLED_YARN_CONTACT.md) ·
+[Native finite-bench response and qualification boundary](docs/NATIVE_FINITE_BENCH.md).
 
 
 ### Earlier plane pickup · local thickness repair · September 29, 2026

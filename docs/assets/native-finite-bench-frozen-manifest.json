@@ -1,0 +1,110 @@
+{
+  "source_commit": "ed7fc1db88d3c9899720ac95743e6af70c7b50e5",
+  "root": "/Users/home/numi-solver/build/native-finite-bench-launch",
+  "files": {
+    "include/numi/cloth_bag_gpu.h": {
+      "sha256": "c3aab7ba6b968160668eaa53a715ff38dd96562607eabce4e728a5c0ce87aecf",
+      "bytes": 10316
+    },
+    "include/numi/static_contact_geometry.h": {
+      "sha256": "7d288795b0e382ee50baf9ae407e3ef97803a8c40152a09606afb7f2133908a4",
+      "bytes": 11444
+    },
+    "src/metal/ClothBag.metal": {
+      "sha256": "860b9322f9452cc3b9af8da74c82dd9dbe34267bb764cd54d48c0d341bc8fa00",
+      "bytes": 173271
+    },
+    "tools/cloth_bag_metal.mm": {
+      "sha256": "37a6253e93b2638ec77b455dbdcb55371ab3097f81efec7d1fad5573346453d3",
+      "bytes": 383825
+    },
+    "tools/static_contact_geometry.cpp": {
+      "sha256": "ea46169f13f973ceb8cecbc331e29d55f536c5d07b17f2a5accd81fedef42a67",
+      "bytes": 10524
+    },
+    "tools/static_contact_geometry_metal.mm": {
+      "sha256": "8dfa90daebf971fe001e12716e88870ab7879d4f6c15792a2aa12a15fd732e19",
+      "bytes": 77
+    },
+    "tools/audit_replayed_finite_fruit_trace.py": {
+      "sha256": "4ceee6a669b99a4ff7d8885ceed6927cd42822e551d592db9eb21d95f02c999b",
+      "bytes": 7485
+    },
+    "CMakeLists.txt": {
+      "sha256": "70d6834e8367bb637d128f7d9e315cb7f2697a726baf8c3bc41e5ab06d39ab3d",
+      "bytes": 40111
+    },
+    "build/numi-solver-cloth-metal": {
+      "sha256": "3d907d41f69e1cad9ee9340593f9b7236e1a35aa004404ad0aa413d4d8138b0e",
+      "bytes": 374008
+    },
+    "build/shaders/NumiTemporalCone.metallib": {
+      "sha256": "45610905210c4d57225a07d20e240f48215a49b752664652ac09318070aff486",
+      "bytes": 1506014
+    },
+    "build/numi-solver-static-geometry-metal": {
+      "sha256": "96e8d98f6aa65866642775a967bac985cdb4e607e5fdc975775457f23da0d075",
+      "bytes": 74640
+    },
+    "build/shaders/NumiStaticGeometry.metallib": {
+      "sha256": "d766e555d4236a86cb0b22230e37ab40d241f3dd7b343abe3bc11d87fc9b7b1b",
+      "bytes": 11983
+    },
+    "include/metalrobo/constraint_ir_shared.h": {
+      "sha256": "00a2ff82e0926f6e7789a30c6730225761b438bef06aab273982b65e4f1c07a0",
+      "bytes": 9553
+    },
+    "include/metalrobo/engine_types.h": {
+      "sha256": "8d1fbaed68e93f721abea78727649aedb9e12a01cac87852b269d7e2ac5b9b38",
+      "bytes": 57745
+    },
+    "include/metalrobo/gpu_types.h": {
+      "sha256": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8",
+      "bytes": 3809
+    },
+    "include/metalrobo/parallel_aba_shared.h": {
+      "sha256": "017a29c5a992df98541274975f7604a24e260d33b141aff30a51c0695e52b00d",
+      "bytes": 3245
+    },
+    "include/metalrobo/rod_gpu_shared.h": {
+      "sha256": "7aeecb8caff40d18be1e635622ed41a036d601d35cc4ea507d68521ed59bc21c",
+      "bytes": 8425
+    },
+    "include/metalrobo/unified_quality_shared.h": {
+      "sha256": "51040bc1ca54d2d8deec332d44c73a3ac19bbf157a362854afabd00f0f3f2673",
+      "bytes": 5293
+    },
+    "include/numi/braided_bag.h": {
+      "sha256": "180e0f8fbee955beb1f5ff1e03d3a24d3e7bcd32a536ade0330328aa10a5a7d0",
+      "bytes": 5029
+    },
+    "include/numi/cloth_material.h": {
+      "sha256": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd",
+      "bytes": 7725
+    },
+    "include/numi/deformable_mesh.h": {
+      "sha256": "a0150503c14f4fd2fe622f5d7262ced435e9ee807048c54e76420acc8154205b",
+      "bytes": 2895
+    },
+    "include/numi/deformable_tet.h": {
+      "sha256": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0",
+      "bytes": 1583
+    },
+    "include/numi/finite_bench_geometry.h": {
+      "sha256": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade",
+      "bytes": 7412
+    },
+    "include/numi/grip_trajectory.h": {
+      "sha256": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+      "bytes": 14412
+    },
+    "include/numi/temporal_cone_island.h": {
+      "sha256": "d518a93d876f6c81896004b95a7e8235dbd4669ca8c82b52bb8b2ae93d4677e3",
+      "bytes": 13967
+    },
+    "include/numi/temporal_cone_probe.h": {
+      "sha256": "83fb5154da4b73ba76039245a4768d44026092966acd7e3cfea83adab28a9323",
+      "bytes": 1962
+    }
+  }
+}

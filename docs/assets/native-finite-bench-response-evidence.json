@@ -1,0 +1,162 @@
+{
+  "schema": "numi.native-finite-bench.response-evidence.v1",
+  "source_commit": "ed7fc1db88d3c9899720ac95743e6af70c7b50e5",
+  "device": "Apple M4",
+  "backend": "Apple Metal FP32",
+  "gpu_ABI": 15,
+  "particle_bytes": 96,
+  "fruit_bytes": 144,
+  "frozen_source_and_binary_files": 26,
+  "artifacts": {
+    "native-finite-bench-response.log": {
+      "sha256": "c27c501657d3ad6bc6abf355e435700ad0da550c10f753c68cb7c8664ffda4ae",
+      "bytes": 24823
+    },
+    "native-finite-bench-geometry.log": {
+      "sha256": "36153a74719cddcd36463660246a37a9a29c3d0a9959c4f268f9d357ef6e0643",
+      "bytes": 463
+    },
+    "native-finite-bench-checks.log": {
+      "sha256": "dfcc1a313fda73120ddff3fe4e105092284ca472cfe445d65ee371fb224a11d6",
+      "bytes": 2046
+    },
+    "native-finite-bench-default-check.log": {
+      "sha256": "1cd9ff82f663253d04613d9a8e089450d8827dae14150bec0d2d2bb348c4331c",
+      "bytes": 1209
+    },
+    "native-finite-bench-frozen-manifest.json": {
+      "sha256": "33f32ce800eb255963bd8e93cf62357b79b249b66108712df9e6cdcb33b3f947",
+      "bytes": 4169
+    },
+    "native-finite-smoke.log": {
+      "sha256": "c7159fc39d014776278b286b4c5b01e47fd5f1c008772e97f3d1cfd2f679d488",
+      "bytes": 9715
+    },
+    "native-finite-smoke-fruits.csv": {
+      "sha256": "8ba5f74e56e2905775e54a89441efa03f23788274994fb4c02a1cb0db5ee265c",
+      "bytes": 10434
+    },
+    "native-finite-smoke-r1-fruits.csv": {
+      "sha256": "99cf6a3d6585dcaa2ce9baba8a1283cbd6e6d12f2653f7a5a24a62db28ec7e7a",
+      "bytes": 5294
+    },
+    "native-finite-smoke-r2-fruits.csv": {
+      "sha256": "1ca0f6d10a5c908e03ce2efd8a516974a59da28adce6b352dc2a27fbbfcd0fe1",
+      "bytes": 5294
+    },
+    "native-finite-smoke-fruit-audit.json": {
+      "sha256": "da51a0ca2493139e98f830df46372efee1a59bc3924fd59727283ec9cbfe88e0",
+      "bytes": 17057
+    },
+    "native-finite-smoke-contact-audit.json": {
+      "sha256": "88de1efef72f469a13fd24e60a8d684be5981595c78f0fd9725c4f3267ace0f5",
+      "bytes": 4858
+    },
+    "native-finite-trace-schema-controls.json": {
+      "sha256": "1d9abda378326382a095a156f0a211c3cb7aed32168a2cb23028cfceeacb4251",
+      "bytes": 18816
+    },
+    "native-finite-pickup-preparation.json": {
+      "sha256": "5d62f37945493d745471a50b2bd32bea4560f241c6d22376fa135637ff455060",
+      "bytes": 1380
+    },
+    "native-finite-smoke-r1-0.obj": {
+      "sha256": "c06e8d202f2391214eb62ee1b1a65b4e424a8e32a36f541eef38cc0a0b71dbaa",
+      "bytes": 102354
+    },
+    "native-finite-smoke-r1-1.obj": {
+      "sha256": "a0b0fbb5c7d2d217c92bc29634b82ff795bce2906d22b36f3cb415b08c04ebad",
+      "bytes": 102560
+    },
+    "native-finite-smoke-r1-2.obj": {
+      "sha256": "c1ffd17741584293f998c469dbb6b18635412f090472e674090eadb84d3956d8",
+      "bytes": 102589
+    },
+    "native-finite-smoke-r2-0.obj": {
+      "sha256": "c06e8d202f2391214eb62ee1b1a65b4e424a8e32a36f541eef38cc0a0b71dbaa",
+      "bytes": 102354
+    },
+    "native-finite-smoke-r2-1.obj": {
+      "sha256": "a0b0fbb5c7d2d217c92bc29634b82ff795bce2906d22b36f3cb415b08c04ebad",
+      "bytes": 102560
+    },
+    "native-finite-smoke-r2-2.obj": {
+      "sha256": "c1ffd17741584293f998c469dbb6b18635412f090472e674090eadb84d3956d8",
+      "bytes": 102589
+    }
+  },
+  "contact_response": {
+    "actual_exit_code": 0,
+    "two_bit_exact_replays": true,
+    "cases": 103,
+    "cases_by_phase": {
+      "radial_impacts_two_radii": 54,
+      "sustained_support": 27,
+      "sliding_friction": 7,
+      "rolling_resistance": 7,
+      "supported_fruit_pairs": 7,
+      "constraint_driven_support_departure": 1
+    },
+    "radii_m": [
+      0.004,
+      0.05
+    ],
+    "features": {
+      "faces": 6,
+      "rounded_edges": 12,
+      "rounded_corners": 8,
+      "room_floor": 1
+    },
+    "maximum_position_error_m": 7.45709e-08,
+    "maximum_velocity_error_m_s": 1.1887e-05,
+    "maximum_support_impulse_error_Ns": 3.82492e-06,
+    "minimum_independent_static_gap_m": -1.42448e-08,
+    "unchanged_acceptance_limits": {
+      "position_error_m": 2e-06,
+      "velocity_error_m_s": 0.001,
+      "impulse_error_Ns": 0.0001,
+      "static_penetration_m": 2e-06
+    },
+    "reference": "Independent production FP64 feature casts on actual represented FP32 rays; analytic sustained support, friction, rolling and supported-pair behavior. The FP64 reference uses the represented -.08f bench bound for impacts, and exact authored bounds for independent static gaps."
+  },
+  "geometry": {
+    "cases_per_replay": 1714,
+    "replays": 2,
+    "bit_exact": true,
+    "hit_feature_mismatches": 0,
+    "maximum_impact_position_error_m": 3.9402e-07,
+    "maximum_normal_error": 2.05958e-05
+  },
+  "smoke": {
+    "source_commit": "ed7fc1db88d3c9899720ac95743e6af70c7b50e5",
+    "requested_frames_per_replay": 2,
+    "published_states_per_replay": 3,
+    "replays": 2,
+    "simulated_seconds": 0.016666667070239782,
+    "actual_runner_exit_code": 1,
+    "runtime_complete_flag": false,
+    "runtime_replay_exact": true,
+    "both_fruit_sequences_preserved": true,
+    "serialized_fruit_sequences_exact": true,
+    "all_six_saved_contact_audits_pass": true,
+    "released_fruits": [],
+    "full_pickup_qualified": false,
+    "exit_explanation": "Two-frame smoke is deliberately shorter than the required 480-frame pickup and has no spill; actual solver result is FAIL, not full-scene qualification."
+  },
+  "validation": {
+    "six_relevant_CTest_checks_pass": true,
+    "default_native_internal_contact_rechecked_after_departure_change": true,
+    "malformed_trace_controls_rejected": 6,
+    "complete_16_column_CPU_format_remains_accepted": true
+  },
+  "full_native_pickup": {
+    "status": "FAILED_EARLY",
+    "source_commit": "ed7fc1db88d3c9899720ac95743e6af70c7b50e5",
+    "actual_exit_code": 1,
+    "requested_frames_per_replay": 480,
+    "actual_captured_frames_per_replay": 4,
+    "printed_complete_true_was_incorrect": true,
+    "repair_evidence": "native-finite-ghost-impulse-repair.json"
+  },
+  "evidence_boundary": "Qualifies focused production native static-contact responses and strict replay export. Does not qualify a complete native spill, intervening whole-yarn/bench contacts, joint static/contact/friction complementarity, timestep convergence, calibrated woven or fruit materials, volume/cloth coupling, or whole-scene work/reaction closure. Published normal impulse is current support friction capacity, not a complete static-impulse history when a body departs support."
+}

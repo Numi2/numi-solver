@@ -1,0 +1,469 @@
+{
+  "native_short_trace": {
+    "schema": "numi.finite-bench.fruit-trace-audit.v1",
+    "trace": "build/native-finite-smoke-fruits.csv",
+    "trace_sha256": "8ba5f74e56e2905775e54a89441efa03f23788274994fb4c02a1cb0db5ee265c",
+    "simulated_seconds": 0.016666667070239782,
+    "backend": "native_fp32",
+    "both_replays_complete": true,
+    "serialized_fruit_replay_exact": true,
+    "minimum_independent_static_gap_m": 0.025623321533203125,
+    "maximum_exported_gap_discrepancy_m": 2.7755575615628914e-17,
+    "independent_geometry_pass": true,
+    "replays": [
+      {
+        "replay": 1,
+        "frames": 3,
+        "released_fruits": [],
+        "released_fruits_landed_on_floor": [],
+        "fruits": [
+          {
+            "fruit": 0,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              0.1899999976158142,
+              0.0,
+              0.09562332183122635
+            ],
+            "final_static_gap_m": 0.025623321533203125,
+            "final_floor_gap_m": 0.7756233215332031,
+            "final_vertical_velocity_m_s": -0.16349701583385468,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 1,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              0.11800000071525574,
+              0.14900000393390656,
+              0.09062332659959793
+            ],
+            "final_static_gap_m": 0.025623328983783722,
+            "final_floor_gap_m": 0.7756233289837837,
+            "final_vertical_velocity_m_s": -0.16349680721759796,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 2,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              -0.041999999433755875,
+              0.1850000023841858,
+              0.1066233217716217
+            ],
+            "final_static_gap_m": 0.031623318791389465,
+            "final_floor_gap_m": 0.7816233187913895,
+            "final_vertical_velocity_m_s": -0.16349723935127258,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 3,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              -0.17100000381469727,
+              0.0820000022649765,
+              0.08562332391738892
+            ],
+            "final_static_gap_m": 0.025623325258493423,
+            "final_floor_gap_m": 0.7756233252584934,
+            "final_vertical_velocity_m_s": -0.1634967178106308,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 4,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              -0.18700000643730164,
+              -0.07599999755620956,
+              0.09962332993745804
+            ],
+            "final_static_gap_m": 0.03162332624197006,
+            "final_floor_gap_m": 0.7816233262419701,
+            "final_vertical_velocity_m_s": -0.1634969264268875,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 5,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              -0.041999999433755875,
+              -0.1850000023841858,
+              0.0976233184337616
+            ],
+            "final_static_gap_m": 0.025623321533203125,
+            "final_floor_gap_m": 0.7756233215332031,
+            "final_vertical_velocity_m_s": -0.16349713504314423,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 6,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              0.11800000071525574,
+              -0.14900000393390656,
+              0.08862332999706268
+            ],
+            "final_static_gap_m": 0.025623328983783722,
+            "final_floor_gap_m": 0.7756233289837837,
+            "final_vertical_velocity_m_s": -0.16349680721759796,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 7,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              0.0,
+              0.0,
+              0.09162332862615585
+            ],
+            "final_static_gap_m": 0.025623328983783722,
+            "final_floor_gap_m": 0.7756233289837837,
+            "final_vertical_velocity_m_s": -0.1634969264268875,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 8,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              0.10300000011920929,
+              0.0,
+              0.21762330830097198
+            ],
+            "final_static_gap_m": 0.1456233114004135,
+            "final_floor_gap_m": 0.8956233114004135,
+            "final_vertical_velocity_m_s": -0.16349713504314423,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 9,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              0.0,
+              0.0989999994635582,
+              0.21962331235408783
+            ],
+            "final_static_gap_m": 0.15562330931425095,
+            "final_floor_gap_m": 0.905623309314251,
+            "final_vertical_velocity_m_s": -0.1634969413280487,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 10,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              -0.10499999672174454,
+              0.0,
+              0.2226233184337616
+            ],
+            "final_static_gap_m": 0.15262331813573837,
+            "final_floor_gap_m": 0.9026233181357384,
+            "final_vertical_velocity_m_s": -0.16349701583385468,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 11,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              0.0,
+              -0.10499999672174454,
+              0.21762330830097198
+            ],
+            "final_static_gap_m": 0.15062330663204193,
+            "final_floor_gap_m": 0.9006233066320419,
+            "final_vertical_velocity_m_s": -0.16349680721759796,
+            "final_lower_floor_contact": false
+          }
+        ]
+      },
+      {
+        "replay": 2,
+        "frames": 3,
+        "released_fruits": [],
+        "released_fruits_landed_on_floor": [],
+        "fruits": [
+          {
+            "fruit": 0,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              0.1899999976158142,
+              0.0,
+              0.09562332183122635
+            ],
+            "final_static_gap_m": 0.025623321533203125,
+            "final_floor_gap_m": 0.7756233215332031,
+            "final_vertical_velocity_m_s": -0.16349701583385468,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 1,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              0.11800000071525574,
+              0.14900000393390656,
+              0.09062332659959793
+            ],
+            "final_static_gap_m": 0.025623328983783722,
+            "final_floor_gap_m": 0.7756233289837837,
+            "final_vertical_velocity_m_s": -0.16349680721759796,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 2,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              -0.041999999433755875,
+              0.1850000023841858,
+              0.1066233217716217
+            ],
+            "final_static_gap_m": 0.031623318791389465,
+            "final_floor_gap_m": 0.7816233187913895,
+            "final_vertical_velocity_m_s": -0.16349723935127258,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 3,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              -0.17100000381469727,
+              0.0820000022649765,
+              0.08562332391738892
+            ],
+            "final_static_gap_m": 0.025623325258493423,
+            "final_floor_gap_m": 0.7756233252584934,
+            "final_vertical_velocity_m_s": -0.1634967178106308,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 4,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              -0.18700000643730164,
+              -0.07599999755620956,
+              0.09962332993745804
+            ],
+            "final_static_gap_m": 0.03162332624197006,
+            "final_floor_gap_m": 0.7816233262419701,
+            "final_vertical_velocity_m_s": -0.1634969264268875,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 5,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              -0.041999999433755875,
+              -0.1850000023841858,
+              0.0976233184337616
+            ],
+            "final_static_gap_m": 0.025623321533203125,
+            "final_floor_gap_m": 0.7756233215332031,
+            "final_vertical_velocity_m_s": -0.16349713504314423,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 6,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              0.11800000071525574,
+              -0.14900000393390656,
+              0.08862332999706268
+            ],
+            "final_static_gap_m": 0.025623328983783722,
+            "final_floor_gap_m": 0.7756233289837837,
+            "final_vertical_velocity_m_s": -0.16349680721759796,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 7,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              0.0,
+              0.0,
+              0.09162332862615585
+            ],
+            "final_static_gap_m": 0.025623328983783722,
+            "final_floor_gap_m": 0.7756233289837837,
+            "final_vertical_velocity_m_s": -0.1634969264268875,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 8,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              0.10300000011920929,
+              0.0,
+              0.21762330830097198
+            ],
+            "final_static_gap_m": 0.1456233114004135,
+            "final_floor_gap_m": 0.8956233114004135,
+            "final_vertical_velocity_m_s": -0.16349713504314423,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 9,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              0.0,
+              0.0989999994635582,
+              0.21962331235408783
+            ],
+            "final_static_gap_m": 0.15562330931425095,
+            "final_floor_gap_m": 0.905623309314251,
+            "final_vertical_velocity_m_s": -0.1634969413280487,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 10,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              -0.10499999672174454,
+              0.0,
+              0.2226233184337616
+            ],
+            "final_static_gap_m": 0.15262331813573837,
+            "final_floor_gap_m": 0.9026233181357384,
+            "final_vertical_velocity_m_s": -0.16349701583385468,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 11,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              0.0,
+              -0.10499999672174454,
+              0.21762330830097198
+            ],
+            "final_static_gap_m": 0.15062330663204193,
+            "final_floor_gap_m": 0.9006233066320419,
+            "final_vertical_velocity_m_s": -0.16349680721759796,
+            "final_lower_floor_contact": false
+          }
+        ]
+      }
+    ],
+    "evidence_boundary": "The caller asserts the authored finite-bench geometry and binds source/config separately. Both complete CSV fruit sequences are compared and gaps independently reconstructed. Floor support is an observed radius/vertical-velocity match, not a reaction-force audit. Release is latched and may include re-entry. This does not establish whole-cloth replay, cloth contacts, intervening substeps, calibration or energy closure."
+  },
+  "cpu_format_regression_complete": true,
+  "malformed_controls": {
+    "negative_impulse": {
+      "rejected": true,
+      "reason": "negative native static normal impulse"
+    },
+    "nonfinite_impulse": {
+      "rejected": true,
+      "reason": "nonfinite fruit state"
+    },
+    "missing_row": {
+      "rejected": true,
+      "reason": "both complete replays are required; live prefixes are not qualification"
+    },
+    "duplicate_row": {
+      "rejected": true,
+      "reason": "duplicate fruit state"
+    },
+    "wrong_columns": {
+      "rejected": true,
+      "reason": "expected exact replayed CPU or native finite-bench fruit columns"
+    },
+    "live_prefix": {
+      "rejected": true,
+      "reason": "both complete replays are required; live prefixes are not qualification"
+    }
+  },
+  "boundary": "Schema validation and two-frame native smoke only; no full-scene qualification."
+}

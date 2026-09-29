@@ -1,0 +1,5 @@
+device=Apple M4 native_bit_exact_replay=1 native_replay_count=2 native_case_count=1714 gpu_seconds=2.89576e-05
+backend=Apple_Metal_FP32_geometry independent_reference=production_FP64
+cases=1707 faces=481 rounded_edges=136 rounded_vertices=32 floor=159 misses=896 rejected_invalid=7 mismatches=0
+maximum_impact_position_error_m=3.9402e-07 maximum_normal_error=2.05958e-05 maximum_contact_gap_m=1.56e-07
+static_geometry_native_probe_pass=1 full_scene=NOT_QUALIFIED

@@ -50,7 +50,10 @@ its input. Seven malformed snapshot controls reject.
 
 **These are contact projection checks. They do not advance the saved state
 through the full dynamics.** A frozen four-second, 96-substep, two-replay
-pickup from this source is running; its complete qualification is pending.
+pickup from this source now completes **PASS**, with five fruit settling on the
+lower floor and worst accepted fruit/yarn overlap 0.080 µm. Both complete
+481-frame fruit sequences match, and all 51 exported regular/peak states pass.
+[Full result and newest video](assets/coupled-bench-pickup-96-evidence.json).
 [Source, binary, checks and launch record](assets/coupled-yarn-evidence.json).
 
 ```sh
@@ -86,3 +89,12 @@ friction, support reactions and spill outcome remain open, as do timestep
 convergence, calibrated materials, woven-cloth/elastic-volume coupling and
 whole-scene work/reaction closure. The larger native **81,920-tetrahedron**
 volume study is independently running under those volume qualification gates.
+
+The native response port in `ed7fc1d` now passes 103 production contact cases
+twice and preserves both serialized fruit sequences. Its full four-second
+finite-bench candidate stops at frame 4; whole-scene qualification remains open.
+[Native response checks, source binding and short-smoke limits](NATIVE_FINITE_BENCH.md).
+
+The `a427ef0` ghost-support repair adds an airborne-friction regression case,
+bringing the focused native suite to 104 cases. A new full native replay is
+running after both short replays pass the former frame-4 failure.

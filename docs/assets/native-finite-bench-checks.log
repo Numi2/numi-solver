@@ -1,0 +1,45 @@
+Test project /Users/home/numi-solver/build
+    Start  1: static_contact.host
+1/6 Test  #1: static_contact.host .....................   Passed    0.36 sec
+    Start  2: static_contact.metal
+2/6 Test  #2: static_contact.metal ....................   Passed    0.33 sec
+    Start 38: cloth_bag.metal_local_node_contact
+3/6 Test #38: cloth_bag.metal_local_node_contact ......   Passed    0.42 sec
+    Start 40: cloth_bag.metal_finite_bench_response
+4/6 Test #40: cloth_bag.metal_finite_bench_response ...   Passed    0.88 sec
+    Start 41: cloth_bag.metal_fruit_flight
+5/6 Test #41: cloth_bag.metal_fruit_flight ............   Passed    2.64 sec
+    Start 42: cloth_bag.metal_internal_contact
+6/6 Test #42: cloth_bag.metal_internal_contact ........   Passed    4.45 sec
+
+100% tests passed, 0 tests failed out of 6
+
+Label Time Summary:
+aerodynamics      =   4.45 sec*proc (1 test)
+bend              =   4.45 sec*proc (1 test)
+ccd               =   4.87 sec*proc (2 tests)
+cloth             =   8.40 sec*proc (4 tests)
+contact           =   5.56 sec*proc (4 tests)
+cpu               =   0.36 sec*proc (1 test)
+finite_bench      =   1.57 sec*proc (3 tests)
+friction          =   5.34 sec*proc (2 tests)
+fruit             =   7.98 sec*proc (3 tests)
+gravity           =   2.64 sec*proc (1 test)
+ground            =   7.51 sec*proc (3 tests)
+knot              =   4.45 sec*proc (1 test)
+local_topology    =   0.42 sec*proc (1 test)
+metal             =   8.31 sec*proc (4 tests)
+mouth             =   4.45 sec*proc (1 test)
+physics           =   9.09 sec*proc (6 tests)
+pickup            =   4.45 sec*proc (1 test)
+reconciliation    =   4.45 sec*proc (1 test)
+reference         =   4.45 sec*proc (1 test)
+refinement        =   2.64 sec*proc (1 test)
+release           =   4.45 sec*proc (1 test)
+rolling           =   4.45 sec*proc (1 test)
+self_contact      =   4.45 sec*proc (1 test)
+self_friction     =   4.45 sec*proc (1 test)
+strain            =   4.45 sec*proc (1 test)
+yarn              =   4.45 sec*proc (1 test)
+
+Total Test time (real) =   9.09 sec

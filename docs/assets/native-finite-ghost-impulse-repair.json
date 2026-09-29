@@ -1,0 +1,138 @@
+{
+  "schema": "numi.native-finite-bench.ghost-impulse-repair.v1",
+  "source_commit": "a427ef0a21e8ba1d71f22bc18c15140641898bbc",
+  "frozen_payload_files": 24,
+  "device": "Apple M4",
+  "focused_probe_actual_exit": 0,
+  "focused_cases": 104,
+  "default_native_reference_check": "PASS",
+  "former_full_candidate": {
+    "source_commit": "ed7fc1db88d3c9899720ac95743e6af70c7b50e5",
+    "actual_exit_code": 1,
+    "requested_frames_per_replay": 480,
+    "captured_frames_per_replay": 4,
+    "both_replays_stopped_early": true,
+    "printed_complete_true_was_a_reporting_bug": true
+  },
+  "first_failure_diagnostic": {
+    "kernel": "numi_cloth_bag_apply_fruit_ground_friction",
+    "frame": 4,
+    "substep_zero_based": 7,
+    "failure_flags": 8,
+    "observer_saved_states_exactly_match_unobserved_run": true,
+    "matched_snapshot_count": 10,
+    "both_fruit_sequences_match": true
+  },
+  "regression_control": {
+    "patch": "native-ghost-impulse-control.patch",
+    "patch_sha256": "d7586cf41cf6738d52c0df94679911ce269be2a29005f630ec5938c3bc695023",
+    "modified_shader_sha256": "0dff19d26a2e9cf781ea350a88f16447580f9e7264527a68179870692faf62a5",
+    "metallib_sha256": "37d53f4be2a397f17b688030be9bbee54a2881d04ea38573b79bf9342768ee7d",
+    "actual_exit_code": 1,
+    "airborne_friction_case_passed": false,
+    "spurious_static_impulse_Ns": 2.38598e-10,
+    "positive_control_static_impulse_Ns": 0,
+    "boundary": "Deliberate one-expression negative control of the original multiplication-order defect; no production source was reverted."
+  },
+  "repaired_short_run": {
+    "requested_frames_per_replay": 5,
+    "actual_frames_per_replay": 5,
+    "replays": 2,
+    "failure_flags": [
+      0,
+      0
+    ],
+    "runtime_replay_exact": true,
+    "actual_exit_code": 1,
+    "full_pickup_complete": false,
+    "boundary": "Deliberate five-frame diagnostic, not a full spill; actual runner FAIL is retained."
+  },
+  "new_full_candidate": {
+    "schema": "numi.native-finite-bench.pickup-launch.v1",
+    "status": "RUNNING",
+    "pid": 69630,
+    "source_commit": "a427ef0a21e8ba1d71f22bc18c15140641898bbc",
+    "frozen_manifest": "/Users/home/numi-solver/build/native-finite-repaired-launch/manifest.json",
+    "manifest_sha256": "ed1586dfd08a0da12e7b0b1c2d908178955da00e1af92ec7debd08d451a66a11",
+    "command": [
+      "/Users/home/numi-solver/build/native-finite-repaired-launch/build/numi-solver-cloth-metal",
+      "--metallib",
+      "/Users/home/numi-solver/build/native-finite-repaired-launch/build/shaders/NumiTemporalCone.metallib",
+      "--finite-bench",
+      "--pickup-prefix",
+      "/Users/home/numi-solver/build/native-finite-repaired-pickup-20260929",
+      "--pickup-steps",
+      "480",
+      "--pickup-dump-every",
+      "10",
+      "--iterations",
+      "32",
+      "--strain-sweeps",
+      "3",
+      "--replays",
+      "2"
+    ],
+    "started_unix": 1790688352.235432,
+    "requested_simulated_seconds": 4,
+    "requested_frames_per_replay": 480,
+    "requested_replays": 2,
+    "substeps_per_frame": 48,
+    "iterations": 32,
+    "strain_sweeps": 3,
+    "static_box_min_m": [
+      -0.75,
+      -0.5,
+      -0.08
+    ],
+    "static_box_max_m": [
+      0.75,
+      0.5,
+      0
+    ],
+    "room_floor_height_m": -0.75,
+    "evidence_boundary": "Full native candidate in progress, not qualification. No competing local scientific GPU job."
+  },
+  "artifacts": {
+    "native-finite-bench-response-repaired.log": {
+      "sha256": "acac7f00120b6edb440a5e4639150f0d4dc75ffc1b666e2bf7f72745091f5113",
+      "bytes": 24940
+    },
+    "native-finite-default-repaired-check.log": {
+      "sha256": "65461da8cc25d5500bc9e9f36e62c6a3eaa3f6877564c4dbaddb6703af372901",
+      "bytes": 1209
+    },
+    "native-finite-repaired-manifest.json": {
+      "sha256": "ed1586dfd08a0da12e7b0b1c2d908178955da00e1af92ec7debd08d451a66a11",
+      "bytes": 3848
+    },
+    "native-finite-original-early-failure.log": {
+      "sha256": "0f243f1d5919ac6100b7209af2f51500f933f6cd104044e3a9f9eca72ee103f0",
+      "bytes": 9266
+    },
+    "native-finite-original-early-failure-fruits.csv": {
+      "sha256": "686935cc81cf1795a963725f988424c37238f0fe7d7923878f942173627ba831",
+      "bytes": 18304
+    },
+    "native-first-failure-observer.log": {
+      "sha256": "cafce5e0e8cc1ed37d389c950faf22d9326f13367945e1e327cc7b6593fe16be",
+      "bytes": 10919
+    },
+    "native-first-failure-observer-audit.json": {
+      "sha256": "88b453d5bd233a0e53f9406aa8b86e68771c4dce0d1ce303a14307ad1d569aa5",
+      "bytes": 1812
+    },
+    "native-ghost-impulse-control.log": {
+      "sha256": "f943642d152b013995be5bab1d042fd4e1e80d7ece04325f4ba59de55d0452f8",
+      "bytes": 24960
+    },
+    "native-finite-repaired-short.log": {
+      "sha256": "a49e13f91483c7422b4d07e5c63ba14f5cd7b726b608a9887c472dc194704df5",
+      "bytes": 10928
+    },
+    "native-finite-repaired-pickup-preparation.json": {
+      "sha256": "17606e30698fa5e941ebc27deb78c4b61508c9600ea5ae9587c99e4dfc979f24",
+      "bytes": 1341
+    }
+  },
+  "evidence_boundary": "Repairs ghost static reaction and misleading early-stop completion reporting. Native full 480-frame spill, continuous whole-yarn static contact, coupled friction/work closure and state-of-the-art comparison remain unqualified."
+}

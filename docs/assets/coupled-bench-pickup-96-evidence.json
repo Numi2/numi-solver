@@ -1,0 +1,372 @@
+{
+  "schema": "numi.coupled-yarn.full-pickup-evidence.v1",
+  "source_commit": "bbf111ae4a761ea68b8906a0084120b805a59b9d",
+  "source_binary_sha256": {
+    "cloth_bag.cpp": "367d8aff2181921d56b5444ef20a01e9771f1e525b76cd58fa46b56f0ca29740",
+    "cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd",
+    "finite_bench_geometry.h": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade",
+    "grip_trajectory.h": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+    "numi-solver-cloth-bag": "ba02c16b1da9f542e9b3b56f0b80cd0cd5da1e3d6c92960f290822442b36c036"
+  },
+  "actual_exit_code": 0,
+  "result": "PASS",
+  "backend": "CPU FP64",
+  "command": [
+    "/Users/home/numi-solver/build/coupled-yarn-launch/numi-solver-cloth-bag",
+    "--scenario",
+    "pickup",
+    "--finite-bench",
+    "--steps",
+    "480",
+    "--substeps",
+    "96",
+    "--iterations",
+    "32",
+    "--replays",
+    "2",
+    "--dump-frames",
+    "build/coupled-bench-pickup-96",
+    "--dump-every",
+    "10",
+    "--dump-obj",
+    "build/coupled-bench-pickup-96.obj",
+    "--fruit-trace",
+    "build/coupled-bench-pickup-96-fruits.csv",
+    "--contact-peak-prefix",
+    "build/coupled-bench-pickup-96",
+    "--progress"
+  ],
+  "simulated_seconds": 4,
+  "frames_per_replay_including_initial": 481,
+  "replays": 2,
+  "substeps_per_frame": 96,
+  "iterations": 32,
+  "final_physical_hash": "0x3e1d7a6b7b4b5f35",
+  "ordered_frame_hash": "0x7e2bdb6dc4388dda",
+  "runtime_physical_and_ordered_frame_replay_exact": true,
+  "both_complete_serialized_fruit_replays_exact": true,
+  "released_fruits": [
+    1,
+    4,
+    9,
+    10,
+    11
+  ],
+  "all_released_fruits_observed_on_lower_floor": true,
+  "maximum_runtime_fruit_yarn_overlap_m": 7.987747485671548e-08,
+  "maximum_runtime_fruit_pair_overlap_m": 4.033003930814516e-10,
+  "maximum_runtime_nonlocal_yarn_overlap_m": 9.32e-07,
+  "maximum_runtime_local_node_overlap_m": 6.1e-08,
+  "maximum_runtime_speed_m_s": 14.071887604,
+  "maximum_runtime_knot_error_rad": 0.038144422,
+  "maximum_certificate_passes": 3,
+  "coupled_contact_blocks": 2920,
+  "block_fallbacks": 0,
+  "saved_contact_states": 51,
+  "all_saved_contact_states_pass": true,
+  "artifacts": {
+    "coupled-bench-pickup-96.log": {
+      "sha256": "9f83052b1626825ade692e1069d9c462863a4f3b0bb4293814149d2c9667ebbe",
+      "bytes": 13453
+    },
+    "coupled-bench-pickup-96-fruits.csv": {
+      "sha256": "a79dfb2968bac8526a13b77beef10f8c7be71e91266ffdd1644300b9cd993297",
+      "bytes": 2830645
+    },
+    "coupled-bench-pickup-96-fruit-audit.json": {
+      "sha256": "db09a0ba6331af263f76803914701271eb056e50278981713955061b489ae550",
+      "bytes": 17731
+    },
+    "coupled-bench-pickup-96-contact-audit.json": {
+      "sha256": "a77d0ca9b67c0e884851ec8bc17af469a7b677a8afa479f24f2c282f62a962c6",
+      "bytes": 50945
+    },
+    "coupled-bench-pickup-96-render.json": {
+      "sha256": "800d785b59c8b3923b740218ee3347277506db5c231dc20c3023556026059e29",
+      "bytes": 11551
+    },
+    "coupled-bench-pickup-96-poster.png": {
+      "sha256": "e16cbda47f8ce51d927f1413121528880e6d2ddbc2d175d51ba1b090ba00a2df",
+      "bytes": 488351
+    },
+    "coupled-bench-pickup-96-final.obj": {
+      "sha256": "8f3f39669e65c3a5b7d24e449c9613189ce09e9bc4cd15a90ffdfd2e459dbabf",
+      "bytes": 101054
+    },
+    "coupled-bench-pickup-96-r1-peak.obj": {
+      "sha256": "7bb69dadf16d7e7d41e57b300f40e9226651ecfbd4d26c9b4995a76801198a86",
+      "bytes": 102032
+    },
+    "coupled-bench-pickup-96-r2-peak.obj": {
+      "sha256": "7bb69dadf16d7e7d41e57b300f40e9226651ecfbd4d26c9b4995a76801198a86",
+      "bytes": 102032
+    },
+    "coupled-bench-pickup-96.mp4": {
+      "sha256": "32a305c15de580cd2f48ae4a79e8e33a920612a13bdccc7de2347f4fe2d0ba98",
+      "bytes": 269765
+    }
+  },
+  "video": {
+    "physics_source_commit": "bbf111ae4a761ea68b8906a0084120b805a59b9d",
+    "renderer_source_sha256": "cccc99f1ffb8eea96d7436a08acb045a5b48568652cf526df65cd867481a1e55",
+    "renderer_executable_sha256": "a9110f3fe56dabbcb6a12209d6a4c95ccc2cedfc16bc31952cbb1bbfec4586fd",
+    "saved_dynamic_states": 49,
+    "simulated_seconds": 4,
+    "capture_interval_simulated_seconds": 0.08333333333333333,
+    "camera": "fixed trajectory camera framing every regular saved state, bench and floor",
+    "geometry": "Exact exported yarn endpoints and rigid fruit centers; no smoothing or trajectory interpolation; repeated video frames hold each saved state.",
+    "width": 960,
+    "height": 800,
+    "encoded_frames": "98",
+    "duration_seconds": 4.083333,
+    "video_sha256": "32a305c15de580cd2f48ae4a79e8e33a920612a13bdccc7de2347f4fe2d0ba98",
+    "frames": [
+      {
+        "simulation_frame": 0,
+        "obj_sha256": "21483357b0deb815b8cb071e40c171b46f05bd285425d0ed4661e2c0d68b3122",
+        "png_sha256": "52de09ad5679c365fddd189a6725f7c8ce9b9fd54c498ca877b7ad39ce768070"
+      },
+      {
+        "simulation_frame": 10,
+        "obj_sha256": "091b3ab429257c93ba18e324309304299ab63350fa464a6e81554046a1a30301",
+        "png_sha256": "4ab67f8812f18edcb50dde92709d62ae6b4c8a31d93bd9a526a974aaf6031fe5"
+      },
+      {
+        "simulation_frame": 20,
+        "obj_sha256": "2d60e0cf066f7478cd5f082e11b0cb7ab90068f6228ae27d58f5b46f8af1def6",
+        "png_sha256": "5c4d904b90045128dec1024669649b22970896d3dad8377da0ddffe1309f6ac7"
+      },
+      {
+        "simulation_frame": 30,
+        "obj_sha256": "628c01da9275f14e5a48d9d002cde36bf6d9f676856ab0515821750f13c9264a",
+        "png_sha256": "845fee06470bfff10a6bfa9badd91bc9ebf68e9ce3ed7ae89afd073e42dad1bb"
+      },
+      {
+        "simulation_frame": 40,
+        "obj_sha256": "b222c6bd6458e1605028abc9e0ebc47359dc5dd0e35364a51efa9c094d733ddc",
+        "png_sha256": "7890e236421b28e04df8bed04940e0355824cf6817a3f7197dcbc6278464e661"
+      },
+      {
+        "simulation_frame": 50,
+        "obj_sha256": "030bcabdb064c77033ef31bd5d73a8c5ac1b715eb2c6ddc20ddcfdbd2e031446",
+        "png_sha256": "de08683c6b51c6b49f39de933877461d7e08045a6539b685f8377a2c5a6c7264"
+      },
+      {
+        "simulation_frame": 60,
+        "obj_sha256": "7d100844f5e9831498a62eb01ffe7c04936927c1e367e710fde800dfa4e3f56d",
+        "png_sha256": "3b22b88c38546444b54cb35ae75593f0d6d03ab4b4de381a6fc3f4eb5a9b9256"
+      },
+      {
+        "simulation_frame": 70,
+        "obj_sha256": "7d9b00b47a072db255cb11bcdb2cc3f352b3639f3afea0002d2dca1b97959618",
+        "png_sha256": "3838ffd2d143d5442b332dd01dbbc60c8cdc0296824ab179f9e26b0debde46c7"
+      },
+      {
+        "simulation_frame": 80,
+        "obj_sha256": "470eee77d3f9b341042378effdbbd41fa2c470800afd79ae452555f7e1965e3b",
+        "png_sha256": "3cfebf35e1ddb349d5332ddec3b82b9a02810c698a537a1c0eeb329605c72299"
+      },
+      {
+        "simulation_frame": 90,
+        "obj_sha256": "57772199ae1019d6e158e2a62c3cae9f4e9d6e6b16be7f30cc57b16f19f58bc8",
+        "png_sha256": "a2c35354ec3a06635d8cac787f09f0212a48ac0ba3d1977d1103732c09edd694"
+      },
+      {
+        "simulation_frame": 100,
+        "obj_sha256": "14d06a687fa5bac87e588c9cfa87819c6641253b8d016c1c9899572926246cce",
+        "png_sha256": "71570d8557cab602ca09fbc7a35e8d3a7f96edd13b6744e2e54c0a45a4b9764c"
+      },
+      {
+        "simulation_frame": 110,
+        "obj_sha256": "9beb6fca417672f5bebd6fe8bceea2009a6d524172984536ff193edc92ab0cf1",
+        "png_sha256": "3f58730fa04cdb6cf51105c4ef9d0b49b2a8373dca0b2b8681a4265933e1b071"
+      },
+      {
+        "simulation_frame": 120,
+        "obj_sha256": "973daaccde460949bf739b7e17d122c69ac1c2b8931ee06ed87e4d4433eca390",
+        "png_sha256": "6bdc5489f9eecd0428b002a477f49b211228c37da452603e245c0a2b169b0555"
+      },
+      {
+        "simulation_frame": 130,
+        "obj_sha256": "dff01287e1689b4a76f380dce35893308b631e9ecf8165001d96f037a5418cfa",
+        "png_sha256": "5f7eabadb44dc52f6d53a833ef85f6b0c45b7799ae74f73485d3726afa603963"
+      },
+      {
+        "simulation_frame": 140,
+        "obj_sha256": "2bd978a43e7040a6b21d696056aa4719de5456f38743e7e390d0421a6fdd0e30",
+        "png_sha256": "72ad5900c9a92e387987e75ee8faf614185da0173496acbbabbc220742fe7aa1"
+      },
+      {
+        "simulation_frame": 150,
+        "obj_sha256": "d477c505cfbeb90ab8bf04805f25040bcfdd93e1af71ac199dc3a14a342e3d87",
+        "png_sha256": "79c4c30a800589142543416506797ff45aa8fc0fd9148e0e01d883a8779a44cf"
+      },
+      {
+        "simulation_frame": 160,
+        "obj_sha256": "92b89385b18442f126b76c24ca08d02db44ff7c0c168c9976cc7cd08a09ccff4",
+        "png_sha256": "d6e4629f67d28672bbd1a1c3f91cd33261e7e9e77be424d3516faee98510f9f6"
+      },
+      {
+        "simulation_frame": 170,
+        "obj_sha256": "fc957326de5aa93f50f9065cddb9b42d954e00be86c6c29c4aec5bb0b3744a33",
+        "png_sha256": "ab3994cabf1fd9982cb82e8f886197d9fdcf992d7cf4104f9bf4aed1e556a889"
+      },
+      {
+        "simulation_frame": 180,
+        "obj_sha256": "7954e4e036689e1f831b3bf875ba5ceed9561cc668f600b715b7345e327b5b7a",
+        "png_sha256": "c3ebae3c06dcae4c76c123fe557f12672747f2d62391cd79dae43ec3d986cf25"
+      },
+      {
+        "simulation_frame": 190,
+        "obj_sha256": "943fb171e1d39c7874152685c4f15ea67e0903b6934bbf0d97330939058e4449",
+        "png_sha256": "c1c260318e4241115e5062a54cf732fab5055f5442b759234ef57d3ef9c0b0ee"
+      },
+      {
+        "simulation_frame": 200,
+        "obj_sha256": "a621cca201c8cb005da7cd08b5abe287e1c7fa03b076b2cc1094f51dcc3bf3f8",
+        "png_sha256": "7f398faf8ee008eea791352c79d70e32d276294f63f8c55cdb10d320c9c1ba29"
+      },
+      {
+        "simulation_frame": 210,
+        "obj_sha256": "86662fd4453893739cd8ba970997adc46d5a58ad87e5391a08dcea9da54bf86c",
+        "png_sha256": "cd641cd78146172f9b44a102faca86c90c99fd4aa245d26f7c24fd0f7485e35a"
+      },
+      {
+        "simulation_frame": 220,
+        "obj_sha256": "2e9111ce93263219188593485384fda2eba70f15afea0da3f1151761c592d4c0",
+        "png_sha256": "44bcb59dd62f515df1473abe16ce11fff0ec2ab9d9c4726ccb30c053dd844da8"
+      },
+      {
+        "simulation_frame": 230,
+        "obj_sha256": "81756baae3d16e791076e9b45a92c36eacf39d84303f698db09057ee29893e1e",
+        "png_sha256": "64d2e92771f35cac6081f3a29b650d1f5daf38c473a7b46ae01a027880a13dee"
+      },
+      {
+        "simulation_frame": 240,
+        "obj_sha256": "a112141c860003670e483aefd230259e666bf3c4069ad9cb3431b6fbafa1b1b1",
+        "png_sha256": "e2f17b5c725584c05ebc7a1a550c856ef76d81347c490e23c4d79f2b69c538a0"
+      },
+      {
+        "simulation_frame": 250,
+        "obj_sha256": "ea6fa02d39a6180e18e3781154fb42dafe7a68a5ca1bb6cb70ec95361df27520",
+        "png_sha256": "62cc9699d568565739286fffb44bd6d70823201b57cb5a0daf04d3505da9b4d6"
+      },
+      {
+        "simulation_frame": 260,
+        "obj_sha256": "f91ef47ffb98b284c150ef1bd496f08bc10830bd625661081ddf10a186b022f8",
+        "png_sha256": "28e3a1f1e6209eac83850d678ee3336aae192aa6c5616f50a122d5f7dc1527a8"
+      },
+      {
+        "simulation_frame": 270,
+        "obj_sha256": "ee27c83382133f90bead5846dd8b15bb45f2b03b309325084d539d5d8c9caa86",
+        "png_sha256": "e9eccf3de508010774ce5aa9e319296414159cd953d5ef6c5a16b59ba7a85df8"
+      },
+      {
+        "simulation_frame": 280,
+        "obj_sha256": "def462905a9b324ea2de67a02afa3bde57902b2c2d838d93db082562a5697d3f",
+        "png_sha256": "77e7accfe5779ab5b94d8b34ceb29f3cac0b34d7b3505f22d72c3d46dfb0c81e"
+      },
+      {
+        "simulation_frame": 290,
+        "obj_sha256": "cdcb4224eb916302314775025e19e3413f53f05b2fc823c90bf6f85d04536994",
+        "png_sha256": "8765b30f4eab4eb5a37eba81a88aa0da538e620b16b3084c5b4b586ac9b26776"
+      },
+      {
+        "simulation_frame": 300,
+        "obj_sha256": "f46d036250969cca0330b041e08ac4b2ce35ee10efdd51f281cea5b278afcb95",
+        "png_sha256": "e16cbda47f8ce51d927f1413121528880e6d2ddbc2d175d51ba1b090ba00a2df"
+      },
+      {
+        "simulation_frame": 310,
+        "obj_sha256": "0228079cb3120fb6f9ec14fdc52aeb8c5be2ec9784b6424b66191e6c562ee222",
+        "png_sha256": "34b75bd7e0394f8f74d18b900df7f7264e15d71a174cadb0a6c6be70558c8278"
+      },
+      {
+        "simulation_frame": 320,
+        "obj_sha256": "40dfaeeda1612618807b30842b474f83ab27b3b9f90545483be72028c763868a",
+        "png_sha256": "e186398d058aadc7a5fd74670af32fb84aad0b054352198865d8cb263d82e379"
+      },
+      {
+        "simulation_frame": 330,
+        "obj_sha256": "ac252d117379c1fa362a68316720148749f477b31a64c7dd492b7ddf67349c27",
+        "png_sha256": "53e115170a676b60b399954f4e136c89629e947d393a042374b5b6d463a026d7"
+      },
+      {
+        "simulation_frame": 340,
+        "obj_sha256": "8086aabddbedb82b3afa2e083e8e3d4dcbf6df86408cdecce82d639ae95ec3eb",
+        "png_sha256": "60cc97d65faeec96d4a6b99f41ca0252c661fa61ec99d56857f35de66cee1154"
+      },
+      {
+        "simulation_frame": 350,
+        "obj_sha256": "32b1d6845e9baaa7a509ef93665381267fc894c8592c44b5f994e8e22e6e228b",
+        "png_sha256": "904869bfe39a4ab88a3cf84ae8031c755c46c518d1a592ee65aa4a290850e53b"
+      },
+      {
+        "simulation_frame": 360,
+        "obj_sha256": "0fac20ed14636ee675010421fe4a14a0daea2e7fc89b65ba00ce045241fd6d50",
+        "png_sha256": "3ee5d7cd23bb49765e2a3684b3cd7fffd9ee20a2a8801b2232f98fb74b677b25"
+      },
+      {
+        "simulation_frame": 370,
+        "obj_sha256": "186f57a1b890effd33aef36ef1529d1bed6ab71a9287a8f893c223878f2f0fb0",
+        "png_sha256": "7ec8be90667729eb228a0a50fc6ec643cfa39d257db9f95da8cdcd4130c06e4d"
+      },
+      {
+        "simulation_frame": 380,
+        "obj_sha256": "1a681c826a94ca59a49cf7b67f47153627256561d98d9c3dc47466bf15340324",
+        "png_sha256": "cd065232e366cc8e1315b40f82dd6e924011e97cb7878a61603cce8ac9914836"
+      },
+      {
+        "simulation_frame": 390,
+        "obj_sha256": "fb23e86191da3f55acebfacc0dfa1b0aaa0ace7e04e67765f8eb66b0eee8dbf3",
+        "png_sha256": "24124751aaefc731cfa0d60ca1f00fd05d11dc6fb9f5917afab3d2d24741b37a"
+      },
+      {
+        "simulation_frame": 400,
+        "obj_sha256": "f653ff479e08481ac74fa84be74f82475699d591f9962e0baed9108f9196e754",
+        "png_sha256": "f87196f7155ed05dc25e387b5f679e4c444dfb838775b95c4baca636c4d662fd"
+      },
+      {
+        "simulation_frame": 410,
+        "obj_sha256": "263503836a93422599bdd8709e1f115432ec799564f38478f6c64ad74711f57a",
+        "png_sha256": "58a5327416be96523bd67f77982b23907b02b619973177c346314aaac1c1d8e2"
+      },
+      {
+        "simulation_frame": 420,
+        "obj_sha256": "d575c4ca42e1806ae3735ac06265471249b5025e0780e51ca6b9127708ea8440",
+        "png_sha256": "748156181fead0dee24f77053b36c50de946030c1ee1d1043004cc9f3610effc"
+      },
+      {
+        "simulation_frame": 430,
+        "obj_sha256": "d090326bd4d68b29c83354aea4c8f4b02b6d1991a95241e5f5b9e1d38e93ab4d",
+        "png_sha256": "fc3b7a913c2ccd447daa5fa5e747796da084577b7484e22dfa88da9a075e427b"
+      },
+      {
+        "simulation_frame": 440,
+        "obj_sha256": "df9a58c5ebe6122266b23a68df0e8f238ccf29c5f52d32cb35092564f4d114f2",
+        "png_sha256": "a44f5e856ce8be58f93f8957e4a67f6ae1600feef7a56775b2c58af0d6ed3b78"
+      },
+      {
+        "simulation_frame": 450,
+        "obj_sha256": "584a63bde76b9a779487184396a2632efb758944a816c4b5054b3aeb37d5e5fa",
+        "png_sha256": "02efb84a4914566751a5c928cbac5e61f6589b5328346ac4b0506e713fdde4a7"
+      },
+      {
+        "simulation_frame": 460,
+        "obj_sha256": "b446669e23ed0c7d537f83997be669f15721ec5f1272465dde91853499148199",
+        "png_sha256": "6b1a75f3cfe10df4da0c93784a5f463f1304df38d55e053ad24099311e987455"
+      },
+      {
+        "simulation_frame": 470,
+        "obj_sha256": "f02b94872efb6aa3cecaff9af21a5ce0d11083868e1f187ca90804bb7b5ec9d4",
+        "png_sha256": "12633a238afc9c6b29c0b05afe8fa8b946fa8e42542f495bc45eaeb3303477b3"
+      },
+      {
+        "simulation_frame": 480,
+        "obj_sha256": "8f3f39669e65c3a5b7d24e449c9613189ce09e9bc4cd15a90ffdfd2e459dbabf",
+        "png_sha256": "11a662a7989192218444fc69d04a6f6b328ee05b9e95f6a20aeee2725847e61b"
+      }
+    ]
+  },
+  "evidence_boundary": "Full authored cloth/rigid-sphere CPU96 pickup qualification under existing gates. Not same-source temporal convergence, native full-scene qualification, fruit deformation, calibrated material, elastic-volume/cloth coupling, or whole-scene energy/reaction closure. Published contacts observe accepted states; saved-state audits do not certify all intervening substeps."
+}

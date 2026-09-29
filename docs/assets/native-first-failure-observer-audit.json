@@ -1,0 +1,61 @@
+{
+  "observer_is_read_only_on_saved_evidence": true,
+  "matched_snapshots": [
+    {
+      "replay": 1,
+      "frame": 0,
+      "sha256": "c06e8d202f2391214eb62ee1b1a65b4e424a8e32a36f541eef38cc0a0b71dbaa"
+    },
+    {
+      "replay": 1,
+      "frame": 1,
+      "sha256": "a0b0fbb5c7d2d217c92bc29634b82ff795bce2906d22b36f3cb415b08c04ebad"
+    },
+    {
+      "replay": 1,
+      "frame": 2,
+      "sha256": "c1ffd17741584293f998c469dbb6b18635412f090472e674090eadb84d3956d8"
+    },
+    {
+      "replay": 1,
+      "frame": 3,
+      "sha256": "5695899d524e1029d28a61933a0774db646a6f10d3ac5d946f1a7192c9802386"
+    },
+    {
+      "replay": 1,
+      "frame": 4,
+      "sha256": "873e439c93fe05310d64bed662c132dd639d2b320df8ab8b56689f2a63d83496"
+    },
+    {
+      "replay": 2,
+      "frame": 0,
+      "sha256": "c06e8d202f2391214eb62ee1b1a65b4e424a8e32a36f541eef38cc0a0b71dbaa"
+    },
+    {
+      "replay": 2,
+      "frame": 1,
+      "sha256": "a0b0fbb5c7d2d217c92bc29634b82ff795bce2906d22b36f3cb415b08c04ebad"
+    },
+    {
+      "replay": 2,
+      "frame": 2,
+      "sha256": "c1ffd17741584293f998c469dbb6b18635412f090472e674090eadb84d3956d8"
+    },
+    {
+      "replay": 2,
+      "frame": 3,
+      "sha256": "5695899d524e1029d28a61933a0774db646a6f10d3ac5d946f1a7192c9802386"
+    },
+    {
+      "replay": 2,
+      "frame": 4,
+      "sha256": "873e439c93fe05310d64bed662c132dd639d2b320df8ab8b56689f2a63d83496"
+    }
+  ],
+  "combined_fruit_trace_sha256": "686935cc81cf1795a963725f988424c37238f0fe7d7923878f942173627ba831",
+  "first_failure_kernel": "numi_cloth_bag_apply_fruit_ground_friction",
+  "first_failure_frame": 4,
+  "first_failure_substep_zero_based": 7,
+  "first_failure_flags": 8,
+  "boundary": "Diagnostic comparison on the pre-repair early failure. Both runs stop at frame 4; no full native qualification."
+}
