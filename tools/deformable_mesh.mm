@@ -31,7 +31,7 @@ struct Mesh {
     std::vector<uint32_t> offsets;
     std::vector<mr_uint4> incidence;
 };
-Mesh makeMesh(const uint32_t refinement=0){
+Mesh makeMesh(const uint32_t refinement=0,const bool shortestDiagonal=false){
     Mesh mesh;double phi=(1+std::sqrt(5.0))/2,radius=.05;
     std::vector<V> surface{{-1,phi,0},{1,phi,0},{-1,-phi,0},{1,-phi,0},
         {0,-1,phi},{0,1,phi},{0,-1,-phi},{0,1,-phi},
@@ -70,9 +70,30 @@ Mesh makeMesh(const uint32_t refinement=0){
             uint32_t a=tet[0],b=tet[1],c=tet[2],d=tet[3];
             uint32_t ab=midpoint(a,b),ac=midpoint(a,c),ad=midpoint(a,d),
                      bc=midpoint(b,c),bd=midpoint(b,d),cd=midpoint(c,d);
+            // The four central children tile the midpoint octahedron. Always
+            // choosing ab-cd can progressively lengthen their edges under
+            // refinement. The explicit shortest-diagonal candidate preserves
+            // the exterior faces and volume while bounding this deterioration.
+            const std::array<std::array<std::array<uint32_t,4>,4>,3> central{{
+                {{{ab,ac,ad,cd},{ab,ac,bc,cd},{ab,ad,bd,cd},{ab,bc,bd,cd}}},
+                {{{ac,ab,ad,bd},{ac,ad,cd,bd},{ac,cd,bc,bd},{ac,bc,ab,bd}}},
+                {{{ad,ab,ac,bc},{ad,ac,cd,bc},{ad,cd,bd,bc},{ad,bd,ab,bc}}}
+            }};
+            uint32_t diagonal=0;
+            if(shortestDiagonal){
+                const std::array<std::pair<uint32_t,uint32_t>,3> choices{{{ab,cd},{ac,bd},{ad,bc}}};
+                double shortest=dot(sub(xyz(mesh.positions[ab]),xyz(mesh.positions[cd])),
+                                    sub(xyz(mesh.positions[ab]),xyz(mesh.positions[cd])));
+                for(uint32_t choice=1;choice<choices.size();++choice){
+                    const auto [first,second]=choices[choice];
+                    const V edge=sub(xyz(mesh.positions[first]),xyz(mesh.positions[second]));
+                    const double squared=dot(edge,edge);
+                    if(squared<shortest){shortest=squared;diagonal=choice;}
+                }
+            }
             for(auto child:std::array<std::array<uint32_t,4>,8>{{
                 {a,ab,ac,ad},{b,ab,bc,bd},{c,ac,bc,cd},{d,ad,bd,cd},
-                {ab,ac,ad,cd},{ab,ac,bc,cd},{ab,ad,bd,cd},{ab,bc,bd,cd}}}){
+                central[diagonal][0],central[diagonal][1],central[diagonal][2],central[diagonal][3]}}){
                 V x=sub(xyz(mesh.positions[child[1]]),xyz(mesh.positions[child[0]]));
                 V y=sub(xyz(mesh.positions[child[2]]),xyz(mesh.positions[child[0]]));
                 V z=sub(xyz(mesh.positions[child[3]]),xyz(mesh.positions[child[0]]));
@@ -272,11 +293,11 @@ void exportFrames(const std::string& prefix,const Mesh& mesh,const std::vector<F
         for(auto face:mesh.faces)obj<<"f "<<face[0]+1<<' '<<face[1]+1<<' '<<face[2]+1<<'\n';
     }
 }
-int topologyProbe(){
+int topologyProbe(const bool shortestDiagonal=false){
     bool pass=true;
     const std::array<uint32_t,5> expectedNodes{13,55,309,2057,14993};
     for(uint32_t level=0;level<expectedNodes.size();++level){
-        const auto mesh=makeMesh(level);
+        const auto mesh=makeMesh(level,shortestDiagonal);
         std::vector<mr_uint4> legacy;
         std::vector<uint32_t> offsets;
         if(level<4)for(uint32_t node=0;node<mesh.positions.size();++node){
@@ -307,12 +328,74 @@ int topologyProbe(){
             <<" tetrahedra="<<mesh.elements.size()<<" boundary_triangles="<<mesh.faces.size()
             <<" sorted_incidence_reference_exact="<<exact
             <<" reference="<<(level<4?"legacy_scan":"independent_flat_corner_sort")<<" expected_counts="<<counts<<'\n';
+        if(shortestDiagonal){
+            const auto legacyMesh=makeMesh(level);
+            using TriangleGeometry=std::array<V,3>;
+            auto boundaryGeometry=[](const Mesh& body){
+                std::vector<TriangleGeometry> geometry;
+                for(auto face:body.faces){TriangleGeometry points{xyz(body.positions[face[0]]),
+                    xyz(body.positions[face[1]]),xyz(body.positions[face[2]])};
+                    std::sort(points.begin(),points.end());geometry.push_back(points);}
+                std::sort(geometry.begin(),geometry.end());return geometry;
+            };
+            const bool boundaryExact=boundaryGeometry(mesh)==boundaryGeometry(legacyMesh);
+            // Independently reconstruct the element boundary. Counts and
+            // sorted incidence alone cannot detect duplicate or missing
+            // octahedron children.
+            auto canonical=[](Face face){return std::min({face,Face{face[1],face[2],face[0]},
+                Face{face[2],face[0],face[1]}});};
+            std::map<Face,std::vector<Face>> owners;
+            for(auto element:mesh.elements){
+                const uint32_t a=element.nodes.x,b=element.nodes.y,c=element.nodes.z,d=element.nodes.w;
+                for(const Face face:std::array<Face,4>{{{b,c,d},{a,d,c},{a,b,d},{a,c,b}}}){
+                    Face key=face;std::sort(key.begin(),key.end());owners[key].push_back(face);
+                }
+            }
+            bool internalOwnersValid=true;
+            std::vector<Face> extractedBoundary,authoredBoundary;
+            for(const auto& [key,faces]:owners){
+                if(faces.size()==1)extractedBoundary.push_back(canonical(faces[0]));
+                else if(faces.size()!=2||canonical(faces[0])!=canonical(Face{faces[1][2],faces[1][1],faces[1][0]}))
+                    internalOwnersValid=false;
+            }
+            for(auto face:mesh.faces)authoredBoundary.push_back(canonical(face));
+            std::sort(extractedBoundary.begin(),extractedBoundary.end());
+            std::sort(authoredBoundary.begin(),authoredBoundary.end());
+            internalOwnersValid&=extractedBoundary==authoredBoundary;
+            bool originalNodesExact=true;
+            for(uint32_t node=0;node<13;++node)
+                originalNodesExact&=xyz(mesh.positions[node])==xyz(legacyMesh.positions[node]);
+            double mass=0,legacyMass=0,minimumQuality=1,maximumEdgeAspect=1;
+            for(auto v:mesh.velocityAndMass)mass+=v.w;
+            for(auto v:legacyMesh.velocityAndMass)legacyMass+=v.w;
+            for(auto element:mesh.elements){
+                double squaredEdges=0,shortest=1,longest=0;
+                for(uint32_t first=0;first<4;++first)for(uint32_t second=first+1;second<4;++second){
+                    const V edge=sub(xyz(mesh.positions[corner(element.nodes,first)]),
+                                     xyz(mesh.positions[corner(element.nodes,second)]));
+                    const double squared=dot(edge,edge);
+                    squaredEdges+=squared;shortest=std::min(shortest,squared);longest=std::max(longest,squared);
+                }
+                minimumQuality=std::min(minimumQuality,12*std::pow(3*double(element.inverseRestRows[0].w),2./3)/squaredEdges);
+                maximumEdgeAspect=std::max(maximumEdgeAspect,std::sqrt(longest/shortest));
+            }
+            const bool geometryPreserved=boundaryExact&&originalNodesExact&&std::abs(mass-legacyMass)<2e-7;
+            const bool shapeQualityPreserved=minimumQuality>.84&&maximumEdgeAspect<1.46;
+            pass&=geometryPreserved&&internalOwnersValid&&shapeQualityPreserved;
+            std::cout<<std::setprecision(12)<<"refinement_diagonal=shortest original_nodes_exact="<<originalNodesExact
+                <<" boundary_geometry_exact="<<boundaryExact<<" mass_difference_kg="<<std::abs(mass-legacyMass)
+                <<" minimum_tet_mean_ratio="<<minimumQuality<<" maximum_tet_edge_aspect="<<maximumEdgeAspect
+                <<" physical_rest_geometry_preserved="<<geometryPreserved
+                <<" internal_face_owners_valid="<<internalOwnersValid
+                <<" shape_quality_preserved="<<shapeQualityPreserved<<'\n';
+        }
     }
     std::cout<<"mesh_topology_probe_qualified="<<pass<<'\n';
     return pass?0:1;
 }
 
-int run(const std::string& prefix,const uint32_t refinement,const float timestep,const uint32_t integrator){
+int run(const std::string& prefix,const uint32_t refinement,const float timestep,const uint32_t integrator,
+        const bool shortestDiagonal=false){
     auto device=MTLCreateSystemDefaultDevice();if(!device)throw std::runtime_error("Metal device unavailable");
     NSError* error=nil;
     auto library=[device newLibraryWithURL:[NSURL fileURLWithPath:@NUMI_DEFORMABLE_MESH_METALLIB] error:&error];
@@ -322,7 +405,7 @@ int run(const std::string& prefix,const uint32_t refinement,const float timestep
     Pipelines pipelines{pipeline(@"numi_deformable_mesh_evaluate"),pipeline(@"numi_deformable_mesh_predict"),
         pipeline(@"numi_deformable_mesh_finish_verlet"),
         pipeline(@"numi_deformable_mesh_validate"),pipeline(@"numi_deformable_mesh_commit")};
-    auto mesh=makeMesh(refinement);
+    auto mesh=makeMesh(refinement,shortestDiagonal);
     auto motion=simulate(device,pipelines,mesh,timestep,true,0,NUMI_DEFORMABLE_MESH_ABI_VERSION,nullptr,integrator,"primary"),
          replay=simulate(device,pipelines,mesh,timestep,true,0,NUMI_DEFORMABLE_MESH_ABI_VERSION,nullptr,integrator,"replay"),
          fine=simulate(device,pipelines,mesh,timestep/2,true,0,NUMI_DEFORMABLE_MESH_ABI_VERSION,nullptr,integrator,"half_timestep");
@@ -412,6 +495,7 @@ int run(const std::string& prefix,const uint32_t refinement,const float timestep
     if(!prefix.empty())exportFrames(prefix+"-half",mesh,fine,integrator);
     std::cout<<std::setprecision(12)<<"device="<<device.name.UTF8String<<" backend=Apple_Metal\n"
         <<"shared_nodes="<<mesh.positions.size()<<" tetrahedra="<<mesh.elements.size()<<" boundary_triangles="<<mesh.faces.size()<<" mesh_refinement="<<refinement<<" density_kg_m3=1000 mass_kg="<<mass<<'\n'
+        <<"refinement_diagonal="<<(shortestDiagonal?"shortest":"legacy")<<'\n'
         <<"simulated_seconds=.5 steps="<<steps<<" refined_steps="<<2*steps<<" timestep_s="<<timestep
         <<" captured_frames="<<motion.size()<<" replay_exact="<<exact<<" all_candidates_valid="<<allValid<<'\n'
         <<"maximum_nodal_refinement_difference_m="<<difference<<" maximum_relative_shape_change_m="<<maximumShape<<'\n'
@@ -450,11 +534,16 @@ int run(const std::string& prefix,const uint32_t refinement,const float timestep
 }
 int main(int argc,const char* const* argv){@autoreleasepool{try{
     std::string prefix;uint32_t refinement=0,integrator=NUMI_DEFORMABLE_MESH_INTEGRATOR_EULER;
-    bool topologyOnly=false;float timestep=1e-4f;
+    bool topologyOnly=false,shortestDiagonal=false;float timestep=1e-4f;
     for(int argument=1;argument<argc;++argument){
         std::string option=argv[argument];
         if(option=="--trajectory"&&argument+1<argc)prefix=argv[++argument];
         else if(option=="--topology-probe")topologyOnly=true;
+        else if(option=="--refinement-diagonal"&&argument+1<argc){
+            const std::string value=argv[++argument];
+            if(value!="legacy"&&value!="shortest")throw std::runtime_error("refinement diagonal must be legacy or shortest");
+            shortestDiagonal=value=="shortest";
+        }
         else if(option=="--integrator"&&argument+1<argc){
             std::string value=argv[++argument];
             if(value=="euler")integrator=NUMI_DEFORMABLE_MESH_INTEGRATOR_EULER;
@@ -473,8 +562,8 @@ int main(int argc,const char* const* argv){@autoreleasepool{try{
             std::string value=argv[++argument];
             if(value!="0"&&value!="1"&&value!="2"&&value!="3"&&value!="4")throw std::runtime_error("mesh refinement must be 0, 1, 2, 3, or 4");
             refinement=uint32_t(std::stoul(value));
-        } else throw std::runtime_error("usage: numi-solver-deformable-mesh [--trajectory PREFIX] [--mesh-refinement 0|1|2|3|4] [--timestep DT] [--integrator euler|support-verlet] [--topology-probe]");
+        } else throw std::runtime_error("usage: numi-solver-deformable-mesh [--trajectory PREFIX] [--mesh-refinement 0|1|2|3|4] [--refinement-diagonal legacy|shortest] [--timestep DT] [--integrator euler|support-verlet] [--topology-probe]");
     }
-    if(topologyOnly)return topologyProbe();
-    return run(prefix,refinement,timestep,integrator);
+    if(topologyOnly)return topologyProbe(shortestDiagonal);
+    return run(prefix,refinement,timestep,integrator,shortestDiagonal);
 }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 2;}}}

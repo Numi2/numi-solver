@@ -461,6 +461,8 @@ if(BUILD_TESTING)
     add_test(NAME deformable_tet.constitutive COMMAND $<TARGET_FILE:numi-solver-deformable-tet>)
     set_tests_properties(deformable_tet.constitutive PROPERTIES LABELS "metal;physics;deformable" TIMEOUT 30)
     add_test(NAME deformable_mesh.topology COMMAND $<TARGET_FILE:numi-solver-deformable-mesh> --topology-probe)
+    add_test(NAME deformable_mesh.shortest_topology COMMAND $<TARGET_FILE:numi-solver-deformable-mesh> --topology-probe --refinement-diagonal shortest)
+    set_tests_properties(deformable_mesh.shortest_topology PROPERTIES LABELS "cpu;geometry;deformable;mesh_refinement" TIMEOUT 30)
     set_tests_properties(deformable_mesh.topology
         PROPERTIES LABELS "cpu;geometry;deformable;mesh_refinement" TIMEOUT 30)
     add_test(NAME deformable_mesh.drop COMMAND $<TARGET_FILE:numi-solver-deformable-mesh>)

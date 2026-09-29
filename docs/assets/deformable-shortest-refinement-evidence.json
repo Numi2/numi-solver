@@ -1,0 +1,110 @@
+{
+  "schema": "numi.deformable.shortest-refinement-candidate.v1",
+  "base_source_revision": "09d8ca144402d7f9b5a5dfa9433cacc073191347",
+  "candidate_source_sha256": "4c86592a56b1e331d5edbd111bf2641af463cfa8b2ea9ec9283cef3a159f942b",
+  "cpu_probe_binary_sha256": "aba198974697ae667616bb0ade74c20b19259bf926405fc837c2014ffade9040",
+  "compiler_command": "xcrun clang++ -std=c++20 -O2 -fobjc-arc -framework Foundation -framework Metal -Iinclude -DNUMI_DEFORMABLE_MESH_METALLIB=quoted_path tools/deformable_mesh.mm -o build/numi-solver-mesh-diagonal-cpu-probe",
+  "cpu_command": "build/numi-solver-mesh-diagonal-cpu-probe --topology-probe --refinement-diagonal shortest",
+  "cpu_actual_exit": 0,
+  "GPU_execution": false,
+  "legacy_default_probe_actual_exit": 0,
+  "legacy_default_probe_byte_identical_to_frozen_level4_preparation": true,
+  "cpu_probe_log": "mesh_topology_refinement=0 shared_nodes=13 tetrahedra=20 boundary_triangles=20 sorted_incidence_reference_exact=1 reference=legacy_scan expected_counts=1\nrefinement_diagonal=shortest original_nodes_exact=1 boundary_geometry_exact=1 mass_difference_kg=0 minimum_tet_mean_ratio=0.997395176598 maximum_tet_edge_aspect=1.05146237921 physical_rest_geometry_preserved=1 internal_face_owners_valid=1 shape_quality_preserved=1\nmesh_topology_refinement=1 shared_nodes=55 tetrahedra=160 boundary_triangles=80 sorted_incidence_reference_exact=1 reference=legacy_scan expected_counts=1\nrefinement_diagonal=shortest original_nodes_exact=1 boundary_geometry_exact=1 mass_difference_kg=0 minimum_tet_mean_ratio=0.848830096518 maximum_tet_edge_aspect=1.45105973563 physical_rest_geometry_preserved=1 internal_face_owners_valid=1 shape_quality_preserved=1\nmesh_topology_refinement=2 shared_nodes=309 tetrahedra=1280 boundary_triangles=320 sorted_incidence_reference_exact=1 reference=legacy_scan expected_counts=1\nrefinement_diagonal=shortest original_nodes_exact=1 boundary_geometry_exact=1 mass_difference_kg=5.82076609135e-10 minimum_tet_mean_ratio=0.848829850231 maximum_tet_edge_aspect=1.45106061094 physical_rest_geometry_preserved=1 internal_face_owners_valid=1 shape_quality_preserved=1\nmesh_topology_refinement=3 shared_nodes=2057 tetrahedra=10240 boundary_triangles=1280 sorted_incidence_reference_exact=1 reference=legacy_scan expected_counts=1\nrefinement_diagonal=shortest original_nodes_exact=1 boundary_geometry_exact=1 mass_difference_kg=3.05590219796e-10 minimum_tet_mean_ratio=0.848829314754 maximum_tet_edge_aspect=1.45106211276 physical_rest_geometry_preserved=1 internal_face_owners_valid=1 shape_quality_preserved=1\nmesh_topology_refinement=4 shared_nodes=14993 tetrahedra=81920 boundary_triangles=5120 sorted_incidence_reference_exact=1 reference=independent_flat_corner_sort expected_counts=1\nrefinement_diagonal=shortest original_nodes_exact=1 boundary_geometry_exact=1 mass_difference_kg=1.52795109898e-10 minimum_tet_mean_ratio=0.848828338127 maximum_tet_edge_aspect=1.45106607242 physical_rest_geometry_preserved=1 internal_face_owners_valid=1 shape_quality_preserved=1\nmesh_topology_probe_qualified=1\n",
+  "independent_FP64_geometry_FP32_coordinate_quality": [
+    {
+      "shortest": false,
+      "level": 0,
+      "nodes": 13,
+      "elements": 20,
+      "mass": 0.31701885057807333,
+      "minimum_mean_ratio": 0.9973951924110022,
+      "maximum_edge_aspect": 1.0514623792119542
+    },
+    {
+      "shortest": false,
+      "level": 1,
+      "nodes": 55,
+      "elements": 160,
+      "mass": 0.3170188458054068,
+      "minimum_mean_ratio": 0.8488299414735675,
+      "maximum_edge_aspect": 1.4510600187343632
+    },
+    {
+      "shortest": false,
+      "level": 2,
+      "nodes": 309,
+      "elements": 1280,
+      "mass": 0.3170188335741409,
+      "minimum_mean_ratio": 0.6539989639581267,
+      "maximum_edge_aspect": 1.82118749955422
+    },
+    {
+      "shortest": false,
+      "level": 3,
+      "nodes": 2057,
+      "elements": 10240,
+      "mass": 0.3170188422861788,
+      "minimum_mean_ratio": 0.4482332741200813,
+      "maximum_edge_aspect": 2.3285854244696425
+    },
+    {
+      "shortest": false,
+      "level": 4,
+      "nodes": 14993,
+      "elements": 81920,
+      "mass": 0.3170188433468055,
+      "minimum_mean_ratio": 0.27511636006882917,
+      "maximum_edge_aspect": 3.1376209887031696
+    },
+    {
+      "shortest": true,
+      "level": 0,
+      "nodes": 13,
+      "elements": 20,
+      "mass": 0.31701885057807333,
+      "minimum_mean_ratio": 0.9973951924110022,
+      "maximum_edge_aspect": 1.0514623792119542
+    },
+    {
+      "shortest": true,
+      "level": 1,
+      "nodes": 55,
+      "elements": 160,
+      "mass": 0.3170188458054068,
+      "minimum_mean_ratio": 0.8488300980349385,
+      "maximum_edge_aspect": 1.4510597356332169
+    },
+    {
+      "shortest": true,
+      "level": 2,
+      "nodes": 309,
+      "elements": 1280,
+      "mass": 0.3170188335741409,
+      "minimum_mean_ratio": 0.8488298405572321,
+      "maximum_edge_aspect": 1.4510606109436701
+    },
+    {
+      "shortest": true,
+      "level": 3,
+      "nodes": 2057,
+      "elements": 10240,
+      "mass": 0.3170188422861788,
+      "minimum_mean_ratio": 0.8488293285566026,
+      "maximum_edge_aspect": 1.451062112755836
+    },
+    {
+      "shortest": true,
+      "level": 4,
+      "nodes": 14993,
+      "elements": 81920,
+      "mass": 0.3170188433468055,
+      "minimum_mean_ratio": 0.8488283482182798,
+      "maximum_edge_aspect": 1.4510660724243718
+    }
+  ],
+  "independent_geometry_probe_script_sha256": "28d88143f63d641bcd4bf565254d889970461245292471a02c1b3d62b9163013",
+  "construction_qualified": true,
+  "native_dynamics_qualified": false,
+  "spatial_convergence_qualified": false,
+  "boundary": "Construction, shape quality and rest-body identity only. Native accepted deformation, timestep and spatial convergence, energy, contact response, material calibration and cloth/volume coupling remain unqualified for this candidate. Legacy source, topology and frozen GPU jobs were not changed."
+}

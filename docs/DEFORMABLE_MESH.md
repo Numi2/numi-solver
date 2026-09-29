@@ -119,6 +119,51 @@ Mini checkout. The terminal exit was zero after both 5,000-step replays,
 10,000 half-timestep steps and all five transactional rejection checks.
 The frozen source, executable and metallib manifest was verified after completion.
 
+## Shape-preserving refinement candidate and comparison repair
+
+The legacy midpoint-octahedron split always selects its `ab-cd` diagonal.
+Repeated refinement progressively worsens element shape: the independent
+minimum tetrahedral mean ratio falls from 0.9974 at level 0 to 0.4482 at
+level 3 and 0.2751 at level 4. The maximum edge aspect reaches 3.1376.
+The explicit `--refinement-diagonal shortest` candidate selects the shortest
+of the octahedron's three diagonals. Its level-4 minimum mean ratio is
+0.8488 and maximum edge aspect is 1.4511. This changes the interior
+triangulation while preserving every original node and every geometric
+boundary triangle exactly. Total lumped mass differs from the legacy
+construction by at most 0.582 micrograms across all five levels.
+
+The [CPU construction receipt](assets/deformable-shortest-refinement-evidence.json)
+checks deterministic incidence, opposing internal face owners, the exact
+boundary, original nodes and the stated shape bounds. The legacy default
+and its frozen running study remain unchanged. No native dynamics or
+spatial convergence is qualified for the shortest-diagonal candidate yet.
+
+The spatial comparator now requires an owning energy ledger, the same
+integration method, the same accepted step grid and the authored initially
+stationary drop. It rejects Euler-versus-Verlet and mixed-timestep inputs
+that the previous comparator accepted, plus six malformed or changed-input
+controls. The unchanged 1 mm target still fails: the 1,280-to-10,240-element
+support-Verlet pair differs by 14.9269 mm at node 6 and 0.5 seconds. Before
+the first captured impact at 0.165 seconds its discrepancy is only
+0.346 micrometres. Both half-timestep trajectories still differ by
+14.7743 mm. The discrepancy develops after contact; the captured data do
+not establish that poor element shape is its sole cause. The primary runs
+remove 0.06625 and 0.03366 J of normal kinetic energy at the two resolutions,
+so the support response and impact dissipation also require refinement
+qualification. [Bound comparison and input controls](assets/deformable-refinement-comparability-evidence.json).
+
+```sh
+# CPU construction only; no GPU execution.
+./build/numi-solver-deformable-mesh --topology-probe --refinement-diagonal shortest
+# Run separately when the GPU is free, at a matched timestep at both levels.
+./build/numi-solver-deformable-mesh --mesh-refinement 2 --refinement-diagonal shortest \
+  --integrator support-verlet --timestep 0.000025 --trajectory build/shortest-level2-dt25us
+./build/numi-solver-deformable-mesh --mesh-refinement 3 --refinement-diagonal shortest \
+  --integrator support-verlet --timestep 0.000025 --trajectory build/shortest-level3-dt25us
+python3 tools/audit_deformable_mesh_refinement.py \
+  build/shortest-level2-dt25us build/shortest-level3-dt25us
+```
+
 ```sh
 ./build/numi-solver-deformable-mesh --topology-probe
 ./build/numi-solver-deformable-mesh --mesh-refinement 3 \

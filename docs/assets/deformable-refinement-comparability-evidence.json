@@ -1,0 +1,118 @@
+{
+  "schema": "numi.deformable.refinement-comparability.v1",
+  "base_source_revision": "09d8ca144402d7f9b5a5dfa9433cacc073191347",
+  "comparator_source_sha256": "2f9a4831400d99885aadf1c19ae8c3e227369a891710a1fd1fea61f98a72d25a",
+  "CPU_controls_actual_exit": 0,
+  "CPU_controls": {
+    "source": "09d8ca144402d7f9b5a5dfa9433cacc073191347",
+    "negative_controls": {
+      "cross_integrator": {
+        "prior_comparator_accepted_inputs": true,
+        "current_rejected": true,
+        "reason": "spatial comparison requires the same integration method"
+      },
+      "mixed_step_grid": {
+        "prior_comparator_accepted_inputs": true,
+        "current_rejected": true,
+        "reason": "spatial comparison requires the same accepted step grid; mixed timestep and mesh changes are not spatial convergence"
+      },
+      "changing_integrator": {
+        "current_rejected": true,
+        "reason": "integrator changes within spatial comparison trace"
+      },
+      "missing_ledger": {
+        "current_rejected": true,
+        "reason": "spatial comparison requires the owning energy ledger to identify the integrator and accepted step grid"
+      },
+      "malformed_schema": {
+        "current_rejected": true,
+        "reason": "unexpected energy ledger schema in spatial comparison"
+      },
+      "nonfinite_integrator": {
+        "current_rejected": true,
+        "reason": "nonfinite energy ledger in spatial comparison"
+      },
+      "truncated_initial_row": {
+        "current_rejected": true,
+        "reason": "malformed energy row in spatial comparison"
+      },
+      "changed_initial_motion": {
+        "prior_comparator_accepted_inputs": true,
+        "current_rejected": true,
+        "reason": "refinement changed the authored initially stationary drop"
+      }
+    },
+    "physics_target_m": 0.001,
+    "retained_spatial_failure_actual_exit": 1,
+    "retained_spatial_failure_m": 0.014926916244093886,
+    "legacy_topology_probe_byte_identical_to_frozen_level4_preparation": true
+  },
+  "controls_script_sha256": "e946e85f5916acde10f88d2442dd849a268acbcaa70c7a7a7d4eaf9e5f6ce02b",
+  "primary_actual_exit": 1,
+  "primary_comparison": {
+    "spatial_target_m": 0.001,
+    "comparison": [
+      {
+        "coarse_nodes": 309,
+        "fine_nodes": 2057,
+        "coarse_tetrahedra": 1280,
+        "fine_tetrahedra": 10240,
+        "total_mass_difference_kg": 1.5737964931261672e-08,
+        "maximum_matched_node_difference_m": 0.014926916244093886,
+        "maximum_difference_frame": 100,
+        "maximum_difference_time_s": 0.5,
+        "maximum_difference_node": 6,
+        "maximum_pre_captured_impact_node_difference_m": 3.458988439380191e-07,
+        "coarse_first_captured_impact_frame": 33,
+        "fine_first_captured_impact_frame": 33,
+        "coarse_normal_kinetic_loss_J": 0.0662452727556,
+        "fine_normal_kinetic_loss_J": 0.0336560159922,
+        "integrator": "support-verlet",
+        "accepted_steps": 5000,
+        "maximum_COM_difference_m": 0.004724879844924818,
+        "maximum_height_difference_m": 0.010090379044300005,
+        "within_spatial_target": false,
+        "coarse_trace_sha256": "b47faa143bd7903cce4d59b023b88fb71b66a9cfcf72f32167349ac9be5957ef",
+        "fine_trace_sha256": "2c0c0c5f45c821acdd026e88d6a9d259fd78f9d245c8617f98a742aa2075c434",
+        "coarse_energy_ledger_sha256": "bd0824b63ca569e647944dd9ea039c052ec60bf96d2de1c5310212b8437e94ab",
+        "fine_energy_ledger_sha256": "13b9152c0a19be88b31ba643de04d562dde07449e258849007b14a34dea23eef"
+      }
+    ],
+    "finest_pair_within_spatial_target": false,
+    "evidence_boundary": "Matched owning-node positions at equal exported times for the same piecewise-flat rest body, authored material and volume-derived masses. Each complete trajectory is independently checked for topology, geometry and mass. Owning energy ledgers bind equal integrators and accepted step grids, and both meshes start stationary. Captured impact times delimit the observed pre-impact region; they are not exact continuous impact times. Timestep convergence does not imply spatial convergence. This comparison does not calibrate fruit properties or close intervening contact work."
+  },
+  "half_timestep_actual_exit": 1,
+  "half_timestep_comparison": {
+    "spatial_target_m": 0.001,
+    "comparison": [
+      {
+        "coarse_nodes": 309,
+        "fine_nodes": 2057,
+        "coarse_tetrahedra": 1280,
+        "fine_tetrahedra": 10240,
+        "total_mass_difference_kg": 1.5737964931261672e-08,
+        "maximum_matched_node_difference_m": 0.01477432941621162,
+        "maximum_difference_frame": 100,
+        "maximum_difference_time_s": 0.5,
+        "maximum_difference_node": 6,
+        "maximum_pre_captured_impact_node_difference_m": 3.5923387990142475e-07,
+        "coarse_first_captured_impact_frame": 33,
+        "fine_first_captured_impact_frame": 33,
+        "coarse_normal_kinetic_loss_J": 0.0660247057676,
+        "fine_normal_kinetic_loss_J": 0.0337200164795,
+        "integrator": "support-verlet",
+        "accepted_steps": 10000,
+        "maximum_COM_difference_m": 0.004726801932963262,
+        "maximum_height_difference_m": 0.010182186030100002,
+        "within_spatial_target": false,
+        "coarse_trace_sha256": "ea1ef18f91940505a5810f360e05b652348dfd7abcee0f2a7f9802b1785a6254",
+        "fine_trace_sha256": "d2d1d24aee83157d1d92f0eff3a268990c13c4076f13d855af2a0d100a1f2017",
+        "coarse_energy_ledger_sha256": "f1d43cd8621cb4f3fff8f4ac268d79efea5e2f93f3c627dc2244a5eb4b191878",
+        "fine_energy_ledger_sha256": "17c818927b022c18efd47fd66210f6252a2052a29151bc9f928510fecd950e39"
+      }
+    ],
+    "finest_pair_within_spatial_target": false,
+    "evidence_boundary": "Matched owning-node positions at equal exported times for the same piecewise-flat rest body, authored material and volume-derived masses. Each complete trajectory is independently checked for topology, geometry and mass. Owning energy ledgers bind equal integrators and accepted step grids, and both meshes start stationary. Captured impact times delimit the observed pre-impact region; they are not exact continuous impact times. Timestep convergence does not imply spatial convergence. This comparison does not calibrate fruit properties or close intervening contact work."
+  },
+  "boundary": "Same integration method, accepted temporal grid and initial motion are required for spatial comparisons. Both completed retained pairs remain FAIL at the unchanged 1 mm target. Post-contact discrepancy and resolution-dependent kinetic removal are observations, not a single-cause diagnosis or physical qualification."
+}
