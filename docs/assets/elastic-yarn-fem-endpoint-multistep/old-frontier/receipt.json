@@ -1,0 +1,44 @@
+{
+  "schema": "numi.elastic-yarn.multistep-short.source-bound-receipt.v1",
+  "actual_program_exit": 0,
+  "result_sha256": "be7bc2d87e2a83df907bc5698d3f6e603f23dea9b1d8c237b7b02f843a97b80a",
+  "trajectory_source_sha256": "bf39cf4ab8ebc904bd7bf697ee7287ca3c0eb24b444646b6dabf33cc78ef6ac4",
+  "frozen_normal_source_sha256": "dcfaeca294146fbec3e161dce05a7583d0ffdf34e8e181e2a008c92a0dc22176",
+  "frozen_centroid_source_sha256": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+  "input_sha256": {
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/body.json": "7eda877b63f31f70661dea103c98fbec97cd4adb5e322ddc4222f4e6e2da7ceb",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/receipt.json": "6cb63eff549236e1e65b0c692f5b9cce96a89259531caa4751caff7ad6b32c59",
+    "/Users/home/numi-solver/docs/assets/elastic-yarn-fem-frame38-provenance.json": "1c7da0b0410abdbf3b1f8c614c8803830fe272a4c355057ce4b035cebdb0b26d",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/CMakeLists.txt": "6cbcced7a175e1de1574d19a38e572a61cbf43d00c3ad792809e33e36e88e738",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/tools/deformable_mesh.mm": "ad289c243c3ab4c3e251cb420fc4be74d8d1713007c3603265cc3c90ab73d87c",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/src/metal/DeformableTet.metal": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/src/metal/DeformableMesh.metal": "1d4c4cd80c956b3ac45877af6af3a155db5bd3728eb3ae06766809069d33887c",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/metalrobo/gpu_types.h": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/numi/deformable_mesh.h": "a0150503c14f4fd2fe622f5d7262ced435e9ee807048c54e76420acc8154205b",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/numi/deformable_tet.h": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-multistep-short/centroid_step.py": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-multistep-short/step.py": "dcfaeca294146fbec3e161dce05a7583d0ffdf34e8e181e2a008c92a0dc22176"
+  },
+  "retained_outputs": {
+    "result.json": {
+      "sha256": "be7bc2d87e2a83df907bc5698d3f6e603f23dea9b1d8c237b7b02f843a97b80a",
+      "bytes": 40250
+    },
+    "replay.jsonl": {
+      "sha256": "e666350d70a00812584837ae27de354625f24733c9270f509f19e6f2e0cd580a",
+      "bytes": 24973
+    },
+    "primary.jsonl": {
+      "sha256": "e666350d70a00812584837ae27de354625f24733c9270f509f19e6f2e0cd580a",
+      "bytes": 24973
+    },
+    "terminal.state.f64x6.bin": {
+      "sha256": "5aaeec9a99b0ea733079a3747105bd7905e374f8b53a87b28ffcea41671458bf",
+      "bytes": 98832
+    },
+    "terminal.metadata.json.gz": {
+      "sha256": "381015017f0e9e9f1659368160569ce341f277e15acd416728502c3616664d0f",
+      "bytes": 109997
+    }
+  }
+}

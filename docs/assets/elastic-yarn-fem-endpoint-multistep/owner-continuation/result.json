@@ -1,0 +1,3030 @@
+{
+  "schema": "numi.elastic-yarn.endpoint-normal-block-checkpoint-continuation.v1",
+  "preceding_result_sha256": "cd26a476f0a2dc5760663d8b0c1c0174a770eb6606a7b23345063a936d531577",
+  "preceding_receipt_sha256": "d60d1ec790d8fa0577082253e10df0d46b19add090bbd4ab2873a4c952899692",
+  "preceding_32step_terminal_state_sha256": "840cea60d0834d6d4cd6c2e34e01382855ac83ad678ab0f771c8200af272fbc4",
+  "input_sha256": {
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/body.json": "7eda877b63f31f70661dea103c98fbec97cd4adb5e322ddc4222f4e6e2da7ceb",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/receipt.json": "6cb63eff549236e1e65b0c692f5b9cce96a89259531caa4751caff7ad6b32c59",
+    "/Users/home/numi-solver/docs/assets/elastic-yarn-fem-frame38-provenance.json": "1c7da0b0410abdbf3b1f8c614c8803830fe272a4c355057ce4b035cebdb0b26d",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/CMakeLists.txt": "6cbcced7a175e1de1574d19a38e572a61cbf43d00c3ad792809e33e36e88e738",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/tools/deformable_mesh.mm": "ad289c243c3ab4c3e251cb420fc4be74d8d1713007c3603265cc3c90ab73d87c",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/src/metal/DeformableTet.metal": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/src/metal/DeformableMesh.metal": "1d4c4cd80c956b3ac45877af6af3a155db5bd3728eb3ae06766809069d33887c",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/metalrobo/gpu_types.h": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/numi/deformable_mesh.h": "a0150503c14f4fd2fe622f5d7262ced435e9ee807048c54e76420acc8154205b",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/numi/deformable_tet.h": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/centroid_step.py": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/step.py": "dcfaeca294146fbec3e161dce05a7583d0ffdf34e8e181e2a008c92a0dc22176",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/endpoint_step.py": "57115c3a0c82241d0567f237d937864f1d0e7734e580e126cc95aa5f35e75241"
+  },
+  "source_sha256": {
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/endpoint_step.py": "57115c3a0c82241d0567f237d937864f1d0e7734e580e126cc95aa5f35e75241",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/step.py": "dcfaeca294146fbec3e161dce05a7583d0ffdf34e8e181e2a008c92a0dc22176",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/centroid_step.py": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/trajectory.py": "bf2176472e676277ec009c79e252ceddd0f86f865f785f9f2714a6c025ad2e45",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/continuation_exact.py": "c6919b7d03df358ec2327a8be6115aaaad42e9faf0ec9ac24dc2db1864452a97"
+  },
+  "dt_s": 1.9999999999999998e-05,
+  "bit_identical_candidate_dt": true,
+  "additional_accepted_steps": 32,
+  "total_accepted_steps": 64,
+  "first_unsupported_frontier": null,
+  "right_censored_at_additional_step_cap": true,
+  "exact_replay": true,
+  "terminal_checkpoint": {
+    "position_file": "terminal.state.f64x6.bin",
+    "position_sha256": "a051376b8ed88708f979f9c5dec9e3b864a924fea74343910a2475ced1b2ed55",
+    "position_bytes": 98832,
+    "metadata_file": "terminal.metadata.json.gz",
+    "metadata_sha256": "5980957a800a0131da67b876568b9348643590b1203b1906a9a1a8dab64afc73",
+    "metadata_bytes": 577145,
+    "complete_state_sha256": "8fac679fdade406faf77cc32554e1a9413526d34788e4270a6a16da0b70dfe6a",
+    "elapsed_s": 0.001280000000000002,
+    "steps": 64
+  },
+  "additional_full_body_summary": {
+    "accepted_steps": 32,
+    "elapsed_s": 0.001280000000000002,
+    "initial_energy_J": 0.5183783690296334,
+    "final_energy_J": 0.518373652928982,
+    "contact_dissipation_J": 1.1170131155209117e-08,
+    "plane_kinetic_removal_J": 4.523674064119564e-06,
+    "gravity_work_J": -0.0005815027373050644,
+    "cumulative_physical_energy_residual_J": -1.812564561725678e-07,
+    "direct_physical_energy_residual_J": -1.8125645617256844e-07,
+    "maximum_absolute_per_step_energy_residual_J": 5.026622796706997e-08,
+    "minimum_J": 0.3822734716470573,
+    "minimum_gap_m": -1.5915224625892566e-06,
+    "maximum_speed_of_yarn_globally_not_recorded": true,
+    "support_impulse_Ns": [
+      0.0,
+      0.0,
+      0.014298672308095837
+    ],
+    "gravity_impulse_Ns": [
+      0.0,
+      0.0,
+      -0.0019909990388229325
+    ],
+    "support_events": 10614,
+    "position_projections": 1,
+    "all_steps_full_body_J_stress_force_owner_and_boundary_checked": true
+  },
+  "additional_records": [
+    {
+      "step": 1,
+      "elapsed_s": 0.0006600000000000004,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "6ffddb19ca0dd76c5f8d40818d77d7d9823c39c68096e2bcec9abc4e5fe8f5bb",
+      "source_step_after_sha256": "6ffddb19ca0dd76c5f8d40818d77d7d9823c39c68096e2bcec9abc4e5fe8f5bb",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "e121a30ab379cd66e968c24601338de85c261f5d8cf6dc9a1eba8b6ea967f505",
+      "force_sha256": "134b789b0e21f02ddbd32af54b5a620dcd0c85d58717be8629f7065321f13d97",
+      "minJ": 0.3851161618820417,
+      "maxJ": 1.5205195483752458,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.4188417930870514e-06,
+      "minimum_closing_m_s": 1.0733601507606494e-16,
+      "endpoint_gaps_m": [
+        -1.41884179308098e-06,
+        -1.4145992566442361e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          7.745322237677366e-08,
+          5.31413540593614e-08
+        ],
+        [
+          1.1252844805648162e-07,
+          8.351399980877032e-08
+        ]
+      ],
+      "contact_dissipation_J": 4.4693024177011425e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.0004553700491222336
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 336,
+      "position_projections": 0,
+      "gravity_work_J": -1.6990330681280557e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": 5.776380867275642e-09,
+      "physical_energy_balance_residual_J": 5.776380789312195e-09,
+      "bookkeeping_identity_error_J": -7.796344694668267e-17,
+      "start_energy_J": 0.5183783690296334,
+      "end_energy_J": 0.518378374359084,
+      "start_momentum_kg_m_s": [
+        2.2762939523125765e-05,
+        -1.4529701683131888e-05,
+        0.0864002579623828
+      ],
+      "end_momentum_kg_m_s": [
+        2.276293952312623e-05,
+        -1.4529701683132032e-05,
+        0.08679340929154183
+      ],
+      "start_angular_kg_m2_s": [
+        -7.152794157496328e-06,
+        1.7211528586361196e-05,
+        5.56873182566659e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -7.079062060158288e-06,
+        1.720903882877217e-05,
+        5.568731825666631e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        4.641740550953566e-19,
+        -1.4399560103323106e-19,
+        1.0787811616230769e-17
+      ],
+      "angular_balance_residual_Nms": [
+        -1.1117307432712692e-21,
+        -1.6801692602177098e-20,
+        4.0234064994579266e-21
+      ]
+    },
+    {
+      "step": 2,
+      "elapsed_s": 0.0006800000000000005,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "65b5e5d46c25127c75c072674f9415fbfd411f9485689921e2acf6cb91434f62",
+      "source_step_after_sha256": "65b5e5d46c25127c75c072674f9415fbfd411f9485689921e2acf6cb91434f62",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "8856e134eb779918a51aca8cbb2347e7360cd226ae72aa6a3c261586041dc643",
+      "force_sha256": "473e68c2863f8c67061868fd1f0337f0c2748c4194628e8973d737a2ca9b97a5",
+      "minJ": 0.3844038878525283,
+      "maxJ": 1.522220594792119,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.4293227910446016e-06,
+      "minimum_closing_m_s": 3.9898639947466563e-17,
+      "endpoint_gaps_m": [
+        -1.4293227910446016e-06,
+        -1.4241683548108647e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          7.843487546451146e-08,
+          5.2127771275107896e-08
+        ],
+        [
+          1.1265463696859496e-07,
+          8.134621873412878e-08
+        ]
+      ],
+      "contact_dissipation_J": 4.4176475078148943e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00045473440159813283
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 336,
+      "position_projections": 0,
+      "gravity_work_J": -1.706740458151902e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": 3.7635704505508926e-09,
+      "physical_energy_balance_residual_J": 3.763570470162166e-09,
+      "bookkeeping_identity_error_J": 1.9611274004849704e-17,
+      "start_energy_J": 0.518378374359084,
+      "end_energy_J": 0.5183783776808897,
+      "start_momentum_kg_m_s": [
+        2.276293952312623e-05,
+        -1.4529701683132032e-05,
+        0.08679340929154183
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523126534e-05,
+        -1.4529701683131694e-05,
+        0.08718592497317675
+      ],
+      "start_angular_kg_m2_s": [
+        -7.079062060158288e-06,
+        1.720903882877217e-05,
+        5.568731825666631e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -7.00670657757941e-06,
+        1.7204498084629083e-05,
+        5.568731825666538e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        3.049318610115481e-19,
+        3.3711911300721153e-19,
+        -4.933119884809045e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -2.63374307036884e-21,
+        -1.4401214464548212e-21,
+        -9.317362419797304e-21
+      ]
+    },
+    {
+      "step": 3,
+      "elapsed_s": 0.0007000000000000005,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "fd1a60cd3c751bef6115a3514bce920a9bc1b7854042e3db5e09eec781426c47",
+      "source_step_after_sha256": "fd1a60cd3c751bef6115a3514bce920a9bc1b7854042e3db5e09eec781426c47",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "b7951eea090428bca49fc1df8439258194236ef7a64e53ee8e1a9b25d9d64b96",
+      "force_sha256": "2e25d4575acc93ea8d5f9abc392e82d37b3c62018c022422f3a3a81d3d42c740",
+      "minJ": 0.3837924259269042,
+      "maxJ": 1.5235626358832741,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.4395055415224872e-06,
+      "minimum_closing_m_s": -4.163336342344337e-17,
+      "endpoint_gaps_m": [
+        -1.4395055415224872e-06,
+        -1.4333926770752209e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          7.938604671845143e-08,
+          5.109257455269714e-08
+        ],
+        [
+          1.1271374661830294e-07,
+          7.91295316695795e-08
+        ]
+      ],
+      "contact_dissipation_J": 4.3629510521551596e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00045409935960906075
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 336,
+      "position_projections": 0,
+      "gravity_work_J": -1.7144353841342376e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": 1.9144267605675745e-09,
+      "physical_energy_balance_residual_J": 1.914426722320821e-09,
+      "bookkeeping_identity_error_J": -3.8246753646753266e-17,
+      "start_energy_J": 0.5183783776808897,
+      "end_energy_J": 0.5183783791590213,
+      "start_momentum_kg_m_s": [
+        2.2762939523126534e-05,
+        -1.4529701683131694e-05,
+        0.08718592497317675
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523126446e-05,
+        -1.4529701683131535e-05,
+        0.08757780561282259
+      ],
+      "start_angular_kg_m2_s": [
+        -7.00670657757941e-06,
+        1.7204498084629083e-05,
+        5.568731825666538e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -6.935860023045535e-06,
+        1.7197942960071434e-05,
+        5.568731825666585e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -8.809142651444724e-20,
+        1.5924219408380846e-19,
+        3.3068166260807885e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -1.7867101231145398e-20,
+        2.3641649087378084e-20,
+        4.7645603283054394e-21
+      ]
+    },
+    {
+      "step": 4,
+      "elapsed_s": 0.0007200000000000006,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "d1d3c00daad3e017a56aa94dead6af6f924d5263d62072e642c15f6cfbeac634",
+      "source_step_after_sha256": "d1d3c00daad3e017a56aa94dead6af6f924d5263d62072e642c15f6cfbeac634",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "a30a4e0c6e01bac3a6998f3c7d699144cf0da4419ff7857779d5dffb87bb0817",
+      "force_sha256": "0a6a48c8bc18f17105400de422c4971e3fac8b6fff57a6f342ab863b42088519",
+      "minJ": 0.3832826492707124,
+      "maxJ": 1.5245433419866576,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.4493803860583104e-06,
+      "minimum_closing_m_s": 8.803721640582296e-17,
+      "endpoint_gaps_m": [
+        -1.4493803860591778e-06,
+        -1.4422640374047238e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.03060940807701e-08,
+          5.003692745665642e-08
+        ],
+        [
+          1.1270759250447835e-07,
+          7.686853663499733e-08
+        ]
+      ],
+      "contact_dissipation_J": 4.3055026818650674e-10,
+      "plane_kinetic_removal_J": 4.523674064119564e-06,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00048693670535579313
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 337,
+      "position_projections": 1,
+      "gravity_work_J": -1.7221339452202173e-05,
+      "position_potential_work_J": -2.5812659787405323e-09,
+      "plane_force_response_kinetic_J": 5.267941938545878e-08,
+      "free_split_integration_residual_J": 1.6807450904755746e-10,
+      "physical_energy_balance_residual_J": 5.026622796706997e-08,
+      "bookkeeping_identity_error_J": 5.130393858224572e-17,
+      "start_energy_J": 0.5183783791590213,
+      "end_energy_J": 0.5183739053206349,
+      "start_momentum_kg_m_s": [
+        2.2762939523126446e-05,
+        -1.4529701683131535e-05,
+        0.08757780561282259
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523126042e-05,
+        -1.4529701683131495e-05,
+        0.08800252359821516
+      ],
+      "start_angular_kg_m2_s": [
+        -6.935860023045535e-06,
+        1.7197942960071434e-05,
+        5.568731825666585e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -5.552723969519511e-06,
+        1.6922639355829898e-05,
+        5.568731825666651e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -4.0318768289304696e-19,
+        4.0657581468206416e-20,
+        -1.22514845490862e-17
+      ],
+      "angular_balance_residual_Nms": [
+        2.3928680759933985e-20,
+        -1.911118087242515e-20,
+        6.564505341220828e-21
+      ]
+    },
+    {
+      "step": 5,
+      "elapsed_s": 0.0007400000000000006,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "1d26364f4316edbe3eed18053dc1d31e5b9936fafdba9db1357facfe4c524de4",
+      "source_step_after_sha256": "1d26364f4316edbe3eed18053dc1d31e5b9936fafdba9db1357facfe4c524de4",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "cdef75d42e811077c20e796b5b1ff4206ee5cffc0cfd3e90f8b40c340224abab",
+      "force_sha256": "b90558ebb2362e30067ad571701bf0c256a92213334b61797e1274d8c18e21fb",
+      "minJ": 0.38287530537112296,
+      "maxJ": 1.5251608469077733,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.4589385299241045e-06,
+      "minimum_closing_m_s": -4.336808689942018e-17,
+      "endpoint_gaps_m": [
+        -1.4589385299241045e-06,
+        -1.4507752718138228e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.119440695911351e-08,
+          4.8962028972225834e-08
+        ],
+        [
+          1.1263814792305993e-07,
+          7.456796088208588e-08
+        ]
+      ],
+      "contact_dissipation_J": 4.245595732791172e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00045282764584895824
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 336,
+      "position_projections": 0,
+      "gravity_work_J": -1.7304445954283337e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.5468507552331454e-09,
+      "physical_energy_balance_residual_J": -1.5468507950052925e-09,
+      "bookkeeping_identity_error_J": -3.977214707460465e-17,
+      "start_energy_J": 0.5183739053206349,
+      "end_energy_J": 0.5183739033492245,
+      "start_momentum_kg_m_s": [
+        2.2762939523126042e-05,
+        -1.4529701683131495e-05,
+        0.08800252359821516
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523126385e-05,
+        -1.4529701683131469e-05,
+        0.0883931325241009
+      ],
+      "start_angular_kg_m2_s": [
+        -5.552723969519511e-06,
+        1.6922639355829898e-05,
+        5.568731825666651e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -5.485362360532353e-06,
+        1.691220176277658e-05,
+        5.568731825666463e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        3.4220131069073734e-19,
+        2.541098841762901e-20,
+        2.1141942363467336e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -1.6609786700064796e-20,
+        -2.157287037538296e-21,
+        -1.8740603958001395e-20
+      ]
+    },
+    {
+      "step": 6,
+      "elapsed_s": 0.0007600000000000007,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "a89cdbd7b4bc4d4b75c621cadec2b9e27ecd3d08f3fd546f4ec8ceb0eb2838b0",
+      "source_step_after_sha256": "a89cdbd7b4bc4d4b75c621cadec2b9e27ecd3d08f3fd546f4ec8ceb0eb2838b0",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "fbbb8eba6a407b1681db58413ce30c9a8e602c5c60f8daf2f9fc08cb6e6afd24",
+      "force_sha256": "62b69fba722c4c1d2dfcacbdc816fc823c5446a9506ada03dd295bcc274ea66d",
+      "minJ": 0.3825710165824211,
+      "maxJ": 1.5254137516197104,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.4681720740435111e-06,
+      "minimum_closing_m_s": -8.239936510889834e-18,
+      "endpoint_gaps_m": [
+        -1.46817207405045e-06,
+        -1.4589202664847326e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.20504061681422e-08,
+          4.7869110408291584e-08
+        ],
+        [
+          1.1250753382339969e-07,
+          7.223264395217308e-08
+        ]
+      ],
+      "contact_dissipation_J": 4.1835248853563827e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.0004521884322246179
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 335,
+      "position_projections": 0,
+      "gravity_work_J": -1.7381020731823232e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -3.194843533290729e-09,
+      "physical_energy_balance_residual_J": -3.1948435871334843e-09,
+      "bookkeeping_identity_error_J": -5.3842755232698584e-17,
+      "start_energy_J": 0.5183739033492245,
+      "end_energy_J": 0.5183738997360284,
+      "start_momentum_kg_m_s": [
+        2.2762939523126385e-05,
+        -1.4529701683131469e-05,
+        0.0883931325241009
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523126557e-05,
+        -1.4529701683131323e-05,
+        0.08878310223636231
+      ],
+      "start_angular_kg_m2_s": [
+        -5.485362360532353e-06,
+        1.691220176277658e-05,
+        5.568731825666463e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -5.420039897780438e-06,
+        1.6899919692723916e-05,
+        5.568731825666422e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        1.7279472123987727e-19,
+        1.4568966692773966e-19,
+        5.312590645178972e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -1.367164116427644e-20,
+        3.656138307484382e-21,
+        -4.129285617864714e-21
+      ]
+    },
+    {
+      "step": 7,
+      "elapsed_s": 0.0007800000000000007,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "dcd78da24de7f47648d6f8453e5d0fd9e9ac24ae77445495a47949d02f3026a0",
+      "source_step_after_sha256": "dcd78da24de7f47648d6f8453e5d0fd9e9ac24ae77445495a47949d02f3026a0",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "c7c021f9e2c02461deb31c932fb5646554c37478ae0cda05dafdc1a5aa63672c",
+      "force_sha256": "5c8506b5dbd5a2ab137e577a16e77f2373daf92f87a34463b728de3891a9bdde",
+      "minJ": 0.38237028071369755,
+      "maxJ": 1.5253011276209818,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.477074043545329e-06,
+      "minimum_closing_m_s": -1.474514954580286e-17,
+      "endpoint_gaps_m": [
+        -1.477074043545329e-06,
+        -1.4666939818367211e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.287354376116112e-08,
+          4.67594321557174e-08
+        ],
+        [
+          1.1231800792786108e-07,
+          6.986752017626014e-08
+        ]
+      ],
+      "contact_dissipation_J": 4.1195838492604823e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00045156633859084853
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 334,
+      "position_projections": 0,
+      "gravity_work_J": -1.7457470075920208e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -4.806785460959871e-09,
+      "physical_energy_balance_residual_J": -4.8067854965594174e-09,
+      "bookkeeping_identity_error_J": -3.55995465575539e-17,
+      "start_energy_J": 0.5183738997360284,
+      "end_energy_J": 0.5183738945172846,
+      "start_momentum_kg_m_s": [
+        2.2762939523126557e-05,
+        -1.4529701683131323e-05,
+        0.08878310223636231
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523126656e-05,
+        -1.4529701683131757e-05,
+        0.08917244985498994
+      ],
+      "start_angular_kg_m2_s": [
+        -5.420039897780438e-06,
+        1.6899919692723916e-05,
+        5.568731825666422e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -5.356406999898519e-06,
+        1.6885300360975385e-05,
+        5.568731825666337e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        9.825582188149884e-20,
+        -4.336808689942018e-19,
+        1.5720931501039814e-18
+      ],
+      "angular_balance_residual_Nms": [
+        3.546950466627383e-21,
+        -2.6817195458969157e-21,
+        -8.470329472543003e-21
+      ]
+    },
+    {
+      "step": 8,
+      "elapsed_s": 0.0008000000000000008,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "d8f02db77d377e93151341391cd6c35eded105ff7803cc6bf4fc71a250071ec1",
+      "source_step_after_sha256": "d8f02db77d377e93151341391cd6c35eded105ff7803cc6bf4fc71a250071ec1",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "941b8d889f26e0f3ba2246407d546c61ed39bed03c977f42ee3417c61b8a82fb",
+      "force_sha256": "55e0f4233652ddb0e3b6097db651e13a9dc1516ef810212d8554d022dedea033",
+      "minJ": 0.3822734716470573,
+      "maxJ": 1.5272057470968468,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.485638412697561e-06,
+      "minimum_closing_m_s": 4.336808689942018e-19,
+      "endpoint_gaps_m": [
+        -1.485638412697561e-06,
+        -1.4740924723678772e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.36633027581286e-08,
+          4.563428031532225e-08
+        ],
+        [
+          1.1207195318703609e-07,
+          6.747760071521817e-08
+        ]
+      ],
+      "contact_dissipation_J": 4.0540631183378265e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.0004509607247705598
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 334,
+      "position_projections": 0,
+      "gravity_work_J": -1.7533800743907694e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -6.3708096184373e-09,
+      "physical_energy_balance_residual_J": -6.370809609877288e-09,
+      "bookkeeping_identity_error_J": 8.560012394556003e-18,
+      "start_energy_J": 0.5183738945172846,
+      "end_energy_J": 0.5183738877410686,
+      "start_momentum_kg_m_s": [
+        2.2762939523126656e-05,
+        -1.4529701683131757e-05,
+        0.08917244985498994
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523126266e-05,
+        -1.4529701683131921e-05,
+        0.08956119185979729
+      ],
+      "start_angular_kg_m2_s": [
+        -5.356406999898519e-06,
+        1.6885300360975385e-05,
+        5.568731825666337e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -5.294120412470993e-06,
+        1.6867864414145717e-05,
+        5.568731825666505e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -3.8963515573697816e-19,
+        -1.6432439176733427e-19,
+        3.3068166260807885e-18
+      ],
+      "angular_balance_residual_Nms": [
+        1.9905274260476058e-20,
+        -3.380190855136692e-20,
+        1.6728900708272432e-20
+      ]
+    },
+    {
+      "step": 9,
+      "elapsed_s": 0.0008200000000000008,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "a6e2b178d7b6a79181350e498b059ded7d09ef2afce24ea5016556843eb07e8f",
+      "source_step_after_sha256": "a6e2b178d7b6a79181350e498b059ded7d09ef2afce24ea5016556843eb07e8f",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "3d8ed0dcee6bdbdbb15a6c12cf93decee577727a23842d722c80e5e687bdb86f",
+      "force_sha256": "4a1966f341971316ea3bf82727e717a224b0a9b03b272afd4c682074ff86aa50",
+      "minJ": 0.3822808399756774,
+      "maxJ": 1.530502704398562,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.4938601262297693e-06,
+      "minimum_closing_m_s": 1.691355389077387e-17,
+      "endpoint_gaps_m": [
+        -1.4938601262297693e-06,
+        -1.481112902326602e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.441919677710212e-08,
+          4.449496321062123e-08
+        ],
+        [
+          1.1177186564766089e-07,
+          6.50679552401056e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.987247820929957e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.0004503565801412889
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 333,
+      "position_projections": 0,
+      "gravity_work_J": -1.7610012445131567e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -7.86508698070586e-09,
+      "physical_energy_balance_residual_J": -7.8650869639191e-09,
+      "bookkeeping_identity_error_J": 1.6786758683398066e-17,
+      "start_energy_J": 0.5183738877410686,
+      "end_energy_J": 0.5183738794772569,
+      "start_momentum_kg_m_s": [
+        2.2762939523126266e-05,
+        -1.4529701683131921e-05,
+        0.08956119185979729
+      ],
+      "end_momentum_kg_m_s": [
+        2.276293952312629e-05,
+        -1.4529701683131926e-05,
+        0.08994932971997535
+      ],
+      "start_angular_kg_m2_s": [
+        -5.294120412470993e-06,
+        1.6867864414145717e-05,
+        5.568731825666505e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -5.233261636827779e-06,
+        1.6847806275099535e-05,
+        5.568731825666544e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        2.371692252312041e-20,
+        -5.082197683525802e-21,
+        -7.860465750519907e-18
+      ],
+      "angular_balance_residual_Nms": [
+        1.3367238698856927e-20,
+        7.547195908933825e-21,
+        3.917527381051139e-21
+      ]
+    },
+    {
+      "step": 10,
+      "elapsed_s": 0.0008400000000000009,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "67e00519776d474cf775f6de40d166b7586c84fdf4c8a4460cb13909db545f34",
+      "source_step_after_sha256": "67e00519776d474cf775f6de40d166b7586c84fdf4c8a4460cb13909db545f34",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "f2b257cdb85df83405862271743a3e7302edd3f1c1091b8707b3c80c716105cc",
+      "force_sha256": "a45fb5d9d42293a2a063078e0d26c8c7b6cd2f2ebf78423a32de7774141e0640",
+      "minJ": 0.38239251365210664,
+      "maxJ": 1.5334804894811735,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.5017351167696466e-06,
+      "minimum_closing_m_s": -2.42861286636753e-17,
+      "endpoint_gaps_m": [
+        -1.5017351167687792e-06,
+        -1.4877535569647604e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.514076957690541e-08,
+          4.334280780130051e-08
+        ],
+        [
+          1.1142034181356235e-07,
+          6.264369335544581e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.9194156889284497e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.0004497565940327713
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 332,
+      "position_projections": 0,
+      "gravity_work_J": -1.7686106046756273e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -9.259838040914996e-09,
+      "physical_energy_balance_residual_J": -9.25983802888179e-09,
+      "bookkeeping_identity_error_J": 1.2033206474684482e-17,
+      "start_energy_J": 0.5183738794772569,
+      "end_energy_J": 0.5183738698254773,
+      "start_momentum_kg_m_s": [
+        2.276293952312629e-05,
+        -1.4529701683131926e-05,
+        0.08994932971997535
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523126347e-05,
+        -1.4529701683131843e-05,
+        0.09033686759404491
+      ],
+      "start_angular_kg_m2_s": [
+        -5.233261636827779e-06,
+        1.6847806275099535e-05,
+        5.568731825666544e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -5.173862712457432e-06,
+        1.6825444644459767e-05,
+        5.568731825666568e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        5.759824041329242e-20,
+        8.300922883092143e-20,
+        5.421010862427522e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -1.0680556069284693e-20,
+        -2.6403605152692643e-20,
+        2.4352197233561135e-21
+      ]
+    },
+    {
+      "step": 11,
+      "elapsed_s": 0.000860000000000001,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "69abc81ed5e6da4e8b66e30b54d43031049c040527cb2777a1345204350d95eb",
+      "source_step_after_sha256": "69abc81ed5e6da4e8b66e30b54d43031049c040527cb2777a1345204350d95eb",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "6c118a8cea2ec0c3236066da336b628f320b65f321b07e6c807f922126f6e168",
+      "force_sha256": "79a96894b4d7a215451103b794b9f35c853fa86047050cdcb392b014571ef76a",
+      "minJ": 0.3826084986383581,
+      "maxJ": 1.5361367789660112,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.509260318473607e-06,
+      "minimum_closing_m_s": 9.540979117872439e-18,
+      "endpoint_gaps_m": [
+        -1.509260318473607e-06,
+        -1.494013849340399e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.58275945194508e-08,
+          4.217915601401753e-08
+        ],
+        [
+          1.1102006558406458e-07,
+          6.020994586762466e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.8508351660758305e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00044915708352565124
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 332,
+      "position_projections": 0,
+      "gravity_work_J": -1.7762082313421203e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.0523416398697837e-08,
+      "physical_energy_balance_residual_J": -1.0523416475582874e-08,
+      "bookkeeping_identity_error_J": -7.688503669284626e-17,
+      "start_energy_J": 0.5183738698254773,
+      "end_energy_J": 0.5183738589169773,
+      "start_momentum_kg_m_s": [
+        2.2762939523126347e-05,
+        -1.4529701683131843e-05,
+        0.09033686759404491
+      ],
+      "end_momentum_kg_m_s": [
+        2.276293952312649e-05,
+        -1.4529701683131943e-05,
+        0.09072380595760735
+      ],
+      "start_angular_kg_m2_s": [
+        -5.173862712457432e-06,
+        1.6825444644459767e-05,
+        5.568731825666568e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -5.116005514005816e-06,
+        1.6800969200810118e-05,
+        5.568731825666558e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        1.4230153513872246e-19,
+        -9.994988777600744e-20,
+        -1.0842021724855044e-18
+      ],
+      "angular_balance_residual_Nms": [
+        1.2731963988416202e-20,
+        8.572899868499579e-21,
+        -1.0587911840678754e-21
+      ]
+    },
+    {
+      "step": 12,
+      "elapsed_s": 0.000880000000000001,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "40874c075556dd2c28534125f8e807a91e0ae19cd7297f6b8f805c1c6bbf4886",
+      "source_step_after_sha256": "40874c075556dd2c28534125f8e807a91e0ae19cd7297f6b8f805c1c6bbf4886",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "2f7287d4c92bdcaba43f695785c38607a13043ad445738953de4dd3d2f17ae47",
+      "force_sha256": "3463b56cf0779dbe4c4f37540f3f605394c06e4cfd7d5af22caf323370c2a098",
+      "minJ": 0.3829286795505624,
+      "maxJ": 1.5384695417218772,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.5164336766779196e-06,
+      "minimum_closing_m_s": -1.734723475976807e-18,
+      "endpoint_gaps_m": [
+        -1.516433676671848e-06,
+        -1.499894322768043e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.647927396071823e-08,
+          4.100536100767577e-08
+        ],
+        [
+          1.1057379485598139e-07,
+          5.777184600233222e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.7817636743821357e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.0004485544587936479
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 332,
+      "position_projections": 0,
+      "gravity_work_J": -1.783794066711291e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.162534645146706e-08,
+      "physical_energy_balance_residual_J": -1.1625346474924954e-08,
+      "bookkeeping_identity_error_J": -2.345789422302188e-17,
+      "start_energy_J": 0.5183738589169773,
+      "end_energy_J": 0.5183738469134545,
+      "start_momentum_kg_m_s": [
+        2.276293952312649e-05,
+        -1.4529701683131943e-05,
+        0.09072380595760735
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523126405e-05,
+        -1.4529701683131945e-05,
+        0.09111014169643777
+      ],
+      "start_angular_kg_m2_s": [
+        -5.116005514005816e-06,
+        1.6800969200810118e-05,
+        5.568731825666558e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -5.059820220384095e-06,
+        1.6774443902868266e-05,
+        5.568731825666813e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -8.470329472543003e-20,
+        -1.6940658945086007e-21,
+        -2.3310346708438345e-18
+      ],
+      "angular_balance_residual_Nms": [
+        8.159309562223065e-21,
+        2.0712602538327813e-20,
+        2.5516867536035798e-20
+      ]
+    },
+    {
+      "step": 13,
+      "elapsed_s": 0.0009000000000000011,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "0cfba437d97052dbad36823d6982501162e5bc62f450755bdc4317dc29f1a23e",
+      "source_step_after_sha256": "0cfba437d97052dbad36823d6982501162e5bc62f450755bdc4317dc29f1a23e",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "042c432ae650e08bc0d893747d787bff6f6f2d129a08ce1fcda8ed47eb2c06f1",
+      "force_sha256": "dad39ca2f880999721d725458f143b9a7ba0a359cf3f43d1ce2af0bfdb8aeaf3",
+      "minJ": 0.38335282029220513,
+      "maxJ": 1.540477040735073,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.523254153559979e-06,
+      "minimum_closing_m_s": 1.734723475976807e-18,
+      "endpoint_gaps_m": [
+        -1.523254153559979e-06,
+        -1.5053966486962625e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.709543857986682e-08,
+          3.982278339087742e-08
+        ],
+        [
+          1.100843478773031e-07,
+          5.5334510672654865e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.712446054677027e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.0004479513851401919
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 331,
+      "position_projections": 0,
+      "gravity_work_J": -1.7913680463822634e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.2539271601447612e-08,
+      "physical_energy_balance_residual_J": -1.2539271606193913e-08,
+      "bookkeeping_identity_error_J": -4.746301143463944e-18,
+      "start_energy_J": 0.5183738469134545,
+      "end_energy_J": 0.5183738340029382,
+      "start_momentum_kg_m_s": [
+        2.2762939523126405e-05,
+        -1.4529701683131945e-05,
+        0.09111014169643777
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523126032e-05,
+        -1.4529701683132167e-05,
+        0.09149587436161474
+      ],
+      "start_angular_kg_m2_s": [
+        -5.059820220384095e-06,
+        1.6774443902868266e-05,
+        5.568731825666813e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -5.005513101113031e-06,
+        1.674602815723365e-05,
+        5.568731825666858e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -3.7269449679189215e-19,
+        -2.219226321806267e-19,
+        -6.451002926288751e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -1.1812139147257235e-20,
+        -2.785613430833576e-20,
+        4.552802091491864e-21
+      ]
+    },
+    {
+      "step": 14,
+      "elapsed_s": 0.0009200000000000011,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "9a2570456657efb2c9fe071d28f771a9b298a8eb0f4ce023dff98c3f12811cbb",
+      "source_step_after_sha256": "9a2570456657efb2c9fe071d28f771a9b298a8eb0f4ce023dff98c3f12811cbb",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "1f7b98d74acae782b7a96ac74926b5338ee460527a6e9224ff4a8798b72c69a7",
+      "force_sha256": "8b7a512abda05182ca4928992f8366f7a569da443c38da6a156021642e5560ef",
+      "minJ": 0.38388056467128545,
+      "maxJ": 1.542157834743665,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.529721729803639e-06,
+      "minimum_closing_m_s": 1.5612511283791264e-17,
+      "endpoint_gaps_m": [
+        -1.5297217297967e-06,
+        -1.5105236202007238e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.76757466562611e-08,
+          3.8632787409444385e-08
+        ],
+        [
+          1.0955458944122093e-07,
+          5.290302189925315e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.6431131942286197e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.0004473605009822843
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.7989302171402775e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.3243784822931953e-08,
+      "physical_energy_balance_residual_J": -1.3243784886007936e-08,
+      "bookkeeping_identity_error_J": -6.307598263085128e-17,
+      "start_energy_J": 0.5183738340029382,
+      "end_energy_J": 0.518373820394842,
+      "start_momentum_kg_m_s": [
+        2.2762939523126032e-05,
+        -1.4529701683132167e-05,
+        0.09149587436161474
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523125643e-05,
+        -1.4529701683132008e-05,
+        0.09188101614263382
+      ],
+      "start_angular_kg_m2_s": [
+        -5.005513101113031e-06,
+        1.674602815723365e-05,
+        5.568731825666858e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.9536280086248175e-06,
+        1.6716283590857456e-05,
+        5.56873182566677e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -3.8963515573697816e-19,
+        1.5924219408380846e-19,
+        6.7220534694101275e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -6.0218748593860415e-22,
+        -2.2664748783952958e-20,
+        -8.787966827763366e-21
+      ]
+    },
+    {
+      "step": 15,
+      "elapsed_s": 0.0009400000000000012,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "f40bfcd8258e5e051ff9cfcd956f40b841740a26f6963cb02b216b358c5235ec",
+      "source_step_after_sha256": "f40bfcd8258e5e051ff9cfcd956f40b841740a26f6963cb02b216b358c5235ec",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "2babbc2b5a4ac29d55cda4f268b3eb87b14f4a0673dddbd36737c5b36d7e69d0",
+      "force_sha256": "bfa1c67c4be3f889ac101133c4f15c1f10e13789f8d44406e32238ecb3b4dae9",
+      "minJ": 0.3845114369980749,
+      "maxJ": 1.5435107796312018,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.535837402274684e-06,
+      "minimum_closing_m_s": -5.637851296924623e-17,
+      "endpoint_gaps_m": [
+        -1.5358374022677451e-06,
+        -1.5152791410268096e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.821988330459591e-08,
+          3.743673712228774e-08
+        ],
+        [
+          1.0898741700964651e-07,
+          5.048240848097402e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.5739808516770273e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00044677815422611414
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.8064810105159033e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.3726997683035042e-08,
+      "physical_energy_balance_residual_J": -1.3726997675615095e-08,
+      "bookkeeping_identity_error_J": 7.419947406582342e-18,
+      "start_energy_J": 0.518373820394842,
+      "end_energy_J": 0.5183738063104463,
+      "start_momentum_kg_m_s": [
+        2.2762939523125643e-05,
+        -1.4529701683132008e-05,
+        0.09188101614263382
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523125853e-05,
+        -1.4529701683131893e-05,
+        0.09226557557689671
+      ],
+      "start_angular_kg_m2_s": [
+        -4.9536280086248175e-06,
+        1.6716283590857456e-05,
+        5.56873182566677e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.904618029362022e-06,
+        1.6685672041126538e-05,
+        5.568731825666676e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        2.1006417091906648e-19,
+        1.1519648082658485e-19,
+        -1.4094628242311558e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -7.47771273747937e-21,
+        3.3418096747142318e-21,
+        -9.423241538204091e-21
+      ]
+    },
+    {
+      "step": 16,
+      "elapsed_s": 0.0009600000000000012,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "52f55cf8188f31e5d1b163f1e6ccd35955f9ea9d1d33fe5414a211be47d63cfb",
+      "source_step_after_sha256": "52f55cf8188f31e5d1b163f1e6ccd35955f9ea9d1d33fe5414a211be47d63cfb",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "1048a123228f7fe35104bc11fb77137038e0b4d2153b2e585d8245f43f74cc16",
+      "force_sha256": "5c848ea96c9ea8bf18cc7c51ebf5b86f02ce952c5ab18e85b8b350132949ab4a",
+      "minJ": 0.3852448426614991,
+      "maxJ": 1.5445350295752702,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.541603177664802e-06,
+      "minimum_closing_m_s": 5.204170427930421e-18,
+      "endpoint_gaps_m": [
+        -1.5416031776639347e-06,
+        -1.5196682103587461e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.872755967830267e-08,
+          3.6235992583904483e-08
+        ],
+        [
+          1.0838574685412724e-07,
+          4.8077628011470106e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.505248686772666e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00044619071941281617
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.8140203299862353e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.3984849702384043e-08,
+      "physical_energy_balance_residual_J": -1.3984849685409132e-08,
+      "bookkeeping_identity_error_J": 1.6974910839890603e-17,
+      "start_energy_J": 0.5183738063104463,
+      "end_energy_J": 0.5183737919750717,
+      "start_momentum_kg_m_s": [
+        2.2762939523125853e-05,
+        -1.4529701683131893e-05,
+        0.09226557557689671
+      ],
+      "end_momentum_kg_m_s": [
+        2.276293952312565e-05,
+        -1.4529701683131952e-05,
+        0.09264954757634632
+      ],
+      "start_angular_kg_m2_s": [
+        -4.904618029362022e-06,
+        1.6685672041126538e-05,
+        5.568731825666676e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.858583101731233e-06,
+        1.665424785408929e-05,
+        5.568731825666731e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -2.0328790734103208e-19,
+        -5.929230630780102e-20,
+        3.74049749507499e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -9.019577399278214e-21,
+        -2.3822801641527197e-21,
+        5.505714157152952e-21
+      ]
+    },
+    {
+      "step": 17,
+      "elapsed_s": 0.0009800000000000013,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "764da552f5055f69c183e734e2bebbbd6f480ee31995ad664ff55aba86614443",
+      "source_step_after_sha256": "764da552f5055f69c183e734e2bebbbd6f480ee31995ad664ff55aba86614443",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "fa11718986fd2cdf7326dcf601a431f09d0811fe7a1f6165879b68ff6e361a7f",
+      "force_sha256": "be2b79fb889950bfd4597e6caff9bea05aa8f27a61dc3e7a49a11d181c653a2f",
+      "minJ": 0.38608006868354666,
+      "maxJ": 1.5452300379463804,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.5470220623226352e-06,
+      "minimum_closing_m_s": 1.474514954580286e-17,
+      "endpoint_gaps_m": [
+        -1.5470220623226352e-06,
+        -1.5236969031799316e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.919851215162735e-08,
+          3.5031906051823986e-08
+        ],
+        [
+          1.0775250030107949e-07,
+          4.5693549334098756e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.437099498131633e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00044559786552861926
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.8215480724187966e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.4020315885581849e-08,
+      "physical_energy_balance_residual_J": -1.4020315907825132e-08,
+      "bookkeeping_identity_error_J": -2.224328371824494e-17,
+      "start_energy_J": 0.5183737919750717,
+      "end_energy_J": 0.5183737776110459,
+      "start_momentum_kg_m_s": [
+        2.276293952312565e-05,
+        -1.4529701683131952e-05,
+        0.09264954757634632
+      ],
+      "end_momentum_kg_m_s": [
+        2.276293952312561e-05,
+        -1.4529701683132045e-05,
+        0.09303292672191171
+      ],
+      "start_angular_kg_m2_s": [
+        -4.858583101731233e-06,
+        1.665424785408929e-05,
+        5.568731825666731e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.8156187490214895e-06,
+        1.6622066640631738e-05,
+        5.568731825666552e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -4.0657581468206416e-20,
+        -9.317362419797304e-20,
+        -6.396792817664476e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -9.132073962585426e-22,
+        -2.448454613156962e-22,
+        -1.7893571010747095e-20
+      ]
+    },
+    {
+      "step": 18,
+      "elapsed_s": 0.0010000000000000013,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "92591235f3bfdb5b41f43b9522796687e512325f89ef7bc4c0b74b734d3943f2",
+      "source_step_after_sha256": "92591235f3bfdb5b41f43b9522796687e512325f89ef7bc4c0b74b734d3943f2",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "5190f06face0c69b2f488c9f63375d91e349632223e085e04c2ecda0451d6410",
+      "force_sha256": "79820251d7a9e68288a3cf96e764f362fd430c121af3f90a0423ce2b99d2b7cb",
+      "minJ": 0.3870162842524574,
+      "maxJ": 1.5455955579528748,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.55209804807762e-06,
+      "minimum_closing_m_s": 3.469446951953614e-18,
+      "endpoint_gaps_m": [
+        -1.55209804807762e-06,
+        -1.5273723466425332e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          8.963250149068086e-08,
+          3.382581823715653e-08
+        ],
+        [
+          1.070905901657925e-07,
+          4.333493552298366e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.3696986711530105e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00044499927369877584
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.829064128301698e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.3843457243218983e-08,
+      "physical_energy_balance_residual_J": -1.3843457298717708e-08,
+      "bookkeeping_identity_error_J": -5.5498725324096055e-17,
+      "start_energy_J": 0.5183737776110459,
+      "end_energy_J": 0.5183737634306187,
+      "start_momentum_kg_m_s": [
+        2.276293952312561e-05,
+        -1.4529701683132045e-05,
+        0.09303292672191171
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523125805e-05,
+        -1.4529701683131615e-05,
+        0.09341570727564727
+      ],
+      "start_angular_kg_m2_s": [
+        -4.8156187490214895e-06,
+        1.6622066640631738e-05,
+        5.568731825666552e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.775815902369944e-06,
+        1.6589185073451305e-05,
+        5.568731825666548e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        1.9651164376299768e-19,
+        4.3029273720518457e-19,
+        -2.5478751053409354e-18
+      ],
+      "angular_balance_residual_Nms": [
+        9.297510085096031e-21,
+        7.90122921110652e-21,
+        -4.235164736271502e-22
+      ]
+    },
+    {
+      "step": 19,
+      "elapsed_s": 0.0010200000000000014,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "90e157016a4ba62d4e9b5d7ee6fca0c7779264e0abf229da1fc2ebb2dada5277",
+      "source_step_after_sha256": "90e157016a4ba62d4e9b5d7ee6fca0c7779264e0abf229da1fc2ebb2dada5277",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "374ef1526e4e7c56a0bdddd0e7c56ec9abf5455c28134d6cd25af413b72b13fc",
+      "force_sha256": "cd620429a92f87d48d57108789504de132b0e3a8fd078de519e1fc6bfbc8a0a9",
+      "minJ": 0.3880525412367908,
+      "maxJ": 1.545631643027753,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.5568360944252443e-06,
+      "minimum_closing_m_s": 3.0357660829594124e-17,
+      "endpoint_gaps_m": [
+        -1.556836094424377e-06,
+        -1.530702692328391e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          9.002931202361586e-08,
+          3.26190546162946e-08
+        ],
+        [
+          1.064029074573681e-07,
+          4.1006427473448944e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.3031938328766603e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00044439463797285356
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.8365683819898517e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.3470372081276142e-08,
+      "physical_energy_balance_residual_J": -1.3470372095206166e-08,
+      "bookkeeping_identity_error_J": -1.393002426349718e-17,
+      "start_energy_J": 0.5183737634306187,
+      "end_energy_J": 0.5183737496299272,
+      "start_momentum_kg_m_s": [
+        2.2762939523125805e-05,
+        -1.4529701683131615e-05,
+        0.09341570727564727
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523125826e-05,
+        -1.4529701683131877e-05,
+        0.09379788319365691
+      ],
+      "start_angular_kg_m2_s": [
+        -4.775815902369944e-06,
+        1.6589185073451305e-05,
+        5.568731825666548e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.739260731218107e-06,
+        1.6555660679018397e-05,
+        5.568731825666507e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        2.0328790734103208e-20,
+        -2.625802136488331e-19,
+        2.1141942363467336e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -1.0462180387570694e-20,
+        7.497565072180643e-21,
+        -4.129285617864714e-21
+      ]
+    },
+    {
+      "step": 20,
+      "elapsed_s": 0.0010400000000000014,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "e661d45e6e0bc4794d9495d720f1ccb65e14b6c8ed181a6b2c770ce95f82ec2e",
+      "source_step_after_sha256": "e661d45e6e0bc4794d9495d720f1ccb65e14b6c8ed181a6b2c770ce95f82ec2e",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "dbbb614e607db3f6d007a9d79e18b232ce965b53ff15080af215e8c34797a501",
+      "force_sha256": "9fceed2bd117e1b07419da9ee12ea800a50f9543b94f7f15f80bcfe6022e718b",
+      "minJ": 0.38918777468379245,
+      "maxJ": 1.5453386469534922,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.5612421070268848e-06,
+      "minimum_closing_m_s": -4.0766001685454967e-17,
+      "endpoint_gaps_m": [
+        -1.5612421070268848e-06,
+        -1.533697084637152e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          9.038875081985287e-08,
+          3.141292182122507e-08
+        ],
+        [
+          1.0569230843291271e-07,
+          3.871252818000626e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.2377147101923344e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.0004437836660250387
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.84406071196588e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.2921878060520452e-08,
+      "physical_energy_balance_residual_J": -1.2921878106145665e-08,
+      "bookkeeping_identity_error_J": -4.56252129825324e-17,
+      "start_energy_J": 0.5183737496299272,
+      "end_energy_J": 0.5183737363842776,
+      "start_momentum_kg_m_s": [
+        2.2762939523125826e-05,
+        -1.4529701683131877e-05,
+        0.09379788319365691
+      ],
+      "end_momentum_kg_m_s": [
+        2.276293952312612e-05,
+        -1.4529701683131918e-05,
+        0.09417944813971874
+      ],
+      "start_angular_kg_m2_s": [
+        -4.739260731218107e-06,
+        1.6555660679018397e-05,
+        5.568731825666507e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.706034481792751e-06,
+        1.6521551625614456e-05,
+        5.568731825666469e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        2.947674656444965e-19,
+        -4.0657581468206416e-20,
+        4.933119884809045e-18
+      ],
+      "angular_balance_residual_Nms": [
+        3.785178483042655e-21,
+        9.727644003623605e-22,
+        -3.8116482626443515e-21
+      ]
+    },
+    {
+      "step": 21,
+      "elapsed_s": 0.0010600000000000015,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "889cc8fac3a1f7abc0a8d26efd8b5747e5c4075d2909620966e04125031446dc",
+      "source_step_after_sha256": "889cc8fac3a1f7abc0a8d26efd8b5747e5c4075d2909620966e04125031446dc",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "fa8d72176e63fa0f22e48577060050578d91343152baf1c617b99441cf3f0f78",
+      "force_sha256": "1d38745bf484ff33a8beee6d0cb51722b30e31154f20e46a9db94275663f8793",
+      "minJ": 0.39042080330674306,
+      "maxJ": 1.5447172237212459,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.5653229126274398e-06,
+      "minimum_closing_m_s": 2.2551405187698492e-17,
+      "endpoint_gaps_m": [
+        -1.5653229126283072e-06,
+        -1.5363656255054647e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          9.071064688799322e-08,
+          3.020870412577258e-08
+        ],
+        [
+          1.0496160207545396e-07,
+          3.6457587774342385e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.173373182801306e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.0004431660797607494
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.8515409911137695e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.2222040156041653e-08,
+      "physical_energy_balance_residual_J": -1.222204010701119e-08,
+      "bookkeeping_identity_error_J": 4.9030464101507e-17,
+      "start_energy_J": 0.5183737363842776,
+      "end_energy_J": 0.5183737238449002,
+      "start_momentum_kg_m_s": [
+        2.276293952312612e-05,
+        -1.4529701683131918e-05,
+        0.09417944813971874
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523126124e-05,
+        -1.4529701683131596e-05,
+        0.09456039549951627
+      ],
+      "start_angular_kg_m2_s": [
+        -4.706034481792751e-06,
+        1.6521551625614456e-05,
+        5.568731825666469e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.676213324153721e-06,
+        1.6486916508665284e-05,
+        5.56873182566637e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        3.3881317890172014e-21,
+        3.2187251995663413e-19,
+        -1.1384122811097797e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -1.402898318889935e-20,
+        1.0104838362947786e-20,
+        -9.846758011831241e-21
+      ]
+    },
+    {
+      "step": 22,
+      "elapsed_s": 0.0010800000000000015,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "425b06ebeae6349cdbb8ddf4bfc1011712c62b615e0b2bd7ffa4c1d36b22a66e",
+      "source_step_after_sha256": "425b06ebeae6349cdbb8ddf4bfc1011712c62b615e0b2bd7ffa4c1d36b22a66e",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "1579f749c4732e33a5b5fee750c2473fd628e0df77d5a2e3de9b910ff0bd063e",
+      "force_sha256": "4aa02aa98a7f7270e33b20b7e124c2cc364c4b6adffccf7c2b3750c2edf4786f",
+      "minJ": 0.39175032996720816,
+      "maxJ": 1.5437683271210039,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.569086230713418e-06,
+      "minimum_closing_m_s": -3.122502256758253e-17,
+      "endpoint_gaps_m": [
+        -1.5690862307073464e-06,
+        -1.538719335660195e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          9.099485040158335e-08,
+          2.900766004425983e-08
+        ],
+        [
+          1.0421353806617331e-07,
+          3.424578939019319e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.110263521999847e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00044254161582218927
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.859009087003737e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.1396645325085695e-08,
+      "physical_energy_balance_residual_J": -1.1396645257761794e-08,
+      "bookkeeping_identity_error_J": 6.732390083780713e-17,
+      "start_energy_J": 0.5183737238449002,
+      "end_energy_J": 0.5183737121372286,
+      "start_momentum_kg_m_s": [
+        2.2762939523126124e-05,
+        -1.4529701683131596e-05,
+        0.09456039549951627
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523125775e-05,
+        -1.4529701683131412e-05,
+        0.09494071839537524
+      ],
+      "start_angular_kg_m2_s": [
+        -4.676213324153721e-06,
+        1.6486916508665284e-05,
+        5.56873182566637e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.6498682083499805e-06,
+        1.6451814134705654e-05,
+        5.568731825666347e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -3.4897757426877174e-19,
+        1.8465318250143747e-19,
+        1.0842021724855044e-19
+      ],
+      "angular_balance_residual_Nms": [
+        1.0965106200002935e-20,
+        1.0680556069284693e-20,
+        -2.329340604949326e-21
+      ]
+    },
+    {
+      "step": 23,
+      "elapsed_s": 0.0011000000000000016,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "044cbe26f4975cf92876e1c85c5a23caec44369557c98f72ca52cf9f9a189a78",
+      "source_step_after_sha256": "044cbe26f4975cf92876e1c85c5a23caec44369557c98f72ca52cf9f9a189a78",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "b9489a069bf18ce91c95cdaac630576a3ffa219ec29cb11e24bc093f2946025b",
+      "force_sha256": "8f601a35d7264ff492f2d0f300ba239399375a5493bea003ce6afcee990e67aa",
+      "minJ": 0.39317494215926174,
+      "maxJ": 1.543527213138119,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.572540641795253e-06,
+      "minimum_closing_m_s": -5.204170427930421e-17,
+      "endpoint_gaps_m": [
+        -1.572540641795253e-06,
+        -1.5407701124568393e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          9.124123196144788e-08,
+          2.7811019058569396e-08
+        ],
+        [
+          1.0345079531602593e-07,
+          3.208113591545248e-08
+        ]
+      ],
+      "contact_dissipation_J": 3.0484628023576215e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00044191002598706813
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.8664648621856264e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.0471711590834528e-08,
+      "physical_energy_balance_residual_J": -1.047171158806147e-08,
+      "bookkeeping_identity_error_J": 2.773058483496246e-18,
+      "start_energy_J": 0.5183737121372286,
+      "end_energy_J": 0.5183737013606707,
+      "start_momentum_kg_m_s": [
+        2.2762939523125775e-05,
+        -1.4529701683131412e-05,
+        0.09494071839537524
+      ],
+      "end_momentum_kg_m_s": [
+        2.276293952312594e-05,
+        -1.4529701683131354e-05,
+        0.09532040970139909
+      ],
+      "start_angular_kg_m2_s": [
+        -4.6498682083499805e-06,
+        1.6451814134705654e-05,
+        5.568731825666347e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.627064730218067e-06,
+        1.641630330541093e-05,
+        5.568731825666323e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        1.6601845766184287e-19,
+        5.759824041329242e-20,
+        -4.87890977618477e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -2.16655146039889e-20,
+        -5.532183936754649e-21,
+        -2.4352197233561135e-21
+      ]
+    },
+    {
+      "step": 24,
+      "elapsed_s": 0.0011200000000000016,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "d72374f660d52e7cf326af0ec0bebc0a870d287a0c260deb969c964f952eb359",
+      "source_step_after_sha256": "d72374f660d52e7cf326af0ec0bebc0a870d287a0c260deb969c964f952eb359",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "a4697b89e6b4ddc5400b527233898f93c5c4c950a55423c1e7540d770daf3bb2",
+      "force_sha256": "5f54884a99547d707af476fd24ea0106ccdc56ad6696f3d2f33bcdfb0ebf5393",
+      "minJ": 0.39469311250384337,
+      "maxJ": 1.543829581288476,
+      "minimum_element": 704,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.575695552874165e-06,
+      "minimum_closing_m_s": 8.673617379884035e-17,
+      "endpoint_gaps_m": [
+        -1.575695552874165e-06,
+        -1.5425306847281425e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          9.14496819026585e-08,
+          2.6619978488877724e-08
+        ],
+        [
+          1.0267597111702787e-07,
+          2.996743768596272e-08
+        ]
+      ],
+      "contact_dissipation_J": 2.988031472765215e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00044127107745652874
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.8739081744894092e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -9.472107703379911e-09,
+      "physical_energy_balance_residual_J": -9.472107599887886e-09,
+      "bookkeeping_identity_error_J": 1.0349202570583099e-16,
+      "start_energy_J": 0.5183737013606707,
+      "end_energy_J": 0.51837369158976,
+      "start_momentum_kg_m_s": [
+        2.276293952312594e-05,
+        -1.4529701683131354e-05,
+        0.09532040970139909
+      ],
+      "end_momentum_kg_m_s": [
+        2.276293952312565e-05,
+        -1.4529701683131328e-05,
+        0.0956994620588924
+      ],
+      "start_angular_kg_m2_s": [
+        -4.627064730218067e-06,
+        1.641630330541093e-05,
+        5.568731825666323e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.6078630073393296e-06,
+        1.6380442603208874e-05,
+        5.568731825666387e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -2.913793338554793e-19,
+        2.541098841762901e-20,
+        5.366800753803247e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -1.3635245217324108e-20,
+        -4.301339185275744e-22,
+        6.45862622281404e-21
+      ]
+    },
+    {
+      "step": 25,
+      "elapsed_s": 0.0011400000000000017,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "fc7c8437578ff1bc26fab4f0aaea91b0c98613e2d25b9c56622da50e544d235f",
+      "source_step_after_sha256": "fc7c8437578ff1bc26fab4f0aaea91b0c98613e2d25b9c56622da50e544d235f",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "dddd23bf9f630294b2d6477fd312cf0f9705f353200deb4fae9c024e48b5d03c",
+      "force_sha256": "6ef2d84084aedadf78e73ac8a23c28f79ca1009e23849a48e683e85e08d19b7c",
+      "minJ": 0.39623907065844327,
+      "maxJ": 1.5438107718319847,
+      "minimum_element": 9344,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.578561159861977e-06,
+      "minimum_closing_m_s": 8.673617379884035e-18,
+      "endpoint_gaps_m": [
+        -1.578561159861977e-06,
+        -1.5440145648215955e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          9.162010965365103e-08,
+          2.543570052233196e-08
+        ],
+        [
+          1.0189157096783373e-07,
+          2.790830116835136e-08
+        ]
+      ],
+      "contact_dissipation_J": 2.9290140710285777e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00044062455303030707
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.881338877329895e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -8.420342441793474e-09,
+      "physical_energy_balance_residual_J": -8.420342497065307e-09,
+      "bookkeeping_identity_error_J": -5.527183299079521e-17,
+      "start_energy_J": 0.51837369158976,
+      "end_energy_J": 0.5183736828765161,
+      "start_momentum_kg_m_s": [
+        2.276293952312565e-05,
+        -1.4529701683131328e-05,
+        0.0956994620588924
+      ],
+      "end_momentum_kg_m_s": [
+        2.27629395231256e-05,
+        -1.4529701683131398e-05,
+        0.09607786789195949
+      ],
+      "start_angular_kg_m2_s": [
+        -4.6078630073393296e-06,
+        1.6380442603208874e-05,
+        5.568731825666387e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.5923175656489e-06,
+        1.6344290180036566e-05,
+        5.568731825666503e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -5.082197683525802e-20,
+        -6.945670167485263e-20,
+        -4.553649124439119e-18
+      ],
+      "angular_balance_residual_Nms": [
+        1.31687153518442e-21,
+        7.497565072180643e-21,
+        1.1540823906339842e-20
+      ]
+    },
+    {
+      "step": 26,
+      "elapsed_s": 0.0011600000000000017,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "fb3b4c769510e14a8b1f6ac862680065bcbe939892fd34b46d7afd9a3f329dc4",
+      "source_step_after_sha256": "fb3b4c769510e14a8b1f6ac862680065bcbe939892fd34b46d7afd9a3f329dc4",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "817578d8d523df0111ab29595a7c145ab01b2917e349d90c09314589bfbc5ab4",
+      "force_sha256": "c9f8a16a05b15406983ffae1ca051bca52c677c424e40d2eee811774d744afc4",
+      "minJ": 0.39621846143949907,
+      "maxJ": 1.5434712588811537,
+      "minimum_element": 9344,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.5811484075306872e-06,
+      "minimum_closing_m_s": -5.551115123125783e-17,
+      "endpoint_gaps_m": [
+        -1.5811484075315546e-06,
+        -1.54523599794551e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          9.175244315421912e-08,
+          2.4259309413185195e-08
+        ],
+        [
+          1.010999991225516e-07,
+          2.5907118673185774e-08
+        ]
+      ],
+      "contact_dissipation_J": 2.8714400651118423e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.0004399702511692447
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.8887568200141042e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -7.335574516509228e-09,
+      "physical_energy_balance_residual_J": -7.335574449934725e-09,
+      "bookkeeping_identity_error_J": 6.657450332697491e-17,
+      "start_energy_J": 0.5183736828765161,
+      "end_energy_J": 0.5183736752537976,
+      "start_momentum_kg_m_s": [
+        2.27629395231256e-05,
+        -1.4529701683131398e-05,
+        0.09607786789195949
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523125812e-05,
+        -1.452970168313101e-05,
+        0.09645561942316552
+      ],
+      "start_angular_kg_m2_s": [
+        -4.5923175656489e-06,
+        1.6344290180036566e-05,
+        5.568731825666503e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.5804772371552805e-06,
+        1.6307903550831026e-05,
+        5.568731825666594e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        2.1345230270808369e-19,
+        3.8794108984246956e-19,
+        5.041540102057596e-18
+      ],
+      "angular_balance_residual_Nms": [
+        1.2636011037360051e-20,
+        2.2717688343156352e-20,
+        9.105604182983729e-21
+      ]
+    },
+    {
+      "step": 27,
+      "elapsed_s": 0.0011800000000000018,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "29aa37d89bc3f7285d36c6f8289285dae441626766abb58b63cf9da610ba7108",
+      "source_step_after_sha256": "29aa37d89bc3f7285d36c6f8289285dae441626766abb58b63cf9da610ba7108",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "9368cdaa6df4a88e34a6946a68f82c4a502b8e5e6005ef76c8171072d2977756",
+      "force_sha256": "65cd91f89e55c8b6e3280ce27843157a408d47381db4fddce85c9fec108f7b50",
+      "minJ": 0.3962592095983893,
+      "maxJ": 1.5428118153677897,
+      "minimum_element": 9344,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.5834689469709784e-06,
+      "minimum_closing_m_s": -6.071532165918825e-18,
+      "endpoint_gaps_m": [
+        -1.583468946970111e-06,
+        -1.5462099092295942e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          9.184662833833883e-08,
+          2.3091888866893352e-08
+        ],
+        [
+          1.0030354990549142e-07,
+          2.3967059132895378e-08
+        ]
+      ],
+      "contact_dissipation_J": 2.8153248029962756e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00043930798594740575
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.8961618480484736e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -6.2328827070475235e-09,
+      "physical_energy_balance_residual_J": -6.232882749175307e-09,
+      "bookkeeping_identity_error_J": -4.212778333763673e-17,
+      "start_energy_J": 0.5183736752537976,
+      "end_energy_J": 0.5183736687393824,
+      "start_momentum_kg_m_s": [
+        2.2762939523125812e-05,
+        -1.452970168313101e-05,
+        0.09645561942316552
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523125517e-05,
+        -1.4529701683130934e-05,
+        0.09683270868914971
+      ],
+      "start_angular_kg_m2_s": [
+        -4.5804772371552805e-06,
+        1.6307903550831026e-05,
+        5.568731825666594e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.572385069189597e-06,
+        1.6271339393334224e-05,
+        5.568731825666461e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -2.947674656444965e-19,
+        7.623296525288703e-20,
+        1.0299920638612292e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -2.0578599279094222e-20,
+        -5.43953970814871e-21,
+        -1.3234889800848443e-20
+      ]
+    },
+    {
+      "step": 28,
+      "elapsed_s": 0.0012000000000000018,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "d1e56704f480779610f1cc1863339aa3f8068ed26a920a49673c0fc577a14bc3",
+      "source_step_after_sha256": "d1e56704f480779610f1cc1863339aa3f8068ed26a920a49673c0fc577a14bc3",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "7e7dfb90ea9dc127731cb0126d7ebd079a55f68df46079d09b5217b4d2cbec9a",
+      "force_sha256": "f4ed4944dcac46b63b76af344ceea735b44517bdf67d68c0984a3d327587ab0b",
+      "minJ": 0.39636156151456425,
+      "maxJ": 1.541833512266656,
+      "minimum_element": 9344,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.5855350908432903e-06,
+      "minimum_closing_m_s": 3.209238430557093e-17,
+      "endpoint_gaps_m": [
+        -1.5855350908432903e-06,
+        -1.546951848737689e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          9.190262868702162e-08,
+          2.1934479619501084e-08
+        ],
+        [
+          9.950439982876015e-08,
+          2.2091059972161255e-08
+        ]
+      ],
+      "contact_dissipation_J": 2.76067055298607e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00043863758689814474
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.9035538034442486e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -5.1228218812301206e-09,
+      "physical_energy_balance_residual_J": -5.122821947229445e-09,
+      "bookkeeping_identity_error_J": -6.599932411521677e-17,
+      "start_energy_J": 0.5183736687393824,
+      "end_energy_J": 0.5183736633404934,
+      "start_momentum_kg_m_s": [
+        2.2762939523125517e-05,
+        -1.4529701683130934e-05,
+        0.09683270868914971
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523125317e-05,
+        -1.4529701683131096e-05,
+        0.09720912755608464
+      ],
+      "start_angular_kg_m2_s": [
+        -4.572385069189597e-06,
+        1.6271339393334224e-05,
+        5.568731825666461e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.56807824555551e-06,
+        1.6234653355754533e-05,
+        5.568731825666602e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -1.9989977555201488e-19,
+        -1.6263032587282567e-19,
+        1.8973538018496328e-18
+      ],
+      "angular_balance_residual_Nms": [
+        1.6737999695010515e-20,
+        -1.5491438511893102e-20,
+        1.4081922748102743e-20
+      ]
+    },
+    {
+      "step": 29,
+      "elapsed_s": 0.001220000000000002,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "1e912f179cb1041aee4302ede3221fb6de046f07d496fd0697e5548103bae025",
+      "source_step_after_sha256": "1e912f179cb1041aee4302ede3221fb6de046f07d496fd0697e5548103bae025",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "887852059cd23ac33e421f6f6475be40ac3c47680db0a550109acd33f20ecdb9",
+      "force_sha256": "5dad040ca2c37fdc88433c0a40c6800520879f5c5c464887b54a02745f447f11",
+      "minJ": 0.3965256776661601,
+      "maxJ": 1.5405377174832593,
+      "minimum_element": 9344,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.5873597668169745e-06,
+      "minimum_closing_m_s": -3.9898639947466563e-17,
+      "endpoint_gaps_m": [
+        -1.5873597668100356e-06,
+        -1.547477934687666e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          9.192042485550414e-08,
+          2.0788077222686178e-08
+        ],
+        [
+          9.87046005434397e-08,
+          2.028182009176011e-08
+        ]
+      ],
+      "contact_dissipation_J": 2.707467615224942e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00043795889876045756
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.9109325250187954e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -4.0112866563365235e-09,
+      "physical_energy_balance_residual_J": -4.011286633008987e-09,
+      "bookkeeping_identity_error_J": 2.332753634874781e-17,
+      "start_energy_J": 0.5183736633404934,
+      "end_energy_J": 0.51837365905846,
+      "start_momentum_kg_m_s": [
+        2.2762939523125317e-05,
+        -1.4529701683131096e-05,
+        0.09720912755608464
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523125226e-05,
+        -1.4529701683131178e-05,
+        0.09758486773488188
+      ],
+      "start_angular_kg_m2_s": [
+        -4.56807824555551e-06,
+        1.6234653355754533e-05,
+        5.568731825666602e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.567588019897645e-06,
+        1.6197899873755197e-05,
+        5.568731825666647e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -9.147955830346444e-20,
+        -8.131516293641283e-20,
+        -5.963111948670274e-19
+      ],
+      "angular_balance_residual_Nms": [
+        2.572531705039916e-21,
+        -1.5187036046473588e-20,
+        4.446922973085077e-21
+      ]
+    },
+    {
+      "step": 30,
+      "elapsed_s": 0.001240000000000002,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "a9c8faccdc9bb0412241ddb1b1f772f1519e68137cb1a1ca524f569d77776415",
+      "source_step_after_sha256": "a9c8faccdc9bb0412241ddb1b1f772f1519e68137cb1a1ca524f569d77776415",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "f5aed9242042be4f67d776c7f9179d5cf2260fb4ce39b9f47099cdd860ce6dba",
+      "force_sha256": "e7c3dca645b7f026bcfd6469f948f3b6f22344ca3ab3a48f2f29951aaa7bd2d5",
+      "minJ": 0.39675163342770475,
+      "maxJ": 1.5389260944023282,
+      "minimum_element": 9344,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.5889564691133964e-06,
+      "minimum_closing_m_s": 5.204170427930421e-18,
+      "endpoint_gaps_m": [
+        -1.588956469112529e-06,
+        -1.547804795086656e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          9.190001437814464e-08,
+          1.965363004354796e-08
+        ],
+        [
+          9.79060726482404e-08,
+          1.854179398103624e-08
+        ]
+      ],
+      "contact_dissipation_J": 2.655695486117461e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.0004372717811337453
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.918297848690932e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -2.89968558881835e-09,
+      "physical_energy_balance_residual_J": -2.8996856204679823e-09,
+      "bookkeeping_identity_error_J": -3.1649632160389167e-17,
+      "start_energy_J": 0.51837365905846,
+      "end_energy_J": 0.5183736558932048,
+      "start_momentum_kg_m_s": [
+        2.2762939523125226e-05,
+        -1.4529701683131178e-05,
+        0.09758486773488188
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523124863e-05,
+        -1.4529701683130913e-05,
+        0.09795992079605241
+      ],
+      "start_angular_kg_m2_s": [
+        -4.567588019897645e-06,
+        1.6197899873755197e-05,
+        5.568731825666647e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.570939661545626e-06,
+        1.616113199813973e-05,
+        5.568731825666765e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -3.6253010142484055e-19,
+        2.642742795433417e-19,
+        -1.463672932855431e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -1.9906928621701164e-20,
+        6.392451773809798e-21,
+        1.1858461261560205e-20
+      ]
+    },
+    {
+      "step": 31,
+      "elapsed_s": 0.001260000000000002,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "8d40f9c42f678075944c86198593073bd0eaec72a6f69582454396537a635b67",
+      "source_step_after_sha256": "8d40f9c42f678075944c86198593073bd0eaec72a6f69582454396537a635b67",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "afa45e2130e28b6db57b8266def10cda4edef66be7cb92892d43e752d3e5ad96",
+      "force_sha256": "4342d201860a8b25a2f41f6479d0001067001a2e7468ee292c7be7403696bbf3",
+      "minJ": 0.3970394199239463,
+      "maxJ": 1.5370006000944596,
+      "minimum_element": 9344,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.5903392087844234e-06,
+      "minimum_closing_m_s": -4.336808689942018e-17,
+      "endpoint_gaps_m": [
+        -1.5903392087844234e-06,
+        -1.5479495081970746e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          9.184141145360392e-08,
+          1.853203748703357e-08
+        ],
+        [
+          9.711060037420319e-08,
+          1.6873186966624498e-08
+        ]
+      ],
+      "contact_dissipation_J": 2.60532405654764e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00043657610805067435
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.9256496077686515e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -1.7854193423482477e-09,
+      "physical_energy_balance_residual_J": -1.785419335703701e-09,
+      "bookkeeping_identity_error_J": 6.644546646013909e-18,
+      "start_energy_J": 0.5183736558932048,
+      "end_energy_J": 0.5183736538472531,
+      "start_momentum_kg_m_s": [
+        2.2762939523124863e-05,
+        -1.4529701683130913e-05,
+        0.09795992079605241
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523124874e-05,
+        -1.4529701683130963e-05,
+        0.09833427818413987
+      ],
+      "start_angular_kg_m2_s": [
+        -4.570939661545626e-06,
+        1.616113199813973e-05,
+        5.568731825666765e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.578152414028216e-06,
+        1.612440123447402e-05,
+        5.568731825666656e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        1.0164395367051604e-20,
+        -4.912791094074942e-20,
+        -9.215718466126788e-19
+      ],
+      "angular_balance_residual_Nms": [
+        1.897386889074135e-20,
+        -1.7536228986124187e-21,
+        -1.0905549195899117e-20
+      ]
+    },
+    {
+      "step": 32,
+      "elapsed_s": 0.001280000000000002,
+      "dt_s": 1.9999999999999998e-05,
+      "state_sha256": "8fac679fdade406faf77cc32554e1a9413526d34788e4270a6a16da0b70dfe6a",
+      "source_step_after_sha256": "8fac679fdade406faf77cc32554e1a9413526d34788e4270a6a16da0b70dfe6a",
+      "owners_checked": 2059,
+      "elements_checked": 10240,
+      "stress_J_U_sha256": "ce5bfc9cf48158d4b12461d344d95804ec99f4b10bcfadaaf331878bef4feef6",
+      "force_sha256": "53bd696b37441fdc3183667e5068b02a0f5220b6628527a1b7c51e0aefd4f784",
+      "minJ": 0.3973889449315526,
+      "maxJ": 1.534763483179411,
+      "minimum_element": 9344,
+      "minimum_face": 1088,
+      "minimum_face_nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "minimum_gap_m": -1.5915224625892566e-06,
+      "minimum_closing_m_s": 8.153200337090993e-17,
+      "endpoint_gaps_m": [
+        -1.5915224625892566e-06,
+        -1.5479295420658956e-06
+      ],
+      "row_active_masks": [
+        3,
+        3
+      ],
+      "row_impulses_Ns": [
+        [
+          9.174464681185278e-08,
+          1.7424148447653682e-08
+        ],
+        [
+          9.63198271572144e-08,
+          1.527795160015337e-08
+        ]
+      ],
+      "contact_dissipation_J": 2.55631482684689e-10,
+      "plane_kinetic_removal_J": 0.0,
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        0.00043587176747906473
+      ],
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -6.221871996321664e-05
+      ],
+      "support_events": 330,
+      "position_projections": 0,
+      "gravity_work_J": -1.9329876332278323e-05,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": -6.626396305775948e-10,
+      "physical_energy_balance_residual_J": -6.626396431202036e-10,
+      "bookkeeping_identity_error_J": -1.2542608801120283e-17,
+      "start_energy_J": 0.5183736538472531,
+      "end_energy_J": 0.518373652928982,
+      "start_momentum_kg_m_s": [
+        2.2762939523124874e-05,
+        -1.4529701683130963e-05,
+        0.09833427818413987
+      ],
+      "end_momentum_kg_m_s": [
+        2.2762939523124504e-05,
+        -1.4529701683130847e-05,
+        0.09870793123165571
+      ],
+      "start_angular_kg_m2_s": [
+        -4.578152414028216e-06,
+        1.612440123447402e-05,
+        5.568731825666656e-07
+      ],
+      "end_angular_kg_m2_s": [
+        -4.5892394663842995e-06,
+        1.6087757395730443e-05,
+        5.568731825666482e-07
+      ],
+      "momentum_balance_residual_Ns": [
+        -3.6930636500287495e-19,
+        1.1519648082658485e-19,
+        -8.023096076392733e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -2.570050163202257e-20,
+        -1.1421709898132206e-20,
+        -1.7364175418713157e-20
+      ]
+    }
+  ],
+  "primary_log_sha256": "98f0727027b13d7a99ce265211788de952d4cddc7ddc75717188296a551bd906",
+  "replay_log_sha256": "98f0727027b13d7a99ce265211788de952d4cddc7ddc75717188296a551bd906",
+  "runtime_s": 246.86234712600708,
+  "limits": [
+    "Continuation from complete original 32-step CPU state with unchanged numerical geometry/J/rest/contact gates.",
+    "All additional 2059 owner, 10240 tet stress/J/U/force and 1280 face/normal checks are executed per accepted step.",
+    "First unsupported event rejects and leaves complete accepted state unchanged.",
+    "FP64 numerical boundary oracle, no CCD, no native trajectory or temporal convergence claim.",
+    "Physical energy residual remains open and measured."
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schema": "numi.elastic-yarn.endpoint-public-manifest-negative.v1",
+  "control_passed": true,
+  "negative_copy_root": "/Users/home/numi-solver/build/elastic-yarn-endpoint-prephysics-negative-raza526u",
+  "negative_controller_source_sha256": "f9d1400487e133c244011b6b05b1aa9763d26a9fc5e7c2c530dc3edc6174e9e3",
+  "source_name": "endpoint_step.py",
+  "original_source_sha256": "57115c3a0c82241d0567f237d937864f1d0e7734e580e126cc95aa5f35e75241",
+  "mutated_source_sha256": "670f19d6544ef8b47061ee1d75b11c37e0c21abfc91f529e8f56fa9cae98b976",
+  "changed_byte_offset": 103,
+  "changed_byte_from_hex": "54",
+  "changed_byte_to_hex": "58",
+  "changed_byte_count": 1,
+  "mutated_runner_actual_exit": 1,
+  "rejected_before_physics_root_creation": true,
+  "physics_roots_before": [
+    "elastic-yarn-endpoint-public-replay-r85jq4sb"
+  ],
+  "physics_roots_after": [
+    "elastic-yarn-endpoint-public-replay-r85jq4sb"
+  ],
+  "failure_log_sha256": "de36464552fd1e8039a912370f785dc6b90f8b0bc601f0c38b7038be52bdf393",
+  "failure_exit_marker_sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+  "failure_reason": "Manifest source hash mismatch for endpoint_step.py"
+}

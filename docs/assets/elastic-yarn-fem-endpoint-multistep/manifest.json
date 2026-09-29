@@ -1,0 +1,89 @@
+{
+  "schema": "numi.elastic-yarn.endpoint-multistep.portable-public-manifest.v1",
+  "reproducer_sha256": "20f3053e359f9f258a16d200df8211465299d1d90de15f0fb2e60222d45027b6",
+  "public_payload_manifest_sha256": "3b5e2ee5ba843d44509051d295090e456560dbc493d203c8edde6d6b56312279",
+  "public_fixture_sha256": "1c7da0b0410abdbf3b1f8c614c8803830fe272a4c355057ce4b035cebdb0b26d",
+  "frozen_physical_source_sha256": {
+    "CMakeLists.txt": "6cbcced7a175e1de1574d19a38e572a61cbf43d00c3ad792809e33e36e88e738",
+    "tools/deformable_mesh.mm": "ad289c243c3ab4c3e251cb420fc4be74d8d1713007c3603265cc3c90ab73d87c",
+    "src/metal/DeformableTet.metal": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072",
+    "src/metal/DeformableMesh.metal": "1d4c4cd80c956b3ac45877af6af3a155db5bd3728eb3ae06766809069d33887c",
+    "include/metalrobo/gpu_types.h": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8",
+    "include/numi/deformable_mesh.h": "a0150503c14f4fd2fe622f5d7262ced435e9ee807048c54e76420acc8154205b",
+    "include/numi/deformable_tet.h": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0"
+  },
+  "sources_sha256": {
+    "centroid_step.py": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+    "step.py": "dcfaeca294146fbec3e161dce05a7583d0ffdf34e8e181e2a008c92a0dc22176",
+    "endpoint_step.py": "57115c3a0c82241d0567f237d937864f1d0e7734e580e126cc95aa5f35e75241",
+    "trajectory.py": "bf2176472e676277ec009c79e252ceddd0f86f865f785f9f2714a6c025ad2e45",
+    "continuation_exact.py": "c6919b7d03df358ec2327a8be6115aaaad42e9faf0ec9ac24dc2db1864452a97",
+    "focused_control.py": "53b78df9b5a25234c249f5bbe8e1533124d75ac52cd54a96fb44736a30d397ef",
+    "predecessor_identity.py": "5aee1d46be21756345b4546980a0eee18716841378f0b8ac035f1a6c3a38dce8",
+    "geometry_audit.py": "a62abd22e98a79e9930bab9e3f3bd0e189d0aa6d7c3620451bb01ed81e8e4e19"
+  },
+  "owner_candidate_files_sha256": {
+    "half.jsonl": "7db6e89ff83d1c09b48fd9ca928ec8abe0aac34d71048efb28c7d7f4fd652b35",
+    "interval-full.metadata.json.gz": "00d79ea694c19f9ae2c410d3c55e0fd8543ac48cca22ab4ce354d6371e14073d",
+    "interval-full.state.f64x6.bin": "6ead45b47838d225bbe2e395d0f44f8e9093771a63239e2cc3b76caba773e2ec",
+    "interval-half.metadata.json.gz": "64dff8441f58cca28d572e68a691185ef4b592d36ae3e1a3719db7922aced4e6",
+    "interval-half.state.f64x6.bin": "64b60084de13cb540b3f7f273a86e8e49897df6680df993ad300198b3ec932e4",
+    "primary.jsonl": "47d43ad9f816341c369191edca7776881eec4cfa677c7a68b9b1832914fa67e6",
+    "receipt.json": "d60d1ec790d8fa0577082253e10df0d46b19add090bbd4ab2873a4c952899692",
+    "replay.jsonl": "47d43ad9f816341c369191edca7776881eec4cfa677c7a68b9b1832914fa67e6",
+    "result.json": "cd26a476f0a2dc5760663d8b0c1c0174a770eb6606a7b23345063a936d531577",
+    "terminal.metadata.json.gz": "cdfb0c464dff118ed87dc8822a9be5252605ab627ca119d6a2b0a3c322c25300",
+    "terminal.state.f64x6.bin": "4a46d2fc4a70945cc9e3dce215e09e19ed788116e6df0558c029989c8e932871"
+  },
+  "owner_continuation_files_sha256": {
+    "primary.jsonl": "98f0727027b13d7a99ce265211788de952d4cddc7ddc75717188296a551bd906",
+    "receipt.json": "f6658f0e3311e45d2ebe268a1ca3a6faefd9599c8dd14bc91469ee7907d73515",
+    "replay.jsonl": "98f0727027b13d7a99ce265211788de952d4cddc7ddc75717188296a551bd906",
+    "result.json": "e3e652dde57344e277fcd3df8caea30d3cf43b446a4221fc439c0c3ae9ea90c5",
+    "terminal.metadata.json.gz": "5980957a800a0131da67b876568b9348643590b1203b1906a9a1a8dab64afc73",
+    "terminal.state.f64x6.bin": "a051376b8ed88708f979f9c5dec9e3b864a924fea74343910a2475ced1b2ed55"
+  },
+  "old_frontier_files_sha256": {
+    "receipt.json": "d706dbd34584a6fff0ff469572cd82ace5e320a2618a0043e5d86a4b53ab7605",
+    "result.json": "be7bc2d87e2a83df907bc5698d3f6e603f23dea9b1d8c237b7b02f843a97b80a",
+    "terminal.metadata.json.gz": "381015017f0e9e9f1659368160569ce341f277e15acd416728502c3616664d0f",
+    "terminal.state.f64x6.bin": "5aaeec9a99b0ea733079a3747105bd7905e374f8b53a87b28ffcea41671458bf"
+  },
+  "owner_controls_sha256": {
+    "focused-control.json": "53a75e74e539f39297dbd1f6dccca986560a6b44834ba618c29bc79950a127e7",
+    "predecessor-identity.json": "a961ca004705f578d72e8175cecfe7cfe08506a354df717e3a02b47c427d4fc3",
+    "candidate-geometry-audit.json": "50719a28200ed684423c35f578709e7ee3e01cf0bc94ee17ccda3621c39d0812",
+    "continuation-exact-geometry-audit.json": "34fb6f5f899f3956a524c997bb208515aa3ca5e3627bba524dc54fef6ea489ef"
+  },
+  "physical_output_files": [
+    "primary.jsonl",
+    "replay.jsonl",
+    "half.jsonl",
+    "terminal.state.f64x6.bin",
+    "terminal.metadata.json.gz",
+    "interval-full.state.f64x6.bin",
+    "interval-full.metadata.json.gz",
+    "interval-half.state.f64x6.bin",
+    "interval-half.metadata.json.gz"
+  ],
+  "continuation_physical_output_files": [
+    "primary.jsonl",
+    "replay.jsonl",
+    "terminal.state.f64x6.bin",
+    "terminal.metadata.json.gz"
+  ],
+  "owner_physical_result_digest": "c25d67b7bdcf9f7f5469986f2d6ea086e0cdee1e57a3365d116573cee5a06c71",
+  "owner_continuation_physical_result_digest": "7a93c83b1f6d35b6a1d09ed785544fbb88f91a243193b68effcf60da4516e7cf",
+  "owner_focused_digest": "247152a8147efb6f3d0dca72a9d715f12ce7c837787128eb1d0cc86f47df1186",
+  "owner_identity_digest": "154ce4fc0526b7830bc3a138e85b62330634b3dc27786daa82e028b81a0bddb4",
+  "owner_geometry_digest": "c70c4adc0b5f5efdc6a02a2c0c2e985965ff04dc4eb0dfec54db66c51422b56e",
+  "owner_continuation_geometry_digest": "d93d8b0e08e5a7b2c34d8ee286468d3e08e0b678b778b6046d2912485e4f660d",
+  "input_provenance": "Lossless public FEM payloads, frozen physical source, public frame38 fixture; new actual pack receipts in fresh root, no historical native binary claim",
+  "scope_limits": [
+    "No CCD or exact-real distance certificate",
+    "No native GPU/bag/fruit trajectory",
+    "No internal yarn elasticity or friction",
+    "Open physical energy residual",
+    "One 320us 20/10us comparison is not temporal convergence"
+  ]
+}

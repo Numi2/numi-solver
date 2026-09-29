@@ -74,7 +74,14 @@ remain unavailable. The [reviewed normal-block step](assets/elastic-yarn-fem-nor
 now advances that full body and two authored yarn endpoints together for a
 bounded 1 µs CPU interval, with exact replay, two half steps and a positive
 5.315 nJ physical energy-balance residual. It is not native continuation,
-frictional full-bag contact or long-time qualification. The separate
+frictional full-bag contact or long-time qualification. The
+[endpoint-aware multistep study](assets/elastic-yarn-fem-endpoint-multistep/README.md)
+advances the same complete represented body and locally authored two-node
+yarn through 64 linked 20 µs CPU steps to 1.28 ms with exact replay and a
+320 µs matched half-step observation. Its fresh public reproduction matches
+13 physical output files byte for byte. The closest-witness admission
+replaces the fixed centroid test; the +0.322 µJ combined physical energy
+residual, CCD, native coupling and full-scene work closure remain open. The
 [area admission study](ELASTIC_YARN_AREA_ADMISSION.md) certifies represented
 CPU fixture paths while the actual finer-step bag run still fails area.
 The [CPU96 incident-work audit](assets/cpu96-area-incident-work/README.md)

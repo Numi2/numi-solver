@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/Users/home/numi-solver/build/elastic-yarn-endpoint-prephysics-negative-raza526u/reproduce.py", line 307, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/home/numi-solver/build/elastic-yarn-endpoint-prephysics-negative-raza526u/reproduce.py", line 104, in main
+    assert sha(HERE / name) == expected, ('source changed', name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('source changed', 'endpoint_step.py')

@@ -1,0 +1,66 @@
+{
+  "schema": "numi.elastic-yarn.endpoint-multistep-short.source-bound-receipt.v1",
+  "actual_program_exit": 0,
+  "result_sha256": "cd26a476f0a2dc5760663d8b0c1c0174a770eb6606a7b23345063a936d531577",
+  "trajectory_source_sha256": "bf2176472e676277ec009c79e252ceddd0f86f865f785f9f2714a6c025ad2e45",
+  "endpoint_source_sha256": "57115c3a0c82241d0567f237d937864f1d0e7734e580e126cc95aa5f35e75241",
+  "frozen_normal_source_sha256": "dcfaeca294146fbec3e161dce05a7583d0ffdf34e8e181e2a008c92a0dc22176",
+  "frozen_centroid_source_sha256": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+  "input_sha256": {
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/body.json": "7eda877b63f31f70661dea103c98fbec97cd4adb5e322ddc4222f4e6e2da7ceb",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/receipt.json": "6cb63eff549236e1e65b0c692f5b9cce96a89259531caa4751caff7ad6b32c59",
+    "/Users/home/numi-solver/docs/assets/elastic-yarn-fem-frame38-provenance.json": "1c7da0b0410abdbf3b1f8c614c8803830fe272a4c355057ce4b035cebdb0b26d",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/CMakeLists.txt": "6cbcced7a175e1de1574d19a38e572a61cbf43d00c3ad792809e33e36e88e738",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/tools/deformable_mesh.mm": "ad289c243c3ab4c3e251cb420fc4be74d8d1713007c3603265cc3c90ab73d87c",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/src/metal/DeformableTet.metal": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/src/metal/DeformableMesh.metal": "1d4c4cd80c956b3ac45877af6af3a155db5bd3728eb3ae06766809069d33887c",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/metalrobo/gpu_types.h": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/numi/deformable_mesh.h": "a0150503c14f4fd2fe622f5d7262ced435e9ee807048c54e76420acc8154205b",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/numi/deformable_tet.h": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/centroid_step.py": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/step.py": "dcfaeca294146fbec3e161dce05a7583d0ffdf34e8e181e2a008c92a0dc22176",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/endpoint_step.py": "57115c3a0c82241d0567f237d937864f1d0e7734e580e126cc95aa5f35e75241"
+  },
+  "retained_outputs": {
+    "result.json": {
+      "sha256": "cd26a476f0a2dc5760663d8b0c1c0174a770eb6606a7b23345063a936d531577",
+      "bytes": 96987
+    },
+    "replay.jsonl": {
+      "sha256": "47d43ad9f816341c369191edca7776881eec4cfa677c7a68b9b1832914fa67e6",
+      "bytes": 65166
+    },
+    "half.jsonl": {
+      "sha256": "7db6e89ff83d1c09b48fd9ca928ec8abe0aac34d71048efb28c7d7f4fd652b35",
+      "bytes": 65200
+    },
+    "primary.jsonl": {
+      "sha256": "47d43ad9f816341c369191edca7776881eec4cfa677c7a68b9b1832914fa67e6",
+      "bytes": 65166
+    },
+    "terminal.state.f64x6.bin": {
+      "sha256": "4a46d2fc4a70945cc9e3dce215e09e19ed788116e6df0558c029989c8e932871",
+      "bytes": 98832
+    },
+    "interval-full.state.f64x6.bin": {
+      "sha256": "6ead45b47838d225bbe2e395d0f44f8e9093771a63239e2cc3b76caba773e2ec",
+      "bytes": 98832
+    },
+    "interval-full.metadata.json.gz": {
+      "sha256": "00d79ea694c19f9ae2c410d3c55e0fd8543ac48cca22ab4ce354d6371e14073d",
+      "bytes": 145765
+    },
+    "interval-half.metadata.json.gz": {
+      "sha256": "64dff8441f58cca28d572e68a691185ef4b592d36ae3e1a3719db7922aced4e6",
+      "bytes": 289361
+    },
+    "interval-half.state.f64x6.bin": {
+      "sha256": "64b60084de13cb540b3f7f273a86e8e49897df6680df993ad300198b3ec932e4",
+      "bytes": 98832
+    },
+    "terminal.metadata.json.gz": {
+      "sha256": "cdfb0c464dff118ed87dc8822a9be5252605ab627ca119d6a2b0a3c322c25300",
+      "bytes": 290355
+    }
+  }
+}

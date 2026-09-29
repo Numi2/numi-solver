@@ -1,0 +1,58 @@
+{
+  "schema": "numi.elastic-yarn.endpoint-step13-focused-control.v1",
+  "passed": true,
+  "source_sha256": {
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/endpoint_step.py": "57115c3a0c82241d0567f237d937864f1d0e7734e580e126cc95aa5f35e75241",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/step.py": "dcfaeca294146fbec3e161dce05a7583d0ffdf34e8e181e2a008c92a0dc22176",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/centroid_step.py": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-endpoint-step/focused_control.py": "53b78df9b5a25234c249f5bbe8e1533124d75ac52cd54a96fb44736a30d397ef"
+  },
+  "old_trajectory_result_sha256": "be7bc2d87e2a83df907bc5698d3f6e603f23dea9b1d8c237b7b02f843a97b80a",
+  "old_terminal_buffer_sha256": "5aaeec9a99b0ea733079a3747105bd7905e374f8b53a87b28ffcea41671458bf",
+  "old_terminal_metadata_sha256": "381015017f0e9e9f1659368160569ce341f277e15acd416728502c3616664d0f",
+  "pre_state_sha256": "117f4863ba01b8626b518f471b07c11a156390405bf5e04b435823f145e2aec9",
+  "dt_s": 1.9999999999999998e-05,
+  "old_rejected_reason": "contact-manifold/gap",
+  "old_rejected_detail": {
+    "row_distance": 0.004001035711755507,
+    "oracle": {
+      "valid": true,
+      "distance": 0.003998829496252888,
+      "u": 1.0,
+      "bary": [
+        0.20910914044965667,
+        0.4441260746758131,
+        0.3467647848745302
+      ],
+      "active_mask": 2
+    },
+    "radius": 0.004000000189989805
+  },
+  "old_rollback_exact": true,
+  "endpoint_accepted": true,
+  "endpoint_exact_replay": true,
+  "endpoint_state_sha256": "237d93032eba2fdccea0486ad338fd3823909858423ac6119d6ec4e168add32c",
+  "endpoint_final_minJ": 0.41806812248461395,
+  "endpoint_final_global_gap_m": -1.1706937369125245e-06,
+  "endpoint_final_global_normal_rate_m_s": -1.3010426069826053e-18,
+  "endpoint_final_closest_u": 1.0,
+  "endpoint_final_closest_face": 1088,
+  "rollback_negative_controls": [
+    {
+      "fault": "invalid-J",
+      "accepted": false,
+      "reason": "invalid-J",
+      "rollback_exact": true,
+      "complete_state_unchanged": true
+    },
+    {
+      "fault": "invalid-area",
+      "accepted": false,
+      "reason": "invalid-boundary-area",
+      "rollback_exact": true,
+      "complete_state_unchanged": true
+    }
+  ],
+  "runtime_s": 13.462716817855835,
+  "scope": "One private CPU continuation from a reproduced 12-step state; numerical FP64 witness, no CCD or native trajectory claim."
+}

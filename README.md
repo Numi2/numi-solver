@@ -281,7 +281,15 @@ The [reviewed two-endpoint normal block](docs/assets/elastic-yarn-fem-normal-blo
 now advances the complete 10,240-element body and two authored yarn owners
 through a bounded 1 µs CPU step. It removes a measured 0.0679 m/s local closing
 mode left by the earlier centroid response; its positive 5.315 nJ physical
-energy residual and full-scene gates remain open. The separate
+energy residual and full-scene gates remain open. The
+[endpoint-aware multistep study](docs/assets/elastic-yarn-fem-endpoint-multistep/README.md)
+replaces the fixed centroid witness when the closest contact moves to a yarn
+endpoint. The full represented body and locally authored two-node yarn pass
+64 linked 20 µs CPU steps to 1.28 ms with exact replay, a source-bound midpoint
+checkpoint and a 320 µs matched half-step comparison. A fresh public-payload
+reproduction matched all 13 physical outputs byte for byte. Its combined
+physical energy residual is +0.322 µJ and remains open; this is not native
+Metal or full bag/fruit qualification. The
 [preventive triangle-area study](docs/ELASTIC_YARN_AREA_ADMISSION.md)
 certifies represented area paths in CPU fixtures, while the full finer-step
 bag drop still fails its strict area gate.
