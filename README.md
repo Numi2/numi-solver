@@ -11,6 +11,32 @@ application scene.
 
 ## Pick up the bag and spill the fruit
 
+### Native fruit-mass comparison · September 29, 2026
+
+[![The same deformable bag carrying fruits at original and triple mass](docs/assets/fruit-mass-1x-vs-3x-native-diagnostic.png)](docs/assets/fruit-mass-1x-vs-3x-native-diagnostic.mp4)
+
+This side-by-side Apple Metal diagnostic shows the first simulated second of
+the finite-bench pickup with original fruit mass and **3× fruit mass**.
+The initial bag and fruit geometry match exactly. Both runs use the same bag,
+fruit radii, bench, solver settings, and prescribed cuff trajectory; the 3×
+run divides each fruit's inverse mass by three. The original-mass frames came
+from a MacBook Air and the heavier frames from a Mac mini with different
+binaries, so this is a visual diagnostic, **not a matched same-host control**.
+The fixed camera and matching simulated timestamps make the different bag
+responses easy to inspect.
+At 1.0 s, the original-mass run has released one fruit and the 3× run has
+released none; the largest sampled cloth-node separation is **0.385 m**.
+The different hosts and binaries prevent assigning that difference solely
+to mass from this clip.
+
+[Watch the mass comparison](docs/assets/fruit-mass-1x-vs-3x-native-diagnostic.mp4) ·
+[Inspect the source-bound comparison receipt](docs/assets/fruit-mass-1x-vs-3x-native-diagnostic.json) ·
+[Download the exact first-replay snapshots and rendering source](docs/assets/fruit-mass-1x-vs-3x-native-diagnostic-inputs.tar.gz) ·
+[Apply the exact runtime source patch to `4bc9e94`](docs/assets/fruit-mass-native-source.patch).
+This one-second clip does not establish exact two-replay agreement, independently
+audited contact, full pickup and landing, material calibration, or a Franka
+grasp; the grip remains a prescribed cuff path.
+
 ### Newest pickup · coupled yarn contacts · September 29, 2026
 
 [![Five released fruits reach the lower floor after leaving the deformable bag](docs/assets/coupled-bench-pickup-96-poster.png)](docs/assets/coupled-bench-pickup-96.mp4)
