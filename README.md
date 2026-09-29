@@ -45,7 +45,7 @@ The Metal images and full-trajectory measurements in this section precede the
 September 29 [fruit free-flight, bench-support, and packing fixes](docs/FRUIT_FALL.md).
 Native gravity, refinement, and landing checks pass; replacement full Metal
 spill qualification is in progress. This historical Metal GIF does not qualify
-the changed source. The independent FP64 reference below is newly qualified.
+the changed source. The CPU FP64 reference above is newly qualified.
 
 ![A deterministic Metal cloth replay lifting a woven produce bag by its reinforced top opening seam and spilling fruit onto the ground](docs/assets/cloth-metal-pickup-spill.gif)
 
