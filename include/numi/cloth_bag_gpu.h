@@ -14,6 +14,10 @@ enum NumiClothBagGPUFailure : mr_u32 {
     NUMI_CLOTH_BAG_GPU_FAILURE_BATCH = 1u << 2u,
     NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE = 1u << 3u,
     NUMI_CLOTH_BAG_GPU_FAILURE_GRIP_CAPTURE = 1u << 4u,
+    // A static cast starts inside the collider beyond geometric tolerance.
+    NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_START = 1u << 5u,
+    NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_ARRIVAL = 1u << 6u,
+    NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_ADVANCE = 1u << 7u,
 };
 
 typedef struct MR_ALIGN16 NumiClothBagGPUConfig {

@@ -87,10 +87,16 @@ inline float3 nativeStaticResponse(float3 position,float radius,float3 response,
         response=cross(normal,cross(response,normal))/dot(normal,normal);
     return response;
 }
+inline uint nativeStaticCastFailure(float3 start, float3 end, float radius) {
+    auto sample = numiStaticSceneSample(staticVector(start), radius);
+    return sample.valid && sample.gap < -numiStaticTolerance(staticVector(start), staticVector(end))
+        ? NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_START : NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE;
+}
 inline float nativeStaticArrival(float3 position,float radius,float3 correction,
                                 device atomic_uint* failure) {
     auto hit=numiStaticSceneCast(staticVector(position),staticVector(position+correction),radius);
-    if(!hit.valid){recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);return 0;}
+    if(!hit.valid){recordFailure(failure,nativeStaticCastFailure(position,position+correction,radius) |
+        NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_ARRIVAL);return 0;}
     return hit.contact?hit.time:1;
 }
 inline float nativeBlockedReaction(float3 freeResponse,float3 response,float inverseMass,float lambda) {
@@ -99,7 +105,8 @@ inline float nativeBlockedReaction(float3 freeResponse,float3 response,float inv
 inline float nativeStaticSweep(float3 previous,thread float3& position,float radius,
                               thread float4& support,thread float3& velocity,device atomic_uint* failure) {
     auto hit=numiStaticSceneCast(staticVector(previous),staticVector(position),radius);
-    if(!hit.valid){recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);return 0;}
+    if(!hit.valid){recordFailure(failure,nativeStaticCastFailure(previous,position,radius) |
+        NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_ADVANCE);return 0;}
     if(!hit.contact)return 0;
     float3 normal=staticVector(hit.normal);support.xyz=normal;
     float3 impact=fma(position-previous,float3(hit.time),previous);
@@ -210,15 +217,16 @@ inline void applySupportedFruitImpulse(
     thread NumiClothBagGPUFruit& fruit,
     const float3 impulse,
     const float3 contactOffset,
+    const float3 freeResponse,
     const float3 response,
+    const float impulseMagnitude,
     device atomic_uint* failure
 ) {
     const float inverseMass = fruit.positionAndInverseMass.w;
-    const float3 freeChange = impulse * inverseMass;
-    fruit.velocityAndGroundImpulse.xyz += response;
+    fruit.velocityAndGroundImpulse.xyz += response * impulseMagnitude;
     if (inverseMass > 0.0f) {
         fruit.velocityAndGroundImpulse.w +=
-            length(response - freeChange) / inverseMass;
+            length((response - freeResponse) * impulseMagnitude) / inverseMass;
     }
     fruit.angularVelocity.xyz +=
         cross(contactOffset, impulse) * fruitInverseInertia(fruit);
@@ -3629,7 +3637,7 @@ kernel void numi_cloth_bag_apply_yarn_friction(
                             if (config.constraintCounts.z == 2u) {
                                 applySupportedFruitImpulse(fruit,
                                     tangent * -tangentialImpulse, ballOffset,
-                                    fruitResponse * tangentialImpulse, failure);
+                                    fruitFree, fruitResponse, tangentialImpulse, failure);
                                 first.velocity.w += nativeBlockedReaction(
                                     tangent * first.positionAndInverseMass.w,
                                     firstResponse, first.positionAndInverseMass.w,
@@ -3753,9 +3761,9 @@ kernel void numi_cloth_bag_apply_fruit_pair_friction(
     const float3 impulseOnSecond = tangent * -tangentialImpulse;
     if (config.constraintCounts.z == 2u) {
         applySupportedFruitImpulse(second, impulseOnSecond, secondOffset,
-            secondResponse * tangentialImpulse, failure);
+            secondFree, secondResponse, tangentialImpulse, failure);
         applySupportedFruitImpulse(first, -impulseOnSecond, firstOffset,
-            firstResponse * tangentialImpulse, failure);
+            firstFree, firstResponse, tangentialImpulse, failure);
     } else {
         applyFruitImpulse(second, impulseOnSecond, secondOffset);
         applyFruitImpulse(first, -impulseOnSecond, firstOffset);
@@ -3861,4 +3869,23 @@ kernel void numi_cloth_bag_apply_fruit_ground_friction(
         return;
     }
     fruits[index] = fruit;
+}
+
+// Diagnostic dispatch: high buffer slots preserve every production binding.
+// Reads the failure flag without writing any physical state.
+kernel void numi_cloth_bag_observe_first_failure(
+    device atomic_uint* failure [[buffer(28)]],
+    device atomic_uint* trace [[buffer(29)]],
+    constant uint& stage [[buffer(30)]],
+    uint index [[thread_position_in_grid]]
+) {
+    if (index != 0u) return;
+    const uint flags = atomic_load_explicit(failure, memory_order_relaxed);
+    uint empty = 0;
+    if (flags == 0u) return;
+    while (!atomic_compare_exchange_weak_explicit(trace, &empty, stage,
+            memory_order_relaxed, memory_order_relaxed)) {
+        if (empty != 0u) return;
+    }
+    atomic_store_explicit(trace + 1, flags, memory_order_relaxed);
 }

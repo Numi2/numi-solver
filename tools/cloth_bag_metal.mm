@@ -50,6 +50,14 @@ constexpr std::uint32_t kFinalContactPasses = 2u;
 constexpr std::uint32_t kCertificatePasses = 8u;
 numi::ClothMaterialArtifact gClothMaterial{};
 bool gFiniteBench = false;
+bool gDiagnoseFailure = false;
+bool gObserveThisRun = false;
+id<MTLComputePipelineState> gFailureObserver = nil;
+id<MTLBuffer> gObservedFailureBuffer = nil;
+id<MTLBuffer> gFirstFailureTraceBuffer = nil;
+std::uint32_t gObservedSubstep = 0;
+std::unordered_map<const void*, std::string> gKernelNames;
+std::vector<std::pair<std::string, std::uint32_t>> gObservedStages;
 
 double nativeStaticClearance(const mr_float4& position, const double radius,
                              const bool finiteBench) {
@@ -4073,7 +4081,21 @@ id<MTLComputePipelineState> makePipeline(
             "failed to create pipeline: " + errorText(error)
         );
     }
+    gKernelNames[(__bridge const void*)pipeline] = name.UTF8String;
     return pipeline;
+}
+
+void observeFailure(id<MTLComputeCommandEncoder> encoder,
+                    id<MTLComputePipelineState> pipeline) {
+    if (!gObserveThisRun) return;
+    gObservedStages.emplace_back(gKernelNames.at((__bridge const void*)pipeline), gObservedSubstep);
+    const std::uint32_t stage = static_cast<std::uint32_t>(gObservedStages.size());
+    [encoder setComputePipelineState:gFailureObserver];
+    [encoder setBuffer:gObservedFailureBuffer offset:0 atIndex:28];
+    [encoder setBuffer:gFirstFailureTraceBuffer offset:0 atIndex:29];
+    [encoder setBytes:&stage length:sizeof(stage) atIndex:30];
+    [encoder dispatchThreads:MTLSizeMake(1, 1, 1) threadsPerThreadgroup:MTLSizeMake(1, 1, 1)];
+    [encoder setComputePipelineState:pipeline];
 }
 
 void dispatch(
@@ -4091,6 +4113,7 @@ void dispatch(
     [encoder setComputePipelineState:pipeline];
     [encoder dispatchThreads:MTLSizeMake(count, 1u, 1u)
           threadsPerThreadgroup:MTLSizeMake(width, 1u, 1u)];
+    observeFailure(encoder, pipeline);
 }
 
 struct GPUResult {
@@ -4348,6 +4371,13 @@ GPUResult runGPU(
         throw std::runtime_error("failed to allocate Metal cloth buffers");
     }
 
+    gObserveThisRun = gDiagnoseFailure && initial.config.constraintCounts.z == 2u;
+    if (gObserveThisRun) {
+        gObservedFailureBuffer = failureBuffer;
+        gFirstFailureTraceBuffer = makeZeroed(2 * sizeof(std::uint32_t));
+        if (gFirstFailureTraceBuffer == nil) throw std::runtime_error("failed to allocate diagnostic trace");
+        gObservedStages.clear();
+    }
     id<MTLCommandBuffer> commandBuffer = [queue commandBuffer];
     id<MTLComputeCommandEncoder> encoder =
         [commandBuffer computeCommandEncoder];
@@ -4358,6 +4388,7 @@ GPUResult runGPU(
     for (std::uint32_t trajectorySubstep = 0u;
          trajectorySubstep < trajectoryConfigs.size();
          ++trajectorySubstep) {
+    gObservedSubstep = trajectorySubstep;
     [encoder setComputePipelineState:pipelines.prepareTrajectorySubstep];
     [encoder setBuffer:configBuffer offset:0 atIndex:0];
     [encoder setBuffer:trajectoryConfigBuffer offset:0 atIndex:1];
@@ -4525,6 +4556,7 @@ GPUResult runGPU(
             [encoder dispatchThreadgroups:MTLSizeMake(
                 initial.selfBatches.size(), 1u, 1u
             ) threadsPerThreadgroup:MTLSizeMake(detectionWidth, 1u, 1u)];
+            observeFailure(encoder, pipelines.selfDetect);
         } else {
             if (initial.selfPairLookup.size() !=
                 initial.distances.size() *
@@ -4917,6 +4949,16 @@ GPUResult runGPU(
         mouthClearanceValues + initial.fruits.size()
     );
     result.failure = *static_cast<const std::uint32_t*>(failureBuffer.contents);
+    if (gObserveThisRun) {
+        const auto* trace = static_cast<const std::uint32_t*>(gFirstFailureTraceBuffer.contents);
+        if (trace[0] != 0 && trace[0] <= gObservedStages.size()) {
+            const auto& stage = gObservedStages[trace[0] - 1];
+            std::cout << "native_first_failure dispatch=" << trace[0] << " kernel=" << stage.first
+                      << " substep=" << stage.second << " first_flags=" << trace[1]
+                      << " final_flags=" << result.failure << std::endl;
+        }
+    }
+    gObserveThisRun = false;
     if (commandBuffer.GPUEndTime >= commandBuffer.GPUStartTime) {
         result.seconds = commandBuffer.GPUEndTime - commandBuffer.GPUStartTime;
     }
@@ -5388,7 +5430,7 @@ TrajectoryReplay runTrajectoryReplay(
         traceFruits(completedSteps, replay.final.fruits, replay.final.releaseStatus.masks.y);
         if (!dumpPrefix.empty() &&
             (completedSteps % dumpEvery == 0u ||
-             completedSteps == steps)) {
+             completedSteps == steps || !replay.failureFree)) {
             dumpGPUOBJ(
                 snapshotPrefix + "-" + std::to_string(completedSteps) + ".obj",
                 replay.final.particles,
@@ -5397,7 +5439,7 @@ TrajectoryReplay runTrajectoryReplay(
                 configs.back()
             );
         }
-        if (completedSteps % dumpEvery == 0u || completedSteps == steps) {
+        if (completedSteps % dumpEvery == 0u || completedSteps == steps || !replay.failureFree) {
             std::cout << (scenario == TrajectoryScenario::pickup
                               ? "pickup_progress"
                               : "trajectory_progress")
@@ -5407,6 +5449,7 @@ TrajectoryReplay runTrajectoryReplay(
                       << " released_mask="
                       << replay.final.releaseStatus.masks.y
                       << " max_local_node_overlap_m=" << replay.maximumLocalNodePenetration
+                      << " failure_flags=" << replay.final.failure
                       << " gpu_seconds=" << replay.gpuSeconds << std::endl;
         }
         if (!replay.failureFree) {
@@ -5944,6 +5987,29 @@ int runFiniteBenchProbe(id<MTLDevice> device, id<MTLCommandQueue> queue,
                   << " stale_support_impulse_Ns=" << lifted.velocity.w
                   << " replay_exact=" << exact << " passed=" << valid << '\n';
     }
+    {
+        // Friction between airborne fruit must create exactly zero static
+        // reaction. Scaling before subtraction can turn rounding differences
+        // between equivalent free/supported responses into ghost support.
+        InitialState initial = makeFruitPairProbeState();
+        initial.config.constraintCounts.z = 2;
+        initial.fruits = {makeProbeFruit({0, 0, 1}, 5, .05f),
+                          makeProbeFruit({.09, 0, 1}, 5, .05f)};
+        initial.fruits[0].velocityAndGroundImpulse.y = 1;
+        initial.fruits[1].velocityAndGroundImpulse.y = -2;
+        const GPUResult first = runGPU(device, queue, pipelines, initial, 1, 0);
+        const GPUResult second = runGPU(device, queue, pipelines, initial, 1, 0);
+        const bool exact = bitwiseEqualPhysicalState(first, second);
+        const bool valid = first.failure == 0 && second.failure == 0 && exact &&
+            first.frictionStatus.counters.x > 0 &&
+            first.fruits[0].velocityAndGroundImpulse.w == 0 &&
+            first.fruits[1].velocityAndGroundImpulse.w == 0;
+        passed &= valid; ++cases;
+        std::cout << "finite_bench_airborne_friction case=" << cases
+                  << " first_static_impulse_Ns=" << first.fruits[0].velocityAndGroundImpulse.w
+                  << " second_static_impulse_Ns=" << first.fruits[1].velocityAndGroundImpulse.w
+                  << " replay_exact=" << exact << " passed=" << valid << '\n';
+    }
     std::cout << "device=" << device.name.UTF8String << " finite_bench_response_cases=" << cases
               << " maximum_position_error_m=" << maximumPositionError
               << " maximum_velocity_error_m_s=" << maximumVelocityError
@@ -6107,6 +6173,8 @@ int run(const int argc, const char* const* argv) {
         const std::string_view value(argv[argument]);
         if (value == "--finite-bench") {
             gFiniteBench = true;
+        } else if (value == "--diagnose-failure") {
+            gDiagnoseFailure = true;
         } else if (value == "--finite-bench-probe") {
             finiteBenchProbe = true;
         } else if (value == "--local-node-probe") {
@@ -6191,7 +6259,7 @@ int run(const int argc, const char* const* argv) {
                    "[--spin-dump-every N] [--pickup-prefix PATH] "
                    "[--pickup-steps N] [--pickup-dump-every N] "
                    "[--fruit-flight-probe] [--initial-state-probe] [--finite-bench] "
-                   "[--finite-bench-probe]\n";
+                   "[--finite-bench-probe] [--diagnose-failure]\n";
             return 0;
         } else {
             throw std::runtime_error(
@@ -6421,6 +6489,9 @@ int run(const int argc, const char* const* argv) {
         ),
     };
 
+    if (gDiagnoseFailure) {
+        gFailureObserver = makePipeline(device, library, @"numi_cloth_bag_observe_first_failure");
+    }
     if (finiteBenchProbe) {
         return runFiniteBenchProbe(device, queue, pipelines);
     }
@@ -6786,8 +6857,9 @@ int run(const int argc, const char* const* argv) {
             bitwiseEqualPhysicalState(
                 groundedFirst.final, groundedSecond.final
             );
-        groundedComplete = groundedSteps ==
-            kGroundedQualificationFrames;
+        groundedComplete = groundedSteps == kGroundedQualificationFrames &&
+            groundedFirst.frameHashes.size() == groundedSteps &&
+            groundedSecond.frameHashes.size() == groundedSteps;
         groundedReleasedMask =
             groundedFirst.final.releaseStatus.masks.y;
         groundedEscapeMask = trajectoryEscapeMask(
@@ -6885,7 +6957,8 @@ int run(const int argc, const char* const* argv) {
         );
         spinReplayExact = spinFirst.frameHashes == spinSecond.frameHashes &&
             bitwiseEqualPhysicalState(spinFirst.final, spinSecond.final);
-        spinComplete = spinSteps == kSpinQualificationFrames;
+        spinComplete = spinSteps == kSpinQualificationFrames &&
+            spinFirst.frameHashes.size() == spinSteps && spinSecond.frameHashes.size() == spinSteps;
         spinReleasedMask = spinFirst.final.releaseStatus.masks.y;
         spinEscapeMask = trajectoryEscapeMask(
             spinFirst.final, TrajectoryScenario::spin
@@ -6968,7 +7041,8 @@ int run(const int argc, const char* const* argv) {
             bitwiseEqualPhysicalState(
                 pickupFirst.final, pickupSecond.final
             );
-        pickupComplete = pickupSteps == kPickupQualificationFrames;
+        pickupComplete = pickupSteps == kPickupQualificationFrames &&
+            pickupFirst.frameHashes.size() == pickupSteps && pickupSecond.frameHashes.size() == pickupSteps;
         pickupReleasedMask = pickupFirst.final.releaseStatus.masks.y;
         for (std::size_t index = 0u;
              index < pickupFirst.final.fruits.size();
@@ -8931,6 +9005,10 @@ int run(const int argc, const char* const* argv) {
               << " failure_flags=" << distantRegrabGPU.failure << '\n'
               << "grounded_requested=" << groundedRequested
               << " complete=" << groundedComplete
+              << " first_captured_frames=" << groundedFirst.frameHashes.size()
+              << " second_captured_frames=" << groundedSecond.frameHashes.size()
+              << " first_failure_flags=" << groundedFirst.final.failure
+              << " second_failure_flags=" << groundedSecond.final.failure
               << " steps=" << (groundedRequested ? groundedSteps : 0u)
               << " replay_exact=" << groundedReplayExact
               << " released_mask=" << groundedReleasedMask
@@ -8951,6 +9029,10 @@ int run(const int argc, const char* const* argv) {
               << " qualified=" << groundedQualified << '\n'
               << "spin_requested=" << spinRequested
               << " complete=" << spinComplete
+              << " first_captured_frames=" << spinFirst.frameHashes.size()
+              << " second_captured_frames=" << spinSecond.frameHashes.size()
+              << " first_failure_flags=" << spinFirst.final.failure
+              << " second_failure_flags=" << spinSecond.final.failure
               << " steps=" << (spinRequested ? spinSteps : 0u)
               << " replay_exact=" << spinReplayExact
               << " released_mask=" << spinReleasedMask
@@ -8970,6 +9052,10 @@ int run(const int argc, const char* const* argv) {
               << " qualified=" << spinQualified << '\n'
               << "pickup_requested=" << pickupRequested
               << " complete=" << pickupComplete
+              << " first_captured_frames=" << pickupFirst.frameHashes.size()
+              << " second_captured_frames=" << pickupSecond.frameHashes.size()
+              << " first_failure_flags=" << pickupFirst.final.failure
+              << " second_failure_flags=" << pickupSecond.final.failure
               << " steps=" << (pickupRequested ? pickupSteps : 0u)
               << " motion_frames=" << kPickupMotionFrames
               << " settling_frames="
@@ -8989,6 +9075,10 @@ int run(const int argc, const char* const* argv) {
               << " second_gpu_seconds=" << pickupSecond.gpuSeconds
               << " qualified=" << pickupQualified << '\n'
               << "recorded_requested=" << recordedRequested
+              << " first_captured_frames=" << recordedFirst.frameHashes.size()
+              << " second_captured_frames=" << recordedSecond.frameHashes.size()
+              << " first_failure_flags=" << recordedFirst.final.failure
+              << " second_failure_flags=" << recordedSecond.final.failure
               << " steps=" << (recordedRequested ? recordedSteps : 0u)
               << " replay_exact=" << recordedReplayExact
               << " released_mask=" << recordedReleasedMask
