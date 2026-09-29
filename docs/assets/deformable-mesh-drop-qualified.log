@@ -1,0 +1,10 @@
+device=Apple M4 backend=Apple_Metal
+shared_nodes=13 tetrahedra=20 boundary_triangles=20 density_kg_m3=1000 mass_kg=0.317018840462
+simulated_seconds=.5 steps=5000 refined_steps=10000 captured_frames=101 replay_exact=1 all_candidates_valid=1
+maximum_nodal_refinement_difference_m=5.97019960481e-05 maximum_relative_shape_change_m=0.0247453109374
+initial_height_m=0.0850650817156 minimum_height_m=0.0508879609406 final_height_m=0.0776309713256
+minimum_clearance_m=0 minimum_all_step_volume_ratio=0.59890806675 maximum_internal_net_force_N=1.3134171013e-06
+bench_normal_impulse_Ns=1.5641592741 removed_normal_kinetic_energy_J=0.279412597418 maximum_momentum_balance_error_Ns=4.17405014472e-06
+maximum_mechanical_energy_increase_J=0 maximum_elastic_energy_J=0.312232262988 maximum_free_fall_COM_error_m=3.44366863289e-07
+rejected_cases=5 rejected_mesh_state_and_ledger_exact=1
+deformable_mesh_drop_qualified=1

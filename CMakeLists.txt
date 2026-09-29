@@ -155,6 +155,30 @@ target_compile_options(numi-solver-deformable-tet PRIVATE -fobjc-arc -Wall -Wext
 target_compile_definitions(numi-solver-deformable-tet PRIVATE
     NUMI_DEFORMABLE_TET_METALLIB="${NUMI_DEFORMABLE_TET_METALLIB}")
 
+set(NUMI_DEFORMABLE_MESH_METALLIB "${NUMI_SOLVER_SHADER_DIR}/NumiDeformableMesh.metallib")
+add_custom_command(
+    OUTPUT "${NUMI_DEFORMABLE_MESH_METALLIB}"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${NUMI_SOLVER_SHADER_DIR}"
+    COMMAND "${XCRUN_EXECUTABLE}" -sdk macosx metal -std=metal4.0 -O3 -fno-fast-math
+        -I "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        -c "${CMAKE_CURRENT_SOURCE_DIR}/src/metal/DeformableMesh.metal"
+        -o "${NUMI_SOLVER_SHADER_DIR}/NumiDeformableMesh.air"
+    COMMAND "${XCRUN_EXECUTABLE}" -sdk macosx metallib
+        "${NUMI_SOLVER_SHADER_DIR}/NumiDeformableMesh.air" -o "${NUMI_DEFORMABLE_MESH_METALLIB}"
+    DEPENDS src/metal/DeformableMesh.metal src/metal/DeformableTet.metal
+        include/numi/deformable_mesh.h include/numi/deformable_tet.h include/metalrobo/gpu_types.h
+    VERBATIM
+)
+add_custom_target(numi_deformable_mesh DEPENDS "${NUMI_DEFORMABLE_MESH_METALLIB}")
+add_executable(numi-solver-deformable-mesh tools/deformable_mesh.mm)
+add_dependencies(numi-solver-deformable-mesh numi_deformable_mesh)
+target_link_libraries(numi-solver-deformable-mesh PRIVATE numi_temporal_cone_abi
+    "${FOUNDATION_FRAMEWORK}" "${METAL_FRAMEWORK}")
+target_compile_features(numi-solver-deformable-mesh PRIVATE cxx_std_23)
+target_compile_options(numi-solver-deformable-mesh PRIVATE -fobjc-arc -Wall -Wextra -Wpedantic)
+target_compile_definitions(numi-solver-deformable-mesh PRIVATE
+    NUMI_DEFORMABLE_MESH_METALLIB="${NUMI_DEFORMABLE_MESH_METALLIB}")
+
 add_executable(numi-solver-math tools/temporal_cone_math.mm)
 add_dependencies(numi-solver-math numi_temporal_cone)
 target_link_libraries(
@@ -390,6 +414,8 @@ include(CTest)
 if(BUILD_TESTING)
     add_test(NAME deformable_tet.constitutive COMMAND $<TARGET_FILE:numi-solver-deformable-tet>)
     set_tests_properties(deformable_tet.constitutive PROPERTIES LABELS "metal;physics;deformable" TIMEOUT 30)
+    add_test(NAME deformable_mesh.drop COMMAND $<TARGET_FILE:numi-solver-deformable-mesh>)
+    set_tests_properties(deformable_mesh.drop PROPERTIES LABELS "metal;physics;deformable;contact" TIMEOUT 60)
     add_test(
         NAME temporal_cone.math
         COMMAND $<TARGET_FILE:numi-solver-math>
@@ -926,11 +952,13 @@ endif()
 
 install(FILES "${NUMI_SOLVER_METALLIB}" DESTINATION lib/numi-solver)
 install(FILES "${NUMI_DEFORMABLE_TET_METALLIB}" DESTINATION lib/numi-solver)
+install(FILES "${NUMI_DEFORMABLE_MESH_METALLIB}" DESTINATION lib/numi-solver)
 install(DIRECTORY include/ DESTINATION include)
 install(
     TARGETS
         numi-solver-math
         numi-solver-deformable-tet
+        numi-solver-deformable-mesh
         numi-solver-islands
         numi-solver-assembly
         numi-solver-rigid

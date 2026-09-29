@@ -105,13 +105,19 @@ from those selected indices rather than a fixed rendering location.
 
 ## Growing toward coupled deformable volumes
 
-The next simulation target adds soft fruit with evolving nodal shape and
-volumetric stress to the woven bag. The new native
-[`numi-solver-deformable-tet`](docs/DEFORMABLE_VOLUMES.md) foundation already
-advances three nonlinear elastic tetrahedra for 0.5 seconds on Apple Metal.
-It records up to 31.97 mm of relative shape change, 38.77 µm of timestep
-refinement difference, and exact replay at all 51 captured nodal states.
-Shared-node fruit meshes and two-way cloth/bench contact are the next gate.
+[![Watch the native shared-node elastic mesh drop, compress and recover](docs/assets/deformable-mesh-drop.gif)](docs/assets/deformable-mesh-drop.mp4)
+
+The new native [shared-node elastic mesh](docs/DEFORMABLE_MESH.md) now falls,
+compresses on the plane, and recovers from its own volumetric stress. Its
+13 nodes and 20 tetrahedra advance for 0.5 seconds on Apple Metal, compressing
+from 85.07 to 50.89 mm before recovering to 77.63 mm. All 101 captured states
+replay exactly; the half-step run differs by at most 59.70 µm. The video plays
+the actual faceted solver boundary at 6.7x slow playback.
+
+The [independent-element foundation](docs/DEFORMABLE_VOLUMES.md) separately
+qualifies the nonlinear elastic forces. Coupling these volumes to the woven
+bag, frictional surface contact, finer meshes, and measured fruit properties
+remain the next gates.
 
 ## Grounded cloth produce-bag replay
 

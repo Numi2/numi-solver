@@ -78,14 +78,13 @@ and the refined run recorded zero candidate failures.
 
 ## Next simulation gate
 
-This is a running volumetric element foundation, not a coupled soft-fruit scene.
-The next implementation must assemble shared-node tetrahedral fruit meshes,
-retain their exact boundary surface, distribute contact through the owning
-nodal masses, and exchange equal/opposite response with cloth and the plane.
-Its qualification must show actual compression and recovery in contact,
-positive element volumes, bounded contact residuals and energy error,
-timestep refinement, and complete native replay. Measured fruit constitutive
-and impact parameters remain a separate calibration requirement.
+The [shared-node mesh drop](DEFORMABLE_MESH.md) now assembles twenty elements,
+retains their exact boundary, and distributes plane contact through the owning
+nodal masses. It demonstrates actual compression/recovery, positive volumes,
+zero plane penetration, half-step refinement, and exact native replay.
+Two-way woven-cloth contact, mesh-resolution convergence, total contact-work
+closure, and measured fruit constitutive/impact parameters remain separate
+requirements before coupling soft fruit into the full bag scene.
 
 The new component builds a separate metallib. It does not replace the cloth
 source, binary, or library while the corrected full bag replay is running.

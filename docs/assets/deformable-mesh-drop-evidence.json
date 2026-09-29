@@ -1,0 +1,612 @@
+{
+  "schema_version": 1,
+  "source_parent_commit": "083c1fe0b9a606337aa82004db5d0b2ad1a8b641",
+  "source_identity": "Exact source, binary and artifact fingerprints below. Created before the scoped mesh-source commit.",
+  "device": "Apple M4",
+  "backend": "Apple Metal",
+  "qualification_result": "PASS",
+  "qualification_exit_code": 0,
+  "ctest_passed": true,
+  "commands": [
+    "cmake --build build --target numi-solver-deformable-mesh -j2",
+    "./build/numi-solver-deformable-mesh --trajectory build/deformable-mesh-drop",
+    "ctest --test-dir build -R \"^deformable_mesh.drop$\" --output-on-failure",
+    "python3 tools/audit_deformable_mesh_trajectory.py build/deformable-mesh-drop --output build/deformable-mesh-artifact-audit.json",
+    "python3 tools/render_deformable_mesh.py build/deformable-mesh-drop build/deformable-mesh-renders",
+    "ffmpeg -framerate 30 -i build/deformable-mesh-renders/frame-%03d.png -c:v libx264 -crf 20 -pix_fmt yuv420p -movflags +faststart docs/assets/deformable-mesh-drop.mp4"
+  ],
+  "sha256": {
+    "include/numi/deformable_mesh.h": "a0096fef902fc70774cfcde746587cb662c1f3f9be9c2bc2cbf9bae9a7fe020f",
+    "include/numi/deformable_tet.h": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0",
+    "include/metalrobo/gpu_types.h": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8",
+    "src/metal/DeformableMesh.metal": "bbc8dbcc30463fe6986883bdd9aa8d860a32ccf8b0efcd055c8251cba34049ce",
+    "src/metal/DeformableTet.metal": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072",
+    "tools/deformable_mesh.mm": "022d17b5bcb9b12113f74753e45dcf6293954fe511e8266553f9e96d33eaba6e",
+    "tools/audit_deformable_mesh_trajectory.py": "51733aecba07d0772bb3e33febbe5806349d5e0af073689c401e0aac47e70d27",
+    "tools/render_deformable_mesh.py": "0f825dacd0fe77b373bf3f334f6c32757629453491d5a4ddc49f4141108bf040",
+    "CMakeLists.txt": "d868c7a91450045cb7216e7922a4fe04adedf5296aaf1ce98869f5f5375efbba",
+    "build/numi-solver-deformable-mesh": "54e1a0794cafe58e82a1c9c34ff1c7fc767b5dba61a4c008d8a85aefc899b521",
+    "build/shaders/NumiDeformableMesh.metallib": "6e4c73b8a3f2c24aae8086d487044bfd7e73d0baed1962c45f2f74a93f93b594",
+    "build/deformable-mesh-drop.log": "6ca777399fdb07d27b96558e436aa93b1f5d1dc318a408783b0610d9e7c38452",
+    "build/deformable-mesh-drop.csv": "ebe705014535a1654d0eeb98287e862607864fcfc95e1335cfd4de538bcf6816",
+    "build/deformable-mesh-drop-topology.csv": "b84811445a6c1aa0854ee5415d0dc253f8c0b6358314bb450f46d92019938fdb",
+    "docs/assets/deformable-mesh-drop.mp4": "954d4c9fae18ef60a3cd915390a412a601995382a7cd5250d8a2d5707b13a345",
+    "docs/assets/deformable-mesh-drop.gif": "561f9b77388305ce8f79efa13431fe540f03d59b3e70425b97b64fd61ef4a46c",
+    "docs/assets/deformable-mesh-drop-0.png": "f1ecee9e050ac3c6dee9db9e97625c8a4ac6dd5accb9d9b57ea6431c5ac12ac4",
+    "docs/assets/deformable-mesh-drop-38.png": "a64cfd6eab99808b83f9be5569ca535e091f3d6f85460cf6259e4bb6fb0b258a",
+    "docs/assets/deformable-mesh-drop-75.png": "f2e92205ffc5faec5287931fc015e8148efd4a79bebace508fa33b3c12a44a71",
+    "docs/assets/deformable-mesh-drop-100.png": "a1bd51767166b582e2df95765c57ad962ab24e40f1b4fe7e5d2211ecd8c18dbc"
+  },
+  "metrics": {
+    "shared_nodes": 13.0,
+    "tetrahedra": 20.0,
+    "boundary_triangles": 20.0,
+    "mass_kg": 0.317018840462,
+    "simulated_seconds": 0.5,
+    "steps": 5000.0,
+    "refined_steps": 10000.0,
+    "captured_frames": 101.0,
+    "replay_exact": 1.0,
+    "all_candidates_valid": 1.0,
+    "maximum_nodal_refinement_difference_m": 5.97019960481e-05,
+    "maximum_relative_shape_change_m": 0.0247453109374,
+    "initial_height_m": 0.0850650817156,
+    "minimum_height_m": 0.0508879609406,
+    "final_height_m": 0.0776309713256,
+    "minimum_clearance_m": 0.0,
+    "minimum_all_step_volume_ratio": 0.59890806675,
+    "maximum_internal_net_force_N": 1.3134171013e-06,
+    "bench_normal_impulse_Ns": 1.5641592741,
+    "removed_normal_kinetic_energy_J": 0.279412597418,
+    "maximum_momentum_balance_error_Ns": 4.17405014472e-06,
+    "maximum_mechanical_energy_increase_J": 0.0,
+    "maximum_elastic_energy_J": 0.312232262988,
+    "maximum_free_fall_COM_error_m": 3.44366863289e-07,
+    "rejected_cases": 5.0,
+    "rejected_mesh_state_and_ledger_exact": 1.0,
+    "deformable_mesh_drop_qualified": 1.0
+  },
+  "exported_state_audit": {
+    "captured_frames": 101,
+    "rows": 1313,
+    "nodes": 13,
+    "tetrahedra": 20,
+    "boundary_triangles": 20,
+    "boundary_oriented_manifold": true,
+    "OBJ_CSV_positions_exact": true,
+    "volume_derived_masses_match": true,
+    "minimum_sampled_volume_ratio": 0.6025443307372615,
+    "minimum_sampled_clearance_m": 0.0,
+    "trace_sha256": "ebe705014535a1654d0eeb98287e862607864fcfc95e1335cfd4de538bcf6816",
+    "topology_sha256": "b84811445a6c1aa0854ee5415d0dc253f8c0b6358314bb450f46d92019938fdb",
+    "evidence_boundary": "Exported state geometry and mass only; not independent proof of intermediate device steps, force accuracy, total contact-work closure or fruit calibration.",
+    "snapshots": [
+      {
+        "frame": 0,
+        "sha256": "a78bfd1a6826f7ac1df5b845c9fe337d6c4049b1da37a886556156c3e410e823",
+        "minimum_volume_ratio": 0.9999999494131966
+      },
+      {
+        "frame": 1,
+        "sha256": "7fb5ccb53a46dd53eccadf2587e9dd30256bff7d1bd4cb2c174f73cc6c03d32b",
+        "minimum_volume_ratio": 0.9999999492039922
+      },
+      {
+        "frame": 2,
+        "sha256": "31a888407641e72d2b04ce188ae8091a6f82e1c993f72eae736eda084998b142",
+        "minimum_volume_ratio": 0.9999999486028
+      },
+      {
+        "frame": 3,
+        "sha256": "635723999fa0dd6b6d4356382df826b1076ab17283020723732dbe08f63ec825",
+        "minimum_volume_ratio": 0.999999947550828
+      },
+      {
+        "frame": 4,
+        "sha256": "22355e86494379ff31916cca7d559ac92a842925f44c22abf6fd977fee09520d",
+        "minimum_volume_ratio": 0.9999999460978836
+      },
+      {
+        "frame": 5,
+        "sha256": "1e95211664a5cfff9f84ba385bda8ed32a4dbd2632dd6ef97a720bc501b8e24f",
+        "minimum_volume_ratio": 0.9999999443038046
+      },
+      {
+        "frame": 6,
+        "sha256": "a15fb0bd8ca7458eafe138b81924a40461d942d1ed26bd40e9dcab4fe9607d54",
+        "minimum_volume_ratio": 0.9999999421777868
+      },
+      {
+        "frame": 7,
+        "sha256": "dd94871510a564cf9e9b547c5d908a1e78681e00f4e70e4e3fdc4b834300f51a",
+        "minimum_volume_ratio": 0.9999999397773952
+      },
+      {
+        "frame": 8,
+        "sha256": "c6f82de4903c67f3a8f29c336e2abd87ec41e79d4a82f08831ae30d9b7ebf105",
+        "minimum_volume_ratio": 0.9999999370569822
+      },
+      {
+        "frame": 9,
+        "sha256": "7af208b90eb313caa8989d27d77aa84213da9f6d55d85b2b13dff14e14100e48",
+        "minimum_volume_ratio": 0.9999999340080661
+      },
+      {
+        "frame": 10,
+        "sha256": "1e65328d7a825928e638b3f0274f70a6436fff844dcb4447a4d8c18de176b435",
+        "minimum_volume_ratio": 0.9999998254299196
+      },
+      {
+        "frame": 11,
+        "sha256": "c85df713db796ebb9d8749fbeb1f6d6a143e55cdd7bec9ae78519c728c4e9c67",
+        "minimum_volume_ratio": 0.9999999267047589
+      },
+      {
+        "frame": 12,
+        "sha256": "4c14b8c3890894782beafb1cd4919fa294cc8de59860f65fd7f3ea7ac20641af",
+        "minimum_volume_ratio": 0.9999999225241102
+      },
+      {
+        "frame": 13,
+        "sha256": "8bcb22cb4e68ede6994ca30f87b6da5de206d2e6644631bc468a4e66fd5f0029",
+        "minimum_volume_ratio": 0.999999856054131
+      },
+      {
+        "frame": 14,
+        "sha256": "7a675e4a52b2efc5d28014937258c89ca21d3f89bb5115b11a0cd0f5641748f4",
+        "minimum_volume_ratio": 0.999999916732458
+      },
+      {
+        "frame": 15,
+        "sha256": "2f9049c169d197b912dd71ad5ce76bcb93dd3c613aafe1c9cb9619d23b6dbadd",
+        "minimum_volume_ratio": 0.9999997710867081
+      },
+      {
+        "frame": 16,
+        "sha256": "cf77debfb9ac0d686fce3deaf387592bd764d6f6ce3568d8f8a15037800394eb",
+        "minimum_volume_ratio": 0.9999996420715147
+      },
+      {
+        "frame": 17,
+        "sha256": "f7276d40d22cecfa5c14b79cec721359d32be43d1c4c550004eba7b7ebed843c",
+        "minimum_volume_ratio": 0.9999998199693222
+      },
+      {
+        "frame": 18,
+        "sha256": "9cd244ebf4d5805f0e9610c470c651ca30d111a0f4347ad3db87e07b13a3910b",
+        "minimum_volume_ratio": 0.9999998989307245
+      },
+      {
+        "frame": 19,
+        "sha256": "bc1f68c0d4f4e1f3ec9379c4b24cabf93622ec64de80f155297fa343e218a13a",
+        "minimum_volume_ratio": 0.9999995093501428
+      },
+      {
+        "frame": 20,
+        "sha256": "5c9b6e294dc2f53cd08e83e2af08889a1d3c082084c6188c1e912feb2f7feafa",
+        "minimum_volume_ratio": 0.9999997145306729
+      },
+      {
+        "frame": 21,
+        "sha256": "e8165b7d5fec27516a435131c5f6a410fc1a07c6c0ddb5ff75d0a9913ad0dda8",
+        "minimum_volume_ratio": 0.9999995330155548
+      },
+      {
+        "frame": 22,
+        "sha256": "a6e1b52568d6659319a6b448df7cfd56e77f7b135b8d5af2b7b52d49c4a44850",
+        "minimum_volume_ratio": 0.9999990163273144
+      },
+      {
+        "frame": 23,
+        "sha256": "3bd2cb35149d013b620bd3257934863fb36300bd414a355c90f0e2a6bd4eab0c",
+        "minimum_volume_ratio": 0.9999991695038493
+      },
+      {
+        "frame": 24,
+        "sha256": "8ba0ffe5dab780d08fdfdbadbf1ed7d524c17830060ff87e1505fd41a17013fd",
+        "minimum_volume_ratio": 0.9999993091451461
+      },
+      {
+        "frame": 25,
+        "sha256": "1a2688c24d81004386e3376216fd77c74ebbe27be9244fe499631065c3f0e59b",
+        "minimum_volume_ratio": 0.9999992948719738
+      },
+      {
+        "frame": 26,
+        "sha256": "2aeb469fade489b3644cc9546c44191eccda52c69e9dab07e3551fc264e15a83",
+        "minimum_volume_ratio": 0.9999995786631898
+      },
+      {
+        "frame": 27,
+        "sha256": "ffee5ab80582c2a9f0874fb001d171278d75c8ebfdc22352441bbe3284ead80a",
+        "minimum_volume_ratio": 0.9999992479159688
+      },
+      {
+        "frame": 28,
+        "sha256": "45d13e5964998528e1e5be3680b390f3ca7a04069cbc0598fd401fb37c29bc19",
+        "minimum_volume_ratio": 1.0000000993155198
+      },
+      {
+        "frame": 29,
+        "sha256": "f71f7011436511adb65f87000fe60c8cde7fe68b844811bd23c37a792f37aca3",
+        "minimum_volume_ratio": 0.9999995564402255
+      },
+      {
+        "frame": 30,
+        "sha256": "3ba818a63826be2e8f97243ce35f239e00bc89819a9540d4338a124650270370",
+        "minimum_volume_ratio": 0.9999981643192394
+      },
+      {
+        "frame": 31,
+        "sha256": "aad5bb4c1a2e4799878648d28a07508ac31b63b9bc52f554f4910ea4fd41abc1",
+        "minimum_volume_ratio": 0.9999980588738252
+      },
+      {
+        "frame": 32,
+        "sha256": "48b19f30a1c397a935f64b84cc3fb40972ed5a5fd3917d792f658a8e1990a4c4",
+        "minimum_volume_ratio": 0.9999987967880661
+      },
+      {
+        "frame": 33,
+        "sha256": "f4740df9c4a8ceeb97e53235cf5006032640ef2ab8ab6a1af98033ae82639c85",
+        "minimum_volume_ratio": 0.8595279256140956
+      },
+      {
+        "frame": 34,
+        "sha256": "897e300b01f4fd029a2a192da14267fdcb1be650ca0853d6c58a8e2a61c8f401",
+        "minimum_volume_ratio": 0.7075202563610102
+      },
+      {
+        "frame": 35,
+        "sha256": "c2319ec6f5627ebeee187f93f693311057c2b424fff7d4d4f054d9bed0764886",
+        "minimum_volume_ratio": 0.6156325188041357
+      },
+      {
+        "frame": 36,
+        "sha256": "97cc066383dbcb67a0ab5d914c30d9dec21b0d9aaa282396b2e0628e04a92c13",
+        "minimum_volume_ratio": 0.6070058601165454
+      },
+      {
+        "frame": 37,
+        "sha256": "481dab961a90249c5a8552011b036cf129ff59c7dd58bfe289d0c0f837d661c8",
+        "minimum_volume_ratio": 0.6975012882111904
+      },
+      {
+        "frame": 38,
+        "sha256": "cf3763e98e1d2066eb346ce284e4cb124fd49556b584546914323bfefe8ac924",
+        "minimum_volume_ratio": 0.8519733103365988
+      },
+      {
+        "frame": 39,
+        "sha256": "eb79276bdd2e5effaa4ce46030caf4a536d8bbcc18c3f33985e0302120887a08",
+        "minimum_volume_ratio": 0.9434680815754749
+      },
+      {
+        "frame": 40,
+        "sha256": "c696a8487def75558056c3c92a4992052c072039c974677bde186ef9707a6b5b",
+        "minimum_volume_ratio": 0.876623057575441
+      },
+      {
+        "frame": 41,
+        "sha256": "40172e47165d0e6d01533c22e3736172f60fc21833961c0657bddd993609be1c",
+        "minimum_volume_ratio": 0.801151441763154
+      },
+      {
+        "frame": 42,
+        "sha256": "4501be0c8d0de07f947b2de0680e843ee5ef3525d235935f4f53877667cbfda6",
+        "minimum_volume_ratio": 0.7495399713187327
+      },
+      {
+        "frame": 43,
+        "sha256": "ec9b89bf9e84269e0f5e5e351c78411f8fb2935367d0fbce31d57b5500f99dfb",
+        "minimum_volume_ratio": 0.691608631906516
+      },
+      {
+        "frame": 44,
+        "sha256": "30ca74da4858e3826172ef5128876e9bcb64eb7e3a721da30285e70e70a2d42b",
+        "minimum_volume_ratio": 0.7738211951516248
+      },
+      {
+        "frame": 45,
+        "sha256": "05268a957250c79e4a063c11318bddf536de09f790b5cbcf74530ebe33b348ee",
+        "minimum_volume_ratio": 0.9876042175497405
+      },
+      {
+        "frame": 46,
+        "sha256": "6919db8cb4abfe2bbc0ab85b6786ff89ca8f8e485141f70aa19c8ddd9400ffb7",
+        "minimum_volume_ratio": 1.1963646383818023
+      },
+      {
+        "frame": 47,
+        "sha256": "f07d7d6460f6883bc18e348ffc20d9abbdd59cc9ffd4e9bcabe15a0acd989d8d",
+        "minimum_volume_ratio": 1.100183360604677
+      },
+      {
+        "frame": 48,
+        "sha256": "e3ee316c4e87b5a937b6428da427f7ebfcb20c7cb8dd304c74397738b7f953c2",
+        "minimum_volume_ratio": 0.8950636014660922
+      },
+      {
+        "frame": 49,
+        "sha256": "20702a0d74e6cb44390c1381b4b2df37e10ca81fe00f8a4459a95d055ce3fcf1",
+        "minimum_volume_ratio": 0.7595342142942053
+      },
+      {
+        "frame": 50,
+        "sha256": "6d36670e296cc5a087648ead54717a75768c39990397c7eed41991c8d22beec4",
+        "minimum_volume_ratio": 0.676354271039626
+      },
+      {
+        "frame": 51,
+        "sha256": "33331e9d7229dcc237da7d369facc52d290e20850e0d9b3d51eac95380c74652",
+        "minimum_volume_ratio": 0.8419544252948516
+      },
+      {
+        "frame": 52,
+        "sha256": "ff61bfb5e470b87d8cd31c2bb53529faa6e6bba86704e1fe29a449bd28fcc806",
+        "minimum_volume_ratio": 1.1226450899156188
+      },
+      {
+        "frame": 53,
+        "sha256": "5d50daad8474b3384f7755b5d9a4416d9b601eaad4222df2f55ddaec7e33035b",
+        "minimum_volume_ratio": 1.1888167039907287
+      },
+      {
+        "frame": 54,
+        "sha256": "42832e79b3b78112cfb2d41271a72637d466c43fc4b3ec702eda788ba3193dc4",
+        "minimum_volume_ratio": 0.9924570425968571
+      },
+      {
+        "frame": 55,
+        "sha256": "7d9173d35e88b029d1d17d7ed410fc21842754ebb7ad7d539e4d4a104e4249d1",
+        "minimum_volume_ratio": 0.7471505512237828
+      },
+      {
+        "frame": 56,
+        "sha256": "ca99bcc426d9791e88e3a50ba27ed9784b64d8220c17180f993d74279abaad14",
+        "minimum_volume_ratio": 0.7036375400184152
+      },
+      {
+        "frame": 57,
+        "sha256": "e06e756e15938c1eb79e155f6cec5d17e2ed30a9cb271bec53012fee91a1a94b",
+        "minimum_volume_ratio": 0.8491433160704784
+      },
+      {
+        "frame": 58,
+        "sha256": "e1aec5e354d72ece9636bff1b24471737b83260a8d83305328a71c191da7f53f",
+        "minimum_volume_ratio": 0.9574301323996253
+      },
+      {
+        "frame": 59,
+        "sha256": "15a2de72440ea972d0cdc8e9358a4867eeead545b7de12279a6b785755f6831c",
+        "minimum_volume_ratio": 1.0967670459922456
+      },
+      {
+        "frame": 60,
+        "sha256": "04aeb11ca63c6329698eac736c93178a5e172ccfbb383a389ce23c1a375a668d",
+        "minimum_volume_ratio": 1.0370567363800873
+      },
+      {
+        "frame": 61,
+        "sha256": "3b9c637f8741f6c3f4e695dc3efd9f6bc352a1c3889dd95b357267affaea21e3",
+        "minimum_volume_ratio": 0.8462333953494421
+      },
+      {
+        "frame": 62,
+        "sha256": "2c01c5777cda3cfe7be5e4a53239c92330a8d45ecd4da3cfda7f8cc25b0ef47d",
+        "minimum_volume_ratio": 0.663800561469412
+      },
+      {
+        "frame": 63,
+        "sha256": "0802a0755eb5bcdae7efd724d2bb2ae5c9b4787cc672e4f9e28f2617eb985021",
+        "minimum_volume_ratio": 0.71769935385921
+      },
+      {
+        "frame": 64,
+        "sha256": "17f38a43aa8378d246dd8e3052b4ae7a5bc7cf557dbcd4cbc33da11911725b91",
+        "minimum_volume_ratio": 0.8592936606090968
+      },
+      {
+        "frame": 65,
+        "sha256": "e4139de1049cf5240bbd536aac583664bcee27d5ed4ae69340c996a952abbe67",
+        "minimum_volume_ratio": 1.1362361608520568
+      },
+      {
+        "frame": 66,
+        "sha256": "330a77c4c2cdf3420ec03e3d4ad4dddcaa2cd28b83744ccc6f6aa4a0ae43cf3d",
+        "minimum_volume_ratio": 1.242034269245299
+      },
+      {
+        "frame": 67,
+        "sha256": "e93d8d458e816afeea185b7ef94d272bb3ae6e5666b62caa0712cb8327818e2e",
+        "minimum_volume_ratio": 0.9691868276135571
+      },
+      {
+        "frame": 68,
+        "sha256": "1ab93551628716f4477d531238cdb7df7b49014a3fe9f882de0f5d920465bdd2",
+        "minimum_volume_ratio": 0.7258625339674905
+      },
+      {
+        "frame": 69,
+        "sha256": "0832200e66d91edddb16f03877b87318f5116223dbd339123045940e13d3ffc9",
+        "minimum_volume_ratio": 0.7052207102498762
+      },
+      {
+        "frame": 70,
+        "sha256": "d7ac8f60cf56b5c1312e43c70128dfadcca5c7405b982b980453d727965cb892",
+        "minimum_volume_ratio": 0.7869796371729897
+      },
+      {
+        "frame": 71,
+        "sha256": "5e632594133cbd9b32c4fac7a2bd47685c2d8671cc27bf6a3587787168987b36",
+        "minimum_volume_ratio": 0.9982782239366998
+      },
+      {
+        "frame": 72,
+        "sha256": "e3642735c34c265e3f89903342230364170162a812df7802a42ab877c473eb62",
+        "minimum_volume_ratio": 1.107634775360169
+      },
+      {
+        "frame": 73,
+        "sha256": "0b871b06c9867c6866c4d67f55b8955d3e1d6ce429853631b66c3c5e200d5242",
+        "minimum_volume_ratio": 1.0449018359463265
+      },
+      {
+        "frame": 74,
+        "sha256": "3108ffd71e175c61b54d8ead2c2e58fae6abf66b9f772c148d5acd8e6184cc1f",
+        "minimum_volume_ratio": 0.808899635937704
+      },
+      {
+        "frame": 75,
+        "sha256": "bf4e2c7c20ccfc0981ea4f2a2b9cdf8e5a38d8beba12817932e14870f7e4e0cb",
+        "minimum_volume_ratio": 0.7486508936677364
+      },
+      {
+        "frame": 76,
+        "sha256": "f978623336d069318bf3a6a34e0e3067c7d9b7cc6e1f0f3949861e1de5d9c973",
+        "minimum_volume_ratio": 0.6840241684382178
+      },
+      {
+        "frame": 77,
+        "sha256": "07b4e94a2f749b08b77ff9c1e3c0f4d98c086d2192d62b47dcca30603d4704de",
+        "minimum_volume_ratio": 0.7957131693631601
+      },
+      {
+        "frame": 78,
+        "sha256": "e13fa42ce885ca18aa2e5373e5dc3d13ab8f583facf432950cc59cbea45e6abb",
+        "minimum_volume_ratio": 1.0887682448617297
+      },
+      {
+        "frame": 79,
+        "sha256": "2ef86bae777daf80feee228319a99ff56dffcbb695a8c0581ff97404a90c9387",
+        "minimum_volume_ratio": 1.0884960382848519
+      },
+      {
+        "frame": 80,
+        "sha256": "49362d23f6746fc2ce835fcc63239e7840b310ae53630214f4895086b6d34936",
+        "minimum_volume_ratio": 0.9523965839964514
+      },
+      {
+        "frame": 81,
+        "sha256": "946f7299b399c1232ae7642406c4b8c1cd22f102200eb6760e5983ec8cc4214c",
+        "minimum_volume_ratio": 0.8244194801865778
+      },
+      {
+        "frame": 82,
+        "sha256": "4a9eba754af022e24688769d8a72399ff90e1f414ff54cedc7658a001774f924",
+        "minimum_volume_ratio": 0.7368461248174151
+      },
+      {
+        "frame": 83,
+        "sha256": "fe5240e44444c582e1cbd1bad9ea0f17cd4b2081431ebb5f11e922aee45821b5",
+        "minimum_volume_ratio": 0.6439626563657871
+      },
+      {
+        "frame": 84,
+        "sha256": "d41cc19fa89ea870bf8adbf1d4996ad4af5746eeb187297e5db9d774637acdc7",
+        "minimum_volume_ratio": 0.6025443307372615
+      },
+      {
+        "frame": 85,
+        "sha256": "78888a9f9c4953d29016696204ac6cc1b564593aaa78dc53a026c793ff77d9d7",
+        "minimum_volume_ratio": 0.6839537073429863
+      },
+      {
+        "frame": 86,
+        "sha256": "99186fa139bef5cafbed28c847002163243bb430ac960a11c86e3d5ae501935e",
+        "minimum_volume_ratio": 0.8471168940667385
+      },
+      {
+        "frame": 87,
+        "sha256": "0fa0eef2d83aee3141b237f64b10ebc6b1f6afad058fc45b28b070f853d1bca1",
+        "minimum_volume_ratio": 0.8726385012179758
+      },
+      {
+        "frame": 88,
+        "sha256": "886697a89e1fa66d97b8c2ddfc77d5cee0c22eac92484a90e346105ee1e49316",
+        "minimum_volume_ratio": 0.8320748714723838
+      },
+      {
+        "frame": 89,
+        "sha256": "8a367e3a3ad1525387b869b55a7a890b9677d2d5c27cea2d2456b201ac4b8136",
+        "minimum_volume_ratio": 0.8485382520495307
+      },
+      {
+        "frame": 90,
+        "sha256": "83c1960258feb933d75c98c7eca9f142e21bb1096b1229e8a01a378ce478169e",
+        "minimum_volume_ratio": 0.7220024553683998
+      },
+      {
+        "frame": 91,
+        "sha256": "8ae72fe9306dfb673f8ac34a8594ca56bf4816b0c688da18948d391b1e80d014",
+        "minimum_volume_ratio": 0.7554489266161843
+      },
+      {
+        "frame": 92,
+        "sha256": "65816964f8bab5c4a1055537cafa13ac7c5f388da02680b7ae0c3fa28b795d30",
+        "minimum_volume_ratio": 0.7720127990780661
+      },
+      {
+        "frame": 93,
+        "sha256": "d74d6ed544f91424cf848913e2dcb921cf0bd33045b8175ea69f62307f107505",
+        "minimum_volume_ratio": 0.6466960285681342
+      },
+      {
+        "frame": 94,
+        "sha256": "4723012da8343db04793d8dcab39e6b26480d8aae1c12b08baed26c4ea412460",
+        "minimum_volume_ratio": 0.8281777212975484
+      },
+      {
+        "frame": 95,
+        "sha256": "eeb1e632a88daf01db7c547154d0d7e3f1353f48bf87edf0389ef4282d95c6fd",
+        "minimum_volume_ratio": 0.9844321051952095
+      },
+      {
+        "frame": 96,
+        "sha256": "dd40a517df30bb5390e3752075e25f406ddf33072c81ae388359bb9c27f01b88",
+        "minimum_volume_ratio": 0.8531969429220234
+      },
+      {
+        "frame": 97,
+        "sha256": "46563f24ed45fca97ce27fe058d9d40ac64fa382bf3e5e64c7272ec81af290cf",
+        "minimum_volume_ratio": 0.7945125841975714
+      },
+      {
+        "frame": 98,
+        "sha256": "981a8f27e0917e3cb4e4a176fe66e89db70173dbad70a434b4c1d1c0d68486f6",
+        "minimum_volume_ratio": 0.8533062436139703
+      },
+      {
+        "frame": 99,
+        "sha256": "a36e175713833976871ff52455f1ac8b6133a8692db8861151c17df75ebf90e5",
+        "minimum_volume_ratio": 0.8402927157683442
+      },
+      {
+        "frame": 100,
+        "sha256": "edfe4067b14414154c7f20677b36940e812ce00d3d04d053b0d85a7123a04de4",
+        "minimum_volume_ratio": 0.768252777268006
+      }
+    ]
+  },
+  "video": {
+    "codec": "H264",
+    "width": 960,
+    "height": 800,
+    "frames": 101,
+    "fps": 30,
+    "playback_seconds": 3.3666666666666667,
+    "simulated_seconds": 0.5,
+    "speed_fraction": 0.1485148514851485,
+    "native_boundary_rendered": true,
+    "camera": "Fixed orthographic projection; native vertex geometry unchanged."
+  },
+  "qualification_scope": "One coarse authored shared-node elastic volume falls onto a frictionless inelastic plane. Two exact complete native replays, a half-timestep run, five whole-mesh rejection/ledger cases and independent exported-geometry/mass audits.",
+  "unmet_gates": [
+    "two-way contact with woven bag",
+    "mesh-resolution convergence",
+    "frictional surface contact and finite bench geometry",
+    "total contact-work and energy closure",
+    "measured fruit material and impact calibration",
+    "full corrected native bag outcome and full-scene knot-angle refinement gate"
+  ]
+}
