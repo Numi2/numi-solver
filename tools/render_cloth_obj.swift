@@ -64,7 +64,23 @@ private struct Grip {
     var patchCenterRing: Int
 }
 
+private struct StaticBench {
+    let minimum = Vec3(x: -0.75, y: -0.5, z: -0.08)
+    let maximum = Vec3(x: 0.75, y: 0.5, z: 0)
+    let floorHeight = -0.75
+
+    var corners: [Vec3] {
+        [minimum.x, maximum.x].flatMap { x in
+            [minimum.y, maximum.y].flatMap { y in
+                [minimum.z, maximum.z].map { z in Vec3(x: x, y: y, z: z) }
+            }
+        }
+    }
+}
+
 private enum PrimitiveKind {
+    case bench([CGPoint], CGColor)
+    case shadow([CGPoint], CGColor)
     case yarn(CGPoint, CGPoint, Bool)
     case fruit(CGPoint, Fruit)
 }
@@ -110,28 +126,43 @@ private func trajectoryBounds(listPath: String) throws -> ViewBounds {
     for line in lines {
         let path = line.hasPrefix("/") ? line :
             listURL.deletingLastPathComponent().appendingPathComponent(line).path
-        let (vertices, fruits, grip) = try parseOBJ(at: path)
+        let (vertices, fruits, grip, bench) = try parseOBJ(at: path)
+        if let bench {
+            for corner in bench.corners {
+                bounds.include(corner, radius: 0.01)
+                bounds.include(Vec3(x: corner.x, y: corner.y, z: bench.floorHeight), radius: 0.01)
+            }
+        }
         for vertex in vertices { bounds.include(vertex, radius: clothRadiusMeters) }
         for fruit in fruits {
             bounds.include(fruit.center, radius: fruit.radius)
-            bounds.include(Vec3(x: fruit.center.x, y: fruit.center.y, z: 0),
+            let shadowHeight = bench?.floorHeight ?? 0.0
+            bounds.include(Vec3(x: fruit.center.x, y: fruit.center.y, z: shadowHeight),
                            radius: fruit.radius * 1.1 +
-                               0.08 * max(0, fruit.center.z - fruit.radius))
+                               0.08 * max(0, fruit.center.z - shadowHeight - fruit.radius))
         }
         if let grip { bounds.include(grip.center, radius: 0.03) }
     }
     return bounds
 }
 
-private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit], Grip?) {
+private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit], Grip?, StaticBench?) {
     let source = try String(contentsOfFile: path, encoding: .utf8)
     var vertices: [Vec3] = []
     var fruits: [Fruit] = []
     var grip: Grip?
+    var bench: StaticBench?
     for line in source.split(separator: "\n") {
         let fields = line.split(separator: " ")
         guard let first = fields.first else { continue }
-        if first == "v", fields.count >= 4,
+        if fields.prefix(2) == ["#", "static_bench"] {
+            guard bench == nil, fields == ["#", "static_bench", "min", "-0.75", "-0.5", "-0.08",
+                                           "max", "0.75", "0.5", "0", "floor", "-0.75"] else {
+                throw NSError(domain: "NumiClothRenderer", code: 8,
+                              userInfo: [NSLocalizedDescriptionKey: "invalid or duplicate authored bench geometry"])
+            }
+            bench = StaticBench()
+        } else if first == "v", fields.count >= 4,
            let x = Double(fields[1]),
            let y = Double(fields[2]),
            let z = Double(fields[3]) {
@@ -206,7 +237,7 @@ private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit], Grip?) {
                 "expected \(expectedVertices) vertices, found \(vertices.count)"]
         )
     }
-    return (vertices, fruits, grip)
+    return (vertices, fruits, grip, bench)
 }
 
 private func mix(_ first: Vec3, _ second: Vec3, _ t: Double) -> Vec3 {
@@ -313,6 +344,7 @@ private func render(
     vertices: [Vec3],
     fruits: [Fruit],
     grip: Grip?,
+    bench: StaticBench?,
     cameraProfile: String,
     framing: ViewBounds?,
     output: String
@@ -335,6 +367,15 @@ private func render(
         minimumY = min(minimumY, center.y - fruit.radius)
         maximumY = max(maximumY, center.y + fruit.radius)
     }
+    if let bench {
+        for corner in bench.corners {
+            for point in [corner, Vec3(x: corner.x, y: corner.y, z: bench.floorHeight)] {
+                let view = camera(point, yaw: yaw, pitch: pitch)
+                minimumX = min(minimumX, view.x); maximumX = max(maximumX, view.x)
+                minimumY = min(minimumY, view.y); maximumY = max(maximumY, view.y)
+            }
+        }
+    }
     let scale: Double
     let centerX: Double
     let centerY: Double
@@ -351,6 +392,11 @@ private func render(
             (framing.minimumX + framing.maximumX) * 0.5 * scale
         centerY = Double(height) * 0.5 -
             (framing.minimumY + framing.maximumY) * 0.5 * scale
+    } else if bench != nil && cameraProfile == "automatic" {
+        scale = min(Double(width - 120) / (maximumX - minimumX),
+                    Double(height - 120) / (maximumY - minimumY))
+        centerX = Double(width) * 0.5 - (minimumX + maximumX) * 0.5 * scale
+        centerY = Double(height) * 0.5 - (minimumY + maximumY) * 0.5 * scale
     } else if cameraProfile == "pickup-wide" {
         scale = 400.0
         centerX = Double(width) * 0.5
@@ -410,18 +456,18 @@ private func render(
     context.setFillColor(color(250, 249, 246))
     context.fill(CGRect(x: 0, y: 0, width: width, height: height))
 
-    // The solver's support plane is unbounded. In this orthographic view it
-    // covers the whole viewport; a finite +/-4 m patch makes grounded fruit
-    // look suspended once they roll beyond its presentation-only edge.
+    // The legacy plane and finite-bench room floor are both unbounded. The
+    // declared bench itself is rendered below as its exact finite box.
     context.setFillColor(color(232, 225, 211))
     context.fill(CGRect(x: 0, y: 0, width: width, height: height))
     func groundPoint(screenX: Double, screenY: Double) -> Vec3 {
         let side = (screenX - centerX) / scale
-        let forward = -(screenY - centerY) / (scale * sin(pitch))
+        let forward = bench == nil ? -(screenY - centerY) / (scale * sin(pitch)) :
+            (cos(pitch) * bench!.floorHeight - (screenY - centerY) / scale) / sin(pitch)
         return Vec3(
             x: cos(yaw) * side + sin(yaw) * forward,
             y: -sin(yaw) * side + cos(yaw) * forward,
-            z: 0
+            z: bench?.floorHeight ?? 0.0
         )
     }
     let visibleGround = [
@@ -439,39 +485,81 @@ private func render(
     let groundSpan = max(groundMaximumX - groundMinimumX,
                          groundMaximumY - groundMinimumY)
     let gridSpacing = 0.25 * pow(2.0, max(0.0, ceil(log2(groundSpan / 32.0))))
+    let groundHeight = bench?.floorHeight ?? 0.0
     context.setStrokeColor(color(152, 130, 101, 0.18))
     context.setLineWidth(0.7)
     for line in Int(floor(groundMinimumX / gridSpacing))...Int(ceil(groundMaximumX / gridSpacing)) {
         let coordinate = Double(line) * gridSpacing
-        context.move(to: project(Vec3(x: coordinate, y: groundMinimumY, z: 0)).point)
-        context.addLine(to: project(Vec3(x: coordinate, y: groundMaximumY, z: 0)).point)
+        context.move(to: project(Vec3(x: coordinate, y: groundMinimumY, z: groundHeight)).point)
+        context.addLine(to: project(Vec3(x: coordinate, y: groundMaximumY, z: groundHeight)).point)
         context.strokePath()
     }
     for line in Int(floor(groundMinimumY / gridSpacing))...Int(ceil(groundMaximumY / gridSpacing)) {
         let coordinate = Double(line) * gridSpacing
-        context.move(to: project(Vec3(x: groundMinimumX, y: coordinate, z: 0)).point)
-        context.addLine(to: project(Vec3(x: groundMaximumX, y: coordinate, z: 0)).point)
+        context.move(to: project(Vec3(x: groundMinimumX, y: coordinate, z: groundHeight)).point)
+        context.addLine(to: project(Vec3(x: groundMaximumX, y: coordinate, z: groundHeight)).point)
         context.strokePath()
     }
+    var primitives: [Primitive] = []
+    primitives.reserveCapacity(6_900)
     for fruit in fruits {
-        let clearance = max(0, fruit.center.z - fruit.radius)
+        var shadowHeight = groundHeight
+        if let bench, fruit.center.x >= bench.minimum.x, fruit.center.x <= bench.maximum.x,
+           fruit.center.y >= bench.minimum.y, fruit.center.y <= bench.maximum.y,
+           fruit.center.z >= bench.maximum.z + fruit.radius {
+            shadowHeight = bench.maximum.z
+        }
+        let clearance = max(0, fruit.center.z - shadowHeight - fruit.radius)
         let shadowRadius = fruit.radius * 1.1 + 0.08 * clearance
-        context.setFillColor(color(69, 52, 34, 0.24 / (1 + 4 * clearance)))
+        let shade = color(69, 52, 34, 0.24 / (1 + 4 * clearance))
+        context.setFillColor(shade)
+        var shadowPoints: [Projected] = []
         for sample in 0...40 {
             let angle = 2 * Double.pi * Double(sample) / 40
             let point = project(Vec3(
                 x: fruit.center.x + shadowRadius * cos(angle),
-                y: fruit.center.y + shadowRadius * sin(angle), z: 0
-            )).point
-            if sample == 0 { context.move(to: point) }
-            else { context.addLine(to: point) }
+                y: fruit.center.y + shadowRadius * sin(angle), z: shadowHeight
+            ))
+            if bench != nil { shadowPoints.append(point) }
+            else if sample == 0 { context.move(to: point.point) }
+            else { context.addLine(to: point.point) }
         }
-        context.closePath()
-        context.fillPath()
+        if bench != nil {
+            primitives.append(Primitive(depth: shadowPoints.map(\.depth).reduce(0,+) /
+                Double(shadowPoints.count) + 0.00001,
+                kind: .shadow(shadowPoints.map(\.point), shade)))
+        } else {
+            context.closePath()
+            context.fillPath()
+        }
     }
-
-    var primitives: [Primitive] = []
-    primitives.reserveCapacity(6_900)
+    if let bench {
+        let low = [bench.minimum.x, bench.minimum.y, bench.minimum.z]
+        let high = [bench.maximum.x, bench.maximum.y, bench.maximum.z]
+        // Subdivide only the presentation of the exact planar box faces so
+        // painter depth ordering can occlude nearby cloth and fruit locally.
+        for axis in 0..<3 {
+            let first = (axis + 1) % 3, second = (axis + 2) % 3
+            let firstCount = max(1, Int(ceil((high[first] - low[first]) / 0.08)))
+            let secondCount = max(1, Int(ceil((high[second] - low[second]) / 0.08)))
+            for side in 0..<2 {
+                let shade = axis == 2 && side == 1 ? color(193, 160, 117) :
+                    (axis == 2 ? color(95, 73, 48) : color(149, 112, 75))
+                for i in 0..<firstCount { for j in 0..<secondCount {
+                    var points: [Projected] = []
+                    for (u, v) in [(i,j),(i+1,j),(i+1,j+1),(i,j+1)] {
+                        var coordinate = low
+                        coordinate[axis] = side == 0 ? low[axis] : high[axis]
+                        coordinate[first] += (high[first] - low[first]) * Double(u) / Double(firstCount)
+                        coordinate[second] += (high[second] - low[second]) * Double(v) / Double(secondCount)
+                        points.append(project(Vec3(x: coordinate[0], y: coordinate[1], z: coordinate[2])))
+                    }
+                    primitives.append(Primitive(depth: points.map(\.depth).reduce(0,+) / 4,
+                        kind: .bench(points.map(\.point), shade)))
+                } }
+            }
+        }
+    }
     for halfLevel in 0...(2 * (levels - 1)) {
         let level = Double(halfLevel) * 0.5
         let rim = level >= 0.72 * Double(levels - 1)
@@ -574,6 +662,24 @@ private func render(
     context.setLineCap(.round)
     for primitive in primitives {
         switch primitive.kind {
+        case let .shadow(points, shade):
+            context.setFillColor(shade)
+            context.move(to: points[0])
+            for point in points.dropFirst() { context.addLine(to: point) }
+            context.closePath()
+            context.fillPath()
+        case let .bench(points, shade):
+            context.setFillColor(shade)
+            context.move(to: points[0])
+            for point in points.dropFirst() { context.addLine(to: point) }
+            context.closePath()
+            context.fillPath()
+            context.setStrokeColor(shade)
+            context.setLineWidth(0.5)
+            context.move(to: points[0])
+            for point in points.dropFirst() { context.addLine(to: point) }
+            context.closePath()
+            context.strokePath()
         case let .yarn(first, second, rim):
             let physicalDiameter = CGFloat(
                 2.0 * clothRadiusMeters * scale
@@ -792,13 +898,14 @@ guard (cameraProfile == "trajectory") == (CommandLine.arguments.count == 6),
 }
 
 do {
-    let (vertices, fruits, grip) = try parseOBJ(at: CommandLine.arguments[1])
+    let (vertices, fruits, grip, bench) = try parseOBJ(at: CommandLine.arguments[1])
     let framing = cameraProfile == "trajectory"
         ? try trajectoryBounds(listPath: CommandLine.arguments[5]) : nil
     try render(
         vertices: vertices,
         fruits: fruits,
         grip: grip,
+        bench: bench,
         cameraProfile: cameraProfile,
         framing: framing,
         output: CommandLine.arguments[2]

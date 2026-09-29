@@ -1,0 +1,15 @@
+{
+  "renderer_source_sha256": "cccc99f1ffb8eea96d7436a08acb045a5b48568652cf526df65cd867481a1e55",
+  "cold_snapshot_sha256": "0121561701d4392b34ac34d1dfa62e84cf969a2396373f05318b81fbfbb21637",
+  "render_sha256": "3a00f18803e0df164462af95b04f25b80b51475cd5625a20dec0d11030277e6f",
+  "malformed_metadata_rejected": [
+    "wrong_bounds",
+    "duplicate"
+  ],
+  "legacy_plane_frame_160_byte_identity": "PASS",
+  "boundary": "Cold 4-frame scene image only. Exact authored finite box and lower floor presentation with local painter depth ordering; no full-scene physical qualification or pixel-exact visibility guarantee.",
+  "renderer_executable_sha256": "cbfb8c40cc93b6e3e8e259e5bef45d8b86563e49785ab419c0e000b0bc373c9e",
+  "physics_source_commit": "4186cfa",
+  "physics_executable_sha256": "fba0c342a36380de631bc7cfe8ee52a7a462ecdcdf8a39ca09b7ff09f0580eeb",
+  "cold_snapshot_reproduced_from_frozen_published_source": true
+}

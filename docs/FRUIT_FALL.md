@@ -245,6 +245,16 @@ spin, actual static clearance, and latched release state.
 [production probe](assets/finite-bench-production-probe.log),
 [rigid reference](assets/finite-bench-reference.log), and
 [focused checks](assets/finite-bench-checks.log) bind this result.
+The Swift renderer recognizes the same authored metadata, draws the exact
+finite slab and lower floor, places fruit shadows on the applicable height,
+and includes the bench in fixed trajectory framing. Invalid or duplicate
+collider declarations reject. A retained plane frame renders byte-identically.
+The image below is only the four-frame startup display, reproduced from the
+frozen published CPU binary; its short pickup correctly fails the release
+outcome gate. [Render receipt](assets/finite-bench-render-evidence.json).
+
+![Startup diagnostic of the bag on the finite tabletop, with the lower room floor visible](assets/finite-bench-startup.png)
+
 Full four-second finite-bench bag runs at 48 and 96 substeps are launched from
 frozen source/binary and await their actual terminal result. This option is
 CPU-only; the native Metal bag still uses the plane. Constraint-induced
