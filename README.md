@@ -248,26 +248,30 @@ from those selected indices rather than a fixed rendering location.
 
 ## Growing toward coupled deformable volumes
 
-[![Watch the newest support-aware native elastic volume drop](docs/assets/deformable-support-10240-38.png)](docs/assets/deformable-support-10240.mp4)
+[![Watch the 81,920-tetrahedron native elastic volume compress and recover](docs/assets/deformable-support-81920-38.png)](docs/assets/deformable-support-81920.mp4)
 
-The native [shared-node elastic mesh](docs/DEFORMABLE_MESH.md) advances
-2,057 nodes and 10,240 tetrahedra for 0.5 seconds on the M4 Pro. It compresses
-from 85.07 to 47.81 mm and recovers to 70.60 mm through its own volumetric stress.
-Two complete native replays match exactly; the half-step run differs by at most
-307.00 µm. All 101 exported states pass independent geometry and mass checks.
-The video renders the exact 1,280-triangle boundary at 6.7x slow playback.
+The new standalone Apple Metal volume advances **14,993 shared nodes and 81,920
+tetrahedra** for 0.5 simulated seconds on the M4 Pro. Its mass center falls from
+85.07 to 47.46 mm, then recovers to 74.68 mm through the authored volumetric
+stress and support response. The native replay matches exactly; the 40,000-step
+half-timestep run differs by at most **93.11 µm** from the 20,000-step run. All
+101 captured states in each run pass independent geometry and mass checks. The
+video renders the exact 5,120-triangle boundary at 30 fps, or 6.7× slow playback.
 
-Support-aware velocity Verlet supplies resting contact reactions before the
-force kicks. Its [independently audited numerical energy bound](docs/DEFORMABLE_ENERGY.md)
-is **0.85 percent**, down from **144.95 percent** for Euler at the same mesh and
-timestep, passing the authored 1 percent budget. Six rejected candidates retain
-all accepted state and ledgers. Physical material and whole-scene energy closure
-remain open.
+The independent numerical energy bound is **0.254%** of initial energy at 25 µs
+and **0.122%** at the half timestep, both within the authored 1% budget. The
+native run reports zero rejected steps and passes six whole-state and ledger
+rollback controls. [Watch the new native video](docs/assets/deformable-support-81920.mp4) ·
+[Inspect its source, binary, exported-state and media receipt](docs/assets/deformable-support-81920-evidence.json).
+This is a volume against a frictionless plane, not a coupled bag-and-fruit run.
 
-The new 1,280-to-10,240-element spatial comparison differs by 14.93 mm against
-the unchanged 1 mm target. The next **81,920-tetrahedron** level has independently
-checked topology; its complete native replay, timestep and energy study is running.
-It retains the same initial surface, authored material and volume-derived masses.
+The [earlier 10,240-tetrahedron video](docs/assets/deformable-support-10240.mp4)
+and [energy comparison](docs/DEFORMABLE_ENERGY.md) remain available. That mesh
+passed the 1% numerical budget at 100 µs, but its 1,280-to-10,240-element
+spatial comparison differed by 14.93 mm against the unchanged 1 mm target.
+The same-timestep 10,240-to-81,920-element comparison is pending. Spatial
+convergence, measured material, reciprocal cloth/fruit coupling and complete
+physical work closure remain open.
 
 The [independent-element foundation](docs/DEFORMABLE_VOLUMES.md) separately
 qualifies the nonlinear elastic forces. Coupling these volumes to the woven
