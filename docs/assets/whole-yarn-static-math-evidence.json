@@ -1,0 +1,136 @@
+{
+  "schema": "numi.whole-yarn-static-math.cpu-qualified.v1",
+  "timestamp_utc": "2026-09-29T14:17:31.016337+00:00",
+  "base_source_commit": "af79e57a0f652e5b93bce269624ef702b2574e0f",
+  "source_binding": "Named source and helper-header hashes from the current working tree; CPU CMake binaries rerun with byte-identical qualification output. Native files are not part of this CPU receipt.",
+  "source_sha256": {
+    "include/numi/static_contact_geometry.h": "7d288795b0e382ee50baf9ae407e3ef97803a8c40152a09606afb7f2133908a4",
+    "include/numi/finite_bench_geometry.h": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade",
+    "include/numi/static_segment_geometry.h": "ac0e1b70617b5fcafd77fab9b5197334e1350c17a495446d3e5972a5880454fe",
+    "include/numi/static_velocity_contact.h": "54cfb932e12df1b9e3153c6dbc16d2f8948ab862cf1ffe4ac38130f548dde65c",
+    "tools/static_segment_geometry.cpp": "88a6f34b38d8bd68bc72c36bfe4c7f9920d742f2325396deb34452e7fc371928",
+    "tools/static_velocity_contact.cpp": "6eb1c5c678fa2cdad2732e899d4640c26e63ae145ab1cb943d099bc83d9289c8"
+  },
+  "CMakeLists_observed_sha256": "4a7caa602e9fb2c2f9d1bc12562a4aa3017a3e0687bc3f1a7c54edd413314bf2",
+  "CMake_cpu_binaries_sha256": {
+    "build/numi-solver-static-segment": "81ae11f8ddf45d1dbed80b6848398d5a6b9ada9da6cd1b905e2f7aee17ef012e",
+    "build/numi-solver-static-velocity": "41a95cef158558615d8ac9a7410b9dedadf50f930ab3fb64eb88d457d7e8438c"
+  },
+  "qualification_artifacts_sha256": {
+    "docs/assets/whole-yarn-static-geometry-host.log": "2162935d24142b7d40f25f4b3fac0bcfc0cd283c0a6bb6beb72c572559324990",
+    "docs/assets/whole-yarn-static-velocity-host.log": "89eb6d8833fb459bbbe40478856221da9d36561b14b4a4c734da23e40e70cb01",
+    "docs/assets/whole-yarn-static-math-ctest.log": "239a148b9e2c6991f5480ca63e7a5383c2f647cab21a90a6420c41e665ddac5c"
+  },
+  "geometry": {
+    "backend": "CPU shared production FP32 segment geometry",
+    "host_actual_exit_code": 0,
+    "final_log_byte_identical_to_CMake_binary_rerun": true,
+    "metrics": {
+      "backend": "CPU_shared_FP32_segment_geometry",
+      "native_Metal_execution": "NOT_RUN",
+      "full_scene": "NOT_QUALIFIED",
+      "samples": 12108,
+      "sample_failures": 0,
+      "signed_gap_max_error_m": 1.6158793694764917e-07,
+      "witness_max_suboptimality_m": 1.4420676400228594e-07,
+      "clearance_certificates": 12108,
+      "certificate_failures": 0,
+      "maximum_lower_bound_excess_m": 0,
+      "sweeps": 781,
+      "sweep_failures": 0,
+      "certified_clear": 404,
+      "conservative_contacts": 352,
+      "explicit_unresolved": 25,
+      "maximum_iterations": 128,
+      "maximum_impact_gap_m": 2.976470318386687e-06,
+      "analytic_impact_position_max_error_m": 1.604855084313961e-07,
+      "adversarial_cases": 22,
+      "endpoint_only_negative_controls": 21,
+      "tangent_outward_departures": 12,
+      "rejected_invalid_or_exhausted": 7,
+      "velocity_queries": 1004,
+      "velocity_failures": 0,
+      "solid_interior_velocity_rejected": 26,
+      "velocity_max_suboptimality_m_per_s": 2.0925863039700232e-05,
+      "deforming_sweeps": 518,
+      "deforming_misses": 0,
+      "deforming_FP64_oracle_unresolved": 0,
+      "deforming_FP32_sweep_unresolved": 129,
+      "static_segment_host_probe_pass": 1
+    },
+    "distance_reference": "Independent FP64 represented-input box/floor signed-gap and closest-parameter comparison.",
+    "general_sweep_reference": "Independent FP64 interval-bracketing oracle on separately moving endpoints.",
+    "velocity_reference": "Analytic planar checks and dense independent FP64 rounded-feature sampling (2001 axial samples per seeded query).",
+    "sweep_status_handling_qualified_in_tested_cases": true,
+    "general_deforming_sweep_completeness_qualified": false,
+    "positive_arrival_gap_is_early_conservative_contact": true,
+    "native_Metal_execution": "NOT_EXECUTED",
+    "maximum_positive_arrival_gap_scope": "Primary 781-sweep set; general deforming sweep positive-gap maximum is not reported."
+  },
+  "velocity_pair": {
+    "backend": "CPU actual shared production FP32 helper",
+    "host_actual_exit_code": 0,
+    "retained_receipt_all13_hashes_verified": true,
+    "retained_log_byte_identical_to_CMake_binary_rerun": true,
+    "api": "numiStaticResolveVelocityPair(first,second,gradientA,gradientB,requestedMaximumImpulse,uncappedNormal)",
+    "qualification": {
+      "physical_cases": 16,
+      "invalid_controls": 10,
+      "exact_full_named_field_replays": 2,
+      "old_algebra_negative_controls": 2,
+      "maximum_independent_velocity_error_m_s": 1.9073486328125e-06,
+      "maximum_independent_impulse_error_Ns": 1.986821485111534e-08,
+      "maximum_independent_point_support_impulse_error_Ns": 2.384185793236071e-08,
+      "maximum_independent_mass_momentum_closure_error_Ns": 2.3888378565493727e-08,
+      "maximum_actual_kinetic_energy_gain_J": 0,
+      "normal_regression": {
+        "old_gain_J": 0.016237319852789915,
+        "new_delta_J": -0.015247042758687053
+      },
+      "friction_regression": {
+        "old_gain_J": 0.018236515197309563,
+        "new_delta_J": -0.01578231790333521
+      }
+    },
+    "reference": "Independent FP64 point geometry and velocity bracket solve; long-double actual-mass kinetic-energy change on represented inputs; normal, support and mass-momentum comparisons. The shared state-energy guard uses an outward-rounded interval upper bound on represented kinetic-energy change.",
+    "original_receipt_sha256": "4e5589eeb10744fc984c90537b812d256d68d322fb60b5075cbb016c53dfaf11",
+    "Metal_compile": {
+      "command": "xcrun -sdk macosx metal -std=metal3.1 -fno-fast-math -Iinclude -c build/loaded-drop-investigation-static-velocity-contact.metal -o build/loaded-drop-investigation-static-velocity-contact.air",
+      "compile_actual_exit_code": 0,
+      "execution": "NOT_EXECUTED; occupiedGPU"
+    },
+    "Metal_compile_source_and_air_sha256": {
+      "build/loaded-drop-investigation-static-velocity-contact.metal": "98ca0994a50ece863dafcf5978f82bc69e3526b67fa779fb07314ed64119fd07",
+      "build/loaded-drop-investigation-static-velocity-contact.air": "9a195554d895bf99f04c30a49bca783d7748ce72e26e8d3ec1ba59ac0acc5ca4"
+    }
+  },
+  "CMake_checks": {
+    "build_command": "cmake --build build --target numi-solver-static-segment numi-solver-static-velocity",
+    "build_actual_exit_code": 0,
+    "build_output": "ninja: no work to do.",
+    "test_command": "ctest --test-dir build -R '^static_contact\\.(whole_yarn_host|velocity_slack_host)$' --output-on-failure",
+    "test_actual_exit_code": 0,
+    "tests_passed": 2,
+    "tests_failed": 0,
+    "CPU_targets_compile_options": [
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-fno-fast-math",
+      "-ffp-contract=off"
+    ],
+    "native_gpu_jobs_launched": 0
+  },
+  "open_gates": [
+    "129 of 518 general FP32 deforming sweeps remain unresolved although the FP64 oracle resolved all 518.",
+    "25 of 781 primary sweeps remain unresolved.",
+    "Positive early-arrival gap reaches 2.976470 micrometres; this is larger than the requested 0.1-micrometre sweep contact tolerance.",
+    "No native Metal helper execution or full-scene qualification in this receipt.",
+    "Point-supported pair helper does not assemble whole-yarn manifold or simultaneous normal/friction/contact constraints.",
+    "Moving kinematic endpoints require an external-work ledger and currently reject.",
+    "Whole-scene reaction/work closure, material calibration and woven-cloth/elastic-fruit coupling remain open."
+  ],
+  "boundary": "Completed CPU geometry/status and passive velocity-helper test cases only. Compile success, unresolved-safe status handling and sampled oracle agreement do not establish full sweep completeness, native execution or physical whole-scene qualification.",
+  "published_CPU_CMake_sha256": "c3ff80a50c230abfb7e57411426b7f0a42227b2cc71f0877a7c757faa990d087",
+  "CMake_binding_note": "Observed working-tree CMake includes unpublished native dependencies; published index retains identical CPU targets and test flags only."
+}

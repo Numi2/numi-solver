@@ -34,10 +34,10 @@ references, not implementation claims for Numi.
 | Capability | Current evidence | Required next evidence |
 | --- | --- | --- |
 | Loaded woven bag and finite tabletop | New source `bbf111a`: full CPU96 pickup passes, five released fruit settle on the lower floor, both complete fruit traces match, all 51 saved states pass contacts | Same-source timestep comparison, full native spill, whole-yarn/static contacts throughout the trajectory |
-| Native finite contact | Source `a427ef0`: 104 focused response cases pass; a ghost-impulse fix passes the former frame-4 failure and a new full candidate is live | Diagnose and repair the actual early failure, then complete both 480-frame trajectories and audit all retained evidence |
+| Native finite contact | Source `a427ef0`: 104 focused response cases pass; a ghost-impulse fix passes the former frame-4 failure and a new full candidate is live | Complete both 480-frame trajectories and audit all retained evidence; qualify continuous whole-yarn collision separately |
 | Elastic fruit | Isolated 10,240-tet native body passes authored energy/timestep checks; 81,920-tet study is live | Couple elastic boundary triangles with the woven bag and other fruit, with finite-bench contact and force/work receipts |
 | Mesh and time convergence | Volume spatial comparison fails the 1 mm target; older cloth timestep comparisons also fail | Match the same physical body, material, load, trajectory and captured times across refinements; report shape, force and work errors |
-| Contact/friction consistency | Limited supported mechanics probes and CPU shared-yarn contact block pass | Joint contact, static support, strain and friction residuals; friction-free slide, oblique impact, sliding-to-rolling and separation tests |
+| Contact/friction consistency | CPU shared-yarn contact block and passive velocity helper pass tested mechanics; two retained energy-injection regressions now dissipate energy | Joint contact, static support, strain and friction residuals; friction-free slide, oblique impact, sliding-to-rolling and separation tests |
 | Throughput and closure | Individual native GPU timings and a volume energy ledger exist | Same-workload wall time and simulated time, CPU/GPU ownership, high-percentile frame cost, full grip/contact work and impulse history |
 
 The existing 2 µm authored contact limit, 30 m/s speed limit, 1% volume energy
@@ -51,3 +51,8 @@ Implementation proceeds from the actual failing native case, then continuous
 whole-yarn bench support and shared contact complementarity, then elastic-fruit
 coupling. The accepted CPU scene and unsmoothed native volume stay available
 while each larger coupled example earns its own complete evidence.
+
+[Whole-yarn CPU geometry and velocity evidence](WHOLE_YARN_STATIC_MATH.md)
+records 129 unresolved general deforming sweeps out of 518 and the separate
+normal/friction energy regressions. Those helper checks do not establish
+native trajectory collision safety or simultaneous contact closure.

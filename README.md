@@ -30,6 +30,13 @@ Fruit geometry remains rigid spheres. Same-source timestep convergence,
 elastic-fruit/bag coupling, calibrated materials, native full spill and
 whole-scene work/reaction closure remain open.
 
+The next contact slice now passes CPU checks for whole-yarn static geometry
+and passive velocity response. The new response removes two retained cases
+where normal or friction impulses added kinetic energy. General deforming
+sweeps still return explicit unresolved results in 129 of 518 cases; native
+execution and the complete scene remain pending. See the
+[measured geometry and energy limits](docs/WHOLE_YARN_STATIC_MATH.md).
+
 
 ### Newest loaded release · finite tabletop and lower floor · September 29, 2026
 
