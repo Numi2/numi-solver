@@ -714,6 +714,18 @@ if(BUILD_TESTING)
             TIMEOUT 30
     )
     add_test(
+        NAME cloth_bag.local_node_contact
+        COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --local-node-probe
+    )
+    add_test(
+        NAME cloth_bag.metal_local_node_contact
+        COMMAND $<TARGET_FILE:numi-solver-cloth-metal> --local-node-probe
+    )
+    set_tests_properties(
+        cloth_bag.local_node_contact cloth_bag.metal_local_node_contact
+        PROPERTIES LABELS "physics;cloth;contact;ccd;ground;local_topology" TIMEOUT 30
+    )
+    add_test(
         NAME cloth_bag.initial_geometry
         COMMAND $<TARGET_FILE:numi-solver-cloth-metal> --initial-state-probe
     )

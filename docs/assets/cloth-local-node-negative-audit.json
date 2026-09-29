@@ -1,0 +1,46 @@
+{
+  "yarn_radius_m": 0.004,
+  "yarn_count": 2904,
+  "local_node_contacts_enforced": true,
+  "all_snapshots_within_contact_tolerance": false,
+  "evidence_boundary": "Contacts of supplied exported states only. Exact authored axial graph and two-hop exclusions are reconstructed after validating every render triangle. Does not certify intervening substeps, dynamics, material calibration, strain or replay.",
+  "snapshots": [
+    {
+      "snapshot": "docs/assets/cloth-knot-peak.obj",
+      "snapshot_sha256": "ba8bf5c37a2c9f3c1414f75c58499336b30df1c36fc339f60943ce52e03ebc45",
+      "fruit_yarn_overlap_m": 4.289493898967933e-10,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          989,
+          990
+        ]
+      },
+      "fruit_pair_overlap_m": 2.55598181508887e-10,
+      "fruit_pair_witness": [
+        1,
+        2
+      ],
+      "nonlocal_yarn_overlap_m": 1.7071396553325346e-10,
+      "nonlocal_yarn_witness": [
+        [
+          477,
+          478
+        ],
+        [
+          621,
+          622
+        ]
+      ],
+      "self_broadphase_candidates": 20729,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": false,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.007112963367322655,
+      "local_node_witness": [
+        861,
+        957
+      ]
+    }
+  ]
+}

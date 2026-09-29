@@ -120,6 +120,54 @@ restitution calibrated to fruit/surface materials, and complete corrected
 spill outcome remain separate work. These focused checks establish gravity
 and inelastic support, not all scene fidelity.
 
+## Local thickness at folded yarns
+
+The retained failed refinement identified a gap in the two-hop self-contact
+exclusion: nodes 861 and 957 have no direct yarn edge, but their centers came
+within 0.887 mm while each endpoint owns a 4 mm cloth radius. The older
+nonlocal capsule audit excluded that pair. The new independent node audit
+reproduces its 7.113 mm diameter overlap and returns FAIL on the retained peak.
+
+CPU and Metal now project all 5,754 unique two-hop node pairs without a direct
+yarn edge to their authored 8 mm diameter. A relative swept-point contact
+prevents an endpoint crossing from disappearing between discrete positions.
+Inverse masses distribute free corrections; floor support removes blocked
+vertical motion and transfers separation through available motion. Metal uses
+12 disjoint-node color batches. Its FP64 oracle uses the same batch ordering.
+The GPU config advances to ABI 14 to bind the new table counts explicitly.
+
+```sh
+./build/numi-solver-cloth-bag --local-node-probe
+./build/numi-solver-cloth-metal --local-node-probe
+python3 tools/audit_cloth_snapshot.py build/fruit-pickup-*.obj \
+  --include-local-node-contacts --output build/fruit-pickup-contacts.json
+```
+
+The CPU probe covers the actual folded coordinates, unequal masses, floor
+support and arrival, coincident endpoints, and a swept crossing. Six native
+cases additionally check a fixed endpoint, physical separation, free center
+of mass, exact replay, and FP64 response. Seven malformed native cases reject
+without changing accepted particle bytes. Cold geometry remains overlap free.
+The initial geometry, fruit free-flight/drop, and internal contact/oracle
+checks also pass on Apple M4. See the [source/binary receipt](assets/cloth-local-node-evidence.json),
+[CPU probe](assets/cloth-local-node-cpu-probe.log),
+[Metal probe](assets/cloth-local-node-metal-probe.log), and
+[independent negative audit](assets/cloth-local-node-negative-audit.json).
+
+Both solver paths measure the new residual in published states. Native
+grounded, spin, pickup and recorded trajectory qualifications require the
+maximum over every frame of both replays to remain within 2 micrometres.
+The repaired four-second CPU96 run is in progress. Full-scene qualification
+and the unchanged 0.80 rad knot gate remain required; these focused checks
+do not establish mesh-resolution convergence, calibrated local bending or
+friction, yarn-interior contact, or complete energy closure.
+
+The older ABI 13 native run has completed its first four-second replay. Only
+fruit 8 has a latched release bit. Its center finishes inside the capped render
+mesh, 0.928 m above its support radius, with no observed support after release.
+This is not a qualifying spill or landing. Its second replay remains in
+progress and must supply the actual terminal result.
+
 ## Starting contact geometry
 
 The original cold seed had 5.12519 mm of sphere/yarn overlap and 4.48591 mm

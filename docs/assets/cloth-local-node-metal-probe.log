@@ -1,0 +1,15 @@
+initial_geometry backend=host_authored_float_tables fruit_yarn_overlap_m=0 fruit_pair_overlap_m=0 nonlocal_yarn_overlap_m=0 local_node_overlap_m=0 local_node_pairs=5754 local_node_batches=12 ground_overlap_m=0 passed=1
+local_node_case=0 separation_m=0.00800001 com_error_m=2.32562e-09 oracle_error_m=1.07874e-08 replay_exact=1 passed=1
+local_node_case=1 separation_m=0.008 com_error_m=0.00525 oracle_error_m=4.65661e-10 replay_exact=1 passed=1
+local_node_case=2 separation_m=0.008 com_error_m=0.00425 oracle_error_m=4.65661e-10 replay_exact=1 passed=1
+local_node_case=3 separation_m=0.008 com_error_m=8.14907e-10 oracle_error_m=3.40179e-10 replay_exact=1 passed=1
+local_node_case=4 separation_m=0.008 com_error_m=5.82077e-11 oracle_error_m=3.7016e-10 replay_exact=1 passed=1
+local_node_case=5 separation_m=0.008 com_error_m=0.00525 oracle_error_m=0 replay_exact=1 passed=1
+local_node_rejection=0 failure=1 accepted_state_unchanged=1 passed=1
+local_node_rejection=1 failure=2 accepted_state_unchanged=1 passed=1
+local_node_rejection=2 failure=2 accepted_state_unchanged=1 passed=1
+local_node_rejection=3 failure=4 accepted_state_unchanged=1 passed=1
+local_node_rejection=4 failure=8 accepted_state_unchanged=1 passed=1
+local_node_rejection=5 failure=8 accepted_state_unchanged=1 passed=1
+local_node_rejection=6 failure=2 accepted_state_unchanged=1 passed=1
+device=Apple M4 local_node_pairs=5754 local_node_batches=12 witness_included=1 local_node_probe_passed=1

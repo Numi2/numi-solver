@@ -354,6 +354,9 @@ struct ClothModel {
     std::vector<KnotConstraint> knots;
     std::vector<GripConstraint> grips;
     std::vector<std::vector<std::uint32_t>> localTopology;
+    // Exactly two-hop node pairs without a direct yarn edge. Their endpoint
+    // volumes need contact even though nearby capsule pairs share a junction.
+    std::vector<Edge> localNodePairs;
     std::uint32_t bottomCenter{};
     Vec3 gripTarget{};
     Vec3 gripPrevious{};
@@ -381,6 +384,8 @@ struct Metrics {
     std::uint32_t maximumKnotAngleFrame{};
     double maximumKnotCurrentAngle{};
     double maximumKnotRestAngle{};
+    double maximumPublishedLocalNodePenetration{};
+    std::uint64_t localNodeContacts{};
     double maximumBallPenetration{};
     double maximumPublishedBallPenetration{};
     double maximumPublishedPrimitiveSelfPenetration{};
@@ -866,6 +871,13 @@ ClothModel makeCloth(const Scenario scenario) {
         }
         std::sort(local.begin(), local.end());
         local.erase(std::unique(local.begin(), local.end()), local.end());
+        for (const std::uint32_t second : local) {
+            if (second > index && std::find(
+                    directTopology[index].begin(), directTopology[index].end(), second
+                ) == directTopology[index].end()) {
+                model.localNodePairs.push_back({index, second});
+            }
+        }
     }
 
     const auto addYarnBend = [&model](
@@ -4256,6 +4268,125 @@ double measurePrimitiveSelfPenetration(const ClothModel& cloth) {
     return maximumPenetration;
 }
 
+double solveLocalNodePair(Particle& first, Particle& second, const bool groundEnabled) {
+    const double target = 2.0 * kClothRadius;
+    double maximumCorrection = 0.0;
+    for (std::uint32_t pass = 0; pass < 4; ++pass) {
+        const Vec3 relative = second.position - first.position;
+        const Vec3 previous = second.previous - first.previous;
+        const Vec3 delta = relative - previous;
+        const double distance = length(relative);
+        Vec3 normal = distance > 1.0e-12 ? relative / distance : normalized(previous);
+        double overlap = target - distance;
+        const double a = lengthSquared(delta);
+        if (distance >= target) {
+            const double time = a > 1.0e-20
+                ? std::clamp(-dot(previous, delta) / a, 0.0, 1.0) : 0.0;
+            if (lengthSquared(previous + delta * time) >= target * target) break;
+        }
+        const double b = 2.0 * dot(previous, delta);
+        const double c = lengthSquared(previous) - target * target;
+        const double discriminant = b * b - 4.0 * a * c;
+        if (c >= 0.0 && a > 1.0e-20 && b < 0.0 && discriminant >= 0.0) {
+            const double time = (-b - std::sqrt(discriminant)) / (2.0 * a);
+            if (time >= 0.0 && time <= 1.0) {
+                normal = normalized(previous + delta * time);
+                overlap = target - dot(relative, normal);
+            }
+        }
+        if (!(overlap > 0.0)) break;
+        const bool blockedFirst = groundEnabled &&
+            first.position.z <= kClothRadius + 1.0e-9 && normal.z > 0.0;
+        const bool blockedSecond = groundEnabled &&
+            second.position.z <= kClothRadius + 1.0e-9 && normal.z < 0.0;
+        const double denominator = first.inverseMass * (1.0 - (blockedFirst ? normal.z * normal.z : 0.0)) +
+            second.inverseMass * (1.0 - (blockedSecond ? normal.z * normal.z : 0.0));
+        if (!(denominator > 1.0e-16)) break;
+        const double lambda = overlap / denominator;
+        Vec3 firstCorrection = normal * (-first.inverseMass * lambda);
+        Vec3 secondCorrection = normal * (second.inverseMass * lambda);
+        if (blockedFirst) firstCorrection.z = 0.0;
+        if (blockedSecond) secondCorrection.z = 0.0;
+        double fraction = 1.0;
+        if (groundEnabled) for (const auto item : {
+                std::pair{first.position.z, firstCorrection.z},
+                std::pair{second.position.z, secondCorrection.z}}) {
+            if (item.second < 0.0) fraction = std::min(fraction,
+                std::max(0.0, item.first - kClothRadius) / -item.second);
+        }
+        first.position += firstCorrection * fraction;
+        second.position += secondCorrection * fraction;
+        if (groundEnabled) {
+            first.position.z = std::max(first.position.z, kClothRadius);
+            second.position.z = std::max(second.position.z, kClothRadius);
+        }
+        maximumCorrection = std::max(maximumCorrection, overlap * fraction);
+    }
+    return maximumCorrection;
+}
+
+double solveLocalNodeContacts(ClothModel& cloth, const bool groundEnabled, std::uint64_t& count) {
+    double maximum = 0.0;
+    for (const Edge pair : cloth.localNodePairs) {
+        const double correction = solveLocalNodePair(cloth.particles[pair.first],
+            cloth.particles[pair.second], groundEnabled);
+        maximum = std::max(maximum, correction);
+        count += correction > 0.0;
+    }
+    return maximum;
+}
+
+double measureLocalNodePenetration(const ClothModel& cloth) {
+    double maximum = 0.0;
+    for (const Edge pair : cloth.localNodePairs) maximum = std::max(maximum,
+        2.0 * kClothRadius - length(cloth.particles[pair.second].position - cloth.particles[pair.first].position));
+    return maximum;
+}
+
+bool runLocalNodeProbe() {
+    const auto body = [](Vec3 position, double mass) {
+        Particle p; p.position = p.previous = p.rest = position;
+        p.mass = mass; p.inverseMass = 1.0 / mass; return p;
+    };
+    auto a = body({0.0296004313, -0.10588813, 0.624721282}, .001);
+    auto b = body({0.0301673682, -0.106243419, 0.624138885}, .003);
+    const Vec3 com = (a.position * a.mass + b.position * b.mass) / (a.mass + b.mass);
+    const double initial = length(b.position - a.position);
+    const double correction = solveLocalNodePair(a,b,false);
+    const double comError = length((a.position * a.mass + b.position * b.mass) / (a.mass+b.mass) - com);
+    auto floorA = body({0,0,.004}, .001), floorB = body({0,0,.005}, .003);
+    solveLocalNodePair(floorA,floorB,true);
+    auto arrivalA = body({0,0,.005}, .001), arrivalB = body({0,0,.006}, .003);
+    solveLocalNodePair(arrivalA,arrivalB,true);
+    auto sweptA = body({-.02,0,.6}, .001), sweptB = body({.02,0,.6}, .003);
+    sweptA.position.x=.02; sweptB.position.x=-.02;
+    const Vec3 sweptCom = (sweptA.position * sweptA.mass + sweptB.position * sweptB.mass) / (sweptA.mass+sweptB.mass);
+    solveLocalNodePair(sweptA,sweptB,false);
+    const double sweptComError = length((sweptA.position*sweptA.mass+sweptB.position*sweptB.mass)/(sweptA.mass+sweptB.mass)-sweptCom);
+    auto coincidentA = body({-.01,0,.6}, .001), coincidentB = body({.01,0,.6}, .003);
+    coincidentA.position.x=coincidentB.position.x=0;
+    solveLocalNodePair(coincidentA,coincidentB,false);
+    ClothModel cold = makeCloth(Scenario::pickup);
+    bool hasWitness=false;
+    for (auto pair:cold.localNodePairs) hasWitness=hasWitness||(pair.first==861&&pair.second==957);
+    const bool pass = hasWitness && measureLocalNodePenetration(cold)==0 &&
+        initial<.001 && correction>.007 && std::abs(length(b.position-a.position)-.008)<1e-12 && comError<1e-12 &&
+        floorA.position.z==.004 && std::abs(floorB.position.z-.012)<1e-12 &&
+        arrivalA.position.z==.004 && std::abs(arrivalB.position.z-.012)<1e-12 &&
+        std::abs(sweptB.position.x-sweptA.position.x-.008)<1e-12 && sweptComError<1e-12 &&
+        std::abs(length(coincidentB.position-coincidentA.position)-.008)<1e-12;
+    std::cout << std::setprecision(12) << "probe=local_node_thickness pair_count=" << cold.localNodePairs.size()
+        << " witness_included=" << hasWitness << " initial_witness_separation_m=" << initial
+        << " final_witness_separation_m=" << length(b.position-a.position) << " free_COM_error_m=" << comError
+        << " supported_lower_z_m=" << floorA.position.z << " supported_upper_z_m=" << floorB.position.z
+        << " arrival_lower_z_m=" << arrivalA.position.z << " arrival_upper_z_m=" << arrivalB.position.z
+        << " swept_signed_separation_m=" << sweptB.position.x-sweptA.position.x << " swept_COM_error_m=" << sweptComError
+        << " coincident_separation_m=" << length(coincidentB.position-coincidentA.position)
+        << " cold_overlap_m=" << measureLocalNodePenetration(cold) << '\n'
+        << "result=" << (pass?"PASS":"FAIL") << '\n';
+    return pass;
+}
+
 double solveSelfCollision(
     ClothModel& cloth,
     std::uint64_t& contactCount
@@ -4953,6 +5084,8 @@ SimulationResult simulate(
                     }
                 )
             );
+            solveLocalNodeContacts(result.cloth, scenario != Scenario::spin,
+                result.metrics.localNodeContacts);
 
             for (std::size_t ballIndex = 0;
                  ballIndex < result.balls.size();
@@ -5048,6 +5181,8 @@ SimulationResult simulate(
                         }
                     )
                 );
+                solveLocalNodeContacts(result.cloth, scenario != Scenario::spin,
+                    result.metrics.localNodeContacts);
                 if (scenario != Scenario::spin) {
                     result.metrics.maximumGroundPenetration = std::max(
                         result.metrics.maximumGroundPenetration,
@@ -5184,6 +5319,8 @@ SimulationResult simulate(
                 for (std::uint32_t pass = 0u;
                      pass < finalContactPasses;
                      ++pass) {
+                    solveLocalNodeContacts(result.cloth, scenario != Scenario::spin,
+                        result.metrics.localNodeContacts);
                     std::size_t pairIndex = 0u;
                     for (std::size_t first = 0u;
                          first < result.balls.size();
@@ -5262,6 +5399,7 @@ SimulationResult simulate(
                     const double publishedStrainResidual =
                         measureStrainLimitViolation(result.cloth);
                     if (publishedPrimitiveResidual < 1.0e-6 &&
+                        measureLocalNodePenetration(result.cloth) < 1.0e-6 &&
                         publishedBallResidual < 1.0e-6 &&
                         publishedGroundResidual < 1.0e-9 &&
                         publishedStrainResidual < 1.0e-6) {
@@ -5388,6 +5526,9 @@ SimulationResult simulate(
         );
         const double previousKnotPeak = result.metrics.maximumKnotAngleError;
         updateMetrics(result.cloth, result.balls, result.metrics);
+        result.metrics.maximumPublishedLocalNodePenetration = std::max(
+            result.metrics.maximumPublishedLocalNodePenetration,
+            measureLocalNodePenetration(result.cloth));
         if (result.metrics.maximumKnotAngleError > previousKnotPeak) {
             result.metrics.maximumKnotAngleFrame = step + 1u;
             if (knotPeakCapture != nullptr) {
@@ -5614,6 +5755,7 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
         result.metrics.maximumPublishedBallPenetration < 2.0e-6 &&
         result.metrics.maximumPublishedGroundPenetration < 2.0e-6 &&
         result.metrics.maximumPublishedPrimitiveSelfPenetration < 2.0e-6 &&
+        result.metrics.maximumPublishedLocalNodePenetration < 2.0e-6 &&
         result.metrics.maximumPublishedStrainLimitViolation < 2.0e-6 &&
         result.metrics.maximumSelfPenetration < 2.0 * kClothRadius &&
         result.metrics.finalPrimitiveSelfPenetration < 2.0e-6 &&
@@ -5651,6 +5793,7 @@ int main(int argc, char** argv) try {
     bool rollingResistanceProbe = false;
     bool mouthReleaseProbe = false;
     bool escapeClassificationProbe = false;
+    bool localNodeProbe = false;
     Scenario scenario = Scenario::grounded;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string value = argv[argument];
@@ -5704,6 +5847,8 @@ int main(int argc, char** argv) try {
             rollingResistanceProbe = true;
         } else if (value == "--escape-classification-probe") {
             escapeClassificationProbe = true;
+        } else if (value == "--local-node-probe") {
+            localNodeProbe = true;
         } else if (value == "--mouth-release-probe") {
             mouthReleaseProbe = true;
         } else if (value == "--scenario" && argument + 1 < argc) {
@@ -5737,7 +5882,7 @@ int main(int argc, char** argv) try {
                          "[--cloth-ground-friction-probe] "
                          "[--rolling-resistance-probe] "
                          "[--mouth-release-probe] "
-                         "[--escape-classification-probe]\n";
+                         "[--escape-classification-probe] [--local-node-probe]\n";
             return 0;
         } else {
             throw std::invalid_argument("unknown argument: " + value);
@@ -5760,6 +5905,9 @@ int main(int argc, char** argv) try {
     }
     if (rollingProbe) {
         return runRollingProbe() ? 0 : 1;
+    }
+    if (localNodeProbe) {
+        return runLocalNodeProbe() ? 0 : 1;
     }
     if (selfCCDProbe) {
         return runSelfCCDProbe() ? 0 : 1;
@@ -5944,6 +6092,10 @@ int main(int argc, char** argv) try {
               << " max_knot_angle_constraint=" << metrics.maximumKnotAngleConstraint
               << " max_knot_current_angle_rad=" << metrics.maximumKnotCurrentAngle
               << " max_knot_rest_angle_rad=" << metrics.maximumKnotRestAngle << '\n';
+    std::cout << "local_node_pairs=" << first.cloth.localNodePairs.size()
+              << " local_node_contacts=" << metrics.localNodeContacts
+              << " max_published_local_node_penetration="
+              << metrics.maximumPublishedLocalNodePenetration << '\n';
     std::cout << "max_warp_extension=" << metrics.maximumWarpExtension
               << " max_warp_compression=" << metrics.maximumWarpCompression
               << " max_weft_extension=" << metrics.maximumWeftExtension

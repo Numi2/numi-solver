@@ -150,7 +150,19 @@ def read_snapshot(path, expected_faces):
     return payload, vertices, fruits
 
 
-def audit(path, radius, edges, expected_faces, local):
+def local_node_pairs(edges, local):
+    direct = [set() for _ in local]
+    for first, second in edges:
+        direct[first].add(second)
+        direct[second].add(first)
+    pairs = [(first, second) for first, neighbors in enumerate(local)
+             for second in sorted(neighbors) if second > first and second not in direct[first]]
+    if len(pairs) != 5754 or (861, 957) not in pairs:
+        raise ValueError('unexpected two-hop node contact topology')
+    return pairs
+
+
+def audit(path, radius, edges, expected_faces, local, include_local=False):
     payload, vertices, fruits = read_snapshot(path, expected_faces)
     fruit_overlap, fruit_witness = 0.0, None
     for fruit, (center, r) in fruits.items():
@@ -168,12 +180,23 @@ def audit(path, radius, edges, expected_faces, local):
     self_penetration, self_witness, candidates = self_overlap(vertices, edges, local, radius)
     ground = max(0.0, max(radius - vertex[2] for vertex in vertices),
                  max(r - center[2] for center, r in fruits.values()))
-    return {'snapshot': str(path), 'snapshot_sha256': hashlib.sha256(payload).hexdigest(),
+    row = {'snapshot': str(path), 'snapshot_sha256': hashlib.sha256(payload).hexdigest(),
             'fruit_yarn_overlap_m': fruit_overlap, 'fruit_yarn_witness': fruit_witness,
             'fruit_pair_overlap_m': pair_overlap, 'fruit_pair_witness': pair_witness,
             'nonlocal_yarn_overlap_m': self_penetration, 'nonlocal_yarn_witness': self_witness,
             'self_broadphase_candidates': candidates, 'ground_overlap_m': ground,
             'within_contact_tolerance': max(fruit_overlap, pair_overlap, self_penetration, ground) <= 2e-6}
+    if include_local:
+        pairs = local_node_pairs(edges, local)
+        maximum, witness = 0.0, None
+        for first, second in pairs:
+            overlap = 2 * radius - math.dist(vertices[first], vertices[second])
+            if overlap > maximum:
+                maximum, witness = overlap, [first, second]
+        row.update(local_node_pair_count=len(pairs), local_node_overlap_m=maximum,
+                   local_node_witness=witness)
+        row['within_contact_tolerance'] &= maximum <= 2e-6
+    return row
 
 
 def main():
@@ -182,15 +205,20 @@ def main():
     parser.add_argument('--yarn-radius', type=float, default=0.004,
                         help='Radius from the source/material manifest; default authored 0.004 m.')
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--include-local-node-contacts', action='store_true',
+                        help='Enforce the ABI 14 two-hop non-direct node diameter contacts. '
+                             'Leave unset only when auditing retained pre-repair artifacts.')
     args = parser.parse_args()
     if not math.isfinite(args.yarn_radius) or args.yarn_radius <= 0:
         parser.error('yarn radius must be finite and positive')
     try:
         edges, faces, local = topology()
-        rows = [audit(path, args.yarn_radius, edges, faces, local) for path in args.snapshots]
+        rows = [audit(path, args.yarn_radius, edges, faces, local, args.include_local_node_contacts)
+                for path in args.snapshots]
     except (OSError, ValueError, IndexError, UnicodeError) as error:
         parser.error(str(error))
     report = {'yarn_radius_m': args.yarn_radius, 'yarn_count': len(edges),
+              'local_node_contacts_enforced': args.include_local_node_contacts,
               'all_snapshots_within_contact_tolerance': all(row['within_contact_tolerance'] for row in rows),
               'evidence_boundary': 'Contacts of supplied exported states only. Exact authored axial graph and two-hop exclusions are reconstructed after validating every render triangle. Does not certify intervening substeps, dynamics, material calibration, strain or replay.',
               'snapshots': rows}

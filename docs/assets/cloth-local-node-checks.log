@@ -1,0 +1,42 @@
+Test project /Users/home/numi-solver/build-local-thickness
+    Start 27: cloth_bag.local_node_contact
+1/5 Test #27: cloth_bag.local_node_contact .........   Passed    0.00 sec
+    Start 28: cloth_bag.metal_local_node_contact
+2/5 Test #28: cloth_bag.metal_local_node_contact ...   Passed    0.16 sec
+    Start 29: cloth_bag.initial_geometry
+3/5 Test #29: cloth_bag.initial_geometry ...........   Passed    0.11 sec
+    Start 30: cloth_bag.metal_fruit_flight
+4/5 Test #30: cloth_bag.metal_fruit_flight .........   Passed    2.64 sec
+    Start 31: cloth_bag.metal_internal_contact
+5/5 Test #31: cloth_bag.metal_internal_contact .....   Passed    4.43 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Label Time Summary:
+aerodynamics      =   4.43 sec*proc (1 test)
+bend              =   4.43 sec*proc (1 test)
+ccd               =   4.60 sec*proc (3 tests)
+cloth             =   7.36 sec*proc (5 tests)
+contact           =   4.60 sec*proc (3 tests)
+friction          =   4.43 sec*proc (1 test)
+fruit             =   7.19 sec*proc (3 tests)
+geometry          =   0.11 sec*proc (1 test)
+gravity           =   2.64 sec*proc (1 test)
+ground            =   7.24 sec*proc (4 tests)
+knot              =   4.43 sec*proc (1 test)
+local_topology    =   0.17 sec*proc (2 tests)
+metal             =   7.08 sec*proc (2 tests)
+mouth             =   4.43 sec*proc (1 test)
+physics           =   7.36 sec*proc (5 tests)
+pickup            =   4.43 sec*proc (1 test)
+reconciliation    =   4.43 sec*proc (1 test)
+reference         =   4.43 sec*proc (1 test)
+refinement        =   2.64 sec*proc (1 test)
+release           =   4.43 sec*proc (1 test)
+rolling           =   4.43 sec*proc (1 test)
+self_contact      =   4.43 sec*proc (1 test)
+self_friction     =   4.43 sec*proc (1 test)
+strain            =   4.43 sec*proc (1 test)
+yarn              =   4.43 sec*proc (1 test)
+
+Total Test time (real) =   7.36 sec

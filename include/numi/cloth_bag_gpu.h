@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 13u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 14u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
 #define NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY 4096u
 #define NUMI_CLOTH_BAG_GPU_MOUTH_RIM_CAPACITY 64u
@@ -25,6 +25,8 @@ typedef struct MR_ALIGN16 NumiClothBagGPUConfig {
     // x fruit-pair count, y sphere/yarn candidate count,
     // z nonlocal yarn/yarn pair count, w yarn/yarn batch count.
     mr_uint4 contactCounts;
+    // x exactly-two-hop node-contact pairs, y graph-color batch count, zw reserved.
+    mr_uint4 localContactCounts;
     // xyz gravitational acceleration, w substep timestep.
     mr_float4 gravityAndTimestep;
     // xyz virtual-handle position, w 1 when the grip is active.
@@ -147,6 +149,11 @@ typedef struct NumiClothBagGPUSelfPair {
     mr_u32 secondSegment;
 } NumiClothBagGPUSelfPair;
 
+typedef struct MR_ALIGN16 NumiClothBagGPULocalNodePair {
+    // x first node, y second node, z graph color, w reserved.
+    mr_uint4 nodesAndColor;
+} NumiClothBagGPULocalNodePair;
+
 typedef struct MR_ALIGN16 NumiClothBagGPUSelfStatus {
     // x accepted present contacts, y accepted swept contacts,
     // z maximum correction encoded as positive-float bits, w reserved.
@@ -190,7 +197,7 @@ typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
 } NumiClothBagGPUBatch;
 
 #ifndef __METAL_VERSION__
-static_assert(sizeof(NumiClothBagGPUConfig) == 224);
+static_assert(sizeof(NumiClothBagGPUConfig) == 240);
 static_assert(sizeof(NumiClothBagGPUParticle) == 48);
 static_assert(sizeof(NumiClothBagGPUDistance) == 32);
 static_assert(sizeof(NumiClothBagGPUGrip) == 48);
@@ -200,6 +207,7 @@ static_assert(sizeof(NumiClothBagGPUFruit) == 96);
 static_assert(sizeof(NumiClothBagGPUFruitPair) == 32);
 static_assert(sizeof(NumiClothBagGPUYarnContact) == 112);
 static_assert(sizeof(NumiClothBagGPUSelfPair) == 8);
+static_assert(sizeof(NumiClothBagGPULocalNodePair) == 16);
 static_assert(sizeof(NumiClothBagGPUSelfStatus) == 16);
 static_assert(sizeof(NumiClothBagGPUSelfImpulse) == 48);
 static_assert(sizeof(NumiClothBagGPUFrictionStatus) == 32);

@@ -1312,6 +1312,91 @@ kernel void numi_cloth_bag_solve_knot(
     knots[constraintIndex] = constraint;
 }
 
+kernel void numi_cloth_bag_solve_local_node_contact(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device const NumiClothBagGPULocalNodePair* pairs [[buffer(2)]],
+    constant NumiClothBagGPUBatch& batch [[buffer(3)]],
+    device atomic_uint* failure [[buffer(4)]],
+    uint localIndex [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) || localIndex >= batch.control.y) return;
+    if (batch.control.x > config.localContactCounts.x ||
+        batch.control.y > config.localContactCounts.x - batch.control.x ||
+        batch.control.z >= config.localContactCounts.y) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE); return;
+    }
+    uint index = batch.control.x + localIndex;
+    if (index >= config.localContactCounts.x) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE); return;
+    }
+    uint4 pair = pairs[index].nodesAndColor;
+    if (pair.z != batch.control.z) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_BATCH); return;
+    }
+    if (pair.x >= config.control.y || pair.y >= config.control.y || pair.x == pair.y) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE); return;
+    }
+    auto first = particles[pair.x], second = particles[pair.y];
+    if (!all(isfinite(first.positionAndInverseMass)) || !all(isfinite(second.positionAndInverseMass)) ||
+        !all(isfinite(first.previousAndMass)) || !all(isfinite(second.previousAndMass)) ||
+        first.positionAndInverseMass.w < 0 || second.positionAndInverseMass.w < 0) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE); return;
+    }
+    float target = 2 * config.clothMaterial.x;
+    bool ground = config.constraintCounts.z != 0;
+    for (uint pass = 0; pass < 4; ++pass) {
+        float3 relative = second.positionAndInverseMass.xyz - first.positionAndInverseMass.xyz;
+        float3 previous = second.previousAndMass.xyz - first.previousAndMass.xyz;
+        float3 delta = relative - previous;
+        float distance = length(relative), a = dot(delta, delta);
+        if (distance >= target) {
+            float time = a > 1e-20f ? clamp(-dot(previous, delta) / a, 0.0f, 1.0f) : 0;
+            float3 closest = previous + delta * time;
+            if (dot(closest, closest) >= target * target) break;
+        }
+        float3 normal = distance > 1e-12f ? relative / distance : safeNormalized(previous);
+        float overlap = target - distance;
+        float b = 2 * dot(previous, delta), c = dot(previous, previous) - target * target;
+        float discriminant = b * b - 4 * a * c;
+        if (c >= 0 && a > 1e-20f && b < 0 && discriminant >= 0) {
+            float time = (-b - sqrt(discriminant)) / (2 * a);
+            if (time >= 0 && time <= 1) {
+                normal = safeNormalized(previous + delta * time);
+                overlap = target - dot(relative, normal);
+            }
+        }
+        if (!(overlap > 0)) break;
+        bool blockedFirst = ground && first.positionAndInverseMass.z <= config.clothMaterial.x + 1e-9f && normal.z > 0;
+        bool blockedSecond = ground && second.positionAndInverseMass.z <= config.clothMaterial.x + 1e-9f && normal.z < 0;
+        float firstMass = first.positionAndInverseMass.w, secondMass = second.positionAndInverseMass.w;
+        float denominator = firstMass * (1 - (blockedFirst ? normal.z * normal.z : 0)) +
+            secondMass * (1 - (blockedSecond ? normal.z * normal.z : 0));
+        if (!(denominator > 1e-16f)) break;
+        float lambda = overlap / denominator;
+        float3 firstCorrection = -normal * (firstMass * lambda), secondCorrection = normal * (secondMass * lambda);
+        if (blockedFirst) firstCorrection.z = 0;
+        if (blockedSecond) secondCorrection.z = 0;
+        float fraction = 1;
+        if (ground) {
+            if (firstCorrection.z < 0) fraction = min(fraction,
+                max(0.0f, first.positionAndInverseMass.z - config.clothMaterial.x) / -firstCorrection.z);
+            if (secondCorrection.z < 0) fraction = min(fraction,
+                max(0.0f, second.positionAndInverseMass.z - config.clothMaterial.x) / -secondCorrection.z);
+        }
+        first.positionAndInverseMass.xyz += firstCorrection * fraction;
+        second.positionAndInverseMass.xyz += secondCorrection * fraction;
+        if (ground) {
+            first.positionAndInverseMass.z = max(first.positionAndInverseMass.z, config.clothMaterial.x);
+            second.positionAndInverseMass.z = max(second.positionAndInverseMass.z, config.clothMaterial.x);
+        }
+    }
+    if (!all(isfinite(first.positionAndInverseMass)) || !all(isfinite(second.positionAndInverseMass))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE); return;
+    }
+    particles[pair.x] = first; particles[pair.y] = second;
+}
+
 kernel void numi_cloth_bag_solve_bend(
     constant NumiClothBagGPUConfig& config [[buffer(0)]],
     device NumiClothBagGPUParticle* particles [[buffer(1)]],

@@ -1,0 +1,28 @@
+{
+  "base_commit": "847288e",
+  "mechanics": "Finite diameter contact for unique two-hop nodes lacking a direct yarn edge. No fruit trajectory prescription. Existing nonlocal capsules retain their exclusions.",
+  "local_node_pair_count": 5754,
+  "metal_color_batch_count": 12,
+  "cloth_radius_m": 0.004,
+  "ABI": 14,
+  "sources_and_binaries": {
+    "CMakeLists.txt": "f4826762a069796528678ddc8b48adca979782c3140b11fad1cf5b70a86fd40f",
+    "include/numi/cloth_bag_gpu.h": "cdd47c51bff30c3531cba3504ec04cde4dd0ebb2746e9b64f1815437d99c5762",
+    "src/metal/ClothBag.metal": "6ba2e7be3c52949463b5da57c4101c7e61d3dc87c28d4186d66c52004565f62b",
+    "tools/cloth_bag.cpp": "90887a49f105dbf46b685698ce43d9735b906874a87787a5f429815adc489772",
+    "tools/cloth_bag_metal.mm": "d0788fedabcfd41107e21ae30bf260379134cec096da4a64a36e183023e72091",
+    "tools/audit_cloth_snapshot.py": "c98af0fd52351d3a0b27a780857462e81215a4cb3594ee8164ff2a15588b7f13",
+    "build-local-thickness/numi-solver-cloth-bag": "3d0b39fb5b0407b2b50cb0b3ca4ee0270a29c0dacb1c6621493b84d2d9727b0f",
+    "build-local-thickness/numi-solver-cloth-metal": "130eed9c3edabd7412a1501bdd97f41efc9ef7f3d55160fe1114d6421119c33b",
+    "build-local-thickness/shaders/NumiTemporalCone.metallib": "175c6dde347f0b6da898e0eae0c34ef9fc8721c0a1af54df43dcd7386114f217"
+  },
+  "native_device": "Apple M4",
+  "native_positive_cases": 6,
+  "native_transactional_negative_cases": 7,
+  "CPU_probe": "cloth-local-node-cpu-probe.log",
+  "Metal_probe": "cloth-local-node-metal-probe.log",
+  "tests": "cloth-local-node-checks.log",
+  "negative_witness_audit": "cloth-local-node-negative-audit.json",
+  "full_scene_qualification": "Pending actual 480-frame two-replay repaired CPU96 result and new full Metal result. The historical failed refinement remains failed.",
+  "evidence_boundary": "Targeted contact and oracle checks only. Node contact does not qualify all local yarn interiors, material calibration, cloth self-friction, total energy closure, or whole-scene convergence. The new native trajectory gate requires residual <=2 micrometres at each published frame."
+}

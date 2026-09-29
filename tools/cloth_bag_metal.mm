@@ -483,6 +483,7 @@ struct InitialState {
     std::vector<NumiClothBagGPUFruitPair> fruitPairs;
     std::vector<NumiClothBagGPUYarnContact> yarnContacts;
     std::vector<NumiClothBagGPUSelfPair> selfPairs;
+    std::vector<NumiClothBagGPULocalNodePair> localNodePairs;
     std::vector<std::uint32_t> selfPairLookup;
     std::vector<std::uint32_t> mouthRimParticles;
     std::vector<std::uint32_t> cuffParticles;
@@ -491,6 +492,7 @@ struct InitialState {
     std::vector<NumiClothBagGPUBatch> bendBatches;
     std::vector<NumiClothBagGPUBatch> fruitPairBatches;
     std::vector<NumiClothBagGPUBatch> selfBatches;
+    std::vector<NumiClothBagGPUBatch> localNodeBatches;
     std::uint32_t maximumSelfBatchSize{};
     std::uint32_t initialMouthCandidateMask{};
     std::uint32_t initialReleasedMask{};
@@ -1136,6 +1138,29 @@ InitialState makeInitialState() {
         std::sort(local.begin(), local.end());
         local.erase(std::unique(local.begin(), local.end()), local.end());
     }
+    std::vector<std::vector<NumiClothBagGPULocalNodePair>> localColors;
+    std::vector<std::uint64_t> usedLocalColors(kParticleCount, 0);
+    for (std::uint32_t first = 0; first < kParticleCount; ++first) {
+        for (const auto second : localTopology[first]) {
+            if (second <= first || std::find(directTopology[first].begin(),
+                    directTopology[first].end(), second) != directTopology[first].end()) continue;
+            const std::uint64_t used = usedLocalColors[first] | usedLocalColors[second];
+            std::uint32_t color = 0;
+            while (color < 63 && (used & (std::uint64_t{1} << color))) ++color;
+            if (color == 63) throw std::logic_error("local node contact coloring exceeds capacity");
+            usedLocalColors[first] |= std::uint64_t{1} << color;
+            usedLocalColors[second] |= std::uint64_t{1} << color;
+            if (localColors.size() <= color) localColors.resize(color + 1);
+            localColors[color].push_back({u4(first, second, color, 0)});
+        }
+    }
+    for (std::uint32_t color = 0; color < localColors.size(); ++color) {
+        const auto first = static_cast<std::uint32_t>(result.localNodePairs.size());
+        result.localNodePairs.insert(result.localNodePairs.end(),localColors[color].begin(),localColors[color].end());
+        result.localNodeBatches.push_back({u4(first, static_cast<std::uint32_t>(localColors[color].size()), color, 0)});
+    }
+    result.config.localContactCounts = u4(static_cast<std::uint32_t>(result.localNodePairs.size()),
+        static_cast<std::uint32_t>(result.localNodeBatches.size()),0,0);
     const auto localPair = [&localTopology](
         const std::uint32_t first,
         const std::uint32_t second
@@ -1708,6 +1733,20 @@ InitialState makeMouthReleaseProbeState(
 }
 
 bool verifyColoring(const InitialState& state) {
+    std::uint32_t nextLocal = 0;
+    for (const auto& batch : state.localNodeBatches) {
+        if (batch.control.x != nextLocal || batch.control.x + batch.control.y > state.localNodePairs.size()) return false;
+        std::vector<bool> used(state.particles.size(),false);
+        for (std::uint32_t local=0;local<batch.control.y;++local) {
+            const auto pair=state.localNodePairs[batch.control.x+local].nodesAndColor;
+            if (pair.x>=used.size() || pair.y>=used.size() || pair.x==pair.y ||
+                pair.z!=batch.control.z || used[pair.x] || used[pair.y]) return false;
+            used[pair.x]=used[pair.y]=true;
+        }
+        nextLocal+=batch.control.y;
+    }
+    if (nextLocal!=state.localNodePairs.size() || nextLocal!=state.config.localContactCounts.x ||
+        state.localNodeBatches.size()!=state.config.localContactCounts.y) return false;
     for (const NumiClothBagGPUBatch& batch : state.distanceBatches) {
         std::vector<bool> used(state.particles.size(), false);
         for (std::uint32_t local = 0u; local < batch.control.y; ++local) {
@@ -3434,6 +3473,68 @@ void updateOracleReleasedFruit(
     }
 }
 
+void solveOracleLocalNodePair(OracleParticle& first, OracleParticle& second, const double radius, const bool groundEnabled) {
+    const double target = 2.0 * radius;
+    for (std::uint32_t pass = 0; pass < 4; ++pass) {
+        const DVec3 relative = second.position - first.position;
+        const DVec3 previous = second.previous - first.previous;
+        const DVec3 delta = relative - previous;
+        const double distance = length(relative);
+        DVec3 normal = distance > 1.0e-12 ? relative / distance : normalized(previous);
+        double overlap = target - distance;
+        const double a = dot(delta, delta);
+        if (distance >= target) {
+            const double time = a > 1.0e-20
+                ? std::clamp(-dot(previous, delta) / a, 0.0, 1.0) : 0.0;
+            if (dot(previous + delta * time, previous + delta * time) >= target * target) break;
+        }
+        const double b = 2.0 * dot(previous, delta);
+        const double c = dot(previous, previous) - target * target;
+        const double discriminant = b * b - 4.0 * a * c;
+        if (c >= 0.0 && a > 1.0e-20 && b < 0.0 && discriminant >= 0.0) {
+            const double time = (-b - std::sqrt(discriminant)) / (2.0 * a);
+            if (time >= 0.0 && time <= 1.0) {
+                normal = normalized(previous + delta * time);
+                overlap = target - dot(relative, normal);
+            }
+        }
+        if (!(overlap > 0.0)) break;
+        const bool blockedFirst = groundEnabled &&
+            first.position.z <= radius + 1.0e-9 && normal.z > 0.0;
+        const bool blockedSecond = groundEnabled &&
+            second.position.z <= radius + 1.0e-9 && normal.z < 0.0;
+        const double denominator = first.inverseMass * (1.0 - (blockedFirst ? normal.z * normal.z : 0.0)) +
+            second.inverseMass * (1.0 - (blockedSecond ? normal.z * normal.z : 0.0));
+        if (!(denominator > 1.0e-16)) break;
+        const double lambda = overlap / denominator;
+        DVec3 firstCorrection = normal * (-first.inverseMass * lambda);
+        DVec3 secondCorrection = normal * (second.inverseMass * lambda);
+        if (blockedFirst) firstCorrection.z = 0.0;
+        if (blockedSecond) secondCorrection.z = 0.0;
+        double fraction = 1.0;
+        if (groundEnabled) for (const auto item : {
+                std::pair{first.position.z, firstCorrection.z},
+                std::pair{second.position.z, secondCorrection.z}}) {
+            if (item.second < 0.0) fraction = std::min(fraction,
+                std::max(0.0, item.first - radius) / -item.second);
+        }
+        first.position += firstCorrection * fraction;
+        second.position += secondCorrection * fraction;
+        if (groundEnabled) {
+            first.position.z = std::max(first.position.z, radius);
+            second.position.z = std::max(second.position.z, radius);
+        }
+    }
+}
+
+void solveOracleLocalNodes(const InitialState& initial, OracleResult& result) {
+    for (const auto& pair : initial.localNodePairs) {
+        solveOracleLocalNodePair(result.particles[pair.nodesAndColor.x],
+            result.particles[pair.nodesAndColor.y], initial.config.clothMaterial.x,
+            initial.config.constraintCounts.z != 0u);
+    }
+}
+
 OracleResult runOracle(
     const InitialState& initial,
     const std::uint32_t iterations,
@@ -3563,6 +3664,7 @@ OracleResult runOracle(
         predictedFruitPositions.push_back(fruit.position);
     }
     solveOracleSelfContact(initial, result, true);
+    solveOracleLocalNodes(initial, result);
     result.yarnContacts = buildOracleYarnContacts(initial, result);
     solveOracleYarnBatches(initial, result, true);
     for (std::uint32_t iteration = 0u; iteration < iterations; ++iteration) {
@@ -3831,6 +3933,7 @@ OracleResult runOracle(
         }
         solveOracleYarnBatches(initial, result, false);
         solveOracleSelfContact(initial, result, false);
+        solveOracleLocalNodes(initial, result);
         if (initial.config.constraintCounts.z != 0u) {
             const double clothRadius = initial.config.clothMaterial.x;
             for (OracleParticle& particle : result.particles) {
@@ -3850,12 +3953,14 @@ OracleResult runOracle(
     }
     solveOracleStrainLimits(initial, result, strainSweeps);
     const auto solveFinalContacts = [&] {
+        solveOracleLocalNodes(initial, result);
         solveOracleFruitPairs(initial, result);
         solveOracleYarnBatches(initial, result, false);
         solveOracleGround(initial, result);
     };
     const auto solveEndpointSelfAndStrain = [&] {
         solveOracleSelfContact(initial, result, false);
+        solveOracleLocalNodes(initial, result);
         solveOracleStrainLimits(initial, result, strainSweeps);
     };
     if (strainSweeps != 0u) {
@@ -4009,6 +4114,7 @@ struct Pipelines {
     id<MTLComputePipelineState> distance;
     id<MTLComputePipelineState> knot;
     id<MTLComputePipelineState> bend;
+    id<MTLComputePipelineState> localNode;
     id<MTLComputePipelineState> grip;
     id<MTLComputePipelineState> fruitPair;
     id<MTLComputePipelineState> ground;
@@ -4128,6 +4234,7 @@ GPUResult runGPU(
     id<MTLBuffer> gripBuffer = makeBytes(initial.grips);
     id<MTLBuffer> knotBuffer = makeBytes(initial.knots);
     id<MTLBuffer> bendBuffer = makeBytes(initial.bends);
+    id<MTLBuffer> localNodePairBuffer = makeBytes(initial.localNodePairs);
     id<MTLBuffer> fruitBuffer = makeBytes(initial.fruits);
     id<MTLBuffer> fruitPairBuffer = makeBytes(initial.fruitPairs);
     id<MTLBuffer> yarnContactBuffer = makeBytes(initial.yarnContacts);
@@ -4481,7 +4588,19 @@ GPUResult runGPU(
             initial.maximumSelfBatchSize
         );
     };
+    const auto solveLocalNodes = [&] {
+        for (const auto& batch : initial.localNodeBatches) {
+            [encoder setComputePipelineState:pipelines.localNode];
+            [encoder setBuffer:configBuffer offset:0 atIndex:0];
+            [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+            [encoder setBuffer:localNodePairBuffer offset:0 atIndex:2];
+            [encoder setBytes:&batch length:sizeof(batch) atIndex:3];
+            [encoder setBuffer:failureBuffer offset:0 atIndex:4];
+            dispatch(encoder,pipelines.localNode,batch.control.y);
+        }
+    };
     solveSelfContact(1u);
+    solveLocalNodes();
     buildYarnContacts();
     solveYarnBatches(1u);
 
@@ -4532,6 +4651,7 @@ GPUResult runGPU(
         }
         solveYarnBatches(0u);
         solveSelfContact(0u);
+        solveLocalNodes();
         if (initial.config.constraintCounts.z != 0u) {
             [encoder setComputePipelineState:pipelines.ground];
             [encoder setBuffer:configBuffer offset:0 atIndex:0];
@@ -4586,12 +4706,14 @@ GPUResult runGPU(
     };
     solveStrainLimits();
     const auto solveFinalContacts = [&] {
+        solveLocalNodes();
         solveFruitPairs();
         solveYarnBatches(0u);
         solveGround();
     };
     const auto solveEndpointSelfAndStrain = [&] {
         solveSelfContact(0u);
+        solveLocalNodes();
         solveStrainLimits();
     };
     if (strainSweeps != 0u) {
@@ -4970,12 +5092,29 @@ void dumpGPUOBJ(
     }
 }
 
+double maximumLocalNodePenetration(
+    const std::vector<NumiClothBagGPUParticle>& particles,
+    const std::vector<NumiClothBagGPULocalNodePair>& pairs,
+    const double radius
+) {
+    double maximum = 0.0;
+    for (const auto& pair : pairs) {
+        const DVec3 relative = d3(particles[pair.nodesAndColor.y].positionAndInverseMass) -
+            d3(particles[pair.nodesAndColor.x].positionAndInverseMass);
+        const double distance = length(relative);
+        if (!std::isfinite(distance)) return std::numeric_limits<double>::infinity();
+        maximum = std::max(maximum, 2.0 * radius - distance);
+    }
+    return maximum;
+}
+
 struct TrajectoryReplay {
     GPUResult final;
     std::vector<std::uint64_t> frameHashes;
     bool failureFree{true};
     double gpuSeconds{};
     double maximumHandleLag{};
+    double maximumLocalNodePenetration{};
 };
 
 const char* trajectoryName(const TrajectoryScenario scenario) {
@@ -5182,6 +5321,9 @@ TrajectoryReplay runTrajectoryReplay(
         }
         replay.failureFree = replay.failureFree &&
             replay.final.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE;
+        replay.maximumLocalNodePenetration = std::max(replay.maximumLocalNodePenetration,
+            maximumLocalNodePenetration(replay.final.particles, state.localNodePairs,
+                state.config.clothMaterial.x));
         replay.gpuSeconds += replay.final.seconds;
         replay.frameHashes.push_back(hashGPUResult(replay.final));
         if (scenario != TrajectoryScenario::grounded &&
@@ -5228,6 +5370,7 @@ TrajectoryReplay runTrajectoryReplay(
                       << " step=" << completedSteps << '/' << steps
                       << " released_mask="
                       << replay.final.releaseStatus.masks.y
+                      << " max_local_node_overlap_m=" << replay.maximumLocalNodePenetration
                       << " gpu_seconds=" << replay.gpuSeconds << std::endl;
         }
         if (!replay.failureFree) {
@@ -5560,7 +5703,135 @@ int runFruitFlightProbe(
     return passed ? 0 : 1;
 }
 
+int runLocalNodeProbe(
+    id<MTLDevice> device, id<MTLCommandQueue> queue,
+    id<MTLComputePipelineState> pipeline, const InitialState& authored
+) {
+    using Bodies = std::array<NumiClothBagGPUParticle, 2>;
+    struct Result { Bodies bodies; std::uint32_t failure; };
+    NumiClothBagGPUConfig config{};
+    config.control = u4(NUMI_CLOTH_BAG_GPU_ABI_VERSION, 2, 0, 0);
+    config.localContactCounts = u4(1, 1, 0, 0);
+    config.gravityAndTimestep = f4(0, 0, 0, 1e-4f);
+    config.clothMaterial = f4(.004f, 0, 0, 0);
+    const NumiClothBagGPULocalNodePair pair{u4(0, 1, 0, 0)};
+    const NumiClothBagGPUBatch batch{u4(0, 1, 0, 0)};
+    const auto body = [](const DVec3 position, const float mass) {
+        NumiClothBagGPUParticle result{};
+        result.positionAndInverseMass = f4(position.x, position.y, position.z, 1.0f/mass);
+        result.previousAndMass = f4(position.x, position.y, position.z, mass);
+        result.velocity = f4(.1f, -.2f, .3f, 0);
+        return result;
+    };
+    const auto execute = [&](const Bodies& bodies, const NumiClothBagGPUConfig& cfg,
+                             const NumiClothBagGPULocalNodePair& contact,
+                             const NumiClothBagGPUBatch& colorBatch) -> Result {
+        @autoreleasepool {
+            id<MTLBuffer> nodes = [device newBufferWithBytes:bodies.data() length:sizeof(bodies)
+                options:MTLResourceStorageModeShared];
+            std::uint32_t zero=0;
+            id<MTLBuffer> failure = [device newBufferWithBytes:&zero length:sizeof(zero)
+                options:MTLResourceStorageModeShared];
+            if (nodes==nil || failure==nil) throw std::runtime_error("local contact probe allocation failed");
+            id<MTLCommandBuffer> commands = [queue commandBuffer];
+            id<MTLComputeCommandEncoder> encoder = [commands computeCommandEncoder];
+            [encoder setBytes:&cfg length:sizeof(cfg) atIndex:0];
+            [encoder setBuffer:nodes offset:0 atIndex:1];
+            [encoder setBytes:&contact length:sizeof(contact) atIndex:2];
+            [encoder setBytes:&colorBatch length:sizeof(colorBatch) atIndex:3];
+            [encoder setBuffer:failure offset:0 atIndex:4];
+            dispatch(encoder, pipeline, 1);
+            [encoder endEncoding]; [commands commit]; [commands waitUntilCompleted];
+            if (commands.status!=MTLCommandBufferStatusCompleted || commands.error!=nil)
+                throw std::runtime_error("local contact probe GPU command failed");
+            Result result{};
+            std::memcpy(result.bodies.data(), nodes.contents, sizeof(bodies));
+            std::memcpy(&result.failure, failure.contents, sizeof(zero));
+            return result;
+        }
+    };
+    const auto com = [](const Bodies& bodies) {
+        const double a=bodies[0].previousAndMass.w, b=bodies[1].previousAndMass.w;
+        return (d3(bodies[0].positionAndInverseMass)*a + d3(bodies[1].positionAndInverseMass)*b)/(a+b);
+    };
+    bool passed=verifyColoring(authored) && authored.localNodePairs.size()==5754;
+    bool witnessIncluded=false;
+    for (const auto& candidate : authored.localNodePairs)
+        witnessIncluded |= candidate.nodesAndColor.x==861 && candidate.nodesAndColor.y==957;
+    passed &= witnessIncluded;
+    for (std::uint32_t index=0; index<6; ++index) {
+        Bodies input{body({.0296004313,-.10588813,.624721282},.001f),
+            body({.0301673682,-.106243419,.624138885},.003f)};
+        config.constraintCounts.z=0;
+        if (index==1 || index==2) {
+            const double height=index==1 ? .004 : .005;
+            input={body({0,0,height},.001f),body({0,0,height+.001},.003f)};
+            config.constraintCounts.z=1;
+        } else if (index==3 || index==4) {
+            input={body({-.02,0,.6},.001f),body({.02,0,.6},.003f)};
+            input[0].positionAndInverseMass.x=index==3 ? .02f : 0;
+            input[1].positionAndInverseMass.x=index==3 ? -.02f : 0;
+        } else if (index==5) {
+            input={body({0,0,.6},.001f),body({.001,0,.6},.003f)};
+            input[0].positionAndInverseMass.w=0;
+        }
+        const Result first=execute(input,config,pair,batch), second=execute(input,config,pair,batch);
+        const double separation=length(d3(first.bodies[1].positionAndInverseMass)-d3(first.bodies[0].positionAndInverseMass));
+        const double comError=length(com(first.bodies)-com(input));
+        const bool exact=first.failure==second.failure &&
+            std::memcmp(first.bodies.data(),second.bodies.data(),sizeof(Bodies))==0;
+        bool valid=first.failure==0 && exact && std::abs(separation-.008)<2e-6;
+        if (index==0 || index==3 || index==4) valid &= comError<2e-7;
+        if (index==1 || index==2) valid &=
+            std::abs(first.bodies[0].positionAndInverseMass.z-.004)<2e-7 &&
+            std::abs(first.bodies[1].positionAndInverseMass.z-.012)<2e-7;
+        if (index==3) valid &= first.bodies[1].positionAndInverseMass.x-first.bodies[0].positionAndInverseMass.x>0;
+        if (index==5) valid &= std::memcmp(&first.bodies[0],&input[0],sizeof(input[0]))==0;
+        double oracleError=0;
+        OracleParticle oracleA{d3(input[0].positionAndInverseMass),d3(input[0].previousAndMass),{},input[0].positionAndInverseMass.w};
+        OracleParticle oracleB{d3(input[1].positionAndInverseMass),d3(input[1].previousAndMass),{},input[1].positionAndInverseMass.w};
+        solveOracleLocalNodePair(oracleA,oracleB,config.clothMaterial.x,config.constraintCounts.z!=0);
+        oracleError=std::max(length(d3(first.bodies[0].positionAndInverseMass)-oracleA.position),
+            length(d3(first.bodies[1].positionAndInverseMass)-oracleB.position));
+        valid &= oracleError<2e-7;
+        // Only positions may change; previous states, mass and velocity must survive contact.
+        for (std::size_t node=0; node<2; ++node) {
+            auto actual=first.bodies[node], expected=input[node];
+            actual.positionAndInverseMass=expected.positionAndInverseMass;
+            valid &= std::memcmp(&actual,&expected,sizeof(actual))==0;
+        }
+        passed &= valid;
+        std::cout << "local_node_case=" << index << " separation_m=" << separation
+                  << " com_error_m=" << comError << " oracle_error_m=" << oracleError
+                  << " replay_exact=" << exact << " passed=" << valid << '\n';
+    }
+    config.constraintCounts.z=0;
+    const Bodies accepted{body({0,0,.6},.001f),body({.001,0,.6},.003f)};
+    for (std::uint32_t index=0; index<7; ++index) {
+        auto invalidConfig=config; auto invalidPair=pair; auto invalidBatch=batch; auto invalidBodies=accepted;
+        std::uint32_t expectedFlag=NUMI_CLOTH_BAG_GPU_FAILURE_RANGE;
+        if (index==0) { invalidConfig.control.x--; expectedFlag=NUMI_CLOTH_BAG_GPU_FAILURE_ABI; }
+        if (index==1) invalidPair.nodesAndColor.y=2;
+        if (index==2) invalidPair.nodesAndColor.y=0;
+        if (index==3) { invalidPair.nodesAndColor.z=1; expectedFlag=NUMI_CLOTH_BAG_GPU_FAILURE_BATCH; }
+        if (index==4) { invalidBodies[0].positionAndInverseMass.w=-1; expectedFlag=NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE; }
+        if (index==5) { invalidBodies[0].previousAndMass.x=std::numeric_limits<float>::quiet_NaN(); expectedFlag=NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE; }
+        if (index==6) invalidBatch.control.x=std::numeric_limits<std::uint32_t>::max();
+        const Result result=execute(invalidBodies,invalidConfig,invalidPair,invalidBatch);
+        const bool unchanged=std::memcmp(result.bodies.data(),invalidBodies.data(),sizeof(Bodies))==0;
+        const bool valid=unchanged && result.failure==expectedFlag;
+        passed &= valid;
+        std::cout << "local_node_rejection=" << index << " failure=" << result.failure
+                  << " accepted_state_unchanged=" << unchanged << " passed=" << valid << '\n';
+    }
+    std::cout << "device=" << device.name.UTF8String << " local_node_pairs=" << authored.localNodePairs.size()
+              << " local_node_batches=" << authored.localNodeBatches.size()
+              << " witness_included=" << witnessIncluded << " local_node_probe_passed=" << passed << '\n';
+    return passed ? 0 : 1;
+}
+
 int run(const int argc, const char* const* argv) {
+    bool localNodeProbe = false;
     bool fruitFlightProbe = false;
     bool initialStateProbe = false;
     std::uint32_t replays = 2u;
@@ -5583,7 +5854,9 @@ int run(const int argc, const char* const* argv) {
     std::string metallibPath = NUMI_TEMPORAL_CONE_METALLIB;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string_view value(argv[argument]);
-        if (value == "--initial-state-probe") {
+        if (value == "--local-node-probe") {
+            localNodeProbe = true;
+        } else if (value == "--initial-state-probe") {
             initialStateProbe = true;
         } else if (value == "--fruit-flight-probe") {
             fruitFlightProbe = true;
@@ -5652,7 +5925,7 @@ int run(const int argc, const char* const* argv) {
         } else if (value == "--help") {
             std::cout
                 << "usage: numi-solver-cloth-metal [--replays N] "
-                   "[--iterations N] [--strain-sweeps N] "
+                   "[--iterations N] [--strain-sweeps N] [--local-node-probe] "
                    "[--metallib PATH] [--material FILE] "
                    "[--grip-trajectory FILE] [--recorded-steps N] "
                    "[--recorded-prefix PATH] "
@@ -5758,12 +6031,17 @@ int run(const int argc, const char* const* argv) {
         const double groundOverlap = maximumGroundPenetration(
             state.particles, state.fruits, state.config.clothMaterial.x
         );
-        const bool passed = verifyColoring(state) && fruitYarnOverlap <= 1e-6 &&
+        const double localOverlap = maximumLocalNodePenetration(
+            state.particles, state.localNodePairs, state.config.clothMaterial.x);
+        const bool passed = localOverlap <= 2e-6 && verifyColoring(state) && fruitYarnOverlap <= 1e-6 &&
             fruitPairOverlap <= 1e-6 && selfOverlap <= 2e-6 && groundOverlap <= 1e-6;
         std::cout << "initial_geometry backend=host_authored_float_tables"
                   << " fruit_yarn_overlap_m=" << fruitYarnOverlap
                   << " fruit_pair_overlap_m=" << fruitPairOverlap
                   << " nonlocal_yarn_overlap_m=" << selfOverlap
+                  << " local_node_overlap_m=" << localOverlap
+                  << " local_node_pairs=" << state.localNodePairs.size()
+                  << " local_node_batches=" << state.localNodeBatches.size()
                   << " ground_overlap_m=" << groundOverlap
                   << " passed=" << passed << '\n';
         if (selfOverlap > 0.0) {
@@ -5837,6 +6115,7 @@ int run(const int argc, const char* const* argv) {
         makePipeline(device, library, @"numi_cloth_bag_solve_distance"),
         makePipeline(device, library, @"numi_cloth_bag_solve_knot"),
         makePipeline(device, library, @"numi_cloth_bag_solve_bend"),
+        makePipeline(device, library, @"numi_cloth_bag_solve_local_node_contact"),
         makePipeline(device, library, @"numi_cloth_bag_solve_grip"),
         makePipeline(device, library, @"numi_cloth_bag_solve_fruit_pair"),
         makePipeline(device, library, @"numi_cloth_bag_solve_ground"),
@@ -5881,6 +6160,9 @@ int run(const int argc, const char* const* argv) {
         ),
     };
 
+    if (localNodeProbe) {
+        return runLocalNodeProbe(device, queue, pipelines.localNode, initial);
+    }
     if (fruitFlightProbe) {
         return runFruitFlightProbe(device, queue, pipelines);
     }
@@ -6282,7 +6564,9 @@ int run(const int argc, const char* const* argv) {
         groundedKineticEnergy = kineticEnergy(groundedFirst.final);
     }
     const bool groundedQualified = !groundedRequested ||
-        (groundedComplete && groundedFirst.failureFree &&
+        (groundedFirst.maximumLocalNodePenetration <= 2.0e-6 &&
+         groundedSecond.maximumLocalNodePenetration <= 2.0e-6 &&
+         groundedComplete && groundedFirst.failureFree &&
          groundedSecond.failureFree && groundedReplayExact &&
          groundedReleasedMask == 0u && groundedEscapeMask == 0u &&
          groundedClothContacts > 0u &&
@@ -6367,7 +6651,9 @@ int run(const int argc, const char* const* argv) {
         );
     }
     const bool spinQualified = !spinRequested ||
-        (spinComplete && spinFirst.failureFree && spinSecond.failureFree &&
+        (spinFirst.maximumLocalNodePenetration <= 2.0e-6 &&
+         spinSecond.maximumLocalNodePenetration <= 2.0e-6 &&
+         spinComplete && spinFirst.failureFree && spinSecond.failureFree &&
          spinReplayExact && spinReleasedMask == 0u && spinEscapeMask == 0u &&
          spinMinimumClothHeight > -5.0 &&
          spinMinimumFruitClearance > -5.0 &&
@@ -6452,7 +6738,9 @@ int run(const int argc, const char* const* argv) {
         );
     }
     const bool pickupQualified = !pickupRequested ||
-        (pickupComplete && pickupFirst.failureFree &&
+        (pickupFirst.maximumLocalNodePenetration <= 2.0e-6 &&
+         pickupSecond.maximumLocalNodePenetration <= 2.0e-6 &&
+         pickupComplete && pickupFirst.failureFree &&
          pickupSecond.failureFree && pickupReplayExact &&
          std::popcount(pickupReleasedMask) >= 2 &&
          pickupGroundedReleasedCount >= 2u &&
@@ -6599,7 +6887,9 @@ int run(const int argc, const char* const* argv) {
         }
     }
     const bool recordedQualified = !recordedRequested ||
-        (recordedFirst.failureFree && recordedSecond.failureFree &&
+        (recordedFirst.maximumLocalNodePenetration <= 2.0e-6 &&
+         recordedSecond.maximumLocalNodePenetration <= 2.0e-6 &&
+         recordedFirst.failureFree && recordedSecond.failureFree &&
          recordedReplayExact && recordedEscapeMask == 0u &&
          recordedStrainViolation <= 2.0e-6 &&
          recordedGroundPenetration <= 1.0e-6 &&
@@ -6972,6 +7262,8 @@ int run(const int argc, const char* const* argv) {
         initial.selfPairs,
         initial.config.clothMaterial.x
     );
+    const double finalLocalNodePenetration = maximumLocalNodePenetration(
+        gpu.particles, initial.localNodePairs, initial.config.clothMaterial.x);
     const double finalGroundPenetration = maximumGroundPenetration(
         gpu.particles,
         gpu.fruits,
@@ -7912,6 +8204,7 @@ int run(const int argc, const char* const* argv) {
         sweptSelfContactCountDifference <= 4u &&
         maximumSelfCorrectionError <= 2.0e-5 &&
         finalSelfPenetration <= 2.0e-6 &&
+        finalLocalNodePenetration <= 2.0e-6 &&
         finalGroundPenetration <= 1.0e-9 &&
         ((oracle.presentSelfContacts + oracle.sweptSelfContacts == 0u) ==
          (gpuPresentSelfContacts + gpuSweptSelfContacts == 0u)) &&
@@ -8182,6 +8475,7 @@ int run(const int argc, const char* const* argv) {
               << " max_self_correction_error="
               << maximumSelfCorrectionError
               << " final_self_penetration=" << finalSelfPenetration
+              << " final_local_node_overlap_m=" << finalLocalNodePenetration
               << " final_ground_penetration="
               << finalGroundPenetration << '\n'
               << "max_strain_violation=" << strainViolation
@@ -8388,6 +8682,7 @@ int run(const int argc, const char* const* argv) {
               << " strain_violation=" << groundedStrainViolation
               << " ground_penetration=" << groundedGroundPenetration
               << " self_penetration=" << groundedSelfPenetration
+              << " max_local_node_overlap_m=" << std::max(groundedFirst.maximumLocalNodePenetration, groundedSecond.maximumLocalNodePenetration)
               << " shape_change=" << groundedShapeChange
               << " kinetic_energy=" << groundedKineticEnergy
               << " first_gpu_seconds=" << groundedFirst.gpuSeconds
@@ -8404,6 +8699,7 @@ int run(const int argc, const char* const* argv) {
               << " minimum_fruit_clearance=" << spinMinimumFruitClearance
               << " strain_violation=" << spinStrainViolation
               << " self_penetration=" << spinSelfPenetration
+              << " max_local_node_overlap_m=" << std::max(spinFirst.maximumLocalNodePenetration, spinSecond.maximumLocalNodePenetration)
               << " handle_travel=" << spinHandleTravel
               << " maximum_handle_lag=" << spinFirst.maximumHandleLag
               << " shape_change=" << spinShapeChange
@@ -8427,6 +8723,7 @@ int run(const int argc, const char* const* argv) {
               << " strain_violation=" << pickupStrainViolation
               << " ground_penetration=" << pickupGroundPenetration
               << " self_penetration=" << pickupSelfPenetration
+              << " max_local_node_overlap_m=" << std::max(pickupFirst.maximumLocalNodePenetration, pickupSecond.maximumLocalNodePenetration)
               << " first_gpu_seconds=" << pickupFirst.gpuSeconds
               << " second_gpu_seconds=" << pickupSecond.gpuSeconds
               << " qualified=" << pickupQualified << '\n'
@@ -8440,6 +8737,7 @@ int run(const int argc, const char* const* argv) {
               << " strain_violation=" << recordedStrainViolation
               << " ground_penetration=" << recordedGroundPenetration
               << " self_penetration=" << recordedSelfPenetration
+              << " max_local_node_overlap_m=" << std::max(recordedFirst.maximumLocalNodePenetration, recordedSecond.maximumLocalNodePenetration)
               << " maximum_handle_lag="
               << recordedFirst.maximumHandleLag
               << " regrab_count="
