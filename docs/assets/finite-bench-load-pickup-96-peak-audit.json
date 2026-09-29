@@ -1,0 +1,90 @@
+{
+  "yarn_radius_m": 0.004,
+  "yarn_count": 2904,
+  "local_node_contacts_enforced": true,
+  "whole_yarn_static_contacts_enforced": true,
+  "all_snapshots_within_contact_tolerance": false,
+  "evidence_boundary": "Contacts of supplied exported states only. Exact authored axial graph and two-hop exclusions are reconstructed after validating every render triangle. Does not certify intervening substeps, dynamics, material calibration, strain or replay.",
+  "snapshots": [
+    {
+      "snapshot": "build/finite-bench-load-pickup-96-r1-peak.obj",
+      "snapshot_sha256": "8867ea0fe2b8f89571a9c70d20a1186ed5e432ba3eacb946cf46eb1f56212d6f",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.669260191813741e-05,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          983,
+          984
+        ]
+      },
+      "fruit_pair_overlap_m": 3.73206366921508e-08,
+      "fruit_pair_witness": [
+        2,
+        3
+      ],
+      "nonlocal_yarn_overlap_m": 7.420224122645092e-10,
+      "nonlocal_yarn_witness": [
+        [
+          11,
+          12
+        ],
+        [
+          155,
+          156
+        ]
+      ],
+      "self_broadphase_candidates": 16871,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": false,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 9.65347453016352e-10,
+      "local_node_witness": [
+        840,
+        936
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-load-pickup-96-r2-peak.obj",
+      "snapshot_sha256": "8867ea0fe2b8f89571a9c70d20a1186ed5e432ba3eacb946cf46eb1f56212d6f",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.669260191813741e-05,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          983,
+          984
+        ]
+      },
+      "fruit_pair_overlap_m": 3.73206366921508e-08,
+      "fruit_pair_witness": [
+        2,
+        3
+      ],
+      "nonlocal_yarn_overlap_m": 7.420224122645092e-10,
+      "nonlocal_yarn_witness": [
+        [
+          11,
+          12
+        ],
+        [
+          155,
+          156
+        ]
+      ],
+      "self_broadphase_candidates": 16871,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": false,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 9.65347453016352e-10,
+      "local_node_witness": [
+        840,
+        936
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    }
+  ]
+}

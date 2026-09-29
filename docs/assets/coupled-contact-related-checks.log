@@ -1,0 +1,51 @@
+Test project /Users/home/numi-solver/build
+      Start  1: static_contact.host
+ 1/12 Test  #1: static_contact.host ...............   Passed    0.62 sec
+      Start  2: static_contact.metal
+ 2/12 Test  #2: static_contact.metal ..............   Passed    0.54 sec
+      Start  4: cloth_bag.finite_bench
+ 3/12 Test  #4: cloth_bag.finite_bench ............   Passed    0.04 sec
+      Start  5: cloth_bag.coupled_yarn
+ 4/12 Test  #5: cloth_bag.coupled_yarn ............   Passed    0.00 sec
+      Start  6: cloth_bag.coupled_yarn_peak
+ 5/12 Test  #6: cloth_bag.coupled_yarn_peak .......   Passed    0.01 sec
+      Start 37: cloth_bag.local_node_contact
+ 6/12 Test #37: cloth_bag.local_node_contact ......   Passed    0.00 sec
+      Start 44: cloth_bag.strain_limit
+ 7/12 Test #44: cloth_bag.strain_limit ............   Passed    0.00 sec
+      Start 45: cloth_bag.self_friction
+ 8/12 Test #45: cloth_bag.self_friction ...........   Passed    0.00 sec
+      Start 46: cloth_bag.deformable_response
+ 9/12 Test #46: cloth_bag.deformable_response .....   Passed    0.00 sec
+      Start 47: cloth_bag.yarn_mechanics
+10/12 Test #47: cloth_bag.yarn_mechanics ..........   Passed    0.00 sec
+      Start 49: cloth_bag.cloth_ground_friction
+11/12 Test #49: cloth_bag.cloth_ground_friction ...   Passed    0.00 sec
+      Start 50: cloth_bag.rolling_resistance
+12/12 Test #50: cloth_bag.rolling_resistance ......   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 12
+
+Label Time Summary:
+barrier           =   0.00 sec*proc (1 test)
+ccd               =   0.04 sec*proc (3 tests)
+cloth             =   0.06 sec*proc (10 tests)
+contact           =   1.22 sec*proc (10 tests)
+coupled           =   0.02 sec*proc (3 tests)
+cpu               =   0.63 sec*proc (3 tests)
+deformable        =   0.00 sec*proc (1 test)
+finite_bench      =   1.21 sec*proc (5 tests)
+friction          =   0.00 sec*proc (3 tests)
+fruit             =   0.00 sec*proc (1 test)
+ground            =   0.00 sec*proc (2 tests)
+knot              =   0.00 sec*proc (1 test)
+local_topology    =   0.00 sec*proc (1 test)
+metal             =   0.54 sec*proc (1 test)
+physics           =   1.22 sec*proc (12 tests)
+reference         =   0.01 sec*proc (6 tests)
+rolling           =   0.00 sec*proc (1 test)
+self_contact      =   0.00 sec*proc (1 test)
+strain            =   0.00 sec*proc (1 test)
+yarn              =   0.00 sec*proc (2 tests)
+
+Total Test time (real) =   1.23 sec

@@ -1,0 +1,22 @@
+Test project /Users/home/numi-solver/build
+    Start 1: static_contact.host
+1/4 Test #1: static_contact.host ..............   Passed    0.46 sec
+    Start 2: static_contact.metal
+2/4 Test #2: static_contact.metal .............   Passed    0.31 sec
+    Start 5: cloth_bag.coupled_yarn
+3/4 Test #5: cloth_bag.coupled_yarn ...........   Passed    0.27 sec
+    Start 6: cloth_bag.coupled_yarn_peak
+4/4 Test #6: cloth_bag.coupled_yarn_peak ......   Passed    0.03 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Label Time Summary:
+cloth           =   0.30 sec*proc (2 tests)
+contact         =   1.07 sec*proc (4 tests)
+coupled         =   0.30 sec*proc (2 tests)
+cpu             =   0.76 sec*proc (3 tests)
+finite_bench    =   1.07 sec*proc (4 tests)
+metal           =   0.31 sec*proc (1 test)
+physics         =   1.07 sec*proc (4 tests)
+
+Total Test time (real) =   1.07 sec

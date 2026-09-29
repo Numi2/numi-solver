@@ -1,0 +1,54 @@
+{
+  "schema": "numi.finite-bench.blocked-load-finer-failure.v1",
+  "physics_source_commit": "6f1e450",
+  "actual_exit_code": 1,
+  "result": "FAIL",
+  "configuration": {
+    "scenario": "recorded",
+    "steps": 720,
+    "substeps": 96,
+    "iterations": 32,
+    "replays": 2,
+    "simulated_seconds": 6.0,
+    "finite_bench": true
+  },
+  "source_binary_sha256": {
+    "cloth_bag.cpp": "530ea24cb826fd9f8499b96fcece5848757b50c6b11f05f66dd2cdcab6a1c630",
+    "cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd",
+    "finite-bench-loaded-drop.csv": "1313ab661da38fe49c764209391e489050aef5e35399230561d3be7a8c62afd1",
+    "finite_bench_geometry.h": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade",
+    "grip_trajectory.h": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+    "numi-solver-cloth-bag": "c5cef4ec0708bf12e06816e2aa65b29d4a9a99fa366db1b310bac78666b58a63"
+  },
+  "post_terminal_frozen_manifest_verified": true,
+  "both_complete_ordered_frame_replays_match": true,
+  "ordered_frame_hash": "0x3d04ae458b71ce67",
+  "artifacts_sha256": {
+    "finite-bench-load-drop-96.log": "860030eaf9f1dfd52f3a86ad0776f5d70cfbf9741dc5179f65b21b1c8740f7e8",
+    "finite-bench-load-drop-96-fruits.csv": "ce223a276ae972a7ac8b8a4c0ce68f3652e3917d6519a71566ce8935b213ad22",
+    "finite-bench-load-drop-96-peaks.csv": "5be9828d8a9d74300731c94ec7e7ef8d16a32b67b24ced1f102de2f0883c1b09",
+    "finite-bench-load-drop-96-audit.json": "e25a477784455934df6d2ac3e838105873bb78412933ccdc962ccbe3a4e507e6",
+    "finite-bench-load-drop-timestep-comparison.json": "6b5df283c971d974d060c5b4301d3e9dcfff1dbc17a32078413b9256e1c03d10"
+  },
+  "boundary": "Actual completed source6f finer failure, retained independently of the new coupled-contact source. Authored lower floor is -0.75m. Exact replay and saved contact checks do not establish convergence, material calibration, native finite bench or whole-scene work/reaction closure.",
+  "grip_input_sha256": "1313ab661da38fe49c764209391e489050aef5e35399230561d3be7a8c62afd1",
+  "maximum_dynamic_speed_m_s": 35.930056087,
+  "unchanged_speed_limit_m_s": 30,
+  "released_fruits": [
+    10
+  ],
+  "cloth_center_descent_after_first_inactive_saved_state_m": 1.7801912160442024,
+  "final_floor_node_count": 26,
+  "all_73_saved_contact_witnesses_pass": true,
+  "geometric_drop_outcome_pass": true,
+  "full_qualification_pass": false,
+  "failed_gates": [
+    "maximum dynamic speed exceeds 30m/s"
+  ],
+  "released_set_differs_from_completed_coarse_case": true,
+  "coarse_released_fruits": [
+    10,
+    11
+  ],
+  "release_set_boundary": "Recorded six-second case does not impose the pickup minimum-two-release gate. One release is descriptive here, not a failed gate."
+}

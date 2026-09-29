@@ -1,0 +1,47 @@
+{
+  "schema": "numi.cloth.native-local-node.full-failure.v1",
+  "physics_source_commit": "579937a",
+  "device": "Apple M4",
+  "abi": 14,
+  "actual_exit_code": 1,
+  "result": "FAIL",
+  "configuration": {
+    "steps_per_replay": 480,
+    "substeps": 48,
+    "iterations": 32,
+    "strain_sweeps": 3,
+    "replays": 2,
+    "simulated_seconds": 4,
+    "static_surface": "infinite plane"
+  },
+  "both_complete_gpu_buffer_and_ordered_frame_replays_match": true,
+  "released_fruits": [
+    8
+  ],
+  "grounded_released_count": 0,
+  "serialized_full_fruit_trace": "replay2 only; replay1 CSV overwritten by this frozen runner",
+  "released_fruits_never_observed_supported": [
+    8
+  ],
+  "final_fruit8_exported_center_location": "inside render mesh closed by virtual mouth cap; descriptive geometry only",
+  "all_49_saved_contact_witnesses_pass": true,
+  "maximum_published_local_node_overlap_m": 5.4682e-08,
+  "source_binary_sha256": {
+    "tools/cloth_bag_metal.mm": "d0788fedabcfd41107e21ae30bf260379134cec096da4a64a36e183023e72091",
+    "src/metal/ClothBag.metal": "6ba2e7be3c52949463b5da57c4101c7e61d3dc87c28d4186d66c52004565f62b",
+    "include/numi/cloth_bag_gpu.h": "cdd47c51bff30c3531cba3504ec04cde4dd0ebb2746e9b64f1815437d99c5762",
+    "build/local-node-native-launch/numi-solver-cloth-metal": "130eed9c3edabd7412a1501bdd97f41efc9ef7f3d55160fe1114d6421119c33b",
+    "build/local-node-native-launch/NumiTemporalCone.metallib": "175c6dde347f0b6da898e0eae0c34ef9fc8721c0a1af54df43dcd7386114f217"
+  },
+  "post_terminal_frozen_manifest_verified": true,
+  "artifacts_sha256": {
+    "cloth-metal-local-node-failed.log": "5e1a56d536e0155713711ceb7541427353e6bd368218610818490d80a619d842",
+    "cloth-metal-local-node-failed-fruits.csv": "7473dbda949e94b3e843fb3f70fe19f0e791152b44ee85c586398771ede5a137",
+    "cloth-metal-local-node-failed-fruit-audit.json": "6ff4a086449acd39371abde210eee29e079540deb950230039b6ad8d84d52f92",
+    "cloth-metal-local-node-failed-contact-audit.json": "2ddcab15826067e446f5ef6c94c6143ec334ab5b458b625ef75ede1d750c8b48",
+    "cloth-metal-local-node-failed-final-containment.json": "081cabbd691e99433cd545a36f394e2f6143f8ead1eb4af9f4859a852d93cc10",
+    "cloth-metal-local-node-frozen-verification.json": "c70579b7981fb7b768d523de954343990573420acda9fe5752fd1cfa7fc2f43d"
+  },
+  "failure": "Complete native pickup outcome remains unqualified: one latched release and no supported released fruit.",
+  "boundary": "This is the actual completed ABI14 plane job, independent of CPU finite-bench outcomes and native elastic volumes. Current ABI15 finite-bench source work is uncommitted; it did not affect these frozen source/binary/library fingerprints."
+}

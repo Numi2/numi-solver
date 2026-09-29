@@ -1,0 +1,4 @@
+backend=CPU_shared_FP32_geometry independent_reference=production_FP64
+cases=1707 faces=481 rounded_edges=136 rounded_vertices=32 floor=159 misses=896 rejected_invalid=7 mismatches=0
+maximum_impact_position_error_m=3.9402e-07 maximum_normal_error=1.31435e-05 maximum_contact_gap_m=1.56e-07
+static_geometry_host_probe_pass=1 native_Metal_execution=NOT_RUN full_scene=NOT_QUALIFIED

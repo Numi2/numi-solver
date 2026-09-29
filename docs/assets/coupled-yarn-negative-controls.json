@@ -1,0 +1,44 @@
+[
+  {
+    "case": "missing_bench",
+    "actual_exit_code": 2,
+    "rejected": true,
+    "stderr": "numi-solver-cloth-bag: incomplete authored contact snapshot"
+  },
+  {
+    "case": "changed_floor",
+    "actual_exit_code": 2,
+    "rejected": true,
+    "stderr": "numi-solver-cloth-bag: snapshot static model differs from authored bench"
+  },
+  {
+    "case": "duplicate_fruit",
+    "actual_exit_code": 2,
+    "rejected": true,
+    "stderr": "numi-solver-cloth-bag: invalid or duplicate snapshot fruit"
+  },
+  {
+    "case": "changed_topology",
+    "actual_exit_code": 2,
+    "rejected": true,
+    "stderr": "numi-solver-cloth-bag: snapshot topology differs from authored yarn model"
+  },
+  {
+    "case": "missing_vertex",
+    "actual_exit_code": 2,
+    "rejected": true,
+    "stderr": "numi-solver-cloth-bag: incomplete authored contact snapshot"
+  },
+  {
+    "case": "nonfinite_vertex",
+    "actual_exit_code": 2,
+    "rejected": true,
+    "stderr": "numi-solver-cloth-bag: invalid snapshot vertex"
+  },
+  {
+    "case": "changed_radius",
+    "actual_exit_code": 2,
+    "rejected": true,
+    "stderr": "numi-solver-cloth-bag: invalid or duplicate snapshot fruit"
+  }
+]

@@ -1,0 +1,1 @@
+coupled_yarn_probe_pass=true cases=6 applied_blocks=6 maximum_normal_residual_m=1.5265566588595902e-16 maximum_mass_weighted_displacement_balance_error_kg_m=1.111307226797642e-17 maximum_static_support_error_m=0 inactive_contact_zero_impulse=true singular_system_rejected=true full_replay=NOT_QUALIFIED

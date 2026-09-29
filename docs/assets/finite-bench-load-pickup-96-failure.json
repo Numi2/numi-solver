@@ -1,0 +1,59 @@
+{
+  "schema": "numi.finite-bench.blocked-load-finer-failure.v1",
+  "physics_source_commit": "6f1e450",
+  "actual_exit_code": 1,
+  "result": "FAIL",
+  "configuration": {
+    "scenario": "pickup",
+    "steps": 480,
+    "substeps": 96,
+    "iterations": 32,
+    "replays": 2,
+    "simulated_seconds": 4.0,
+    "finite_bench": true
+  },
+  "source_binary_sha256": {
+    "cloth_bag.cpp": "530ea24cb826fd9f8499b96fcece5848757b50c6b11f05f66dd2cdcab6a1c630",
+    "cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd",
+    "finite-bench-loaded-drop.csv": "1313ab661da38fe49c764209391e489050aef5e35399230561d3be7a8c62afd1",
+    "finite_bench_geometry.h": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade",
+    "grip_trajectory.h": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+    "numi-solver-cloth-bag": "c5cef4ec0708bf12e06816e2aa65b29d4a9a99fa366db1b310bac78666b58a63"
+  },
+  "post_terminal_frozen_manifest_verified": true,
+  "both_complete_ordered_frame_replays_match": true,
+  "ordered_frame_hash": "0x71baaeccbe4b6b3f",
+  "artifacts_sha256": {
+    "finite-bench-load-pickup-96.log": "74f34cb060cc3780814cd8db63730f0173e5960dba261bafb34f26ae6e8c8290",
+    "finite-bench-load-pickup-96-fruits.csv": "90f2129bf16e8974634f9683149a1123d429c5959116442f0014f37534f6f559",
+    "finite-bench-load-pickup-96-peaks.csv": "b0b790b4934c9289874716dfaebdebc9d16a67a51abdee17c9133438e9cd0e3b",
+    "finite-bench-load-pickup-96-fruit-audit.json": "fd184c37a8f3c6bf416b42a7461bf3777075f557b096be557171e5d0d41c9d1a",
+    "finite-bench-load-pickup-96-contact-audit.json": "107e933bb329ff7afc8f3872c06db44ca692411abde73467c78bfd15cab5e16a",
+    "finite-bench-load-pickup-96-peak-audit.json": "0759cc13e54d86f1b52f42c088a0171c4f66e4039ca957358d58e6f61174eeef",
+    "finite-bench-load-pickup-timestep-comparison.json": "292cb48fc1fdc9a2199d410a2eea79269074dfa9d82e30cd97916f793e9a04b4"
+  },
+  "boundary": "Actual completed source6f finer failure, retained independently of the new coupled-contact source. Authored lower floor is -0.75m. Exact replay and saved contact checks do not establish convergence, material calibration, native finite bench or whole-scene work/reaction closure.",
+  "released_fruits": [
+    4,
+    9,
+    10,
+    11
+  ],
+  "all_released_finish_on_lower_floor": true,
+  "both_full_serialized_fruit_replays_exact": true,
+  "all_51_contact_witnesses_pass": false,
+  "regular_saved_contacts_pass": true,
+  "worst_frame": 163,
+  "worst_time_s": 1.3583333333333334,
+  "runtime_peak_fruit_yarn_overlap_m": 5.6692783523229484e-05,
+  "independent_export_peak_overlap_m": 5.669260191813741e-05,
+  "unchanged_fruit_yarn_limit_m": 2e-06,
+  "peak_fruit": 3,
+  "peak_yarn_endpoints": [
+    983,
+    984
+  ],
+  "both_peak_obj_sha256": "8867ea0fe2b8f89571a9c70d20a1186ed5e432ba3eacb946cf46eb1f56212d6f",
+  "failed_gate": "fruit/yarn overlap at accepted frame163",
+  "canonical_failed_peak": "finite-bench-load-pickup-96-failed-peak.obj"
+}

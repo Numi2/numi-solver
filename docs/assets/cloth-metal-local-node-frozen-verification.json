@@ -1,0 +1,32 @@
+[
+  {
+    "manifest_path": "tools/cloth_bag_metal.mm",
+    "frozen_path": "build/local-node-native-launch/cloth_bag_metal.mm",
+    "sha256": "d0788fedabcfd41107e21ae30bf260379134cec096da4a64a36e183023e72091",
+    "post_terminal_frozen_match": true
+  },
+  {
+    "manifest_path": "src/metal/ClothBag.metal",
+    "frozen_path": "build/local-node-native-launch/ClothBag.metal",
+    "sha256": "6ba2e7be3c52949463b5da57c4101c7e61d3dc87c28d4186d66c52004565f62b",
+    "post_terminal_frozen_match": true
+  },
+  {
+    "manifest_path": "include/numi/cloth_bag_gpu.h",
+    "frozen_path": "build/local-node-native-launch/cloth_bag_gpu.h",
+    "sha256": "cdd47c51bff30c3531cba3504ec04cde4dd0ebb2746e9b64f1815437d99c5762",
+    "post_terminal_frozen_match": true
+  },
+  {
+    "manifest_path": "build/local-node-native-launch/numi-solver-cloth-metal",
+    "frozen_path": "build/local-node-native-launch/numi-solver-cloth-metal",
+    "sha256": "130eed9c3edabd7412a1501bdd97f41efc9ef7f3d55160fe1114d6421119c33b",
+    "post_terminal_frozen_match": true
+  },
+  {
+    "manifest_path": "build/local-node-native-launch/NumiTemporalCone.metallib",
+    "frozen_path": "build/local-node-native-launch/NumiTemporalCone.metallib",
+    "sha256": "175c6dde347f0b6da898e0eae0c34ef9fc8721c0a1af54df43dcd7386114f217",
+    "post_terminal_frozen_match": true
+  }
+]

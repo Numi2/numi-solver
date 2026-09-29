@@ -1,0 +1,131 @@
+{
+  "schema": "numi.coupled-yarn-contact-and-native-static-geometry.v1",
+  "physics_source_commit": "bbf111ae4a761ea68b8906a0084120b805a59b9d",
+  "source_binary_sha256": {
+    "tools/cloth_bag.cpp": "367d8aff2181921d56b5444ef20a01e9771f1e525b76cd58fa46b56f0ca29740",
+    "include/numi/cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd",
+    "include/numi/finite_bench_geometry.h": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade",
+    "include/numi/grip_trajectory.h": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+    "include/numi/static_contact_geometry.h": "2fd2f72a707f8c74eb51dd13a394ef13780e8095fad3d380b33f87e1037c90de",
+    "src/metal/StaticContactGeometry.metal": "7e72327614bba575bb31988052f720ff26fdbea7c0d3fb52cf88b7e2f16dabbd",
+    "tools/static_contact_geometry.cpp": "ea46169f13f973ceb8cecbc331e29d55f536c5d07b17f2a5accd81fedef42a67",
+    "tools/static_contact_geometry_metal.mm": "8dfa90daebf971fe001e12716e88870ab7879d4f6c15792a2aa12a15fd732e19",
+    "build/numi-solver-cloth-bag": "ba02c16b1da9f542e9b3b56f0b80cd0cd5da1e3d6c92960f290822442b36c036",
+    "build/numi-solver-static-geometry": "db7f5935126a6837bde89b04836e5f826d93380507f3000db06d8498643a9746",
+    "build/numi-solver-static-geometry-metal": "96e8d98f6aa65866642775a967bac985cdb4e607e5fdc975775457f23da0d075",
+    "build/shaders/NumiStaticGeometry.metallib": "a1bca60fcd4e347490edd79ebc0b9a71f65435d14ef3c05733e80d626c0f7dc2"
+  },
+  "artifacts_sha256": {
+    "coupled-yarn-probe.log": "e81af99ed5ccbe91e53917ac56229d609a8c71407a8fb6a34611145c013f8107",
+    "coupled-yarn-peak-probe.log": "672ac167704cf7a4b8096372b1a10705c4de6b8daa811053cab353518dc56ec9",
+    "coupled-yarn-negative-controls.json": "b6811bdfaeb099e621d71f18875ebb49494086450a39274e604edc62296c0af3",
+    "coupled-yarn-projected-peak.obj": "691b9ed2182a58f9bca42f52eb86c9f248bb2ec2d745960ff5af04a9052dfdb3",
+    "coupled-yarn-projected-peak-audit.json": "f962aa0337cf9e86fccd5925205ec146cfe15414cd32d4fe8f5f65ba96d8cd95",
+    "coupled-contact-related-checks.log": "f5537eccbdcf61c49df2d7f9e1a5c328ea900db8b4b59b58c9b9ebd3d204684d",
+    "coupled-contact-final-checks.log": "87be0d9ca9cef2e27166ddf91c0a78eb2a45fe1e13793d2e11c1a86f8af10fa1",
+    "static-geometry-host.log": "0a8b44ec61b985febe0c2afc7cb7a7aafcedad92b046d5cbc0b7ed3f05fe853f",
+    "static-geometry-native.log": "f973e1ecfdcd7c31d48835371d95b4a5f30f12b9c341df125d3049fbe979503e",
+    "coupled-yarn-scalar-projection-trace.csv": "b1e648a483dc31ce6f46a54be5b20cc86d63b9fa028376565786a0615f8e11a1",
+    "coupled-yarn-scalar-projection-diagnostic.cpp": "3b5443531512568633ab322a945a723db9a7bfc6420ed98a61adddd2421e2922",
+    "coupled-yarn-block-projection-trace.csv": "9e1fb0bf483fa941a00a61de687cc73af4a665983820391661290b7cde13de54"
+  },
+  "failed_input_sha256": "8867ea0fe2b8f89571a9c70d20a1186ed5e432ba3eacb946cf46eb1f56212d6f",
+  "snapshot_projection": {
+    "actual_exit_code": 0,
+    "input_fruit_yarn_overlap_m": 5.6692601918151286e-05,
+    "after_fruit_yarn_overlap_m": 8.510049621934801e-07,
+    "after_fruit_pair_overlap_m": 6.291894333321224e-08,
+    "after_local_node_overlap_m": 4.807858186572922e-08,
+    "certificate_passes": 1,
+    "coupled_blocks": 1,
+    "maximum_block_size": 2,
+    "block_fallbacks": 0,
+    "independent_exported_contact_audit_pass": true,
+    "dynamics_and_full_scene_qualification": false
+  },
+  "mechanics_probe": {
+    "cases": 6,
+    "node_mass_kg": [
+      5e-05,
+      0.05,
+      0.5
+    ],
+    "supports": [
+      "free",
+      "bench-supported fruit"
+    ],
+    "maximum_normal_residual_m": 1.5265566588595902e-16,
+    "maximum_mass_weighted_position_balance_error_kg_m": 1.111307226797642e-17,
+    "inactive_contact_zero_impulse": true,
+    "singular_system_preserves_input_and_falls_back": true,
+    "malformed_snapshot_controls_rejected": 7
+  },
+  "native_static_geometry": {
+    "device": "Apple M4",
+    "actual_exit_code": 0,
+    "both_replays_bit_exact": true,
+    "valid_start_cases": 1707,
+    "rejected_invalid_cases": 7,
+    "case_counts": {
+      "faces": 481,
+      "rounded_edges": 136,
+      "rounded_corners": 32,
+      "lower_floor": 159,
+      "initial_support": 3,
+      "misses": 896
+    },
+    "independent_reference": "production FP64 box/room-floor geometry; random valid-start filtering also uses this independent implementation",
+    "maximum_impact_position_error_m": 3.9402e-07,
+    "maximum_normal_error": 1.31435e-05,
+    "maximum_contact_gap_error_m": 1.56e-07,
+    "full_native_cloth_bench_qualification": false
+  },
+  "full_candidate_replay": {
+    "source_commit": "bbf111ae4a761ea68b8906a0084120b805a59b9d",
+    "source_binary_sha256": {
+      "cloth_bag.cpp": "367d8aff2181921d56b5444ef20a01e9771f1e525b76cd58fa46b56f0ca29740",
+      "cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd",
+      "finite_bench_geometry.h": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade",
+      "grip_trajectory.h": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+      "numi-solver-cloth-bag": "ba02c16b1da9f542e9b3b56f0b80cd0cd5da1e3d6c92960f290822442b36c036"
+    },
+    "command": [
+      "/Users/home/numi-solver/build/coupled-yarn-launch/numi-solver-cloth-bag",
+      "--scenario",
+      "pickup",
+      "--finite-bench",
+      "--steps",
+      "480",
+      "--substeps",
+      "96",
+      "--iterations",
+      "32",
+      "--replays",
+      "2",
+      "--dump-frames",
+      "build/coupled-bench-pickup-96",
+      "--dump-every",
+      "10",
+      "--dump-obj",
+      "build/coupled-bench-pickup-96.obj",
+      "--fruit-trace",
+      "build/coupled-bench-pickup-96-fruits.csv",
+      "--contact-peak-prefix",
+      "build/coupled-bench-pickup-96",
+      "--progress"
+    ],
+    "pid": 35850,
+    "state": "RUNNING",
+    "boundary": "Full four-second two-replay candidate pending. Focused contact projection and native CCD geometry checks are separate evidence."
+  },
+  "boundary": "Simultaneous CPU contact normals repair the retained peak projection without raising the certificate cap or relaxing contact/strain/speed gates. Native actual kernels qualify geometric CCD only. Full new-source pickup, native cloth/bench responses, temporal and spatial convergence, calibrated materials, woven-cloth/volume coupling and whole-scene work/reaction closure remain open.",
+  "scalar_projection_diagnostic": {
+    "compiled_physics_source_commit": "8f344c8",
+    "cloth_bag_cpp_sha256": "530ea24cb826fd9f8499b96fcece5848757b50c6b11f05f66dd2cdcab6a1c630",
+    "diagnostic_source_sha256": "3b5443531512568633ab322a945a723db9a7bfc6420ed98a61adddd2421e2922",
+    "diagnostic_binary_sha256": "ba279bcbc5212c5535d06d4046829feab74b62e397efbe74f301a1b41278277a",
+    "extra_certificate_passes": 160,
+    "remaining_fruit_yarn_overlap_m": 4.5687199227706365e-06,
+    "boundary": "Projection of the retained exported peak, with previous positions initialized to those positions. No dynamics, incoming substep state, material calibration or full qualification."
+  }
+}

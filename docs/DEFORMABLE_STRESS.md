@@ -2,7 +2,7 @@
 
 [![Newest six-second loaded-bag release and floor impact](assets/finite-bench-loaded-drop-repaired-floor-impact.png)](assets/finite-bench-loaded-drop-repaired.mp4)
 
-## Newest complete authored-case result: PASS
+## Complete 48-substep authored-case result: PASS
 
 The repaired `6f1e450` CPU FP64 simulation completes both full six-second runs
 with actual exit 0. It keeps the same 121-pose grip input, 48 substeps,
@@ -26,6 +26,28 @@ The video shows all 73 states with one fixed camera at 12 fps. Sphere collision
 geometry remains rigid; authored cloth/sphere gates do not establish material
 calibration, temporal convergence, native finite-bench execution, measured
 support reactions or full contact-work/energy closure.
+
+## Completed finer same-source result: FAIL
+
+The same `6f1e450` source and 121-pose grip input complete both full six-second
+**96-substep** replays with actual exit 1. Both ordered 721-frame hashes and
+both serialized fruit sequences match. All **73** regular saved states pass
+independent contact checks. The cloth descends **1.780 m** after the first
+saved inactive-grip state, with **26** nodes finishing on the lower floor.
+Fruit 10 spills and lands; the release set differs from the two fruits in the
+coarse run.
+
+The unchanged speed gate fails: **35.93 m/s** exceeds **30 m/s**. The recorded
+drop scenario does not impose the pickup's minimum-two-release gate; its
+single release is an observation, not an additional failed gate. Geometric
+landing and exact replay do not qualify this finer dynamics result.
+[Actual terminal log](assets/finite-bench-load-drop-96.log),
+[complete independent drop audit](assets/finite-bench-load-drop-96-audit.json),
+and [source-bound failure receipt](assets/finite-bench-load-drop-96-failure.json).
+Matched times differ by **261 mm** at cloth nodes and **4.73 m** at fruit
+centers. [Same-source timestep comparison](assets/finite-bench-load-drop-timestep-comparison.json).
+The video above remains the completed 48-substep case; it does not qualify
+this finer run or the newer simultaneous-contact source.
 
 ## Retained original failure
 

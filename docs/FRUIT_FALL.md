@@ -54,8 +54,15 @@ exact, but only fruit 8 has a latched release and no released fruit is observed
 supported on the plane: the complete native pickup outcome **FAILS**.
 [Actual native log and source/binary receipt](assets/cloth-metal-mini-original-failure.json)
 and [complete fruit audit](assets/cloth-metal-mini-original-fruit-audit.json)
-retain this result. The separate ABI14 local-node repair is still executing
-its full two-replay M4 job. Full native spill is not yet qualified. The corrected
+retain this result. The separate ABI14 local-node repair has now completed
+both full M4 replays with actual exit 1: its one latched release, fruit 8,
+never reaches support. All 49 saved contact states pass, but the full native
+pickup outcome remains **FAIL**. The final exported fruit center is inside
+the render mesh closed by a virtual mouth cap; this is descriptive geometry,
+not a collision cap. [Completed ABI14 source-bound failure](assets/cloth-metal-local-node-failure.json)
+and [full final-replay fruit audit](assets/cloth-metal-local-node-failed-fruit-audit.json)
+retain it. The frozen runner serialized only replay 2; its own GPU buffer and
+ordered frame hashes compare both complete replays. Full native spill is not yet qualified. The corrected
 four-second CPU FP64 reference has separately passed, as recorded below.
 
 The corrected two-second CPU FP64 pickup has completed two exact replays at
@@ -322,6 +329,19 @@ pickup: actual exit 0, four floor landings (4, 9, 10, 11), both full fruit
 sequences exact, and all 51 independent contact audits PASS. Peak accepted
 fruit/yarn overlap is 0.760 um under the unchanged 2 um limit.
 [Separate newer-source pickup receipt](assets/finite-bench-load-pickup-48-evidence.json).
+
+The same blocked-load source's 96-substep pickup has now completed **FAIL**
+with actual exit 1. Both full replays match and the same four released fruits
+finish on the lower floor, but accepted frame 163 contains **56.7 µm** of
+fruit/yarn overlap. The 49 regular saved states pass; both worst-frame states
+fail the unchanged 2 µm gate. [Finer failure receipt](assets/finite-bench-load-pickup-96-failure.json).
+Matched trajectories still differ by **248 mm** at cloth nodes and **5.01 m**
+at fruit centers, despite identical released sets.
+[Same-source comparison](assets/finite-bench-load-pickup-timestep-comparison.json).
+The new [simultaneous shared-yarn contact solve](COUPLED_YARN_CONTACT.md)
+brings the retained peak projection to 0.851 µm in one certificate pass.
+Its full new-source pickup is running; projection checks do not qualify it.
+
 
 The original CPU96 job also completed both full replays with actual exit 1:
 [its receipt](assets/finite-bench-pickup-96-failure.json) retains 11.26 um

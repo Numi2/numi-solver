@@ -30,6 +30,16 @@ whole-scene energy/reaction closure.
 [read the complete result and retained failure](docs/DEFORMABLE_STRESS.md), or
 [inspect the source-bound receipt](docs/assets/finite-bench-loaded-drop-repaired-evidence.json).
 
+The same-source 96-substep drop now completes **FAIL**: all saved contact
+states pass, but maximum speed reaches **35.93 m/s**, above the unchanged
+30 m/s gate. The finer four-second pickup also fails, with **56.7 µm** of
+fruit/yarn overlap. A new simultaneous contact solve brings that saved peak
+to **0.851 µm** in one certificate pass; its full new-source replay is running.
+Separately, native Metal finite-bench geometry passes **1,714** cases twice,
+with maximum impact-position error below **0.4 µm**. These focused checks do
+not qualify the complete native bag. [Contact repair and actual finer results](docs/COUPLED_YARN_CONTACT.md).
+
+
 ### Earlier plane pickup · local thickness repair · September 29, 2026
 
 [![Four fruits leave the repaired deformable bag and land in the finer CPU96 replay](docs/assets/cloth-local-node-pickup.gif)](docs/assets/cloth-local-node-pickup.mp4)
@@ -92,7 +102,7 @@ five metres (`outside_diagnostic_bounds_mask=2064`), while numerical escape is
 zero. The display covers the complete plane and all 49 exported states share
 one fixed camera. An independent geometric audit passes every supplied state.
 No bag or fruit path is prescribed. This CPU result is distinct from the
-pending full Metal replay and from physical material calibration.
+completed failed full Metal replay and from physical material calibration.
 
 [Watch the video](docs/assets/cloth-pickup-spill.mp4),
 [inspect the qualification log](docs/assets/cloth-pickup-qualified.log), or

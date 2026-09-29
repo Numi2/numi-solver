@@ -1,0 +1,84 @@
+{
+  "snapshots": [
+    {
+      "snapshot": "build/local-node-pickup-metal-480.obj",
+      "snapshot_sha256": "b4ff983715481a7c8296900442adc395559b00e8bafd8550ad26a46c2dc5cd54",
+      "static_surface_model": "unbounded_plane",
+      "fruits": [
+        {
+          "fruit": 0,
+          "render_mesh_winding_number": 1.0,
+          "center_location": "inside",
+          "ground_clearance_m": 0.8891484067000001
+        },
+        {
+          "fruit": 1,
+          "render_mesh_winding_number": 1.0,
+          "center_location": "inside",
+          "ground_clearance_m": 0.8371168974000001
+        },
+        {
+          "fruit": 2,
+          "render_mesh_winding_number": 1.0,
+          "center_location": "inside",
+          "ground_clearance_m": 0.800992593
+        },
+        {
+          "fruit": 3,
+          "render_mesh_winding_number": 1.0,
+          "center_location": "inside",
+          "ground_clearance_m": 0.7226544063
+        },
+        {
+          "fruit": 4,
+          "render_mesh_winding_number": 1.0,
+          "center_location": "inside",
+          "ground_clearance_m": 0.7807957683
+        },
+        {
+          "fruit": 5,
+          "render_mesh_winding_number": 1.0,
+          "center_location": "inside",
+          "ground_clearance_m": 0.7642043531
+        },
+        {
+          "fruit": 6,
+          "render_mesh_winding_number": 1.0,
+          "center_location": "inside",
+          "ground_clearance_m": 0.854213201
+        },
+        {
+          "fruit": 7,
+          "render_mesh_winding_number": 1.0,
+          "center_location": "inside",
+          "ground_clearance_m": 0.7401572914
+        },
+        {
+          "fruit": 8,
+          "render_mesh_winding_number": 1.0,
+          "center_location": "inside",
+          "ground_clearance_m": 0.9555288831
+        },
+        {
+          "fruit": 9,
+          "render_mesh_winding_number": 1.0,
+          "center_location": "inside",
+          "ground_clearance_m": 0.931916066
+        },
+        {
+          "fruit": 10,
+          "render_mesh_winding_number": 1.0,
+          "center_location": "inside",
+          "ground_clearance_m": 0.8293878957
+        },
+        {
+          "fruit": 11,
+          "render_mesh_winding_number": 1.0,
+          "center_location": "inside",
+          "ground_clearance_m": 0.8923432533
+        }
+      ]
+    }
+  ],
+  "evidence_boundary": "Fruit centers relative to the exact render mesh closed by a virtual top-mouth fan. The cap is not a collision surface. Winding does not prove full-sphere clearance, an intervening release or re-entry, calibrated material, dynamics or solver replay. Self-intersecting geometry or a point on the cap can be ambiguous. This descriptive report has no physical qualification gate."
+}
