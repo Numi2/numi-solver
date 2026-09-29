@@ -41,6 +41,9 @@ edge, and floor landing pass focused checks; full four-second 48/96-substep
 bag runs are in progress. [Finite-bench implementation and evidence](docs/FRUIT_FALL.md#finite-tabletop-and-room-floor)
 are separate from the plane video above. Deformable volume/cloth coupling
 and native finite-bench contact remain open.
+A [six-second loaded-bag drop](docs/DEFORMABLE_STRESS.md) now runs a harder
+carry, seam rotation, grip release and whole-cloth floor impact case; its
+complete two-replay qualification is pending.
 
 ### Earlier ground-support CPU48 replay
 
