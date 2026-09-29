@@ -4424,6 +4424,7 @@ GPUResult runGPU(
             initial.bends.size(),
             initial.fruits.size(),
             initial.fruitPairs.size(),
+            initial.yarnContacts.size(),
         })
     );
     [encoder setComputePipelineState:pipelines.updateGripAttachment];
