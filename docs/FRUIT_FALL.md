@@ -48,16 +48,18 @@ velocity does not remove finite-precision absolute position storage.
 
 Full-topology pickup is a separate qualification. The previously committed
 GIF and trajectory numbers predate this correction. They do not qualify the
-changed source. A new 480-frame, two-replay run is in progress; it must be
-inspected before replacing the historical evidence or claiming the complete
-spill is fixed.
+changed source. A new 480-frame, two-replay run with valid initial packing is in progress;
+it must be inspected before replacing historical evidence or claiming the
+complete spill is fixed.
 
 The corrected two-second CPU FP64 pickup has completed two exact replays at
 48 substeps and 32 iterations (`state_hash=0x513295fd7b0ff042`). Its release
 mask is `3073`: fruits 0, 10, and 11 all end at their contact radii. Published
 fruit/yarn penetration, ground penetration, and final strain violation are
 zero; maximum published nonlocal yarn overlap is `0.746 um`. This is an
-independent FP64 outcome, separate from the still-running Metal qualification.
+independent FP64 outcome from the original packing. The subsequent initial
+geometry audit found invalid overlaps in that seed, so this result remains
+a gravity/landing diagnostic and does not qualify the corrected starting scene.
 
 Each exported Metal trajectory now also writes `PREFIX-fruits.csv`, with every
 frame's fruit center, radius, linear/angular velocity, last-substep ground
@@ -74,6 +76,8 @@ aggregate landing count:
 python3 tools/audit_fruit_trace.py build/fruit-pickup-fruits.csv --expected-frames 480
 ```
 
+The report includes the SHA-256 of the exact bytes parsed, so a concurrently
+updated trace cannot silently change the evidence behind a saved report.
 It reports each fruit's release, first observed support after release, maximum
 downward speed, and final clearance and velocity. A partial trace returns
 status 2, including when a concurrent copy ends inside a frame. A complete
@@ -97,3 +101,41 @@ Material calibration, finite bench geometry and edge collisions, impact
 restitution calibrated to fruit/surface materials, and complete corrected
 spill outcome remain separate work. These focused checks establish gravity
 and inelastic support, not all scene fidelity.
+
+## Starting contact geometry
+
+The original cold seed had 5.12519 mm of sphere/yarn overlap and 4.48591 mm
+of nonlocal yarn overlap before gravity or the grip moved. The worst yarn
+pair connected particles 963:964 and 819:820 at the transition into the cuff.
+Those positional corrections could inject velocity on the first step.
+
+The body sag now fades smoothly into the cuff and has half its former
+amplitude. Fruit centers 2, 4, 8, and 9 move by 6.0, 18.1, 2.0, and 6.3 mm
+respectively, leaving at least 0.5 mm sphere/yarn and sphere/sphere clearance.
+CPU and Metal author the same geometry and derive rest constraints from it.
+Yarn thickness, fruit radii/masses, material parameters, solver iterations,
+and grip motion are unchanged. This is collision-free authored packing;
+it is not a measured fruit/bag specimen.
+
+```sh
+./build/numi-solver-cloth-metal --initial-state-probe
+ctest --test-dir build -R 'cloth_bag.initial_geometry' --output-on-failure
+```
+
+The probe inspects the host-authored FP32 tables and all 4,149,792 eligible
+yarn pairs. It reports zero initial fruit/yarn, fruit/fruit, nonlocal yarn,
+and ground overlap on M4 and M4 Pro. Normal Metal execution runs the same
+check before creating its device and rejects an invalid seed. A contract-valid
+6 mm yarn radius is correctly rejected because this particular seed intersects
+fruit and the support plane at that thickness.
+
+The valid cold seed has no contact on its first substep. The oracle comparison
+now requires matching contact presence/absence, while the dedicated fruit/yarn
+CCD and yarn/yarn CCD cases still require positive impulses and friction,
+slip reduction, and the existing geometric error bounds. Geometry, native
+free flight/drop, internal contact, and default material parity checks pass.
+
+The earlier full Metal run was deliberately stopped and retained as an
+invalid-initialization diagnostic baseline. Fresh four-second CPU and Metal
+pickup/settling runs use the corrected geometry and bind source and binary
+hashes; their completed outcomes remain required.

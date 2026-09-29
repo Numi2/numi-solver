@@ -505,7 +505,10 @@ Vec3 authoredPosition(const std::uint32_t level, const std::uint32_t ring) {
         0.004 * std::sin(6.0 * angle + 0.90)
     );
     const double radius = baseRadius * wrinkle + looseRim + looseSkirt;
-    const double bodySag = body * (
+    // Fade body wrinkles into the cuff; a discontinuous sag at the fold
+    // seeds intersecting yarn capsules before the first integration step.
+    const double bodySag = 0.5 * body *
+        (1.0 - smoothstep((vertical - 0.55) / 0.17)) * (
         0.018 * std::sin(2.0 * angle + 0.30) +
         0.009 * std::sin(5.0 * angle - 0.70)
     );
@@ -929,17 +932,19 @@ ClothModel makeCloth(const Scenario scenario) {
 }
 
 std::array<Ball, kFruitCount> makeBalls(const Scenario scenario) {
+    // Cold packing leaves at least 0.5 mm clearance to all yarn capsules
+    // and other fruit, preserving the authored radii and masses.
     constexpr std::array<Vec3, kFruitCount> groundedPositions{{
         {0.190, 0.000, 0.088},
         {0.118, 0.149, 0.083},
-        {-0.042, 0.185, 0.093},
+        {-0.042, 0.185, 0.099},
         {-0.171, 0.082, 0.078},
-        {-0.171, -0.082, 0.086},
+        {-0.187, -0.076, 0.092},
         {-0.042, -0.185, 0.090},
         {0.118, -0.149, 0.081},
         {0.000, 0.000, 0.084},
-        {0.105, 0.000, 0.210},
-        {0.000, 0.105, 0.210},
+        {0.103, 0.000, 0.210},
+        {0.000, 0.099, 0.212},
         {-0.105, 0.000, 0.215},
         {0.000, -0.105, 0.210},
     }};

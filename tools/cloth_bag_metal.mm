@@ -337,7 +337,10 @@ DVec3 authoredPosition(
         0.004 * std::sin(6.0 * angle + 0.90)
     );
     const double radius = baseRadius * wrinkle + looseRim + looseSkirt;
-    const double bodySag = body * (
+    // Fade body wrinkles into the cuff; a discontinuous sag at the fold
+    // seeds intersecting yarn capsules before the first integration step.
+    const double bodySag = 0.5 * body *
+        (1.0 - smoothstep((vertical - 0.55) / 0.17)) * (
         0.018 * std::sin(2.0 * angle + 0.30) +
         0.009 * std::sin(5.0 * angle - 0.70)
     );
@@ -985,17 +988,19 @@ InitialState makeInitialState() {
         }
     }
 
+    // Cold packing leaves at least 0.5 mm clearance to all yarn capsules
+    // and other fruit, preserving the authored radii and masses.
     constexpr std::array<DVec3, kFruitCount> fruitPositions{{
         {0.190, 0.000, 0.088},
         {0.118, 0.149, 0.083},
-        {-0.042, 0.185, 0.093},
+        {-0.042, 0.185, 0.099},
         {-0.171, 0.082, 0.078},
-        {-0.171, -0.082, 0.086},
+        {-0.187, -0.076, 0.092},
         {-0.042, -0.185, 0.090},
         {0.118, -0.149, 0.081},
         {0.000, 0.000, 0.084},
-        {0.105, 0.000, 0.210},
-        {0.000, 0.105, 0.210},
+        {0.103, 0.000, 0.210},
+        {0.000, 0.099, 0.212},
         {-0.105, 0.000, 0.215},
         {0.000, -0.105, 0.210},
     }};
@@ -5276,7 +5281,8 @@ double maximumSelfPenetration(
     const std::vector<NumiClothBagGPUParticle>& particles,
     const std::vector<NumiClothBagGPUDistance>& distances,
     const std::vector<NumiClothBagGPUSelfPair>& pairs,
-    const double clothRadius
+    const double clothRadius,
+    std::array<std::uint32_t, 2>* witness = nullptr
 ) {
     double maximum = 0.0;
     const double target = 2.0 * clothRadius;
@@ -5324,12 +5330,15 @@ double maximumSelfPenetration(
             )) {
             continue;
         }
-        maximum = std::max(
-            maximum,
-            target - sampleSegments(
-                firstStart, firstEnd, secondStart, secondEnd
-            ).distance
-        );
+        const double overlap = target - sampleSegments(
+            firstStart, firstEnd, secondStart, secondEnd
+        ).distance;
+        if (overlap > maximum) {
+            maximum = overlap;
+            if (witness != nullptr) {
+                *witness = {{pair.firstSegment, pair.secondSegment}};
+            }
+        }
     }
     return maximum;
 }
@@ -5553,6 +5562,7 @@ int runFruitFlightProbe(
 
 int run(const int argc, const char* const* argv) {
     bool fruitFlightProbe = false;
+    bool initialStateProbe = false;
     std::uint32_t replays = 2u;
     std::uint32_t iterations = 32u;
     std::uint32_t strainSweeps = 3u;
@@ -5573,7 +5583,9 @@ int run(const int argc, const char* const* argv) {
     std::string metallibPath = NUMI_TEMPORAL_CONE_METALLIB;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string_view value(argv[argument]);
-        if (value == "--fruit-flight-probe") {
+        if (value == "--initial-state-probe") {
+            initialStateProbe = true;
+        } else if (value == "--fruit-flight-probe") {
             fruitFlightProbe = true;
         } else if (value == "--replays" && argument + 1 < argc) {
             replays = static_cast<std::uint32_t>(
@@ -5650,7 +5662,7 @@ int run(const int argc, const char* const* argv) {
                    "[--spin-prefix PATH] [--spin-steps N] "
                    "[--spin-dump-every N] [--pickup-prefix PATH] "
                    "[--pickup-steps N] [--pickup-dump-every N] "
-                   "[--fruit-flight-probe]\n";
+                   "[--fruit-flight-probe] [--initial-state-probe]\n";
             return 0;
         } else {
             throw std::runtime_error(
@@ -5710,6 +5722,60 @@ int run(const int argc, const char* const* argv) {
             "Metal recorded replay requires positive covered steps and dump "
             "cadence"
         );
+    }
+
+    const InitialState initial = makeInitialState();
+    {
+        const InitialState& state = initial;
+        if (initialStateProbe && !pickupPrefix.empty()) {
+            dumpGPUOBJ(pickupPrefix + "-0.obj", state.particles, state.fruits,
+                state.grips, state.config);
+        }
+        double fruitYarnOverlap = 0.0;
+        double fruitPairOverlap = 0.0;
+        for (std::size_t index = 0; index < state.fruits.size(); ++index) {
+            const auto& fruit = state.fruits[index];
+            for (const auto& yarn : state.distances) {
+                const auto sample = samplePointSegment(
+                    d3(fruit.positionAndInverseMass),
+                    d3(state.particles[yarn.particlesAndColor.x].positionAndInverseMass),
+                    d3(state.particles[yarn.particlesAndColor.y].positionAndInverseMass)
+                );
+                fruitYarnOverlap = std::max(fruitYarnOverlap,
+                    fruit.previousAndRadius.w + state.config.clothMaterial.x - sample.distance);
+            }
+            for (std::size_t second = index + 1; second < state.fruits.size(); ++second) {
+                fruitPairOverlap = std::max(fruitPairOverlap,
+                    static_cast<double>(fruit.previousAndRadius.w + state.fruits[second].previousAndRadius.w) -
+                    length(d3(fruit.positionAndInverseMass) - d3(state.fruits[second].positionAndInverseMass)));
+            }
+        }
+        std::array<std::uint32_t, 2> selfWitness{};
+        const double selfOverlap = maximumSelfPenetration(
+            state.particles, state.distances, state.selfPairs, state.config.clothMaterial.x,
+            &selfWitness
+        );
+        const double groundOverlap = maximumGroundPenetration(
+            state.particles, state.fruits, state.config.clothMaterial.x
+        );
+        const bool passed = verifyColoring(state) && fruitYarnOverlap <= 1e-6 &&
+            fruitPairOverlap <= 1e-6 && selfOverlap <= 2e-6 && groundOverlap <= 1e-6;
+        std::cout << "initial_geometry backend=host_authored_float_tables"
+                  << " fruit_yarn_overlap_m=" << fruitYarnOverlap
+                  << " fruit_pair_overlap_m=" << fruitPairOverlap
+                  << " nonlocal_yarn_overlap_m=" << selfOverlap
+                  << " ground_overlap_m=" << groundOverlap
+                  << " passed=" << passed << '\n';
+        if (selfOverlap > 0.0) {
+            for (const auto index : selfWitness) {
+                const auto endpoints = state.distances[index].particlesAndColor;
+                std::cout << "self_overlap_witness segment=" << index
+                          << " endpoints=" << endpoints.x << ':' << endpoints.y << '\n';
+            }
+        }
+        if (!passed || initialStateProbe) {
+            return passed ? 0 : 1;
+        }
     }
 
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
@@ -5818,7 +5884,7 @@ int run(const int argc, const char* const* argv) {
     if (fruitFlightProbe) {
         return runFruitFlightProbe(device, queue, pipelines);
     }
-    const InitialState initial = makeInitialState();
+
     const bool coloringExact = verifyColoring(initial);
     const OracleResult oracle = runOracle(initial, iterations, strainSweeps);
 
@@ -7837,22 +7903,27 @@ int run(const int argc, const char* const* argv) {
         maximumYarnAdvanceError <= 2.0e-5 &&
         maximumYarnResponseError <= 5.0e-2 &&
         maximumYarnPenetration <= 2.0e-6 &&
-        acceptedYarnResponseCount > 0u && maximumYarnNormalImpulse > 0.0 &&
+        // A valid cold scene can have no contact in its first substep.
+        // Positive contact/friction coverage is required by the explicit CCD
+        // probes below; absent production contacts must agree with the oracle.
+        ((expectedYarnResponseCount == 0u) == (acceptedYarnResponseCount == 0u)) &&
+        (acceptedYarnResponseCount == 0u || maximumYarnNormalImpulse > 0.0) &&
         presentSelfContactCountDifference <= 16u &&
         sweptSelfContactCountDifference <= 4u &&
         maximumSelfCorrectionError <= 2.0e-5 &&
         finalSelfPenetration <= 2.0e-6 &&
         finalGroundPenetration <= 1.0e-9 &&
-        gpuPresentSelfContacts + gpuSweptSelfContacts > 0u &&
+        ((oracle.presentSelfContacts + oracle.sweptSelfContacts == 0u) ==
+         (gpuPresentSelfContacts + gpuSweptSelfContacts == 0u)) &&
         maximumFrictionContactCountDifference <= 4u &&
-        gpuFrictionContacts[1] > 0u &&
+        ((gpuFrictionContacts[1] == 0u) == (oracle.frictionContacts[1] == 0u)) &&
         gpuMaximumFrictionConeRatio <= 1.0 + 1.0e-6 &&
         maximumFrictionConeRatioError <= 2.0e-5 &&
         gpuMaximumRollingResistanceRatio <= 1.0 + 1.0e-6 &&
         maximumRollingResistanceRatioError <= 2.0e-5 &&
         rollingContactCountExact &&
         selfFrictionContactCountDifference <= 4u &&
-        gpuSelfFrictionContacts > 0u &&
+        ((gpuSelfFrictionContacts == 0u) == (oracle.selfFrictionContacts == 0u)) &&
         strainViolation <= 2.0e-6 &&
         maximumDisplacement > 1.0e-4 && gripForce > 1.0 &&
         strainGPU.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE &&

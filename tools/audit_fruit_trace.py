@@ -3,13 +3,16 @@
 
 import argparse
 import csv
+import hashlib
+import io
 import json
 import math
 from pathlib import Path
 
 
 def audit(path: Path, expected_frames: int, fruit_count: int) -> dict:
-    with path.open(newline="") as source:
+    payload = path.read_bytes()
+    with io.StringIO(payload.decode("utf-8"), newline="") as source:
         reader = csv.DictReader(source)
         required = {
             "frame", "time_s", "fruit", "x_m", "y_m", "z_m", "radius_m",
@@ -94,6 +97,7 @@ def audit(path: Path, expected_frames: int, fruit_count: int) -> dict:
                        row["first_supported_frame_after_release"] is None]
     return {
         "trace": str(path),
+        "trace_sha256": hashlib.sha256(payload).hexdigest(),
         "last_complete_frame": last,
         "simulated_seconds": previous_time,
         "expected_frames": expected_frames,
