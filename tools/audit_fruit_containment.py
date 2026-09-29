@@ -7,7 +7,8 @@ import json
 import math
 from pathlib import Path
 
-from audit_cloth_snapshot import AROUND, LEVELS, dot, read_snapshot, subtract, topology
+from audit_cloth_snapshot import (AROUND, LEVELS, dot, read_snapshot, subtract,
+                                 topology, static_geometry, surface_gap)
 
 
 def cross(a, b):
@@ -48,6 +49,7 @@ def winding_number(point, vertices, faces):
 
 def audit(path, faces, closed):
     payload, vertices, fruits = read_snapshot(path, faces)
+    geometry = static_geometry(payload)
     ring = vertices[AROUND * (LEVELS - 1):AROUND * LEVELS]
     vertices.append(tuple(math.fsum(p[k] for p in ring) / AROUND for k in range(3)))
     rows = []
@@ -59,8 +61,9 @@ def audit(path, faces, closed):
                     'inside' if abs(magnitude - 1) < 1e-6 else 'ambiguous')
         rows.append({'fruit': index, 'render_mesh_winding_number': winding,
                      'center_location': location,
-                     'ground_clearance_m': center[2] - radius})
+                     'ground_clearance_m': surface_gap(center, radius, geometry)})
     return {'snapshot': str(path), 'snapshot_sha256': hashlib.sha256(payload).hexdigest(),
+            'static_surface_model': geometry,
             'fruits': rows}
 
 

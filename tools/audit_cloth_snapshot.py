@@ -162,8 +162,32 @@ def local_node_pairs(edges, local):
     return pairs
 
 
-def audit(path, radius, edges, expected_faces, local, include_local=False):
+def static_geometry(payload, require_finite=False):
+    declarations = [line.split() for line in payload.decode('utf-8').splitlines()
+                    if line.split()[:2] == ['#', 'static_bench']]
+    if not declarations:
+        if require_finite:
+            raise ValueError('required finite bench declaration is missing')
+        return 'unbounded_plane'
+    expected = ['#', 'static_bench', 'min', '-0.75', '-0.5', '-0.08',
+                'max', '0.75', '0.5', '0', 'floor', '-0.75']
+    if len(declarations) != 1 or declarations[0] != expected:
+        raise ValueError('static bench does not match the authored finite collider')
+    return 'finite_bench_and_room_floor'
+
+
+def surface_gap(point, radius, geometry):
+    if geometry == 'unbounded_plane':
+        return point[2] - radius
+    # Independent centered-box SDF; no solver helper or sweep is imported.
+    q = (abs(point[0]) - 0.75, abs(point[1]) - 0.5, abs(point[2] + 0.04) - 0.04)
+    box_gap = math.hypot(*(max(0.0, value) for value in q)) + min(max(q), 0.0) - radius
+    return min(box_gap, point[2] + 0.75 - radius)
+
+
+def audit(path, radius, edges, expected_faces, local, include_local=False, require_finite=False):
     payload, vertices, fruits = read_snapshot(path, expected_faces)
+    geometry = static_geometry(payload, require_finite)
     fruit_overlap, fruit_witness = 0.0, None
     for fruit, (center, r) in fruits.items():
         for edge in edges:
@@ -178,9 +202,10 @@ def audit(path, radius, edges, expected_faces, local, include_local=False):
         if overlap > pair_overlap:
             pair_overlap, pair_witness = overlap, [first, second]
     self_penetration, self_witness, candidates = self_overlap(vertices, edges, local, radius)
-    ground = max(0.0, max(radius - vertex[2] for vertex in vertices),
-                 max(r - center[2] for center, r in fruits.values()))
+    ground = max(0.0, max(-surface_gap(vertex, radius, geometry) for vertex in vertices),
+                 max(-surface_gap(center, r, geometry) for center, r in fruits.values()))
     row = {'snapshot': str(path), 'snapshot_sha256': hashlib.sha256(payload).hexdigest(),
+            'static_surface_model': geometry,
             'fruit_yarn_overlap_m': fruit_overlap, 'fruit_yarn_witness': fruit_witness,
             'fruit_pair_overlap_m': pair_overlap, 'fruit_pair_witness': pair_witness,
             'nonlocal_yarn_overlap_m': self_penetration, 'nonlocal_yarn_witness': self_witness,
@@ -205,6 +230,8 @@ def main():
     parser.add_argument('--yarn-radius', type=float, default=0.004,
                         help='Radius from the source/material manifest; default authored 0.004 m.')
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--require-finite-bench', action='store_true',
+                        help='Reject a missing or mismatched authored finite bench declaration.')
     parser.add_argument('--include-local-node-contacts', action='store_true',
                         help='Enforce the ABI 14 two-hop non-direct node diameter contacts. '
                              'Leave unset only when auditing retained pre-repair artifacts.')
@@ -213,7 +240,8 @@ def main():
         parser.error('yarn radius must be finite and positive')
     try:
         edges, faces, local = topology()
-        rows = [audit(path, args.yarn_radius, edges, faces, local, args.include_local_node_contacts)
+        rows = [audit(path, args.yarn_radius, edges, faces, local, args.include_local_node_contacts,
+                      args.require_finite_bench)
                 for path in args.snapshots]
     except (OSError, ValueError, IndexError, UnicodeError) as error:
         parser.error(str(error))

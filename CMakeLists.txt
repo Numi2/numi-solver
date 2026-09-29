@@ -277,6 +277,10 @@ target_compile_definitions(
 )
 
 add_executable(numi-solver-cloth-bag tools/cloth_bag.cpp)
+add_executable(numi-solver-finite-bench tools/finite_bench.cpp)
+target_include_directories(numi-solver-finite-bench PRIVATE include)
+target_compile_features(numi-solver-finite-bench PRIVATE cxx_std_23)
+target_compile_options(numi-solver-finite-bench PRIVATE -Wall -Wextra -Wpedantic)
 target_link_libraries(numi-solver-cloth-bag PRIVATE numi_temporal_cone_abi)
 target_compile_features(numi-solver-cloth-bag PRIVATE cxx_std_23)
 target_compile_options(
@@ -412,6 +416,10 @@ target_compile_definitions(
 
 include(CTest)
 if(BUILD_TESTING)
+    add_test(NAME finite_bench.reference COMMAND $<TARGET_FILE:numi-solver-finite-bench>)
+    add_test(NAME cloth_bag.finite_bench COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --finite-bench-probe)
+    set_tests_properties(finite_bench.reference cloth_bag.finite_bench
+        PROPERTIES LABELS "physics;cloth;contact;ccd;finite_bench" TIMEOUT 30)
     add_test(NAME deformable_tet.constitutive COMMAND $<TARGET_FILE:numi-solver-deformable-tet>)
     set_tests_properties(deformable_tet.constitutive PROPERTIES LABELS "metal;physics;deformable" TIMEOUT 30)
     add_test(NAME deformable_mesh.drop COMMAND $<TARGET_FILE:numi-solver-deformable-mesh>)

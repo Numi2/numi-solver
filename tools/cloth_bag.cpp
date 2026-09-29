@@ -1,5 +1,6 @@
 #include "numi/cloth_material.h"
 #include "numi/grip_trajectory.h"
+#include "numi/finite_bench_geometry.h"
 
 #include <algorithm>
 #include <array>
@@ -25,6 +26,9 @@ constexpr std::uint32_t kLevels = 28;
 constexpr std::uint32_t kBottomGrid = 13;
 constexpr std::uint32_t kBottomInterior = kBottomGrid - 2u;
 constexpr std::size_t kFruitCount = 12;
+bool gFiniteBench = false;
+const numi::bench::Box kBench{};
+constexpr double kRoomFloorHeight = -0.75;
 constexpr double kAirborneLift = 0.52;
 constexpr double kInitialGroundLift = 0.009;
 numi::ClothMaterialArtifact gClothMaterial{};
@@ -231,6 +235,7 @@ struct Particle {
     Vec3 rest{};
     double inverseMass{};
     double mass{};
+    Vec3 surfaceNormal{};
 };
 
 struct Ball {
@@ -242,7 +247,60 @@ struct Ball {
     double radius{0.11};
     double inverseMass{1.0};
     std::uint32_t appearance{};
+    Vec3 surfaceNormal{};
 };
+
+numi::bench::Vec3 benchVector(const Vec3 value) {
+    return {value.x, value.y, value.z};
+}
+
+Vec3 clothVector(const numi::bench::Vec3 value) {
+    return {value.x, value.y, value.z};
+}
+
+numi::bench::Sample staticSurface(const Vec3 position, const double radius) {
+    auto surface = numi::bench::sample(kBench, benchVector(position), radius);
+    const double floorGap = position.z - kRoomFloorHeight - radius;
+    if (floorGap < surface.gap) surface = {floorGap, {0.0, 0.0, 1.0}};
+    return surface;
+}
+
+double projectStaticSurface(Vec3& position, const double radius, Vec3& normal) {
+    const auto surface = staticSurface(position, radius);
+    if (surface.gap >= 0.0) return 0.0;
+    normal = clothVector(surface.normal);
+    position += normal * -surface.gap;
+    return -surface.gap;
+}
+
+// Clip the remaining prediction to the tangent at the earliest exact impact.
+// This tangent supports the convex sphere-offset box, including edge/corner
+// features. Publication below removes the remaining incoming normal velocity.
+double sweepStaticSurface(const Vec3 previous, Vec3& position,
+                          const double radius, Vec3& normal) {
+    auto hit = numi::bench::cast(kBench, benchVector(previous), benchVector(position), radius);
+    const auto floor = numi::bench::castFloor(
+        benchVector(previous), benchVector(position), radius, kRoomFloorHeight);
+    if (floor.contact && (!hit.contact || floor.time < hit.time)) hit = floor;
+    if (!hit.contact) return 0.0;
+    normal = clothVector(hit.normal);
+    const Vec3 impact = previous + (position - previous) * hit.time;
+    const double removed = std::max(0.0, -dot(position - impact, normal));
+    position += normal * removed;
+    return removed;
+}
+
+double publishStaticVelocity(const Vec3 position, const double radius,
+                             Vec3& normal, Vec3& velocity,
+                             const Vec3 predictedVelocity, const double inverseMass) {
+    const auto surface = staticSurface(position, radius);
+    if (surface.gap <= 1.0e-6) normal = clothVector(surface.normal);
+    if (lengthSquared(normal) < 0.5 || inverseMass <= 0.0) return 0.0;
+    const double incoming = dot(predictedVelocity, normal);
+    const double current = dot(velocity, normal);
+    if (incoming < 0.0 && current < 0.0) velocity -= normal * current;
+    return std::max(0.0, dot(velocity - predictedVelocity, normal) / inverseMass);
+}
 
 struct BallPairContactImpulse {
     Vec3 weightedNormal{};
@@ -459,6 +517,7 @@ auto accumulateSeconds(double& total, Function&& function) {
 }
 
 struct SimulationResult {
+    std::uint64_t frameStateHash{1469598103934665603ull};
     ClothModel cloth;
     std::array<Ball, kFruitCount> balls{};
     Metrics metrics{};
@@ -1904,6 +1963,13 @@ double measureGroundPenetration(
     const std::array<Ball, kFruitCount>& balls
 ) {
     double maximum = 0.0;
+    if (gFiniteBench) {
+        for (const Particle& particle : particles)
+            maximum = std::max(maximum, -staticSurface(particle.position, kClothRadius).gap);
+        for (const Ball& ball : balls)
+            maximum = std::max(maximum, -staticSurface(ball.position, ball.radius).gap);
+        return maximum;
+    }
     for (const Particle& particle : particles) {
         maximum = std::max(
             maximum,
@@ -2010,7 +2076,9 @@ void applyBallRollingResistance(
     const double rollingResistanceCoefficient,
     Metrics& metrics
 ) {
-    const Vec3 rollingAngularVelocity{
+    const Vec3 rollingAngularVelocity = gFiniteBench
+        ? ball.angularVelocity - ball.surfaceNormal * dot(ball.angularVelocity, ball.surfaceNormal)
+        : Vec3{
         ball.angularVelocity.x,
         ball.angularVelocity.y,
         0.0,
@@ -2048,14 +2116,15 @@ void applyBallGroundFriction(
     const double rollingResistanceCoefficient
 ) {
     static_cast<void>(timestep);
-    const Vec3 normal{0.0, 0.0, 1.0};
     for (std::size_t index = 0; index < balls.size(); ++index) {
         Ball& ball = balls[index];
         const double normalImpulse = normalImpulses[index];
         if (normalImpulse <= 0.0) {
             continue;
         }
-        const Vec3 contactOffset{0.0, 0.0, -ball.radius};
+        const Vec3 normal = gFiniteBench ? ball.surfaceNormal : Vec3{0.0, 0.0, 1.0};
+        const Vec3 contactOffset = gFiniteBench
+            ? normal * -ball.radius : Vec3{0.0, 0.0, -ball.radius};
         const Vec3 contactVelocity = ball.velocity +
             cross(ball.angularVelocity, contactOffset);
         const Vec3 tangentVelocity = contactVelocity -
@@ -2106,7 +2175,9 @@ void applyClothGroundFriction(
         if (normalImpulse <= 0.0 || particle.inverseMass <= 0.0) {
             continue;
         }
-        const Vec3 tangentVelocity{
+        const Vec3 tangentVelocity = gFiniteBench
+            ? particle.velocity - particle.surfaceNormal * dot(particle.velocity, particle.surfaceNormal)
+            : Vec3{
             particle.velocity.x,
             particle.velocity.y,
             0.0,
@@ -2683,6 +2754,22 @@ double solveGround(
     double& maximumBallCorrection
 ) {
     double maximumPenetration = 0.0;
+    if (gFiniteBench) {
+        for (Particle& particle : particles) {
+            const double correction = projectStaticSurface(
+                particle.position, kClothRadius, particle.surfaceNormal);
+            maximumPenetration = std::max(maximumPenetration, correction);
+            maximumClothCorrection = std::max(maximumClothCorrection, correction);
+        }
+        for (std::size_t index = 0; index < balls.size(); ++index) {
+            Ball& ball = balls[index];
+            const double correction = projectStaticSurface(ball.position, ball.radius, ball.surfaceNormal);
+            maximumPenetration = std::max(maximumPenetration, correction);
+            maximumBallCorrection = std::max(maximumBallCorrection, correction);
+            ballNormalImpulses[index] += correction / (ball.inverseMass * timestep);
+        }
+        return maximumPenetration;
+    }
     for (Particle& particle : particles) {
         const double penetration = kClothRadius - particle.position.z;
         if (penetration > 0.0) {
@@ -2718,6 +2805,19 @@ double sweepGroundPrediction(
     std::array<double, kFruitCount>& ballNormalImpulses
 ) {
     double maximumAdvance = 0.0;
+    if (gFiniteBench) {
+        for (Particle& particle : particles)
+            maximumAdvance = std::max(maximumAdvance, sweepStaticSurface(
+                particle.previous, particle.position, kClothRadius, particle.surfaceNormal));
+        for (std::size_t index = 0; index < balls.size(); ++index) {
+            Ball& ball = balls[index];
+            const double removed = sweepStaticSurface(
+                ball.previous, ball.position, ball.radius, ball.surfaceNormal);
+            maximumAdvance = std::max(maximumAdvance, removed);
+            ballNormalImpulses[index] += removed / (ball.inverseMass * timestep);
+        }
+        return maximumAdvance;
+    }
     for (Particle& particle : particles) {
         if (particle.previous.z >= kClothRadius &&
             particle.position.z < kClothRadius) {
@@ -4871,7 +4971,9 @@ bool fruitNumericallyEscaped(
         !std::isfinite(ball.radius) || ball.radius <= 0.0) {
         return true;
     }
-    if (scenario != Scenario::spin && ball.position.z < ball.radius - 2.0e-6) {
+    if (scenario != Scenario::spin && (gFiniteBench
+        ? staticSurface(ball.position, ball.radius).gap < -2.0e-6
+        : ball.position.z < ball.radius - 2.0e-6)) {
         return true;
     }
     // The support plane and free space are unbounded. A classified mouth exit
@@ -4920,6 +5022,8 @@ bool runEscapeClassificationProbe() {
     return pass;
 }
 
+std::uint64_t hashResult(const SimulationResult& result);
+
 SimulationResult simulate(
     const std::uint32_t steps,
     const double frameTimestep,
@@ -4930,7 +5034,9 @@ SimulationResult simulate(
     std::vector<SimulationResult>* captures = nullptr,
     const numi::GripTrajectory* gripTrajectory = nullptr,
     SimulationResult* knotPeakCapture = nullptr,
-    std::ostream* knotTrace = nullptr
+    std::ostream* knotTrace = nullptr,
+    std::ostream* fruitTrace = nullptr,
+    const std::uint32_t replayIndex = 1u
 ) {
     if ((scenario == Scenario::recorded) != (gripTrajectory != nullptr)) {
         throw std::runtime_error(
@@ -4956,10 +5062,32 @@ SimulationResult simulate(
     );
     std::vector<Vec3> predictedClothPositions(result.cloth.particles.size());
     std::vector<Vec3> predictedFruitPositions(result.balls.size());
+    std::vector<Vec3> predictedFruitVelocities(result.balls.size());
+    const bool planarGround = scenario != Scenario::spin && !gFiniteBench;
     std::vector<double> clothGroundNormalImpulses(
         result.cloth.particles.size()
     );
     const auto capture = [&](const std::uint32_t completedSteps) {
+        const std::uint64_t state = hashResult(result);
+        for (unsigned byte = 0; byte < 8u; ++byte) {
+            result.frameStateHash ^= static_cast<std::uint8_t>(state >> (8u * byte));
+            result.frameStateHash *= 1099511628211ull;
+        }
+        if (fruitTrace != nullptr) {
+            for (std::size_t index = 0; index < result.balls.size(); ++index) {
+                const Ball& ball = result.balls[index];
+                const double gap = gFiniteBench ? staticSurface(ball.position, ball.radius).gap
+                    : ball.position.z - ball.radius;
+                *fruitTrace << std::setprecision(17) << replayIndex << ',' << completedSteps << ','
+                    << completedSteps * frameTimestep << ',' << index << ','
+                    << ball.position.x << ',' << ball.position.y << ',' << ball.position.z << ','
+                    << ball.radius << ',' << ball.velocity.x << ',' << ball.velocity.y << ','
+                    << ball.velocity.z << ',' << ball.angularVelocity.x << ','
+                    << ball.angularVelocity.y << ',' << ball.angularVelocity.z << ',' << gap << ','
+                    << ((result.metrics.releasedMask >> index) & 1u) << '\n';
+            }
+            fruitTrace->flush();
+        }
         if (captureSteps != nullptr && captures != nullptr &&
             std::find(
                 captureSteps->begin(),
@@ -5002,6 +5130,7 @@ SimulationResult simulate(
             }
             for (Particle& particle : result.cloth.particles) {
                 particle.previous = particle.position;
+                particle.surfaceNormal = {};
                 if (particle.inverseMass == 0.0) {
                     particle.position = particle.rest;
                     particle.velocity =
@@ -5031,6 +5160,7 @@ SimulationResult simulate(
             }
             for (Ball& ball : result.balls) {
                 ball.previous = ball.position;
+                ball.surfaceNormal = {};
                 ball.velocity += gravity * timestep;
             }
             applyFruitAerodynamics(
@@ -5044,6 +5174,7 @@ SimulationResult simulate(
             }
             for (std::size_t index = 0; index < result.balls.size(); ++index) {
                 predictedFruitPositions[index] = result.balls[index].position;
+                predictedFruitVelocities[index] = result.balls[index].velocity;
             }
             if (scenario != Scenario::spin) {
                 result.metrics.maximumSweptGroundAdvance = std::max(
@@ -5084,7 +5215,7 @@ SimulationResult simulate(
                     }
                 )
             );
-            solveLocalNodeContacts(result.cloth, scenario != Scenario::spin,
+            solveLocalNodeContacts(result.cloth, planarGround,
                 result.metrics.localNodeContacts);
 
             for (std::size_t ballIndex = 0;
@@ -5100,7 +5231,7 @@ SimulationResult simulate(
                             result.cloth.yarnSegments[segmentIndex],
                             result.balls[ballIndex],
                             timestep,
-                            scenario != Scenario::spin,
+                            planarGround,
                             yarnContacts[
                                 ballIndex * result.cloth.yarnSegments.size() +
                                 segmentIndex
@@ -5124,7 +5255,7 @@ SimulationResult simulate(
                             result.cloth.particles,
                             constraint,
                             timestep,
-                            scenario != Scenario::spin
+                            planarGround
                         );
                     }
                 }
@@ -5162,7 +5293,7 @@ SimulationResult simulate(
                             result.cloth,
                             result.balls,
                             timestep,
-                            scenario != Scenario::spin,
+                            planarGround,
                             yarnContacts,
                             result.metrics
                         );
@@ -5181,7 +5312,7 @@ SimulationResult simulate(
                         }
                     )
                 );
-                solveLocalNodeContacts(result.cloth, scenario != Scenario::spin,
+                solveLocalNodeContacts(result.cloth, planarGround,
                     result.metrics.localNodeContacts);
                 if (scenario != Scenario::spin) {
                     result.metrics.maximumGroundPenetration = std::max(
@@ -5224,7 +5355,7 @@ SimulationResult simulate(
                             result.cloth,
                             result.balls,
                             timestep,
-                            scenario != Scenario::spin,
+                            planarGround,
                             yarnContacts,
                             result.metrics
                         );
@@ -5319,7 +5450,7 @@ SimulationResult simulate(
                 for (std::uint32_t pass = 0u;
                      pass < finalContactPasses;
                      ++pass) {
-                    solveLocalNodeContacts(result.cloth, scenario != Scenario::spin,
+                    solveLocalNodeContacts(result.cloth, planarGround,
                         result.metrics.localNodeContacts);
                     std::size_t pairIndex = 0u;
                     for (std::size_t first = 0u;
@@ -5343,7 +5474,7 @@ SimulationResult simulate(
                                 result.cloth,
                                 result.balls,
                                 timestep,
-                                scenario != Scenario::spin,
+                                planarGround,
                                 yarnContacts,
                                 result.metrics
                             );
@@ -5422,13 +5553,18 @@ SimulationResult simulate(
                 } else {
                     particle.velocity +=
                         (particle.position - predictedClothPositions[index]) / timestep;
-                    if (scenario != Scenario::spin &&
+                    if (gFiniteBench && scenario != Scenario::spin) {
+                        clothGroundNormalImpulses[index] = publishStaticVelocity(
+                            particle.position, kClothRadius, particle.surfaceNormal,
+                            particle.velocity, predictedClothVelocities[index], particle.inverseMass);
+                    }
+                    if (!gFiniteBench && scenario != Scenario::spin &&
                         particle.position.z == kClothRadius &&
                         particle.previous.z >= kClothRadius &&
                         predictedClothVelocities[index].z < 0.0) {
                         particle.velocity.z = 0.0;
                     }
-                    if (scenario != Scenario::spin &&
+                    if (!gFiniteBench && scenario != Scenario::spin &&
                         particle.position.z <= kClothRadius + 1.0e-6) {
                         const double normalVelocityChange =
                             particle.velocity.z -
@@ -5443,7 +5579,12 @@ SimulationResult simulate(
             for (std::size_t index = 0; index < result.balls.size(); ++index) {
                 Ball& ball = result.balls[index];
                 ball.velocity += (ball.position - predictedFruitPositions[index]) / timestep;
-                if (scenario != Scenario::spin && ball.position.z == ball.radius &&
+                if (gFiniteBench && scenario != Scenario::spin) {
+                    groundNormalImpulses[index] = publishStaticVelocity(
+                        ball.position, ball.radius, ball.surfaceNormal, ball.velocity,
+                        predictedFruitVelocities[index], ball.inverseMass);
+                }
+                if (!gFiniteBench && scenario != Scenario::spin && ball.position.z == ball.radius &&
                     ball.previous.z >= ball.radius && groundNormalImpulses[index] > 0.0) {
                     groundNormalImpulses[index] = std::max(
                         0.0, groundNormalImpulses[index] - ball.velocity.z / ball.inverseMass
@@ -5466,7 +5607,7 @@ SimulationResult simulate(
                 result.balls,
                 yarnContacts,
                 result.metrics,
-                scenario != Scenario::spin
+                planarGround
             );
             applyBallPairFriction(result.balls, pairContacts, result.metrics);
             applyBallGroundFriction(
@@ -5624,6 +5765,11 @@ std::uint64_t hashResult(const SimulationResult& result) {
             append(grip.targetOffset.z);
         }
     }
+    if (gFiniteBench) {
+        append(kBench.minimum.x); append(kBench.minimum.y); append(kBench.minimum.z);
+        append(kBench.maximum.x); append(kBench.maximum.y); append(kBench.maximum.z);
+        append(kRoomFloorHeight);
+    }
     return hash;
 }
 
@@ -5634,6 +5780,12 @@ void dumpOBJ(const std::string& path, const SimulationResult& result) {
     }
     output << std::setprecision(9);
     output << "# Numi Solver explicit-yarn cloth bag reference\n";
+    if (gFiniteBench) {
+        output << "# static_bench min " << kBench.minimum.x << ' ' << kBench.minimum.y
+               << ' ' << kBench.minimum.z << " max " << kBench.maximum.x
+               << ' ' << kBench.maximum.y << ' ' << kBench.maximum.z
+               << " floor " << kRoomFloorHeight << '\n';
+    }
     output << "# vertices " << result.cloth.particles.size()
            << " render_triangles " << result.cloth.renderTriangles.size()
            << '\n';
@@ -5769,6 +5921,109 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
 
 }  // namespace
 
+struct FiniteBenchProbeResult {
+    std::vector<std::array<double, 9>> captures;
+    double maximumPenetration{};
+    double maximumFrictionRatio{};
+    bool leftBench{};
+    bool reachedFloor{};
+};
+
+FiniteBenchProbeResult finiteBenchTrajectory(const std::uint32_t steps) {
+    const double dt = 2.0 / steps;
+    std::array<Ball, kFruitCount> balls{};
+    for (std::size_t index = 0; index < balls.size(); ++index) {
+        balls[index].radius = 0.07;
+        balls[index].inverseMass = 5.0;
+        balls[index].position = {-3.0 - 0.2 * index, 0.0, kRoomFloorHeight + 0.07};
+    }
+    balls[0].position = {0.0, 0.0, 0.07};
+    balls[0].velocity = {1.1, 0.0, 0.0};
+    balls[0].angularVelocity = {0.0, 1.1 / 0.07, 0.0};
+    std::vector<Particle> particles;
+    Metrics metrics;
+    FiniteBenchProbeResult result;
+    const auto capture = [&] {
+        const auto& ball = balls[0];
+        result.captures.push_back({ball.position.x, ball.position.y, ball.position.z,
+            ball.velocity.x, ball.velocity.y, ball.velocity.z,
+            ball.angularVelocity.x, ball.angularVelocity.y, ball.angularVelocity.z});
+    };
+    capture();
+    for (std::uint32_t step = 0; step < steps; ++step) {
+        std::array<Vec3, kFruitCount> predictedPositions{}, predictedVelocities{};
+        std::array<double, kFruitCount> impulses{};
+        for (std::size_t index = 0; index < balls.size(); ++index) {
+            Ball& ball = balls[index];
+            ball.surfaceNormal = {};
+            ball.previous = ball.position;
+            ball.velocity.z -= 9.81 * dt;
+            ball.position += ball.velocity * dt;
+            predictedPositions[index] = ball.position;
+            predictedVelocities[index] = ball.velocity;
+        }
+        sweepGroundPrediction(particles, balls, dt, impulses);
+        double clothCorrection = 0.0, ballCorrection = 0.0;
+        solveGround(particles, balls, dt, impulses, clothCorrection, ballCorrection);
+        for (std::size_t index = 0; index < balls.size(); ++index) {
+            Ball& ball = balls[index];
+            ball.velocity += (ball.position - predictedPositions[index]) / dt;
+            impulses[index] = publishStaticVelocity(ball.position, ball.radius,
+                ball.surfaceNormal, ball.velocity, predictedVelocities[index], ball.inverseMass);
+        }
+        applyBallGroundFriction(balls, impulses, dt, metrics, 0.0);
+        result.maximumPenetration = std::max(result.maximumPenetration,
+            measureGroundPenetration(particles, balls));
+        result.leftBench |= balls[0].position.x > kBench.maximum.x + balls[0].radius &&
+            balls[0].position.z < 0.0;
+        result.reachedFloor |= balls[0].position.z <= kRoomFloorHeight + balls[0].radius + 1.0e-9;
+        if ((step + 1u) % (steps / 240u) == 0u) capture();
+    }
+    result.maximumFrictionRatio = metrics.maximumFrictionConeRatio;
+    return result;
+}
+
+bool runFiniteBenchProbe() {
+    const auto first = finiteBenchTrajectory(12000u);
+    const auto replay = finiteBenchTrajectory(12000u);
+    const auto fine = finiteBenchTrajectory(24000u);
+    double maximumPositionDifference = 0.0;
+    for (std::size_t index = 0; index < first.captures.size(); ++index) {
+        const auto& a = first.captures[index]; const auto& b = fine.captures[index];
+        maximumPositionDifference = std::max(maximumPositionDifference,
+            std::hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]));
+    }
+    // Exercise cloth and fruit side impact through the production sweep.
+    std::vector<Particle> particles(1);
+    particles[0].previous = {1.0, 0.0, -0.04};
+    particles[0].position = {0.5, 0.0, -0.04};
+    std::array<Ball, kFruitCount> balls{};
+    for (auto& ball : balls) {
+        ball.radius = 0.07; ball.previous = {-2.0, 0.0, 0.5}; ball.position = ball.previous;
+    }
+    balls[0].previous = {1.0, 0.0, -0.04}; balls[0].position = {0.5, 0.0, -0.04};
+    std::array<double, kFruitCount> impulses{};
+    sweepGroundPrediction(particles, balls, 1.0e-4, impulses);
+    const bool side = std::abs(particles[0].position.x - (0.75 + kClothRadius)) < 1.0e-12 &&
+        std::abs(balls[0].position.x - 0.82) < 1.0e-12 && balls[0].surfaceNormal.x == 1.0;
+    const auto& final = first.captures.back();
+    const bool deterministic = first.captures == replay.captures;
+    const bool pass = deterministic && first.leftBench && first.reachedFloor && side &&
+        first.maximumPenetration < 1.0e-9 && fine.maximumPenetration < 1.0e-9 &&
+        first.maximumFrictionRatio <= 1.0 + 1.0e-12 && maximumPositionDifference < 0.002 &&
+        std::abs(final[2] - (kRoomFloorHeight + 0.07)) < 1.0e-9 && std::abs(final[5]) < 1.0e-10;
+    std::cout << std::setprecision(12) << std::boolalpha
+        << "probe=production_finite_bench backend=CPU_FP64 simulated_seconds=2 captures=" << first.captures.size()
+        << " exact_captured_replay=" << deterministic << " left_bench=" << first.leftBench
+        << " reached_lower_floor=" << first.reachedFloor << " cloth_fruit_side_ccd=" << side
+        << " maximum_penetration_m=" << first.maximumPenetration
+        << " maximum_half_step_position_difference_m=" << maximumPositionDifference
+        << " max_friction_cone_ratio=" << first.maximumFrictionRatio
+        << " final_z_m=" << final[2] << " final_vz_m_s=" << final[5] << '\n'
+        << "result=" << (pass ? "PASS" : "FAIL") << '\n';
+    return pass;
+}
+
 int main(int argc, char** argv) try {
     std::uint32_t steps = 120u;
     std::uint32_t substeps = 24u;
@@ -5778,6 +6033,7 @@ int main(int argc, char** argv) try {
     std::string dumpPath;
     std::string knotPeakPath;
     std::string knotTracePath;
+    std::string fruitTracePath;
     std::string framePrefix;
     std::string materialPath;
     std::string gripTrajectoryPath;
@@ -5794,6 +6050,7 @@ int main(int argc, char** argv) try {
     bool mouthReleaseProbe = false;
     bool escapeClassificationProbe = false;
     bool localNodeProbe = false;
+    bool finiteBenchProbe = false;
     Scenario scenario = Scenario::grounded;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string value = argv[argument];
@@ -5819,6 +6076,8 @@ int main(int argc, char** argv) try {
             knotPeakPath = argv[++argument];
         } else if (value == "--knot-trace" && argument + 1 < argc) {
             knotTracePath = argv[++argument];
+        } else if (value == "--fruit-trace" && argument + 1 < argc) {
+            fruitTracePath = argv[++argument];
         } else if (value == "--dump-frames" && argument + 1 < argc) {
             framePrefix = argv[++argument];
         } else if (value == "--dump-every") {
@@ -5847,6 +6106,11 @@ int main(int argc, char** argv) try {
             rollingResistanceProbe = true;
         } else if (value == "--escape-classification-probe") {
             escapeClassificationProbe = true;
+        } else if (value == "--finite-bench") {
+            gFiniteBench = true;
+        } else if (value == "--finite-bench-probe") {
+            finiteBenchProbe = true;
+            gFiniteBench = true;
         } else if (value == "--local-node-probe") {
             localNodeProbe = true;
         } else if (value == "--mouth-release-probe") {
@@ -5873,6 +6137,7 @@ int main(int argc, char** argv) try {
                          "[--material FILE] [--grip-trajectory FILE] "
                          "[--dump-obj PATH] [--dump-frames PREFIX] "
                          "[--dump-knot-peak PATH] [--knot-trace PATH] "
+                         "[--fruit-trace CSV] "
                          "[--dump-every N] [--rolling-probe] "
                          "[--self-ccd-probe] [--strain-probe] "
                          "[--self-friction-probe] "
@@ -5882,7 +6147,8 @@ int main(int argc, char** argv) try {
                          "[--cloth-ground-friction-probe] "
                          "[--rolling-resistance-probe] "
                          "[--mouth-release-probe] "
-                         "[--escape-classification-probe] [--local-node-probe]\n";
+                         "[--escape-classification-probe] [--local-node-probe] "
+                         "[--finite-bench] [--finite-bench-probe]\n";
             return 0;
         } else {
             throw std::invalid_argument("unknown argument: " + value);
@@ -5903,6 +6169,11 @@ int main(int argc, char** argv) try {
             "--scenario recorded and --grip-trajectory must be used together"
         );
     }
+    if (finiteBenchProbe) {
+        return runFiniteBenchProbe() ? 0 : 1;
+    }
+    if (gFiniteBench && scenario == Scenario::spin)
+        throw std::invalid_argument("finite bench requires a scenario with static contacts");
     if (rollingProbe) {
         return runRollingProbe() ? 0 : 1;
     }
@@ -5969,6 +6240,13 @@ int main(int argc, char** argv) try {
         }
     }
     SimulationResult knotPeakCapture;
+    std::ofstream fruitTrace;
+    if (!fruitTracePath.empty()) {
+        fruitTrace.open(fruitTracePath);
+        if (!fruitTrace) throw std::runtime_error("failed to open fruit trace: " + fruitTracePath);
+        fruitTrace << "replay,frame,time_s,fruit,x_m,y_m,z_m,radius_m,vx_m_s,vy_m_s,vz_m_s,"
+                      "wx_rad_s,wy_rad_s,wz_rad_s,static_clearance_m,released\n";
+    }
     std::ofstream knotTrace;
     if (!knotTracePath.empty()) {
         knotTrace.open(knotTracePath);
@@ -5988,12 +6266,14 @@ int main(int argc, char** argv) try {
         framePrefix.empty() ? nullptr : &captures,
         gripTrajectoryPointer,
         knotPeakPath.empty() ? nullptr : &knotPeakCapture,
-        knotTracePath.empty() ? nullptr : &knotTrace
+        knotTracePath.empty() ? nullptr : &knotTrace,
+        fruitTracePath.empty() ? nullptr : &fruitTrace
     );
     const std::uint64_t firstHash = hashResult(first);
     std::uint64_t replayHash = 0u;
+    std::uint64_t replayFrameHash = 0u;
     if (replays == 2u) {
-        replayHash = hashResult(simulate(
+        const auto replay = simulate(
             steps,
             timestep,
             substeps,
@@ -6001,10 +6281,17 @@ int main(int argc, char** argv) try {
             scenario,
             nullptr,
             nullptr,
-            gripTrajectoryPointer
-        ));
+            gripTrajectoryPointer,
+            nullptr,
+            nullptr,
+            fruitTracePath.empty() ? nullptr : &fruitTrace,
+            2u
+        );
+        replayHash = hashResult(replay);
+        replayFrameHash = replay.frameStateHash;
     }
-    const bool deterministic = replays == 2u && firstHash == replayHash;
+    const bool deterministic = replays == 2u && firstHash == replayHash &&
+        first.frameStateHash == replayFrameHash;
     if (!dumpPath.empty()) {
         dumpOBJ(dumpPath, first);
     }
@@ -6034,6 +6321,8 @@ int main(int argc, char** argv) try {
     const char* scenarioName = scenario == Scenario::grounded ? "grounded" :
         scenario == Scenario::spin ? "spin" :
         scenario == Scenario::pickup ? "pickup" : "recorded";
+    if (gFiniteBench) std::cout << "static_contact=finite_bench box_min_m=-.75,-.5,-.08 "
+        "box_max_m=.75,.5,0 room_floor_height_m=-.75\n";
     std::cout << "material_schema=" << numi::kClothMaterialSchema
               << " material_artifact_loaded=" << std::boolalpha
               << gClothMaterial.loaded
@@ -6227,7 +6516,9 @@ int main(int argc, char** argv) try {
               << " cloth_ground_friction_contacts="
               << metrics.clothGroundFrictionContacts
               << " deterministic=" << std::boolalpha << deterministic
-              << " state_hash=0x" << std::hex << firstHash << std::dec << '\n';
+              << " state_hash=0x" << std::hex << firstHash
+              << " frame_state_hash=0x" << first.frameStateHash << std::dec
+              << " replay_frame_states=" << steps + 1u << '\n';
     std::cout << "ball_cloth_solve_seconds=" << metrics.ballClothSolveSeconds
               << " primitive_self_solve_seconds="
               << metrics.primitiveSelfSolveSeconds
