@@ -297,7 +297,18 @@ cover five production sphere/yarn loading cases on the tabletop, lower
 floor, side, rounded edge and arrival from clearance. New
 `--contact-peak-prefix PREFIX` output captures the worst accepted fruit/yarn
 state of each replay, including maxima between the regular ten-frame exports.
-The full repaired four-second job is a separate candidate and remains required.
+The support-geometry repair from `0543999` has now completed both full CPU48
+replays with actual exit 0 and **PASS**. Its final hash is
+`0xf8a23204743476cd`, with ordered 481-frame digest `0x98f76645d8f87e58`.
+Five released fruits (0, 4, 9, 10, 11) finish on the lower floor; both complete
+fruit CSV sequences match exactly. All 49 regular states and both peak-contact
+snapshots independently pass, including full yarn/static and local-node checks.
+Worst accepted fruit/yarn overlap drops from 173.4 um to 0.949 um, below 2 um.
+Peak dynamic speed is 14.33 m/s and knot error is 0.314 radians.
+[Complete support-geometry receipt](assets/finite-bench-active-pickup-48-evidence.json).
+The paired CPU96 result is pending. This source precedes the added blocked-load
+friction response: fresh full pickup and loaded-drop jobs from `6f1e450` are
+running, and their results remain required for that newer source.
 The original CPU96 job also completed both full replays with actual exit 1:
 [its receipt](assets/finite-bench-pickup-96-failure.json) retains 11.26 um
 worst fruit/yarn overlap, and only fruit 4 has a latched

@@ -1,0 +1,20 @@
+{
+  "spatial_target_m": 0.001,
+  "comparison": [
+    {
+      "coarse_nodes": 309,
+      "fine_nodes": 2057,
+      "coarse_tetrahedra": 1280,
+      "fine_tetrahedra": 10240,
+      "total_mass_difference_kg": 1.5737964931261672e-08,
+      "maximum_matched_node_difference_m": 0.014995631891890949,
+      "maximum_COM_difference_m": 0.0047326532860751626,
+      "maximum_height_difference_m": 0.010069612413599993,
+      "within_spatial_target": false,
+      "coarse_trace_sha256": "1d5d2d52c200104eccf31804050ad543cb97bb6fb5e01e1e9957009347cf0931",
+      "fine_trace_sha256": "a0406d1c8486362cc26664cb702a0ad4598bbf895090ab6c404fb8145b33b30b"
+    }
+  ],
+  "finest_pair_within_spatial_target": false,
+  "evidence_boundary": "Matched owning-node positions at equal exported times for the same piecewise-flat rest body, authored material and volume-derived masses. Each complete trajectory is independently checked for topology, geometry and mass. Timestep convergence does not imply spatial convergence. This comparison does not calibrate fruit properties or close intervening contact work."
+}

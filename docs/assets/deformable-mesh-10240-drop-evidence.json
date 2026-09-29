@@ -1,0 +1,617 @@
+{
+  "native_device": "Apple M4 Pro",
+  "initial_body": "Same piecewise-flat icosahedral volume, authored radius50mm and centerheight170mm. Shared edge midpoints, no projection to a sphere.",
+  "authored_material": {
+    "mu_Pa": 3000,
+    "lambda_Pa": 6000,
+    "density_kg_m3": 1000
+  },
+  "fine_mesh": {
+    "nodes": 2057,
+    "tetrahedra": 10240,
+    "boundary_triangles": 1280,
+    "mass_kg": 0.317018844558,
+    "simulated_seconds": 0.5,
+    "native_steps": 5000,
+    "half_step_native_steps": 10000,
+    "captures": 101,
+    "two_exact_replays": true,
+    "qualified_native_component": true,
+    "maximum_half_step_nodal_difference_m": 0.000335366711896,
+    "initial_height_m": 0.0850650817156,
+    "minimum_height_m": 0.0478014759719,
+    "final_height_m": 0.0706155002117,
+    "minimum_coarse_all_step_volume_ratio": 0.214750543237,
+    "maximum_momentum_balance_error_Ns": 1.99351319918e-06,
+    "five_transactional_rejections_pass": true
+  },
+  "source_and_binary_sha256": {
+    "CMakeLists.txt": "6cbcced7a175e1de1574d19a38e572a61cbf43d00c3ad792809e33e36e88e738",
+    "tools/deformable_mesh.mm": "23520b8203969c1daf1f5944fae083396d175e27289b7b211fa134d2556a6d74",
+    "src/metal/DeformableMesh.metal": "bbc8dbcc30463fe6986883bdd9aa8d860a32ccf8b0efcd055c8251cba34049ce",
+    "src/metal/DeformableTet.metal": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072",
+    "include/numi/deformable_mesh.h": "a0096fef902fc70774cfcde746587cb662c1f3f9be9c2bc2cbf9bae9a7fe020f",
+    "include/numi/deformable_tet.h": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0",
+    "include/metalrobo/gpu_types.h": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8",
+    "build/numi-solver-deformable-mesh": "2a187fbfc938fec05f5598e84ffec534ec86e224dac7402fa198934083a922c7",
+    "build/shaders/NumiDeformableMesh.metallib": "47cacc89971e07dc32b3284bebf654ef8ee27010c92345d5c7d06f6e694f4e19"
+  },
+  "media_and_trace_sha256": {
+    "docs/assets/deformable-mesh-10240-drop-100.png": "c122ccbb1e883d956f2fc49476c2a42c783451ccfc0ba81718857172e4b915f8",
+    "docs/assets/deformable-mesh-10240-spatial-audit.json": "4fb286b7bcc92e9c45a0dab6b4dbc8b79b6c36e44ae57fb309bae55fc20f0638",
+    "docs/assets/deformable-mesh-10240-drop-0.png": "9b7138d4bc3ad8fec873352884b0662fee38dc2eed2dd1ab2f668070fd945bbf",
+    "docs/assets/deformable-mesh-10240-drop-37.png": "37768abd9f6b9a4265827ff4695ca6741cc8acd032631365341a2738f0811998",
+    "docs/assets/deformable-mesh-10240-drop-topology.csv": "528bf55f329ad3b702c39047b16f39e08c6d1f13c58cec4afc2e4acc593aa3f1",
+    "docs/assets/deformable-mesh-10240-drop-trajectory.csv": "a0406d1c8486362cc26664cb702a0ad4598bbf895090ab6c404fb8145b33b30b",
+    "docs/assets/deformable-mesh-10240-drop.mp4": "bce1e25b4a6f5b3c1069415a6978b9fc3f19ff35b8b32337307bc8b7be62fc43",
+    "docs/assets/deformable-mesh-10240-trajectory-audit.json": "70c4ae80e0f950934380a31bd63eb74ce09cf41804873473d81b0890eee8fc36",
+    "docs/assets/deformable-mesh-10240-drop-75.png": "eb634c1b308e0e606b7878ff209142fee35ae377a3fcbd94c831dbfd0bbb4889",
+    "docs/assets/deformable-mesh-10240-drop-qualified.log": "025cfb405835f7216445ba298a9b741867bf1817662bbaf08302210337a433a8",
+    "docs/assets/deformable-mesh-10240-drop-38.png": "b1fb3892ed88009bdc65574d9b2e06c7f9839a35faa1a725c57a1c983a3b2150"
+  },
+  "geometry_audit": {
+    "captured_frames": 101,
+    "rows": 207757,
+    "nodes": 2057,
+    "tetrahedra": 10240,
+    "boundary_triangles": 1280,
+    "boundary_oriented_manifold": true,
+    "OBJ_CSV_positions_exact": true,
+    "volume_derived_masses_match": true,
+    "minimum_sampled_volume_ratio": 0.26267328564071707,
+    "minimum_sampled_clearance_m": 0.0,
+    "trace_sha256": "a0406d1c8486362cc26664cb702a0ad4598bbf895090ab6c404fb8145b33b30b",
+    "topology_sha256": "528bf55f329ad3b702c39047b16f39e08c6d1f13c58cec4afc2e4acc593aa3f1",
+    "evidence_boundary": "Exported state geometry and mass only; not independent proof of intermediate device steps, force accuracy, total contact-work closure or fruit calibration.",
+    "snapshots": [
+      {
+        "frame": 0,
+        "sha256": "1d666ea650b3ff50fc75224520336fa66d75aee87eaeea73fddfb83b81fd1550",
+        "minimum_volume_ratio": 0.9999999427867466
+      },
+      {
+        "frame": 1,
+        "sha256": "4ad6cf05bbf69e623d7a8bd231983d120236c079950b713f272316438355817f",
+        "minimum_volume_ratio": 0.9999853574015348
+      },
+      {
+        "frame": 2,
+        "sha256": "5cdd49c5de7450165c42bf4ac2131e25fa80571246e9db94c914d9cd53a58287",
+        "minimum_volume_ratio": 0.9999767730731519
+      },
+      {
+        "frame": 3,
+        "sha256": "b73d74b67ebfecad40a27f84af5789bf1665298b2adc16b4d3a3d007a62d9a47",
+        "minimum_volume_ratio": 0.9999754169506648
+      },
+      {
+        "frame": 4,
+        "sha256": "c1924294fabf87a41ac164dd1b26fff1e1c3cd20f8d081f8cf70b40602d3b667",
+        "minimum_volume_ratio": 0.9999760072219701
+      },
+      {
+        "frame": 5,
+        "sha256": "2424ca1e09dee4959bab96dc631255f41952cddc5a754dd349471e9f187f0db6",
+        "minimum_volume_ratio": 0.9999653840268872
+      },
+      {
+        "frame": 6,
+        "sha256": "6bbe51cbfb77a7b6e0a4ea97619abee9edca198b707fdce502689b99a1a9647c",
+        "minimum_volume_ratio": 0.9999482166905527
+      },
+      {
+        "frame": 7,
+        "sha256": "fb0a72bdee1b681e0cd97094be11158860d2575babe72cfef9de381c2a3429cb",
+        "minimum_volume_ratio": 0.9999487041288488
+      },
+      {
+        "frame": 8,
+        "sha256": "e51c13db2daf70e0b9f1545accde26fe81a3b4214372ea2e2174e720f83fc8d5",
+        "minimum_volume_ratio": 0.99996276632757
+      },
+      {
+        "frame": 9,
+        "sha256": "8a80494790196debf2c7a3e76626272ede367cedaa6aaf4ad16a4353312adc08",
+        "minimum_volume_ratio": 0.9999505423897105
+      },
+      {
+        "frame": 10,
+        "sha256": "5177c2b699555608b09955a19260f6ec5701f4eb89c9b9c5f1731d64fc3ffb9e",
+        "minimum_volume_ratio": 0.9999464779510023
+      },
+      {
+        "frame": 11,
+        "sha256": "7e2c93a7710e9aab214022e11dc3336111b5e3238c339c3b48eb28eadefd9e82",
+        "minimum_volume_ratio": 0.9999524221961991
+      },
+      {
+        "frame": 12,
+        "sha256": "678df8a19159ab456bda06db65d2aa1d900201b186b75694fd1059ec90440eb5",
+        "minimum_volume_ratio": 0.9999591064399544
+      },
+      {
+        "frame": 13,
+        "sha256": "cef84ce8ea6cb79d732ed25174028763354dad98f7077d59da78d6c86b8f1960",
+        "minimum_volume_ratio": 0.9999549054398976
+      },
+      {
+        "frame": 14,
+        "sha256": "d7deeedf26fb863107b5e06c0b0e954aab85692c71962be970f8b566b3ef0a82",
+        "minimum_volume_ratio": 0.9999463467115213
+      },
+      {
+        "frame": 15,
+        "sha256": "dadddaafd9088eb99bde9f7bd5b4c4fec953d1d7d80352639ae3a0434d0b791f",
+        "minimum_volume_ratio": 0.999951964811486
+      },
+      {
+        "frame": 16,
+        "sha256": "af2b92bae35d3dfeb26343c2e63e87c12f07a9d967a3aae6315af7b9356101e5",
+        "minimum_volume_ratio": 0.9999336221496926
+      },
+      {
+        "frame": 17,
+        "sha256": "e14a40d0640dea924b373c417ff84ab2aca7f7798af3cf5ddb94137848eaa39d",
+        "minimum_volume_ratio": 0.9999386600144857
+      },
+      {
+        "frame": 18,
+        "sha256": "3f5e5469af5fe01ac906392a82888464ff128ea7dccda63048e7c159b4cc5f96",
+        "minimum_volume_ratio": 0.99994010400669
+      },
+      {
+        "frame": 19,
+        "sha256": "a4dee20b5fb0142b1453fc9c71035e5bab74a05b2b6b8e5c25051ffd8f603eb1",
+        "minimum_volume_ratio": 0.9999190701301627
+      },
+      {
+        "frame": 20,
+        "sha256": "b5b40652274ec0338366518c96eacf7cf01d77827d5d92c1149108135979abde",
+        "minimum_volume_ratio": 0.9999377598591837
+      },
+      {
+        "frame": 21,
+        "sha256": "ba49af1634d1e69b73b3198b9dcc7093b85ecc827cbed31ed481539bf5191fb7",
+        "minimum_volume_ratio": 0.9999324513786308
+      },
+      {
+        "frame": 22,
+        "sha256": "dd4d7fd3087e5292c2cf26d7373f77869ae768e53517fa94ff6d6d0f7f74bf77",
+        "minimum_volume_ratio": 0.9998920128088752
+      },
+      {
+        "frame": 23,
+        "sha256": "7a84682ded1f22cc2ca7d56a0395ebf00b49a0b2a77e94b108536ef32a791201",
+        "minimum_volume_ratio": 0.9999441856110298
+      },
+      {
+        "frame": 24,
+        "sha256": "cbabeeaa96f411a20426282cc143839a592da7262344249d9c58fafd6cad5c93",
+        "minimum_volume_ratio": 0.9999283291798327
+      },
+      {
+        "frame": 25,
+        "sha256": "9f12caea0e135f9c43e379996664b08bc808932ef9c760431ce7cc687bb9735a",
+        "minimum_volume_ratio": 0.999918299651743
+      },
+      {
+        "frame": 26,
+        "sha256": "4e499c6cb9e8c64ff35731c080def6d79bc7a724c09aab7186e0665d195b9847",
+        "minimum_volume_ratio": 0.9999451763331174
+      },
+      {
+        "frame": 27,
+        "sha256": "f7a13650a968ed8c5df9951897aa188869856db691eefe1275bc0c4edeab102b",
+        "minimum_volume_ratio": 0.999878745395633
+      },
+      {
+        "frame": 28,
+        "sha256": "9f78f4c48a3386b738354e959931cff49b774262f2c44d1fa7acf3e74a43241b",
+        "minimum_volume_ratio": 0.999925124464794
+      },
+      {
+        "frame": 29,
+        "sha256": "c36e450de65295a45ab1718316cb570814171d3e75cb02898bd31ee7519f6829",
+        "minimum_volume_ratio": 0.9999116316051037
+      },
+      {
+        "frame": 30,
+        "sha256": "7997f4f77e0754ad70ec5e8c38326ee3191903a818870b79e7e543446f047bcd",
+        "minimum_volume_ratio": 0.9998838657505148
+      },
+      {
+        "frame": 31,
+        "sha256": "7cf16d2eb1a296d4adcfb36e6e741e2609c627d6c59d0fee8c728ace45dc134e",
+        "minimum_volume_ratio": 0.9999147250854395
+      },
+      {
+        "frame": 32,
+        "sha256": "071e3a2e833e93f5e8d4a809ae739599c402bc7e4fbc2821c82b2266abf8b089",
+        "minimum_volume_ratio": 0.9998870885687349
+      },
+      {
+        "frame": 33,
+        "sha256": "00aa3ff4ca5a79a0ae438a496346f60b1ba4acb8a7269d438733c3bb478dedd6",
+        "minimum_volume_ratio": 0.5162367278751618
+      },
+      {
+        "frame": 34,
+        "sha256": "f69791d13bd460f065093b1960e82f6bf8f56bb84717ceba37576ed401796141",
+        "minimum_volume_ratio": 0.40197883407369767
+      },
+      {
+        "frame": 35,
+        "sha256": "9a1f6f63ed68703577146afbd0e96139dafc158ed02ab17963820cb2bdb63840",
+        "minimum_volume_ratio": 0.3562729868241397
+      },
+      {
+        "frame": 36,
+        "sha256": "b3236243de6b637904b2349cc5fbe68dc7bc107308a992cf30fcecdd771fdb84",
+        "minimum_volume_ratio": 0.3733662060875312
+      },
+      {
+        "frame": 37,
+        "sha256": "c94ae3c6b690120a05dd903ecc2cc421772dabc0d5b9c582276fe598079e076e",
+        "minimum_volume_ratio": 0.34722880455574356
+      },
+      {
+        "frame": 38,
+        "sha256": "4e1043c1748b4c295fe50194de540704ce366f0c8b885a5fc3b895c3047f9e53",
+        "minimum_volume_ratio": 0.42370785618095586
+      },
+      {
+        "frame": 39,
+        "sha256": "552f3de5d02994de10a8f03e3c55b589bec1c2de8255e3dad7a27e536162c7e1",
+        "minimum_volume_ratio": 0.4371776044737938
+      },
+      {
+        "frame": 40,
+        "sha256": "92c2c7b0bf2e3533acc38012a76835c4fa142933e957a57d3a359d5051f6da27",
+        "minimum_volume_ratio": 0.4056115114910366
+      },
+      {
+        "frame": 41,
+        "sha256": "09e850e66de8941d0d485eed8b8680e7e380401ff0ae4338070332d8e81b25ad",
+        "minimum_volume_ratio": 0.4324483719055548
+      },
+      {
+        "frame": 42,
+        "sha256": "f46fbedc9884624c8a4fa0514953d03a4a134e0a211d56d3e6061ef06719311f",
+        "minimum_volume_ratio": 0.410879988456211
+      },
+      {
+        "frame": 43,
+        "sha256": "ffc1bcd7aa0db7e2f9ad6953c0b98d6675251354854b100d0b6f8839ff8e79f1",
+        "minimum_volume_ratio": 0.47369713907761213
+      },
+      {
+        "frame": 44,
+        "sha256": "19b5e31565e0645a1e36b88a658f3eb33f8daa13d17da8cfaa9165829b0ea01d",
+        "minimum_volume_ratio": 0.6024539150372451
+      },
+      {
+        "frame": 45,
+        "sha256": "7e6c8eeecf2a7cbafca70bbab23e9d4d94b4f635c1e2ee4c556532d38347f0f7",
+        "minimum_volume_ratio": 0.6448733248723502
+      },
+      {
+        "frame": 46,
+        "sha256": "96f3e4217db7fb616a9068fdf6a3d4303432207fe9cefd0d569baf8c9bcc4b50",
+        "minimum_volume_ratio": 0.680225868755676
+      },
+      {
+        "frame": 47,
+        "sha256": "3b219068bc35c4015d41eb4ca0c42ff9fb6bf0178271955e815f67855d5971d5",
+        "minimum_volume_ratio": 0.5887672880378367
+      },
+      {
+        "frame": 48,
+        "sha256": "6fdfa22a9020ca47e9a0e241ff0fbd5f0e6a6681232baf09f847c7833f5757c4",
+        "minimum_volume_ratio": 0.5620750986205398
+      },
+      {
+        "frame": 49,
+        "sha256": "2e9f2ff333ceb2bc218ec393c7c903987a6ccd8260e6f79ce31ce24db045dcb6",
+        "minimum_volume_ratio": 0.639871507032335
+      },
+      {
+        "frame": 50,
+        "sha256": "8d3336f386ab849b7ec9840e9a85ef1bbfc8444db992cc09620aaf0453de337a",
+        "minimum_volume_ratio": 0.6759264123606826
+      },
+      {
+        "frame": 51,
+        "sha256": "c9d043588061a4a62adea0d2f67877fd28550129ce3e5f8fb04fac2fb25c93fe",
+        "minimum_volume_ratio": 0.7062422187245583
+      },
+      {
+        "frame": 52,
+        "sha256": "2f530ca688b88a4424db972b10634e0d970fad392580841788a4500220fd6e4c",
+        "minimum_volume_ratio": 0.6834415595637595
+      },
+      {
+        "frame": 53,
+        "sha256": "da37af4b2f5c8f8bbd765a895e42dcae71418602fb25b2a9bc89026da9c103cc",
+        "minimum_volume_ratio": 0.6306901982526765
+      },
+      {
+        "frame": 54,
+        "sha256": "589f425a6aa8d89ca9458ce89cb38faa1f14c5684edeadc61e0c9459202635e4",
+        "minimum_volume_ratio": 0.5422299570630127
+      },
+      {
+        "frame": 55,
+        "sha256": "2555e62ce9b0264371e0ed6cace7e0f16c78aab24069e171caca8d37d43c36e0",
+        "minimum_volume_ratio": 0.6323131804782767
+      },
+      {
+        "frame": 56,
+        "sha256": "24c0923f2863e152522a207e6b9a08a083cc705501467e1a6830dc2715aa0ec8",
+        "minimum_volume_ratio": 0.7718674406833258
+      },
+      {
+        "frame": 57,
+        "sha256": "f5f9763050db6195218b3d4b1feaa8820c6ef03b37bccc2f65d3c71ac44e2650",
+        "minimum_volume_ratio": 0.7503892704498704
+      },
+      {
+        "frame": 58,
+        "sha256": "e2d26a9ffa032fc1b2336380e09cfd3882d3bb1825b4a7555ef7ed7a021bdff5",
+        "minimum_volume_ratio": 0.665857525564309
+      },
+      {
+        "frame": 59,
+        "sha256": "a17f190ab6cd09ae79ec21db1c4b00ec86dff0248f5c244546241840efb3fe1e",
+        "minimum_volume_ratio": 0.5243553803457986
+      },
+      {
+        "frame": 60,
+        "sha256": "02ce29fb06ddc14d9c330d80c56f4d7f3672dc8660728ff20dd9350d63e968d9",
+        "minimum_volume_ratio": 0.5372948513119731
+      },
+      {
+        "frame": 61,
+        "sha256": "3ad3976cab4598a30173db22432fd810bac4c232fb037df24958a2cd3d01c874",
+        "minimum_volume_ratio": 0.6934849368004785
+      },
+      {
+        "frame": 62,
+        "sha256": "a81e2d2e01a12c86a9744701d8e7a34c289217add8d73980452a8afbacead178",
+        "minimum_volume_ratio": 0.7637434574671498
+      },
+      {
+        "frame": 63,
+        "sha256": "fc5ab41645832669ec7e7a6ae2bd6538f55c31938c45f83f0d2fa7ce560f3361",
+        "minimum_volume_ratio": 0.7134398444882287
+      },
+      {
+        "frame": 64,
+        "sha256": "03e55ea9b5c08717f8d53d7d3bb9c5a141d3312037743f2e432c2542238e4788",
+        "minimum_volume_ratio": 0.6735670536415437
+      },
+      {
+        "frame": 65,
+        "sha256": "f2533dbcdaaeed1cb7e1c84e32151e836c630ba6efef9ad27f3bbf354221e328",
+        "minimum_volume_ratio": 0.5484416221070227
+      },
+      {
+        "frame": 66,
+        "sha256": "98e735a6c37edad774ff18d5af2c5543b2bbdbc1d959689f35817465fdffab6b",
+        "minimum_volume_ratio": 0.5557290064078038
+      },
+      {
+        "frame": 67,
+        "sha256": "a15ef50daecb479c77afd15ba323528a2fd2d49eb786b108e19cca44e8fd12f6",
+        "minimum_volume_ratio": 0.6143521433381723
+      },
+      {
+        "frame": 68,
+        "sha256": "dd28bd9d8d5becd1a2bb12bf61f33cc92fb497d243f940b491af7f6b99b2e739",
+        "minimum_volume_ratio": 0.7572930350272931
+      },
+      {
+        "frame": 69,
+        "sha256": "da5ecad5e2897e6256620df06668e9cd0f55d9733cf0f91720d85a68cf165978",
+        "minimum_volume_ratio": 0.7639736055249812
+      },
+      {
+        "frame": 70,
+        "sha256": "5ce30a33aeb4aa775df844d9fc892e0154ad768361772fc6789618e1c2b37f49",
+        "minimum_volume_ratio": 0.6706859993033476
+      },
+      {
+        "frame": 71,
+        "sha256": "17179e0d39502a5b1279a8e7e8c5fcbfe31943710f8734384c338df9c625091e",
+        "minimum_volume_ratio": 0.5592295862627162
+      },
+      {
+        "frame": 72,
+        "sha256": "5910cc7095f045356fc42ab1b93514c693f30fd97b1223a92c1af8932c776844",
+        "minimum_volume_ratio": 0.5870954317582935
+      },
+      {
+        "frame": 73,
+        "sha256": "ecdc7667b1a3b5575fc0e3949efa8c578937efd443eaca00b978505990670aba",
+        "minimum_volume_ratio": 0.6660909117923941
+      },
+      {
+        "frame": 74,
+        "sha256": "09ecb6dbb684e1464db8311c663c0d6c7266e94de81e0edd50bed8dac381bacf",
+        "minimum_volume_ratio": 0.7380957977288157
+      },
+      {
+        "frame": 75,
+        "sha256": "d6525a474f1a8cf0d386216ee4e29c3fb9278037e8316b8890f8f4624f28fcf4",
+        "minimum_volume_ratio": 0.7371228999672732
+      },
+      {
+        "frame": 76,
+        "sha256": "4d2129c80bef68862f1842da9293a88e0a537cff3330ead4831b437172099ae9",
+        "minimum_volume_ratio": 0.6281500060746915
+      },
+      {
+        "frame": 77,
+        "sha256": "9dae4ebe07f5824e3b3907784bb983271fc3039b95a87f685e91ba01a6c67476",
+        "minimum_volume_ratio": 0.5191638922129881
+      },
+      {
+        "frame": 78,
+        "sha256": "74cf0454217486c68bbdf1b9f6afdfc2696b20ff550ad61ecfefa9dbae0ec857",
+        "minimum_volume_ratio": 0.5488196261732149
+      },
+      {
+        "frame": 79,
+        "sha256": "cdd46259e60bbee8a3247527f7d420b61294a5053567058a3551d048fa2032a4",
+        "minimum_volume_ratio": 0.665408413573202
+      },
+      {
+        "frame": 80,
+        "sha256": "455b4898b8db0855149e0e974a1b54e5f79518fa7d1be7978d40474446d17c88",
+        "minimum_volume_ratio": 0.7243378899896449
+      },
+      {
+        "frame": 81,
+        "sha256": "89ac873ae2bffe53753910d7240453182e44685e2133d9cd0daf9fcabd10dc19",
+        "minimum_volume_ratio": 0.6217684892442711
+      },
+      {
+        "frame": 82,
+        "sha256": "7b2f2136a089b26d99612e972facd18a6eac25e05168027182e9b0ed614f5dfa",
+        "minimum_volume_ratio": 0.5976761267901675
+      },
+      {
+        "frame": 83,
+        "sha256": "fc087f19c8650216af592700d334c82ab85aef39c64a9d2eedd25e5c6ab9c806",
+        "minimum_volume_ratio": 0.5173505475370473
+      },
+      {
+        "frame": 84,
+        "sha256": "edb46b8dd20d2dd318951b667cf987f0f1f9d87f997430e29f20eef9491e28b1",
+        "minimum_volume_ratio": 0.6013985424769829
+      },
+      {
+        "frame": 85,
+        "sha256": "6ee541cf2233c59c8f8b3265ba1ac3878dce1ee3c733ead75f3553d328ac21c2",
+        "minimum_volume_ratio": 0.6546738075793125
+      },
+      {
+        "frame": 86,
+        "sha256": "9eac4ae7752e1f7ef46655b0d7e7e2075d7a31f5cf3bba535d09541e04c6be03",
+        "minimum_volume_ratio": 0.6931338835417127
+      },
+      {
+        "frame": 87,
+        "sha256": "6c2533951ffbac1a31cd6e914e07ac13b39985a2c798be7e175ffec15ddc0188",
+        "minimum_volume_ratio": 0.6042813487845032
+      },
+      {
+        "frame": 88,
+        "sha256": "460f26d3dcceb6ebb997b2942955ef4b511b58391eeca33450854d310e7f4b82",
+        "minimum_volume_ratio": 0.5080818219075033
+      },
+      {
+        "frame": 89,
+        "sha256": "f989eb08cc96aa398468fdbffde981ee942872a3d06f1aac69dc100466294a35",
+        "minimum_volume_ratio": 0.5483691948517435
+      },
+      {
+        "frame": 90,
+        "sha256": "f837fee4daaf159ede8e2f6f0cec0c856e890a47a640340c7c5b1ea10c59df19",
+        "minimum_volume_ratio": 0.336261257050179
+      },
+      {
+        "frame": 91,
+        "sha256": "89e02f0a4c22c82205e5f2c2b2eb2501486fb1fe73ffb20539d70bee64b0a041",
+        "minimum_volume_ratio": 0.26267328564071707
+      },
+      {
+        "frame": 92,
+        "sha256": "b3e28e5901e9b781eaf7f3498298035370b109bb86b39a9e11ac7eb02a61d9d1",
+        "minimum_volume_ratio": 0.48843996537651513
+      },
+      {
+        "frame": 93,
+        "sha256": "d1901a142003f592ccc7a9917231073feb59d5fe539fdda32cc8e3bdf6e39aa6",
+        "minimum_volume_ratio": 0.37782902611190355
+      },
+      {
+        "frame": 94,
+        "sha256": "1e5d244b88ffec13614a2c3d9f643e48268f31dab98a713a3b0287975e20a240",
+        "minimum_volume_ratio": 0.34362916770158364
+      },
+      {
+        "frame": 95,
+        "sha256": "fa3c0a14735614f78d676018013e72d6f2eff127d4cd53dc81323b23ef6d2ccb",
+        "minimum_volume_ratio": 0.32413071730179344
+      },
+      {
+        "frame": 96,
+        "sha256": "d2866984dcf32d2f5a3d9183621a89e4a7158b9415fe41057708e153deb37650",
+        "minimum_volume_ratio": 0.295372331030455
+      },
+      {
+        "frame": 97,
+        "sha256": "49c21735c721f28669d7474cc83b81009e9c74f41a4abaa4f5b44df530578828",
+        "minimum_volume_ratio": 0.35998917608067904
+      },
+      {
+        "frame": 98,
+        "sha256": "86a3fcb429c8e343dbbe08457de55676bb3504a66e0ef8262063e116a5d5cfb6",
+        "minimum_volume_ratio": 0.31499159859767056
+      },
+      {
+        "frame": 99,
+        "sha256": "a2bde5e43244667051e158a84d01290e17dea7430ed048d31a928e08c2b3eb7c",
+        "minimum_volume_ratio": 0.27149067282173633
+      },
+      {
+        "frame": 100,
+        "sha256": "68797e8afc7e788052ab687cb6120e40da6dbf7bdb8903f98551bc91d052d541",
+        "minimum_volume_ratio": 0.41509137067679014
+      }
+    ]
+  },
+  "spatial_comparison": {
+    "spatial_target_m": 0.001,
+    "comparison": [
+      {
+        "coarse_nodes": 309,
+        "fine_nodes": 2057,
+        "coarse_tetrahedra": 1280,
+        "fine_tetrahedra": 10240,
+        "total_mass_difference_kg": 1.5737964931261672e-08,
+        "maximum_matched_node_difference_m": 0.014995631891890949,
+        "maximum_COM_difference_m": 0.0047326532860751626,
+        "maximum_height_difference_m": 0.010069612413599993,
+        "within_spatial_target": false,
+        "coarse_trace_sha256": "1d5d2d52c200104eccf31804050ad543cb97bb6fb5e01e1e9957009347cf0931",
+        "fine_trace_sha256": "a0406d1c8486362cc26664cb702a0ad4598bbf895090ab6c404fb8145b33b30b"
+      }
+    ],
+    "finest_pair_within_spatial_target": false,
+    "evidence_boundary": "Matched owning-node positions at equal exported times for the same piecewise-flat rest body, authored material and volume-derived masses. Each complete trajectory is independently checked for topology, geometry and mass. Timestep convergence does not imply spatial convergence. This comparison does not calibrate fruit properties or close intervening contact work."
+  },
+  "video": {
+    "width": 960,
+    "height": 800,
+    "frames": 101,
+    "fps": 30,
+    "duration_s": 3.366667,
+    "playback_speed_relative_to_simulation": 0.1485148514851485
+  },
+  "evidence_boundary": "Native shared-node elastic benchmark with authored material and a frictionless inelastic plane. Replay/timestep/geometry checks PASS. Spatial 1mm target remains FAIL with 14.996mm maximum matched node discrepancy between 1280 and 10240 elements. No calibrated fruit, frictional surface, finite bench, woven-bag coupling or total contact-work closure qualification.",
+  "source_commit": "78b0d4636c2757a8be0bac100abc3350f88ddf67",
+  "remote_root": "/Users/n/numi-solver-mesh3-20260929",
+  "actual_exit_code": 0,
+  "publication_tools_sha256": {
+    "tools/render_deformable_mesh.py": "63fe05cd557500d5cb6eab4bff327d878975d4a0e010e0acb901ba88abfe508b",
+    "tools/audit_deformable_mesh_trajectory.py": "b07127927b6f5b9a0e23c47ae74e792a42211dd00e647568e464013b3c52ade2",
+    "tools/audit_deformable_mesh_refinement.py": "0af1476b2066dc68a43f9013ca49ec0803213ec72ec4796099a8359a3dd72888"
+  },
+  "level2_regression": {
+    "all_101_obj_states_byte_identical": true,
+    "csv_byte_identical": true,
+    "topology_byte_identical": true
+  },
+  "maximum_captured_compression_frame": 38
+}

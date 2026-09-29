@@ -39,9 +39,12 @@ A new opt-in CPU scene adds a **1.5 × 1.0 m tabletop, 80 mm thickness, and
 room floor 750 mm below it**. Exact face/edge/corner sweeps, rolling off an
 edge, and floor landing pass focused checks. The original full CPU48 run
 lands four released fruits but **fails** the unchanged fruit/yarn overlap
-gate (173.4 um versus 2 um). A support-aware constraint repair passes focused
-loading cases; its complete four-second replay is pending, alongside the
-original CPU96 failure (11.26 um overlap and one released fruit). [Finite-bench implementation and evidence](docs/FRUIT_FALL.md#finite-tabletop-and-room-floor)
+gate (173.4 um versus 2 um). The support-aware repair completes both CPU48
+replays with five released fruits ending on the lower floor and 51 independent
+contact audits passing, including both worst-frame snapshots. Its peak
+fruit/yarn overlap is 0.949 um. The CPU96 comparison and the newer blocked-load
+friction source still require their own complete results. The original CPU96
+failure (11.26 um overlap and one released fruit) remains recorded. [Finite-bench implementation and evidence](docs/FRUIT_FALL.md#finite-tabletop-and-room-floor)
 are separate from the plane video above. Deformable volume/cloth coupling
 and native finite-bench contact remain open.
 A [six-second loaded-bag drop](docs/DEFORMABLE_STRESS.md) now runs a harder
@@ -144,19 +147,19 @@ from those selected indices rather than a fixed rendering location.
 
 ## Growing toward coupled deformable volumes
 
-[![Watch the refined native elastic mesh drop, compress and recover](docs/assets/deformable-mesh-refined-drop.gif)](docs/assets/deformable-mesh-refined-drop.mp4)
+[![Watch the newest native elastic mesh drop, compress and recover](docs/assets/deformable-mesh-10240-drop-38.png)](docs/assets/deformable-mesh-10240-drop.mp4)
 
 The native [shared-node elastic mesh](docs/DEFORMABLE_MESH.md) now advances
-309 nodes and 1,280 tetrahedra for 0.5 seconds on Apple Metal. It compresses
-from 85.07 to 47.85 mm before recovering to 79.60 mm, using its own volumetric
-stress. All 101 captured states replay exactly; the half-step run differs by
-at most 135.85 µm. The video renders its exact 320-triangle boundary at 6.7x
-slow playback. The earlier 20-element replay remains in the linked record.
+2,057 nodes and 10,240 tetrahedra for 0.5 seconds on the M4 Pro. It compresses
+from 85.07 to 47.80 mm before recovering to 70.62 mm through its own volumetric
+stress. Two complete native replays match exactly; the half-step run differs by
+at most 335.37 µm. All 101 exported states pass independent geometry and mass
+checks. The video renders the exact 1,280-triangle boundary at 6.7x slow playback.
 
-Spatial refinement preserves the same initial surface, material and total
-mass. The 160-to-1,280-element comparison still differs by up to 36.39 mm at
-matched nodes during rebound, exceeding the 1 mm benchmark target. Individual
-timestep checks pass; mesh-resolution convergence remains open.
+Spatial refinement preserves the same initial surface and material. The
+1,280-to-10,240-element comparison differs by up to 15.00 mm at matched nodes,
+exceeding the unchanged 1 mm target. The previous pair differed by 36.39 mm.
+Individual timestep checks pass; mesh-resolution convergence remains open.
 
 The [independent-element foundation](docs/DEFORMABLE_VOLUMES.md) separately
 qualifies the nonlinear elastic forces. Coupling these volumes to the woven

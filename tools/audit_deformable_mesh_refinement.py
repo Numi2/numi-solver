@@ -25,11 +25,14 @@ def load(prefix):
 
 def compare(prefixes, tolerance):
     levels = [load(prefix) for prefix in prefixes]
-    if [level[0]['nodes'] for level in levels] != [13, 55, 309]:
-        raise ValueError('provide levels 0, 1, and 2 in that order')
+    supported = [13, 55, 309, 2057]
+    counts = [level[0]['nodes'] for level in levels]
+    if len(counts) < 2 or counts[0] not in supported or \
+            counts != supported[supported.index(counts[0]):supported.index(counts[0]) + len(counts)]:
+        raise ValueError('provide at least two consecutive supported levels in increasing order')
     comparison = []
     height = lambda frame: max(p[2] for p in frame) - min(p[2] for p in frame)
-    for index in range(2):
+    for index in range(len(levels) - 1):
         a, coarse, ca, ma = levels[index]
         b, fine, cb, mb = levels[index + 1]
         if coarse[0] != fine[0][:len(coarse[0])] or abs(ma - mb) > 2e-7:
@@ -58,7 +61,7 @@ def compare(prefixes, tolerance):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('prefixes', nargs=3, type=Path)
+    parser.add_argument('prefixes', nargs='+', type=Path)
     parser.add_argument('--spatial-target-m', type=float, default=.001)
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()

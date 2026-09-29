@@ -1,17 +1,17 @@
 # Native shared-node elastic mesh drop
 
-[![Native mesh compresses and recovers on the plane](assets/deformable-mesh-refined-drop.gif)](assets/deformable-mesh-refined-drop.mp4)
+[![Native mesh compresses and recovers on the plane](assets/deformable-mesh-10240-drop-38.png)](assets/deformable-mesh-10240-drop.mp4)
 
 This Apple Metal trajectory drops a nonlinear elastic volume onto the support
-plane. Its 309 shared nodes and 1,280 tetrahedra own one set of positions, velocities,
-and lumped masses. The surface is the exact 320-triangle boundary of those
+plane. Its 2,057 shared nodes and 10,240 tetrahedra own one set of positions, velocities,
+and lumped masses. The surface is the exact 1,280-triangle boundary of those
 elements. The renderer preserves that faceted geometry without sphere fitting,
 smoothing, posing, or animation forces. The video plays 101 native states at
 30 fps: 3.367 seconds of playback represent 0.5 simulated seconds.
 
 | Before contact | Maximum captured compression | Later recovery |
 | --- | --- | --- |
-| ![Native elastic mesh above the plane](assets/deformable-mesh-refined-drop-0.png) | ![Native elastic mesh compressed against the plane at 0.185 seconds](assets/deformable-mesh-refined-drop-37.png) | ![Native mesh recovering at 0.375 seconds](assets/deformable-mesh-refined-drop-75.png) |
+| ![Native elastic mesh above the plane](assets/deformable-mesh-10240-drop-0.png) | ![Native elastic mesh compressed against the plane at 0.190 seconds](assets/deformable-mesh-10240-drop-38.png) | ![Native mesh recovering at 0.375 seconds](assets/deformable-mesh-10240-drop-75.png) |
 
 ## Mechanics and contact
 
@@ -43,7 +43,7 @@ Uniform eight-child tetrahedron refinement adds shared edge midpoints. It
 preserves the original piecewise-flat surface, material coefficients, density,
 and all pre-existing rest nodes. It does not project new nodes to a sphere.
 Lumped masses and deterministic element incidence are rebuilt from the refined
-volumes. Total mass changes by less than 12 micrograms from FP32 rest-coordinate
+volumes. Total mass changes by less than 28 micrograms from FP32 rest-coordinate
 rounding. Each refinement retains a closed, outward-oriented surface and
 exactly two opposing owners for every internal element face.
 
@@ -51,15 +51,16 @@ exactly two opposing owners for every internal element face.
 | --- | --- | ---: | ---: | ---: |
 | Original | 13 / 20 / 20 | 50.89 mm | 77.63 mm | 59.70 µm |
 | One refinement | 55 / 160 / 80 | 49.14 mm | 102.66 mm | 105.98 µm |
-| Two refinements, newest video | 309 / 1,280 / 320 | 47.85 mm | 79.60 mm | 135.85 µm |
+| Two refinements | 309 / 1,280 / 320 | 47.85 mm | 79.60 mm | 135.85 µm |
+| Three refinements, newest video | 2,057 / 10,240 / 1,280 | 47.80 mm | 70.62 mm | 335.37 µm |
 
-All three actual 0.5-second native simulations pass two exact replays, the
+All four actual 0.5-second native simulations pass two exact replays, the
 5,000-versus-10,000-step comparison, five whole-mesh rejection checks, zero
 plane penetration, positive accepted element volumes, and the existing
 momentum/energy-increase bounds. The new default-resolution run preserves all
 101 original OBJ snapshots byte for byte. The finest run reaches a minimum
-all-step volume ratio of 0.27089 and an accumulated plane impulse of 1.78145 Ns.
-Its maximum vertical momentum discrepancy is 1.359 µNs. These are authored
+all-step volume ratio of 0.21475 and an accumulated plane impulse of 1.75183 Ns.
+Its maximum vertical momentum discrepancy is 1.994 µNs. These are authored
 frictionless-plane benchmarks, not calibrated fruit specimens.
 
 Spatial convergence is still unresolved. At matched pre-existing nodes and
@@ -70,43 +71,45 @@ Rebound shape and phase depend substantially on discretization despite passing
 individual timestep checks. The [comparison report](assets/deformable-mesh-refinement-audit.json)
 retains those results. Increasing element count does not erase this failure.
 
-[Finest qualification log](assets/deformable-mesh-refined-drop-qualified.log),
-[source, binary, state and video fingerprints](assets/deformable-mesh-refined-drop-evidence.json),
-[finest nodal trace](assets/deformable-mesh-refined-drop-trajectory.csv), and
-[owning tetrahedra](assets/deformable-mesh-refined-drop-topology.csv).
+The new 1,280-to-10,240-element comparison differs by **14.996 mm** at matched
+nodes, **4.733 mm** in center of mass and **10.070 mm** in height. Total mass
+changes by 15.738 micrograms between these two resolutions. The independent
+[spatial audit](assets/deformable-mesh-10240-spatial-audit.json) still returns
+FAIL against the unchanged 1 mm target. Smaller discrepancy in this pair does
+not establish spatial convergence.
 
-```sh
-./build/numi-solver-deformable-mesh --mesh-refinement 2 \
-  --trajectory build/deformable-mesh-level-2
-python3 tools/audit_deformable_mesh_trajectory.py build/deformable-mesh-level-2
-# Produce all three levels before comparing their matched nodes.
-python3 tools/audit_deformable_mesh_refinement.py \
-  build/deformable-mesh-level-0 build/deformable-mesh-level-1 \
-  build/deformable-mesh-level-2 --output build/deformable-mesh-refinement-audit.json
-```
+[Newest native qualification log](assets/deformable-mesh-10240-drop-qualified.log),
+[source, binary, state and video fingerprints](assets/deformable-mesh-10240-drop-evidence.json),
+[complete nodal trace](assets/deformable-mesh-10240-drop-trajectory.csv),
+[owning tetrahedra](assets/deformable-mesh-10240-drop-topology.csv), and
+[independent trajectory audit](assets/deformable-mesh-10240-trajectory-audit.json).
+The [previous 1,280-element video](assets/deformable-mesh-refined-drop.mp4) and
+its source-bound record remain available.
 
-## Next native spatial refinement
+## Construction and native regression
 
-A third uniform refinement adds a fourth resolution: **2,057 shared nodes,
-10,240 tetrahedra and 1,280 boundary triangles**. It preserves the same
-piecewise-flat body, material and pre-existing rest nodes. Construction now
-builds incidence once per element and gathers by owning node; the deterministic
-element/corner order remains byte-identical to the previous full scan at all
-four resolutions. The [CPU topology probe](assets/deformable-mesh-topology-3-evidence.json)
-passes without occupying the GPU used by the full cloth replay.
+Construction builds incidence once per element and gathers by owning node;
+the deterministic element/corner order remains byte-identical to the previous
+full scan at all four resolutions. The
+[CPU topology probe](assets/deformable-mesh-topology-3-evidence.json) passes
+without occupying the GPU. A new complete level-2 native run on the M4 Pro
+preserves all 101 previous M4 OBJ states, the CSV and topology byte for byte
+([regression receipt](assets/deformable-mesh-level2-regression.json)).
 
-This is construction evidence. The new native resolution still requires its
-complete 0.5-second run, two exact replays, half timestep, five transactional
-rejections and independent topology/trajectory audit before publication as
-qualified media. The existing 36.39 mm spatial comparison remains FAIL until
-a new matched-node comparison establishes otherwise. Higher element count
-alone is not convergence.
+The new level-3 trajectory was executed from source `78b0d46` in its isolated
+Mini checkout. The terminal exit was zero after both 5,000-step replays,
+10,000 half-timestep steps and all five transactional rejection checks.
+The frozen source, executable and metallib manifest was verified after completion.
 
 ```sh
 ./build/numi-solver-deformable-mesh --topology-probe
 ./build/numi-solver-deformable-mesh --mesh-refinement 3 \
   --trajectory build/deformable-mesh-level-3
 python3 tools/audit_deformable_mesh_trajectory.py build/deformable-mesh-level-3
+# Both complete resolutions must exist. This comparison retains FAIL at 1 mm.
+python3 tools/audit_deformable_mesh_refinement.py \
+  build/deformable-mesh-level-2 build/deformable-mesh-level-3 \
+  --output build/deformable-mesh-level2-3-audit.json
 ```
 
 ## Original 20-element M4 qualification

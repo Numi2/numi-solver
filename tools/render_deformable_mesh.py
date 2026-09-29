@@ -14,7 +14,7 @@ def render(path, output, frame):
             vertices.append(tuple(map(float, fields[1:])))
         elif fields and fields[0] == 'f':
             faces.append(tuple(int(x) - 1 for x in fields[1:]))
-    if (len(vertices), len(faces)) not in ((13, 20), (55, 80), (309, 320)) or not all(math.isfinite(v) for p in vertices for v in p):
+    if (len(vertices), len(faces)) not in ((13, 20), (55, 80), (309, 320), (2057, 1280)) or not all(math.isfinite(v) for p in vertices for v in p):
         raise ValueError('expected a finite supported elastic mesh')
     size, scale = 960, 2400
     image = Image.new('RGB', (size, 800), '#142b2b')
@@ -51,7 +51,7 @@ def render(path, output, frame):
     regular = ImageFont.truetype(font_path,20)
     small = ImageFont.truetype(font_path,17)
     draw.text((42,34), 'NATIVE ELASTIC MESH DROP', font=large, fill='#edf4eb')
-    draw.text((42,80), f'Apple Metal  /  {len(vertices)} shared nodes  /  {dict([(13,20),(55,160),(309,1280)])[len(vertices)]} tetrahedra',font=regular,fill='#b9d1c4')
+    draw.text((42,80), f'Apple Metal  /  {len(vertices)} shared nodes  /  {dict([(13,20),(55,160),(309,1280),(2057,10240)])[len(vertices)]} tetrahedra',font=regular,fill='#b9d1c4')
     draw.text((42,115), 'Exact solver boundary; authored material, frictionless inelastic plane',font=small,fill='#a7c4b7')
     draw.text((42,746), f't = {frame*.005:.3f} s     0.5 simulated seconds / 6.7x slow playback',font=regular,fill='#d7e8dc')
     draw.line((42,719,918,719),fill='#46695f',width=2)
