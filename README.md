@@ -46,7 +46,9 @@ are separate from the plane video above. Deformable volume/cloth coupling
 and native finite-bench contact remain open.
 A [six-second loaded-bag drop](docs/DEFORMABLE_STRESS.md) now runs a harder
 carry, seam rotation, grip release and whole-cloth floor impact case; its
-complete two-replay qualification is pending.
+original complete run shows 1.74 m of free cloth descent and final floor
+contact, but fails contact, strain and motion limits. Its repair requires a
+fresh complete run.
 
 ### Earlier ground-support CPU48 replay
 

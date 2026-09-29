@@ -235,7 +235,9 @@ the expected short-pickup FAIL because no release has occurred.
 OBJ metadata binds the authored collider. The independent auditor reconstructs
 its Euclidean signed distance, rejects missing/duplicate/mismatched declarations
 when the finite mode is required, and permits legitimate descent below `z=0`
-outside the box. Center-containment reports use the declared static surface.
+outside the box. Opt-in `--include-yarn-static-contacts` also minimizes the
+box signed distance along each complete yarn segment, including its interior;
+this catches a capsule crossing a bench edge between two clear endpoints. Center-containment reports use the declared static surface.
 New CPU runs additionally hash every accepted frame's physical state into an
 ordered trajectory digest and require both complete replays to match it.
 The fruit CSV records all 481 frame states in both replays, including velocity,
@@ -292,14 +294,28 @@ floor, side, rounded edge and arrival from clearance. New
 state of each replay, including maxima between the regular ten-frame exports.
 The full repaired four-second job is a separate candidate and remains required.
 The original CPU96 job also completed both full replays with actual exit 1:
-its worst fruit/yarn overlap is 11.26 um, and only fruit 4 has a latched
+[its receipt](assets/finite-bench-pickup-96-failure.json) retains 11.26 um
+worst fruit/yarn overlap, and only fruit 4 has a latched
 release. Exact replay does not close either failed gate. The original
 six-second loaded-cloth drop still awaits its actual terminal result.
 
 This option is CPU-only; the native Metal bag still uses the plane. Point-node
 static support does not certify continuous contact of every yarn interior.
-Transmitted support reactions, calibrated friction under cloth-mediated load,
-and full contact-work closure remain separate open checks. Volumetric fruit,
+[Blocked-load support evidence](assets/finite-bench-load-reaction-evidence.json)
+binds the focused production checks. Bend, local-node and sphere/yarn responses
+now retain their missing
+support contribution for the finite collider's friction capacity, with reset
+on every substep. A two-second three-body check uses dynamic yarn nodes and
+an authored sphere resting above them, without a prescribed body path.
+With a 0.2 kg sphere, velocity change alone reports only 0.001962 Ns of support
+(the yarn's weight). Including the blocked reaction gives 3.925962 Ns,
+matching gravity on all three masses within 0.8 nNs. A 1 kg load closes within
+4.1 nNs; an unloaded control retains the original yarn-only support. The
+production tangential-friction publication matches its analytic capacity in
+all three cases. This isolates cloth-mediated normal load; a complete
+constraint/contact reaction ledger and whole-scene contact-work balance are
+still required. Native finite support and measured material calibration remain
+open. Volumetric fruit,
 reciprocal cloth/volume coupling, material calibration and whole-scene energy
 closure remain open.
 

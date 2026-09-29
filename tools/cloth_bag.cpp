@@ -237,6 +237,9 @@ struct Particle {
     double inverseMass{};
     double mass{};
     Vec3 surfaceNormal{};
+    // Blocked constraint response, in kg*m; converted to support impulse
+    // for friction at publication and reset on every dynamic substep.
+    double blockedStaticPositionImpulse{};
 };
 
 struct Ball {
@@ -249,6 +252,7 @@ struct Ball {
     double inverseMass{1.0};
     std::uint32_t appearance{};
     Vec3 surfaceNormal{};
+    double blockedStaticPositionImpulse{};
 };
 
 numi::bench::Vec3 benchVector(const Vec3 value) {
@@ -320,6 +324,12 @@ double staticArrivalFraction(const Vec3 position, const double radius, const Vec
     const auto floor = numi::bench::castFloor(benchVector(position), benchVector(end), radius, kRoomFloorHeight);
     if (floor.contact && (!hit.contact || floor.time < hit.time)) hit = floor;
     return hit.contact ? hit.time : 1.0;
+}
+
+double blockedStaticReaction(const Vec3 freeResponse, const Vec3 supportedResponse,
+                            const double inverseMass, const double lambda) {
+    if (inverseMass <= 0.0) return 0.0;
+    return length((supportedResponse - freeResponse) * (lambda / inverseMass));
 }
 
 struct BallPairContactImpulse {
@@ -487,6 +497,8 @@ struct Metrics {
     double maximumRollingResistanceRatio{};
     double maximumFrictionConeRatio{};
     double accumulatedTangentialImpulse{};
+    double accumulatedBlockedStaticSupportImpulse{};
+    double maximumBlockedStaticSupportImpulse{};
     double maximumGripForce{};
     double maximumGripImpulse{};
     double maximumRegrabCaptureDistance{};
@@ -1914,6 +1926,9 @@ void solveBend(
         constraint.lambda += delta * fraction;
         for (std::size_t index = 0; index < nodes.size(); ++index) {
             auto& particle = particles[nodes[index]];
+            particle.blockedStaticPositionImpulse += blockedStaticReaction(
+                gradients[index] * particle.inverseMass, response[index],
+                particle.inverseMass, delta * fraction);
             particle.position += response[index] * (delta * fraction);
             projectStaticSurface(particle.position, kClothRadius, particle.surfaceNormal);
         }
@@ -3072,8 +3087,13 @@ double applyBallYarnCorrection(
                 fraction = std::min(fraction, staticArrivalFraction(particles[indices[index]].position,
                     kClothRadius, clothResponse[index] * (weights[index] * lambda)));
             ball.position += ballResponse * (lambda * fraction);
+            ball.blockedStaticPositionImpulse += blockedStaticReaction(
+                normal * -ball.inverseMass, ballResponse, ball.inverseMass, lambda * fraction);
             for (std::size_t index = 0; index < indices.size(); ++index) {
                 auto& particle = particles[indices[index]];
+                particle.blockedStaticPositionImpulse += blockedStaticReaction(
+                    normal * particle.inverseMass, clothResponse[index], particle.inverseMass,
+                    weights[index] * lambda * fraction);
                 particle.position += clothResponse[index] * (weights[index] * lambda * fraction);
                 projectStaticSurface(particle.position, kClothRadius, particle.surfaceNormal);
             }
@@ -4500,6 +4520,10 @@ double solveLocalNodePair(Particle& first, Particle& second, const bool groundEn
             const double fraction = std::min(
                 staticArrivalFraction(first.position, kClothRadius, firstResponse * lambda),
                 staticArrivalFraction(second.position, kClothRadius, secondResponse * lambda));
+            first.blockedStaticPositionImpulse += blockedStaticReaction(
+                normal * -first.inverseMass, firstResponse, first.inverseMass, lambda * fraction);
+            second.blockedStaticPositionImpulse += blockedStaticReaction(
+                normal * second.inverseMass, secondResponse, second.inverseMass, lambda * fraction);
             first.position += firstResponse * (lambda * fraction);
             second.position += secondResponse * (lambda * fraction);
             projectStaticSurface(first.position, kClothRadius, first.surfaceNormal);
@@ -5216,6 +5240,8 @@ SimulationResult simulate(
         double publishedPrimitiveResidual =
             std::numeric_limits<double>::infinity();
         for (std::uint32_t substep = 0; substep < substeps; ++substep) {
+            for (auto& particle : result.cloth.particles) particle.blockedStaticPositionImpulse = 0.0;
+            for (auto& ball : result.balls) ball.blockedStaticPositionImpulse = 0.0;
             std::fill(
                 clothGroundNormalImpulses.begin(),
                 clothGroundNormalImpulses.end(),
@@ -5670,6 +5696,11 @@ SimulationResult simulate(
                         clothGroundNormalImpulses[index] = publishStaticVelocity(
                             particle.position, kClothRadius, particle.surfaceNormal,
                             particle.velocity, predictedClothVelocities[index], particle.inverseMass);
+                        clothGroundNormalImpulses[index] += particle.blockedStaticPositionImpulse / timestep;
+                        result.metrics.accumulatedBlockedStaticSupportImpulse += particle.blockedStaticPositionImpulse / timestep;
+                        result.metrics.maximumBlockedStaticSupportImpulse = std::max(
+                            result.metrics.maximumBlockedStaticSupportImpulse,
+                            particle.blockedStaticPositionImpulse / timestep);
                     }
                     if (!gFiniteBench && scenario != Scenario::spin &&
                         particle.position.z == kClothRadius &&
@@ -5696,6 +5727,11 @@ SimulationResult simulate(
                     groundNormalImpulses[index] = publishStaticVelocity(
                         ball.position, ball.radius, ball.surfaceNormal, ball.velocity,
                         predictedFruitVelocities[index], ball.inverseMass);
+                    groundNormalImpulses[index] += ball.blockedStaticPositionImpulse / timestep;
+                    result.metrics.accumulatedBlockedStaticSupportImpulse += ball.blockedStaticPositionImpulse / timestep;
+                    result.metrics.maximumBlockedStaticSupportImpulse = std::max(
+                        result.metrics.maximumBlockedStaticSupportImpulse,
+                        ball.blockedStaticPositionImpulse / timestep);
                 }
                 if (!gFiniteBench && scenario != Scenario::spin && ball.position.z == ball.radius &&
                     ball.previous.z >= ball.radius && groundNormalImpulses[index] > 0.0) {
@@ -6138,8 +6174,86 @@ bool runFiniteSupportedYarnProbe() {
     return pass;
 }
 
+bool runFiniteLoadedSupportProbe() {
+    bool pass = true;
+    constexpr double dt = 1.0 / 6000.0;
+    for (const double fruitMass : {0.0, 0.2, 1.0}) {
+        std::vector<Particle> particles(2);
+        for (unsigned index = 0; index < 2; ++index) {
+            auto& particle = particles[index];
+            particle.position = {1.5 + (index == 0 ? -0.02 : 0.02), 0,
+                                 kRoomFloorHeight + kClothRadius};
+            particle.previous = particle.position;
+            particle.mass = kClothNodeMass; particle.inverseMass = 1 / particle.mass;
+        }
+        Ball ball; ball.radius = 0.07; ball.inverseMass = fruitMass > 0 ? 1 / fruitMass : 5;
+        ball.position = {1.5, 0, kRoomFloorHeight + 2 * kClothRadius + ball.radius};
+        double measured = 0, velocityOnly = 0, maxMomentumError = 0;
+        std::vector<double> ground(2);
+        std::uint64_t count = 0;
+        for (unsigned step = 1; step <= 12000; ++step) {
+            std::array<Vec3, 2> predictedPosition{}, predictedVelocity{};
+            for (unsigned index = 0; index < 2; ++index) {
+                auto& particle = particles[index];
+                particle.blockedStaticPositionImpulse = 0;
+                particle.previous = particle.position;
+                particle.velocity.z -= 9.81 * dt;
+                predictedVelocity[index] = particle.velocity;
+                predictedPosition[index] = particle.position + particle.velocity * dt;
+                particle.position = predictedPosition[index];
+                sweepStaticSurface(particle.previous, particle.position, kClothRadius, particle.surfaceNormal);
+            }
+            ball.blockedStaticPositionImpulse = 0;
+            ball.previous = ball.position;
+            if (fruitMass > 0) {
+                ball.velocity.z -= 9.81 * dt;
+                ball.position += ball.velocity * dt;
+            }
+            const Vec3 fruitPrediction = ball.position;
+            BallYarnContactImpulse contact;
+            if (fruitMass > 0) solveBallYarn(particles, Edge{0,1}, ball, dt, true, contact, count);
+            for (unsigned index = 0; index < 2; ++index) {
+                auto& particle = particles[index];
+                particle.velocity += (particle.position - predictedPosition[index]) / dt;
+                ground[index] = publishStaticVelocity(particle.position, kClothRadius,
+                    particle.surfaceNormal, particle.velocity, predictedVelocity[index], particle.inverseMass);
+                velocityOnly += ground[index];
+                ground[index] += particle.blockedStaticPositionImpulse / dt;
+                measured += ground[index];
+            }
+            if (fruitMass > 0) ball.velocity += (ball.position - fruitPrediction) / dt;
+            const double momentum = kClothNodeMass * (particles[0].velocity.z + particles[1].velocity.z)
+                + fruitMass * ball.velocity.z;
+            const double gravity = -(fruitMass + 2 * kClothNodeMass) * 9.81 * dt * step;
+            maxMomentumError = std::max(maxMomentumError, std::abs(momentum - gravity - measured));
+        }
+        const double expected = (fruitMass + 2 * kClothNodeMass) * 9.81 * 2;
+        // An isolated tangential publication checks the real production
+        // friction function against this measured normal capacity.
+        for (auto& particle : particles) particle.velocity = {1,0,0};
+        Metrics metrics; applyClothGroundFriction(particles, ground, metrics);
+        const double tangential = kClothNodeMass * (2 - particles[0].velocity.x - particles[1].velocity.x);
+        const double expectedTangential = std::min(kClothNodeMass, kClothGroundFriction * ground[0])
+            + std::min(kClothNodeMass, kClothGroundFriction * ground[1]);
+        const bool row = std::abs(measured - expected) < 1.0e-6 && maxMomentumError < 1.0e-6 &&
+            std::abs(tangential - expectedTangential) < 1.0e-12 &&
+            (fruitMass == 0 || measured - velocityOnly > 0.99 * fruitMass * 9.81 * 2);
+        pass &= row;
+        std::cout << std::setprecision(12) << "finite_loaded_support fruit_mass_kg=" << fruitMass
+            << " simulated_seconds=2 expected_ground_impulse_Ns=" << expected
+            << " measured_ground_impulse_Ns=" << measured
+            << " velocity_only_ground_impulse_Ns=" << velocityOnly
+            << " maximum_vertical_momentum_error_Ns=" << maxMomentumError
+            << " tangential_impulse_Ns=" << tangential
+            << " expected_tangential_impulse_Ns=" << expectedTangential
+            << " passed=" << row << '\n';
+    }
+    return pass;
+}
+
 bool runFiniteBenchProbe() {
     const bool supportedYarn = runFiniteSupportedYarnProbe();
+    const bool loadedSupport = runFiniteLoadedSupportProbe();
     const auto first = finiteBenchTrajectory(12000u);
     const auto replay = finiteBenchTrajectory(12000u);
     const auto fine = finiteBenchTrajectory(24000u);
@@ -6164,7 +6278,7 @@ bool runFiniteBenchProbe() {
         std::abs(balls[0].position.x - 0.82) < 1.0e-12 && balls[0].surfaceNormal.x == 1.0;
     const auto& final = first.captures.back();
     const bool deterministic = first.captures == replay.captures;
-    const bool pass = supportedYarn && deterministic && first.leftBench && first.reachedFloor && side &&
+    const bool pass = supportedYarn && loadedSupport && deterministic && first.leftBench && first.reachedFloor && side &&
         first.maximumPenetration < 1.0e-9 && fine.maximumPenetration < 1.0e-9 &&
         first.maximumFrictionRatio <= 1.0 + 1.0e-12 && maximumPositionDifference < 0.002 &&
         std::abs(final[2] - (kRoomFloorHeight + 0.07)) < 1.0e-9 && std::abs(final[5]) < 1.0e-10;
@@ -6561,6 +6675,8 @@ int main(int argc, char** argv) try {
               << " max_bottom_extension=" << metrics.maximumBottomExtension
               << " max_bottom_compression=" << metrics.maximumBottomCompression
               << '\n';
+    std::cout << "blocked_static_support_impulse_Ns=" << metrics.accumulatedBlockedStaticSupportImpulse
+              << " max_blocked_static_support_impulse_Ns=" << metrics.maximumBlockedStaticSupportImpulse << '\n';
     std::cout << "max_ball_contact_correction="
               << metrics.maximumBallPenetration
               << " max_published_ball_penetration="

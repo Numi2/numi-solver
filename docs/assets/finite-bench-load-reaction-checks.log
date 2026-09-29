@@ -1,0 +1,31 @@
+Test project /Users/home/numi-solver/build-bench-active-set
+    Start  1: finite_bench.reference
+1/6 Test  #1: finite_bench.reference ............   Passed    0.02 sec
+    Start  2: cloth_bag.finite_bench
+2/6 Test  #2: cloth_bag.finite_bench ............   Passed    1.26 sec
+    Start 31: cloth_bag.local_node_contact
+3/6 Test #31: cloth_bag.local_node_contact ......   Passed    0.01 sec
+    Start 36: cloth_bag.rolling_friction
+4/6 Test #36: cloth_bag.rolling_friction ........   Passed    0.00 sec
+    Start 43: cloth_bag.cloth_ground_friction
+5/6 Test #43: cloth_bag.cloth_ground_friction ...   Passed    0.00 sec
+    Start 44: cloth_bag.rolling_resistance
+6/6 Test #44: cloth_bag.rolling_resistance ......   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 6
+
+Label Time Summary:
+ccd               =   1.29 sec*proc (3 tests)
+cloth             =   1.30 sec*proc (6 tests)
+contact           =   1.30 sec*proc (5 tests)
+finite_bench      =   1.28 sec*proc (2 tests)
+friction          =   0.01 sec*proc (3 tests)
+fruit             =   0.00 sec*proc (1 test)
+ground            =   0.01 sec*proc (2 tests)
+local_topology    =   0.01 sec*proc (1 test)
+physics           =   1.30 sec*proc (6 tests)
+reference         =   0.01 sec*proc (3 tests)
+rolling           =   0.01 sec*proc (2 tests)
+yarn              =   0.00 sec*proc (1 test)
+
+Total Test time (real) =   1.31 sec

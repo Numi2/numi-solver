@@ -185,7 +185,52 @@ def surface_gap(point, radius, geometry):
     return min(box_gap, point[2] + 0.75 - radius)
 
 
-def audit(path, radius, edges, expected_faces, local, include_local=False, require_finite=False):
+def yarn_static_gap(first, second, radius, geometry):
+    """Exact piecewise minimum of box SDF along the whole axial segment."""
+    if geometry == 'unbounded_plane':
+        return min(first[2], second[2]) - radius, float(second[2] < first[2])
+    low, high = (-0.75, -0.5, -0.08), (0.75, 0.5, 0.0)
+    delta = subtract(second, first)
+    knots = {0.0, 1.0}
+    for axis in range(3):
+        if delta[axis]:
+            for boundary in (low[axis], high[axis]):
+                t = (boundary - first[axis]) / delta[axis]
+                if 0 < t < 1:
+                    knots.add(t)
+    ordered = sorted(knots)
+    candidates = set(knots)
+    for left, right in zip(ordered, ordered[1:]):
+        middle = (left + right) / 2
+        outside = []
+        for axis in range(3):
+            coordinate = first[axis] + delta[axis] * middle
+            if coordinate < low[axis]:
+                outside.append((first[axis] - low[axis], delta[axis]))
+            elif coordinate > high[axis]:
+                outside.append((first[axis] - high[axis], delta[axis]))
+        if outside:
+            quadratic = sum(slope * slope for _, slope in outside)
+            if quadratic:
+                t = -sum(offset * slope for offset, slope in outside) / quadratic
+                candidates.add(max(left, min(right, t)))
+        else:
+            # Inside, SDF is minus the minimum of six affine face clearances.
+            # That concave envelope reaches its maximum at an endpoint or
+            # an intersection of two active affine lines.
+            lines = [(first[a] - low[a], delta[a]) for a in range(3)]
+            lines += [(high[a] - first[a], -delta[a]) for a in range(3)]
+            for (offset, slope), (other, other_slope) in itertools.combinations(lines, 2):
+                if slope != other_slope:
+                    t = (other - offset) / (slope - other_slope)
+                    if left <= t <= right:
+                        candidates.add(t)
+    return min((surface_gap(tuple(a + t * d for a, d in zip(first, delta)), radius, geometry), t)
+               for t in candidates)
+
+
+def audit(path, radius, edges, expected_faces, local, include_local=False, require_finite=False,
+          include_yarn_static=False):
     payload, vertices, fruits = read_snapshot(path, expected_faces)
     geometry = static_geometry(payload, require_finite)
     fruit_overlap, fruit_witness = 0.0, None
@@ -221,6 +266,15 @@ def audit(path, radius, edges, expected_faces, local, include_local=False, requi
         row.update(local_node_pair_count=len(pairs), local_node_overlap_m=maximum,
                    local_node_witness=witness)
         row['within_contact_tolerance'] &= maximum <= 2e-6
+    if include_yarn_static:
+        maximum, witness = 0.0, None
+        for first, second in edges:
+            gap, parameter = yarn_static_gap(vertices[first], vertices[second], radius, geometry)
+            if -gap > maximum:
+                maximum = -gap
+                witness = {'yarn_endpoints': [first, second], 'segment_parameter': parameter}
+        row.update(yarn_static_overlap_m=maximum, yarn_static_witness=witness)
+        row['within_contact_tolerance'] &= maximum <= 2e-6
     return row
 
 
@@ -235,18 +289,22 @@ def main():
     parser.add_argument('--include-local-node-contacts', action='store_true',
                         help='Enforce the ABI 14 two-hop non-direct node diameter contacts. '
                              'Leave unset only when auditing retained pre-repair artifacts.')
+    parser.add_argument('--include-yarn-static-contacts', action='store_true',
+                        help='Independently enforce whole yarn-capsule contact with the static collider, '
+                             'including segment interiors between supported nodes.')
     args = parser.parse_args()
     if not math.isfinite(args.yarn_radius) or args.yarn_radius <= 0:
         parser.error('yarn radius must be finite and positive')
     try:
         edges, faces, local = topology()
         rows = [audit(path, args.yarn_radius, edges, faces, local, args.include_local_node_contacts,
-                      args.require_finite_bench)
+                      args.require_finite_bench, args.include_yarn_static_contacts)
                 for path in args.snapshots]
     except (OSError, ValueError, IndexError, UnicodeError) as error:
         parser.error(str(error))
     report = {'yarn_radius_m': args.yarn_radius, 'yarn_count': len(edges),
               'local_node_contacts_enforced': args.include_local_node_contacts,
+              'whole_yarn_static_contacts_enforced': args.include_yarn_static_contacts,
               'all_snapshots_within_contact_tolerance': all(row['within_contact_tolerance'] for row in rows),
               'evidence_boundary': 'Contacts of supplied exported states only. Exact authored axial graph and two-hop exclusions are reconstructed after validating every render triangle. Does not certify intervening substeps, dynamics, material calibration, strain or replay.',
               'snapshots': rows}

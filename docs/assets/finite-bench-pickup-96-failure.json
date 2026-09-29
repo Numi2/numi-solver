@@ -1,0 +1,67 @@
+{
+  "schema": "numi.finite-bench.failed-pickup.v1",
+  "source_commit": "4186cfa",
+  "source_binary_sha256": {
+    "cloth_bag.cpp": "fa22b0c6e1bac96d2034e4e3edcd2adbb0208db2d8951b21015187ae6bea8b08",
+    "finite_bench_geometry.h": "2cb87f12e55e6ac4f73217ff986e8268915b1ccb0f0df7fb425b329451042a1c",
+    "cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd",
+    "grip_trajectory.h": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+    "numi-solver-cloth-bag": "fba0c342a36380de631bc7cfe8ee52a7a462ecdcdf8a39ca09b7ff09f0580eeb"
+  },
+  "auditor_sha256": {
+    "tools/audit_replayed_finite_fruit_trace.py": "b3ba916fd204ac4991921853ec1bef88ad895650dfeaab5384e523a117547107",
+    "tools/audit_cloth_snapshot.py": "b437c1884ad35fde3aab547e13684e27388f75aa72b83746edf8e3c931285d99"
+  },
+  "static_geometry": {
+    "box_min_m": [
+      -0.75,
+      -0.5,
+      -0.08
+    ],
+    "box_max_m": [
+      0.75,
+      0.5,
+      0
+    ],
+    "floor_height_m": -0.75
+  },
+  "actual_exit_code": 1,
+  "result": "FAIL",
+  "configuration": {
+    "scenario": "pickup",
+    "steps": 480,
+    "simulated_seconds": 4,
+    "substeps": 96,
+    "iterations": 32,
+    "replays": 2,
+    "cloth_nodes": 1465,
+    "fruit_count": 12,
+    "finite_bench": true
+  },
+  "final_physical_hash": "0x2c088e98afc7746a",
+  "ordered_481_frame_hash": "0x6afcd7c368dfdd63",
+  "both_replay_hashes_match": true,
+  "failed_gates": [
+    {
+      "metric": "maximum_published_fruit_yarn_overlap_m",
+      "log_rounded_value": 1.126e-05,
+      "unchanged_limit_m": 2e-06
+    },
+    {
+      "metric": "released_fruit_count",
+      "value": 1,
+      "unchanged_minimum": 2
+    }
+  ],
+  "released_fruits": [
+    4
+  ],
+  "released_fruit_observed_on_lower_floor_at_end": true,
+  "all_49_sparse_obj_contact_audits_pass": true,
+  "artifacts_sha256": {
+    "finite-bench-pickup-96-failed.log": "0e151e9523c213c8416f75b493c21a63107844cfe01da4c4a6506477abc02b89",
+    "finite-bench-pickup-96-fruit-audit.json": "66e693ea483263a74e2bce04bdc2ceedf0d7db1377c1464e9d92ee8aa6add90b",
+    "finite-bench-pickup-96-sampled-contacts.json": "0f72e9661a4294bdb5f13907fc119769807b4f1d95288c75d899246cdc3cf0ee"
+  },
+  "boundary": "Both complete runs and full fruit sequences match, but contact and pickup outcome fail. Different release sets at 48 and 96 substeps do not establish temporal convergence. Sparse contact snapshots cannot certify all accepted frames."
+}

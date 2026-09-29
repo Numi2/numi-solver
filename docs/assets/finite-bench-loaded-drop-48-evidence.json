@@ -1,0 +1,61 @@
+{
+  "schema": "numi.finite-bench.loaded-cloth-drop-evidence.v1",
+  "physics_source_commit": "4186cfa",
+  "trajectory_source_commit": "192aed1",
+  "source_binary_trajectory_sha256": {
+    "build/finite-bench-loaded-drop-launch/numi-solver-cloth-bag": "fba0c342a36380de631bc7cfe8ee52a7a462ecdcdf8a39ca09b7ff09f0580eeb",
+    "build/finite-bench-loaded-drop-launch/finite-bench-loaded-drop.csv": "1313ab661da38fe49c764209391e489050aef5e35399230561d3be7a8c62afd1",
+    "build/finite-bench-launch/cloth_bag.cpp": "fa22b0c6e1bac96d2034e4e3edcd2adbb0208db2d8951b21015187ae6bea8b08",
+    "build/finite-bench-launch/finite_bench_geometry.h": "2cb87f12e55e6ac4f73217ff986e8268915b1ccb0f0df7fb425b329451042a1c",
+    "build/finite-bench-launch/cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd",
+    "build/finite-bench-launch/grip_trajectory.h": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+    "build/finite-bench-launch/numi-solver-cloth-bag": "fba0c342a36380de631bc7cfe8ee52a7a462ecdcdf8a39ca09b7ff09f0580eeb"
+  },
+  "actual_exit_code": 1,
+  "result": "FAIL",
+  "configuration": {
+    "scenario": "recorded",
+    "steps": 720,
+    "simulated_seconds": 6,
+    "substeps": 48,
+    "iterations": 32,
+    "replays": 2,
+    "grip_release_time_s": 3.8
+  },
+  "final_physical_hash": "0xae84f235fdd073fe",
+  "ordered_721_frame_hash": "0xb0c91802bd8bc27a",
+  "both_full_replays_match": true,
+  "failed_gates": [
+    {
+      "metric": "published_fruit_yarn_overlap_m",
+      "log_rounded_value": 0.000442785,
+      "unchanged_limit": 2e-06
+    },
+    {
+      "metric": "published_strain_limit_violation_m",
+      "log_rounded_value": 6.5407e-05,
+      "unchanged_limit": 2e-06
+    },
+    {
+      "metric": "maximum_ground_correction_m",
+      "log_rounded_value": 0.006114975,
+      "unchanged_limit": 0.004001
+    },
+    {
+      "metric": "maximum_dynamic_speed_m_s",
+      "value": 42.610303146,
+      "unchanged_limit": 30
+    }
+  ],
+  "cloth_center_descent_after_first_post_release_saved_state_m": 1.739216966901345,
+  "first_saved_post_release_floor_contact_time_s": 4.416666666666667,
+  "final_lower_floor_contact_node_count": 38,
+  "post_release_saved_grips_inactive": true,
+  "failed_saved_contact_states": 14,
+  "all_73_saved_whole_yarn_static_contacts_within_2um": true,
+  "boundary": "Completed authored stress case. Cloth descent and floor geometry do not close failed whole-scene gates. Retain actual FAIL; do not label the diagnostic video as qualified or as a calibrated fruit/bag simulation.",
+  "artifacts_sha256": {
+    "finite-bench-loaded-drop-48.log": "1cd6616b7b079f84eea0aa569906ad6327f6cca3498e86f5e727a4b465a783cc",
+    "finite-bench-loaded-drop-48-audit.json": "3732eb83d7a7bdbab5d15d43804d637a24957f600fc31602eeba4d632231a4d4"
+  }
+}

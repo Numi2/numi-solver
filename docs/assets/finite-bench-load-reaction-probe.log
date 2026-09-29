@@ -1,0 +1,10 @@
+finite_supported_yarn_case=0 separation_error_m=3.46944695195e-18 collider_penetration_m=0 passed=1
+finite_supported_yarn_case=1 separation_error_m=5.89805981832e-17 collider_penetration_m=0 passed=1
+finite_supported_yarn_case=2 separation_error_m=5.89805981832e-17 collider_penetration_m=0 passed=1
+finite_supported_yarn_case=3 separation_error_m=3.46944695195e-18 collider_penetration_m=1.47451495458e-17 passed=1
+finite_supported_yarn_case=4 separation_error_m=5.89805981832e-17 collider_penetration_m=0 passed=1
+finite_loaded_support fruit_mass_kg=0 simulated_seconds=2 expected_ground_impulse_Ns=0.001962 measured_ground_impulse_Ns=0.001962 velocity_only_ground_impulse_Ns=0.001962 maximum_vertical_momentum_error_Ns=5.67471417079e-16 tangential_impulse_Ns=7.35750000025e-08 expected_tangential_impulse_Ns=7.35750000025e-08 passed=1
+finite_loaded_support fruit_mass_kg=0.2 simulated_seconds=2 expected_ground_impulse_Ns=3.925962 measured_ground_impulse_Ns=3.9259619992 velocity_only_ground_impulse_Ns=0.001962 maximum_vertical_momentum_error_Ns=7.97761856575e-10 tangential_impulse_Ns=0.0001 expected_tangential_impulse_Ns=0.0001 passed=1
+finite_loaded_support fruit_mass_kg=1 simulated_seconds=2 expected_ground_impulse_Ns=19.621962 measured_ground_impulse_Ns=19.621961996 velocity_only_ground_impulse_Ns=0.001962 maximum_vertical_momentum_error_Ns=4.00674338152e-09 tangential_impulse_Ns=0.0001 expected_tangential_impulse_Ns=0.0001 passed=1
+probe=production_finite_bench backend=CPU_FP64 simulated_seconds=2 captures=241 exact_captured_replay=true left_bench=true reached_lower_floor=true cloth_fruit_side_ccd=true maximum_penetration_m=0 maximum_half_step_position_difference_m=0.000176893979686 max_friction_cone_ratio=0.00165771973086 final_z_m=-0.68 final_vz_m_s=2.21368930131e-13
+result=PASS

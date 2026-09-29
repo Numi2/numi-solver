@@ -1,0 +1,42 @@
+{
+  "schema": "numi.finite-bench.blocked-load-support.v1",
+  "source_binary_sha256": {
+    "numi-solver-cloth-bag": "c5cef4ec0708bf12e06816e2aa65b29d4a9a99fa366db1b310bac78666b58a63",
+    "finite-bench-loaded-drop.csv": "1313ab661da38fe49c764209391e489050aef5e35399230561d3be7a8c62afd1",
+    "cloth_bag.cpp": "530ea24cb826fd9f8499b96fcece5848757b50c6b11f05f66dd2cdcab6a1c630",
+    "grip_trajectory.h": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+    "finite_bench_geometry.h": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade",
+    "cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd"
+  },
+  "focused_checks_passed": 6,
+  "default_plane_two_frame_final_obj_byte_identical": true,
+  "supported_dynamic_yarn_nodes": 2,
+  "simulated_seconds_per_case": 2,
+  "cases": [
+    {
+      "fruit_mass_kg": 0,
+      "expected_ground_impulse_Ns": 0.001962,
+      "maximum_vertical_momentum_error_Ns": 5.67471417079e-16
+    },
+    {
+      "fruit_mass_kg": 0.2,
+      "expected_ground_impulse_Ns": 3.925962,
+      "measured_ground_impulse_Ns": 3.9259619992,
+      "velocity_only_ground_impulse_Ns": 0.001962,
+      "maximum_vertical_momentum_error_Ns": 7.97761856575e-10
+    },
+    {
+      "fruit_mass_kg": 1,
+      "expected_ground_impulse_Ns": 19.621962,
+      "measured_ground_impulse_Ns": 19.621961996,
+      "velocity_only_ground_impulse_Ns": 0.001962,
+      "maximum_vertical_momentum_error_Ns": 4.00674338152e-09
+    }
+  ],
+  "production_ground_friction_matches_analytic_capacity": true,
+  "artifacts_sha256": {
+    "finite-bench-load-reaction-checks.log": "5ba8b3ea436bf23e598c3ce43fbc8ddfafa4d5e6546673625f02a5977e4fc621",
+    "finite-bench-load-reaction-probe.log": "dc3889fdc247fea7ea0fed4a2647b81bcbab69dc317ce50cfcba40da25fea267"
+  },
+  "boundary": "Authored isolated CPU three-body normal-load cases and one tangential impulse publication, not a whole-scene force/contact-work ledger. Blocked bend, local-node and sphere/yarn responses contribute to friction capacity; reaction closure for every other constraint and calibrated material remain open. Existing frozen full pickup candidates precede this added load-response change; the new source requires its own complete runs."
+}
