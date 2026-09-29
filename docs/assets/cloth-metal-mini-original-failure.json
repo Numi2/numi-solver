@@ -1,0 +1,40 @@
+{
+  "schema": "numi.cloth.native-mini.original-failure.v1",
+  "source_commit": "04682ea",
+  "backend": "Apple_Metal",
+  "device": "Apple M4 Pro",
+  "abi": 13,
+  "actual_exit_code": 1,
+  "configuration": {
+    "steps_per_replay": 480,
+    "substeps": 48,
+    "iterations": 32,
+    "strain_sweeps": 3,
+    "replays": 2,
+    "requested_simulated_seconds": 4
+  },
+  "both_complete_native_replays_match": true,
+  "released_mask": 256,
+  "released_fruit_count": 1,
+  "grounded_released_count": 0,
+  "failure": "Native pickup outcome not qualified; one latched release and no supported released fruit.",
+  "complete_native_fruit_trace": true,
+  "released_fruits_never_observed_supported": [
+    8
+  ],
+  "source_binary_sha256": {
+    "src/metal/ClothBag.metal": "6c8204699dd4ba0c9007c5cb07dc9bf844dea4bc667b7d3fdf5e793a6b07d642",
+    "tools/cloth_bag_metal.mm": "fc7c504133a66e269bf4c17e0dc1b6ffb73fcefe3da1816b6d060f7af7154948",
+    "include/numi/cloth_bag_gpu.h": "0ba4c73af200fa2a91b15c3bb14bca38f4dd882ffa22507c0f2143643104cbe9",
+    "build/numi-solver-cloth-metal": "1286576f789b22ae43dbb9a8f40763788526cddd4e4edcc2a07b65497be90ad2",
+    "build/shaders/NumiTemporalCone.metallib": "1914725f3447255f71cd2830df6707bfd68e21e96f09bcf2e7b727611d4c5db7"
+  },
+  "first_gpu_seconds": 7027.548417748418,
+  "second_gpu_seconds": 7024.372711624019,
+  "boundary": "Retained original ABI13 path before local-node repair. Native free-flight and focused ground probes do not qualify this complete pickup. Release is latched and may re-enter the bag. Separate ABI14 M4 run remains live; CPU48/96 and native elastic-volume qualifications are distinct.",
+  "artifacts_sha256": {
+    "cloth-metal-mini-original-failed.log": "ad591f73f34fcc8740a9f55541590e2a3dfc74c9b20808f27a81d40829d04501",
+    "cloth-metal-mini-original-fruit-audit.json": "76694237787da386448b9988fc37cef4f90e4a625fa565921b88d9b34ecdc57b",
+    "cloth-metal-mini-original-final-containment.json": "4af89f98de1471ed39ed2b38669a8a029723561043bb92b3493e0c5e382f8f49"
+  }
+}

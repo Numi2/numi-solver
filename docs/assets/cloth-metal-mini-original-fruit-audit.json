@@ -1,0 +1,140 @@
+{
+  "trace": "build/valid-metal-mini-terminal/fruits.csv",
+  "trace_sha256": "8b76751b3a569db7c5dada657a3597d68fa7243dde31bc751da37e273f65ed9e",
+  "last_complete_frame": 480,
+  "simulated_seconds": 4.00000009686,
+  "expected_frames": 480,
+  "complete": true,
+  "incomplete_tail_ignored": false,
+  "minimum_fruit_clearance_m": 0.0053541064263000065,
+  "ground_penetration_free": true,
+  "released_fruits": [
+    8
+  ],
+  "released_fruits_never_supported": [
+    8
+  ],
+  "fruits": [
+    {
+      "fruit": 0,
+      "first_release_frame": null,
+      "first_supported_frame_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_clearance_m": 0.901890270412,
+      "final_vertical_velocity_m_s": -0.0766136199236,
+      "final_speed_m_s": 0.07726483272300728,
+      "final_last_substep_support_impulse_Ns": 0.0
+    },
+    {
+      "fruit": 1,
+      "first_release_frame": null,
+      "first_supported_frame_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_clearance_m": 0.8257410526272,
+      "final_vertical_velocity_m_s": -0.0627170801163,
+      "final_speed_m_s": 0.10955576220438303,
+      "final_last_substep_support_impulse_Ns": 0.0
+    },
+    {
+      "fruit": 2,
+      "first_release_frame": null,
+      "first_supported_frame_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_clearance_m": 0.7858106344938,
+      "final_vertical_velocity_m_s": -0.0240467526019,
+      "final_speed_m_s": 0.07562691462780696,
+      "final_last_substep_support_impulse_Ns": 0.0
+    },
+    {
+      "fruit": 3,
+      "first_release_frame": null,
+      "first_supported_frame_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_clearance_m": 0.6958240307871,
+      "final_vertical_velocity_m_s": 0.00391251500696,
+      "final_speed_m_s": 0.13412414987002877,
+      "final_last_substep_support_impulse_Ns": 0.0
+    },
+    {
+      "fruit": 4,
+      "first_release_frame": null,
+      "first_supported_frame_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_clearance_m": 0.7855165153745001,
+      "final_vertical_velocity_m_s": 0.0103158699349,
+      "final_speed_m_s": 0.19178504171725333,
+      "final_last_substep_support_impulse_Ns": 0.0
+    },
+    {
+      "fruit": 5,
+      "first_release_frame": null,
+      "first_supported_frame_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_clearance_m": 0.7893490493294,
+      "final_vertical_velocity_m_s": -0.001599934767,
+      "final_speed_m_s": 0.19325350109509204,
+      "final_last_substep_support_impulse_Ns": 0.0
+    },
+    {
+      "fruit": 6,
+      "first_release_frame": null,
+      "first_supported_frame_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_clearance_m": 0.8837933167817,
+      "final_vertical_velocity_m_s": -0.0494855344296,
+      "final_speed_m_s": 0.159901205841517,
+      "final_last_substep_support_impulse_Ns": 0.0
+    },
+    {
+      "fruit": 7,
+      "first_release_frame": null,
+      "first_supported_frame_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_clearance_m": 0.7551854699846,
+      "final_vertical_velocity_m_s": -0.00612713769078,
+      "final_speed_m_s": 0.1498064653169332,
+      "final_last_substep_support_impulse_Ns": 0.0
+    },
+    {
+      "fruit": 8,
+      "first_release_frame": 138,
+      "first_supported_frame_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 3.50204396248,
+      "final_clearance_m": 0.9280000030994,
+      "final_vertical_velocity_m_s": -0.000309015216772,
+      "final_speed_m_s": 0.1368068704582615,
+      "final_last_substep_support_impulse_Ns": 0.0
+    },
+    {
+      "fruit": 9,
+      "first_release_frame": null,
+      "first_supported_frame_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_clearance_m": 0.8844974711542,
+      "final_vertical_velocity_m_s": -0.00127283483744,
+      "final_speed_m_s": 0.11560674488753814,
+      "final_last_substep_support_impulse_Ns": 0.0
+    },
+    {
+      "fruit": 10,
+      "first_release_frame": null,
+      "first_supported_frame_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_clearance_m": 0.799186579883,
+      "final_vertical_velocity_m_s": 0.0171576105058,
+      "final_speed_m_s": 0.13767714052324517,
+      "final_last_substep_support_impulse_Ns": 0.0
+    },
+    {
+      "fruit": 11,
+      "first_release_frame": null,
+      "first_supported_frame_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_clearance_m": 0.9051524698731,
+      "final_vertical_velocity_m_s": 0.0208076704293,
+      "final_speed_m_s": 0.1592600532978278,
+      "final_last_substep_support_impulse_Ns": 0.0
+    }
+  ],
+  "evidence_boundary": "Support is an observed radius/velocity match. Release is latched and can include re-entry. This report does not establish free-flight force balance, cloth contact residuals, calibrated restitution, or solver replay."
+}

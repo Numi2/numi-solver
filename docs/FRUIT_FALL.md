@@ -48,9 +48,14 @@ velocity does not remove finite-precision absolute position storage.
 
 Full-topology pickup is a separate qualification. The previously committed
 GIF and trajectory numbers predate this correction. They do not qualify the
-changed source. A new 480-frame, two-replay Metal run with valid initial
-packing is in progress; it must be inspected before replacing historical
-Metal evidence or claiming the complete native spill is fixed. The corrected
+changed source. The original valid-packing ABI13 run from `04682ea` has now
+completed both full 480-frame replays on M4 Pro with actual exit 1. Replay is
+exact, but only fruit 8 has a latched release and no released fruit is observed
+supported on the plane: the complete native pickup outcome **FAILS**.
+[Actual native log and source/binary receipt](assets/cloth-metal-mini-original-failure.json)
+and [complete fruit audit](assets/cloth-metal-mini-original-fruit-audit.json)
+retain this result. The separate ABI14 local-node repair is still executing
+its full two-replay M4 job. Full native spill is not yet qualified. The corrected
 four-second CPU FP64 reference has separately passed, as recorded below.
 
 The corrected two-second CPU FP64 pickup has completed two exact replays at
