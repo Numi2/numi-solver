@@ -1,0 +1,14 @@
+finite_bench_geometry_case=0 feature=1 impact_time=0.45 passed=1
+finite_bench_geometry_case=1 feature=1 impact_time=0.291666666667 passed=1
+finite_bench_geometry_case=2 feature=2 impact_time=0.382148869802 passed=1
+finite_bench_geometry_case=3 feature=3 impact_time=0.403774955135 passed=1
+expanded_AABB_corner_false_contact_avoided=1 grazing_miss=1 signed_distances_exact=1 initial_top_support=1 unsupported_outside_edge=1
+invalid_step_rejections=4
+finite_bench_sliding_vx_m_s=1.09942775 sticking_vx_m_s=0.785714285714 sticking_slip_m_s=-1.2361993515e-16 friction_analytic_cases_passed=1
+backend=CPU_FP64 finite_bench_x_half_extent_m=.75 y_half_extent_m=.5 thickness_m=.08 floor_height_m=-.75
+mass_kg=0.2 radius_m=0.07 friction=0.35 restitution=0 simulated_seconds=2
+replay_exact=1 hash=0xd6792f708cc2174d captured_frames=241 maximum_timestep_position_difference_m=0.000172845518765
+left_finite_bench=1 reached_lower_floor=1 minimum_contact_gap_m=0
+final_height_m=-0.68 final_vertical_velocity_m_s=2.16840434497e-19 bench_contacts=4092 curved_edge_contacts=1 floor_contacts=5563
+maximum_linear_momentum_discrepancy_Ns=1.45123899409e-14 maximum_angular_momentum_discrepancy_Nms=6.76680933509e-14 maximum_friction_cone_ratio=0.000235764960472
+finite_bench_reference_qualified=1

@@ -157,16 +157,101 @@ checks also pass on Apple M4. See the [source/binary receipt](assets/cloth-local
 Both solver paths measure the new residual in published states. Native
 grounded, spin, pickup and recorded trajectory qualifications require the
 maximum over every frame of both replays to remain within 2 micrometres.
-The repaired four-second CPU96 run is in progress. Full-scene qualification
-and the unchanged 0.80 rad knot gate remain required; these focused checks
-do not establish mesh-resolution convergence, calibrated local bending or
-friction, yarn-interior contact, or complete energy closure.
+The repaired four-second CPU96 run has completed with actual exit 0 and
+`result=PASS`. Both complete replays have final physical hash
+`0x5496d0e5fd2c9611`. Its maximum knot error is 0.069257379 rad, below the
+unchanged 0.80 rad gate; maximum published local-node overlap is 0.240 um.
+Fruits 4, 8, 9, and 10 finish outside the virtually capped mesh, at their
+support radii with zero vertical velocity, still rolling. All 49 exported
+states pass the independent contact audit with local node contacts enabled.
+The exact-replay claim covers final states; the second replay did not export
+a frame sequence.
+
+The matching full CPU48 run also completes with exit 0 and final replay hash
+`0x9a2e4f1734902d11`, maximum knot error 0.086677663 rad and published local
+overlap 0.980 um. Its three released fruits are 4, 10, and 11, all outside
+and grounded at the end. All 49 snapshots pass the same contact audit.
+Starting geometry is identical, but the release sets differ; maximum matched
+node displacement is 0.648511 m and fruit-center displacement is 7.170077 m.
+These results **do not establish timestep convergence**.
+
+See the [96/48 receipt](assets/cloth-local-node-pickup-evidence.json),
+[96-substep log](assets/cloth-local-node-pickup-96.log),
+[48-substep log](assets/cloth-local-node-pickup-48.log),
+[timestep comparison](assets/cloth-local-node-timestep-comparison.json), and
+[newest plane-contact video](assets/cloth-local-node-pickup.mp4).
+Mesh-resolution convergence, calibrated local bending/friction, yarn-interior
+contact, and complete energy closure remain open. Updated native full-scene
+qualification is still in progress.
 
 The older ABI 13 native run has completed its first four-second replay. Only
 fruit 8 has a latched release bit. Its center finishes inside the capped render
 mesh, 0.928 m above its support radius, with no observed support after release.
 This is not a qualifying spill or landing. Its second replay remains in
 progress and must supply the actual terminal result.
+
+## Finite tabletop and room floor
+
+The plane replay is not a finite bench. Released fruit can roll six metres
+at the same support height. The new CPU option `--finite-bench` instead uses
+a fixed box with bounds `(-0.75,-0.50,-0.08)` to `(0.75,0.50,0)` metres and a
+lower floor at `z=-0.75 m`. Its exact sphere-offset boundary has planar faces,
+quarter-cylinder edges and spherical corner domains. Earliest-impact sweeps
+avoid tunneling and expanded-box corner false contacts. Cloth nodes use their
+authored yarn radius. Collision response, sliding friction and rolling
+resistance use the actual contact normal, so leaving the footprint removes
+table support rather than extending it indefinitely.
+
+```sh
+./build/numi-solver-finite-bench --trajectory build/finite-bench.csv
+./build/numi-solver-cloth-bag --finite-bench-probe
+./build/numi-solver-cloth-bag --scenario pickup --finite-bench \
+  --steps 480 --substeps 96 --iterations 32 --replays 2 \
+  --fruit-trace build/finite-bench-fruits.csv \
+  --dump-frames build/finite-bench-pickup --dump-every 10
+python3 tools/audit_cloth_snapshot.py build/finite-bench-pickup-*.obj \
+  --include-local-node-contacts --require-finite-bench
+```
+
+The standalone FP64 rigid-sphere reference checks analytic face, side, edge,
+and corner times; a corner false-positive and grazing miss; sliding and
+sticking friction; and four rejected invalid candidates. A 0.2 kg, 70 mm
+radius rolling sphere leaves the edge and lands at `z=-0.68 m`. Two exact
+replays match all 241 captures; half-step positions differ by at most
+172.85 um. Linear and angular momentum ledgers close to 1.46e-14 Ns and
+6.77e-14 Nms. This reference authors friction 0.35 and no rolling resistance.
+Its contact loss is measured, not a complete cloth energy audit.
+
+The production bag contact functions independently pass a two-second roll-off
+and landing probe, exact replay of all 241 captured position/velocity/spin
+states, and half-step comparison (176.89 um maximum position difference).
+Cloth and fruit side sweeps pass, with zero measured collider penetration.
+The production probe uses authored friction 0.42 and disables rolling
+resistance only for that focused pure-roll check; the actual finite bag scene
+retains authored rolling resistance 0.015. A two-frame legacy plane run has
+byte-identical final OBJ output to the frozen repaired source, while retaining
+the expected short-pickup FAIL because no release has occurred.
+
+OBJ metadata binds the authored collider. The independent auditor reconstructs
+its Euclidean signed distance, rejects missing/duplicate/mismatched declarations
+when the finite mode is required, and permits legitimate descent below `z=0`
+outside the box. Center-containment reports use the declared static surface.
+New CPU runs additionally hash every accepted frame's physical state into an
+ordered trajectory digest and require both complete replays to match it.
+The fruit CSV records all 481 frame states in both replays, including velocity,
+spin, actual static clearance, and latched release state.
+
+[Source/binary receipt](assets/finite-bench-evidence.json),
+[production probe](assets/finite-bench-production-probe.log),
+[rigid reference](assets/finite-bench-reference.log), and
+[focused checks](assets/finite-bench-checks.log) bind this result.
+Full four-second finite-bench bag runs at 48 and 96 substeps are launched from
+frozen source/binary and await their actual terminal result. This option is
+CPU-only; the native Metal bag still uses the plane. Constraint-induced
+contacts are closed by alternating projection, with no claim of continuous
+CCD for every intermediate constraint move or yarn interior. Volumetric fruit,
+reciprocal cloth/volume coupling, material calibration and whole-scene energy
+closure remain open.
 
 ## Starting contact geometry
 

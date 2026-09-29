@@ -1,0 +1,65 @@
+{
+  "schema": "numi.finite-bench.evidence.v1",
+  "source_commit": "4186cfa",
+  "backend": "CPU_FP64",
+  "sources": {
+    "tools/cloth_bag.cpp": "fa22b0c6e1bac96d2034e4e3edcd2adbb0208db2d8951b21015187ae6bea8b08",
+    "tools/finite_bench.cpp": "ff644658e983daaca3451a8d6b5a3ff7a8b0adcd1bda5fdb32115398499b4880",
+    "include/numi/finite_bench_geometry.h": "2cb87f12e55e6ac4f73217ff986e8268915b1ccb0f0df7fb425b329451042a1c",
+    "tools/audit_cloth_snapshot.py": "b437c1884ad35fde3aab547e13684e27388f75aa72b83746edf8e3c931285d99",
+    "tools/audit_fruit_containment.py": "fe402f2e0de6a7ca1012c627581c49951498288a402d383a4990eb598a4bc217"
+  },
+  "executables": {
+    "bag_sha256": "fba0c342a36380de631bc7cfe8ee52a7a462ecdcdf8a39ca09b7ff09f0580eeb",
+    "reference_sha256": "5095f4bd008fc5dfb3b6e350b616d86108435fe9991f25e22fb6e16e0e85e26f"
+  },
+  "geometry": {
+    "box_min_m": [
+      -0.75,
+      -0.5,
+      -0.08
+    ],
+    "box_max_m": [
+      0.75,
+      0.5,
+      0
+    ],
+    "room_floor_height_m": -0.75
+  },
+  "production_probe": {
+    "result": "PASS",
+    "exact_replayed_captures": 241,
+    "simulated_seconds": 2,
+    "steps": 12000,
+    "half_step_steps": 24000,
+    "max_half_step_position_difference_m": 0.000176893979686,
+    "maximum_penetration_m": 0,
+    "left_bench": true,
+    "reached_floor": true,
+    "final_z_m": -0.68,
+    "log_sha256": "9ddedf1bd9726af7a562e6eb554c4265c41d4f5cfb8ad12dc1a296758fcab313"
+  },
+  "standalone_reference": {
+    "result": "PASS",
+    "mass_kg": 0.2,
+    "radius_m": 0.07,
+    "friction": 0.35,
+    "rolling_resistance": 0,
+    "max_half_step_position_difference_m": 0.000172845518765,
+    "max_linear_momentum_discrepancy_Ns": 1.45123899409e-14,
+    "max_angular_momentum_discrepancy_Nms": 6.76680933509e-14,
+    "log_sha256": "5eec5e7f8a80792beb2ab472d23f9ebf6b175156fadd07d818b8417043814838",
+    "trace_sha256": "31b88cc584e80f287dfbcac0193120a438846e82728909cdbd3416f5d7d4748b"
+  },
+  "legacy_comparison": {
+    "frames": 2,
+    "replays": 2,
+    "source_commit": "579937a",
+    "final_OBJ_bytes_identical": true,
+    "final_OBJ_sha256": "d0804600dd1047e7a777bea527f40f325ff08c485778ae49a6afd93df7b85321",
+    "short_pickup_result": "FAIL, retained unmet-release outcome gate"
+  },
+  "full_bag_qualification": "Two full four-second 48/96-substep jobs launched from frozen source/binary. Pending actual terminal results.",
+  "native_finite_bench": "Not implemented. Native bag jobs use the plane.",
+  "evidence_boundary": "Focused exact sphere/box CCD, friction, rolling and lower-floor reference checks and production-contact probe. Primitive ledger closure is not a full cloth-bag energy audit. Full finite-bench bag dynamics and mesh/cloth coupling remain unqualified."
+}

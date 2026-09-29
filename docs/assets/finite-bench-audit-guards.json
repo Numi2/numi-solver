@@ -1,0 +1,8 @@
+{
+  "rejected": [
+    "missing",
+    "duplicate",
+    "wrong_bound"
+  ],
+  "independent_sdf_edge_floor_inside_checks": "PASS"
+}

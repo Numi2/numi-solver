@@ -1,0 +1,20 @@
+Test project /Users/home/numi-solver/build-finite-bench
+    Start  1: finite_bench.reference
+1/3 Test  #1: finite_bench.reference ...........   Passed    0.03 sec
+    Start  2: cloth_bag.finite_bench
+2/3 Test  #2: cloth_bag.finite_bench ...........   Passed    0.56 sec
+    Start 31: cloth_bag.local_node_contact
+3/3 Test #31: cloth_bag.local_node_contact .....   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 3
+
+Label Time Summary:
+ccd               =   0.59 sec*proc (3 tests)
+cloth             =   0.59 sec*proc (3 tests)
+contact           =   0.59 sec*proc (3 tests)
+finite_bench      =   0.59 sec*proc (2 tests)
+ground            =   0.00 sec*proc (1 test)
+local_topology    =   0.00 sec*proc (1 test)
+physics           =   0.59 sec*proc (3 tests)
+
+Total Test time (real) =   0.60 sec

@@ -1,0 +1,686 @@
+{
+  "schema": "numi.cloth.local-node-full-evidence.v1",
+  "backend": "CPU FP64",
+  "physics_source_commit": "579937a",
+  "source_sha256": "90887a49f105dbf46b685698ce43d9735b906874a87787a5f429815adc489772",
+  "executable_sha256": "3d0b39fb5b0407b2b50cb0b3ca4ee0270a29c0dacb1c6621493b84d2d9727b0f",
+  "runs": [
+    {
+      "substeps": 96,
+      "result": "PASS",
+      "actual_exit": 0,
+      "simulated_seconds": 4,
+      "steps": 480,
+      "iterations": 32,
+      "replays": 2,
+      "replay_scope": "Final physical state hash; second replay has no exported frame sequence.",
+      "state_hash": "0x5496d0e5fd2c9611",
+      "released_mask": 1808,
+      "released_fruits": [
+        4,
+        8,
+        9,
+        10
+      ],
+      "max_knot_angle_error_rad": 0.069257379,
+      "max_published_local_node_overlap_m": 2.4e-07,
+      "max_published_fruit_yarn_overlap_m": 7.49e-07,
+      "max_published_nonlocal_yarn_overlap_m": 9.73e-07,
+      "max_published_ground_overlap_m": 0.0,
+      "max_grip_force_N": 194.971303624,
+      "max_speed_m_s": 17.645729748,
+      "numerical_escape_mask": 0,
+      "final_released_states": {
+        "4": {
+          "center_m": [
+            -0.979943096,
+            -1.85278248,
+            0.068
+          ],
+          "radius_m": 0.068,
+          "linear_velocity_m_s": [
+            -0.357172551,
+            -0.55420899,
+            0.0
+          ]
+        },
+        "8": {
+          "center_m": [
+            -4.61821105,
+            0.972856438,
+            0.072
+          ],
+          "radius_m": 0.072,
+          "linear_velocity_m_s": [
+            -1.5799295,
+            0.309505315,
+            0.0
+          ]
+        },
+        "9": {
+          "center_m": [
+            -6.83730619,
+            -0.267833553,
+            0.064
+          ],
+          "radius_m": 0.064,
+          "linear_velocity_m_s": [
+            -2.32257683,
+            -0.131310038,
+            0.0
+          ]
+        },
+        "10": {
+          "center_m": [
+            -2.62860826,
+            1.98369242,
+            0.07
+          ],
+          "radius_m": 0.07,
+          "linear_velocity_m_s": [
+            -0.926669594,
+            0.607909365,
+            0.0
+          ]
+        }
+      },
+      "sampled_contact_audit": {
+        "all_49_pass": true,
+        "local_node_contacts_enforced": true,
+        "auditor_source_sha256": "c98af0fd52351d3a0b27a780857462e81215a4cb3594ee8164ff2a15588b7f13",
+        "maxima_m": {
+          "fruit_yarn_overlap_m": 6.300124227864856e-09,
+          "fruit_pair_overlap_m": 6.493380139138694e-09,
+          "nonlocal_yarn_overlap_m": 9.72180402365047e-07,
+          "local_node_overlap_m": 5.644542033431121e-09,
+          "ground_overlap_m": 0.0
+        }
+      },
+      "qualification_log_sha256": "76f1fa308c1bfdb1762b08e3b2d039c1998534e54d5f8aa5da7105d48d206e50",
+      "exported_states": [
+        {
+          "frame": 0,
+          "time_s": 0.0,
+          "obj_sha256": "8839666a4a1fd9fc3297cbc6c4211a415c1039edbf62d21bde177ad26556d57d"
+        },
+        {
+          "frame": 10,
+          "time_s": 0.08333333333333333,
+          "obj_sha256": "7a74f202c4aca8e272d2bcc634c601b9eeb7082b7b63b227a95655d676c2124f"
+        },
+        {
+          "frame": 20,
+          "time_s": 0.16666666666666666,
+          "obj_sha256": "47cb7f7a7c35db6b81322a10352e9909abd81cf9af98ed7ee86a9ea9d4394ba1"
+        },
+        {
+          "frame": 30,
+          "time_s": 0.25,
+          "obj_sha256": "9756c5d9d1369ec01a1c41d683c584c8f3347eff7d0fe427e60be33d5eb31987"
+        },
+        {
+          "frame": 40,
+          "time_s": 0.3333333333333333,
+          "obj_sha256": "c8f4f9cf88eeb3537b4a51676bcd422ac09c941b9638f6cf4f9fea5be33c6d6a"
+        },
+        {
+          "frame": 50,
+          "time_s": 0.4166666666666667,
+          "obj_sha256": "19b225f6ed4e16629c8f2f377ebed94460d6072deb561386605dbf16fcc02dd8"
+        },
+        {
+          "frame": 60,
+          "time_s": 0.5,
+          "obj_sha256": "a1f2cf208820283346f0e4943f6ac3feb0c97619884bf500f6b8e0b43ad34558"
+        },
+        {
+          "frame": 70,
+          "time_s": 0.5833333333333334,
+          "obj_sha256": "cebaebd2c4a484c362f67bd36430acd9b91208d9315f605af4dee58ef1bc7016"
+        },
+        {
+          "frame": 80,
+          "time_s": 0.6666666666666666,
+          "obj_sha256": "62d0b453e149fae2c710ad57d302ff2997ad75932e30cf271b1bc9d52aa4f984"
+        },
+        {
+          "frame": 90,
+          "time_s": 0.75,
+          "obj_sha256": "8022e0162ba05a79f20a293648fa977e4008061ea506902460e175855c573b5d"
+        },
+        {
+          "frame": 100,
+          "time_s": 0.8333333333333334,
+          "obj_sha256": "0c856624ded5e7e339ea671f341ff1df3a9328f8bb82dd790a82123eff2973bf"
+        },
+        {
+          "frame": 110,
+          "time_s": 0.9166666666666666,
+          "obj_sha256": "02dfddade01c03597997311a72162f54aef18fb04eea2c27e8d8204911a2eeb2"
+        },
+        {
+          "frame": 120,
+          "time_s": 1.0,
+          "obj_sha256": "bcdf8ef87899370295213f4ff362fa162683c131e191294fd4f3b7cd12898b17"
+        },
+        {
+          "frame": 130,
+          "time_s": 1.0833333333333333,
+          "obj_sha256": "ddcae7a2b4789ce34f9532c5b887f04dbcd0947f61d58d223b3e4eb37785b607"
+        },
+        {
+          "frame": 140,
+          "time_s": 1.1666666666666667,
+          "obj_sha256": "1edb86dfaf0a7cea0669eeb31fd880fd6878e5a9817fb9665dca86c2f24da13d"
+        },
+        {
+          "frame": 150,
+          "time_s": 1.25,
+          "obj_sha256": "eebbf3bcc151da281ed37039495a03e6748bcd34412aa10c61e4662c475ef05e"
+        },
+        {
+          "frame": 160,
+          "time_s": 1.3333333333333333,
+          "obj_sha256": "96b36b3bb32cf5d9892d40730492bd5951ca54dcfa75819a70d98fb01e3a177b"
+        },
+        {
+          "frame": 170,
+          "time_s": 1.4166666666666667,
+          "obj_sha256": "f4da3213dca5aa7f363506861fc009680399f6ee586651570ed0cf6feda9a709"
+        },
+        {
+          "frame": 180,
+          "time_s": 1.5,
+          "obj_sha256": "da837eed7808169989a9fc223583fbd3a0a019404e22e6cf909b0be0ea956d86"
+        },
+        {
+          "frame": 190,
+          "time_s": 1.5833333333333333,
+          "obj_sha256": "4b9bf28a85665aa3e2fb1297f68b136a05dd45afd468944fa9cdc966afbc52cd"
+        },
+        {
+          "frame": 200,
+          "time_s": 1.6666666666666667,
+          "obj_sha256": "0c4b88988101c9fc64a9ee0648e0f60cfc5421675d268b25faa5749103bb9fc7"
+        },
+        {
+          "frame": 210,
+          "time_s": 1.75,
+          "obj_sha256": "03627cba97f9e2a9e0aac667ba5195f421a249b1643ff53de38975dd7bb710da"
+        },
+        {
+          "frame": 220,
+          "time_s": 1.8333333333333333,
+          "obj_sha256": "badc7e358f6eac2bdbcb73cd9ee1250194b9a3882e388e44ae747cf5e56896cd"
+        },
+        {
+          "frame": 230,
+          "time_s": 1.9166666666666667,
+          "obj_sha256": "5e1fccadb75fda4421335e1b5918cd9e5fbb8e3f0b6bfd1528da84e79881c0f7"
+        },
+        {
+          "frame": 240,
+          "time_s": 2.0,
+          "obj_sha256": "120362abed9b38d4f808dc9edb649b26128698849ad29f90788b247f872abbb1"
+        },
+        {
+          "frame": 250,
+          "time_s": 2.0833333333333335,
+          "obj_sha256": "3ec678686285f3d71a553d0dcd6531d8c0b1b559a8138e58b4ac1ab1fc1f04da"
+        },
+        {
+          "frame": 260,
+          "time_s": 2.1666666666666665,
+          "obj_sha256": "833ef330dc213e209002fc719b95175101893662bca5ee06c63728a154dcac9f"
+        },
+        {
+          "frame": 270,
+          "time_s": 2.25,
+          "obj_sha256": "cf55260fc026f93ff972789ebad550ed4915988c514aab818e6186d6e7c2c4ce"
+        },
+        {
+          "frame": 280,
+          "time_s": 2.3333333333333335,
+          "obj_sha256": "3cc170a7469380b3be88f0d1b91668458d368b46e6c44a8b5dabfbca0a802342"
+        },
+        {
+          "frame": 290,
+          "time_s": 2.4166666666666665,
+          "obj_sha256": "80f72da4e9cb69a6e31893ec0bf220889c37c6b97db3a9d953ea030092801a94"
+        },
+        {
+          "frame": 300,
+          "time_s": 2.5,
+          "obj_sha256": "d079495ee5612c435c19bb48fee460c37e400c0b69b53f70e107276b778a3b1c"
+        },
+        {
+          "frame": 310,
+          "time_s": 2.5833333333333335,
+          "obj_sha256": "611be06d3ac1de627b336fba3c498e8ad0e921d82a1f472ac8b1ec956baf71d0"
+        },
+        {
+          "frame": 320,
+          "time_s": 2.6666666666666665,
+          "obj_sha256": "04409993d0e3c1b1b800fe10e8a1241b18b22061d9417b8f97fbf56d6b408df9"
+        },
+        {
+          "frame": 330,
+          "time_s": 2.75,
+          "obj_sha256": "eaeea70829ef479ee0708568a6b6a7ed0005e6d6d0127c00198a113eaf0b3307"
+        },
+        {
+          "frame": 340,
+          "time_s": 2.8333333333333335,
+          "obj_sha256": "f71c19c07bae0b758d1c85eebe0e2542684adbe292715af29df4746aa9f5b668"
+        },
+        {
+          "frame": 350,
+          "time_s": 2.9166666666666665,
+          "obj_sha256": "61650c99fb546a1e502442f3afecc1f6a9cdf130aad842259be06984b9631843"
+        },
+        {
+          "frame": 360,
+          "time_s": 3.0,
+          "obj_sha256": "31b75247381387e0a3af99260abf1b97aa59bf59e3cfb373cfd76985cf49ab59"
+        },
+        {
+          "frame": 370,
+          "time_s": 3.0833333333333335,
+          "obj_sha256": "e6e6eb8b6316b66424ddd44a8f4677aa86f6a80caf473763738fc74631bb0ef9"
+        },
+        {
+          "frame": 380,
+          "time_s": 3.1666666666666665,
+          "obj_sha256": "8557e8aff8ee02250345a2df1766eb3252bda2949b8d751e634e968a63b3a2ab"
+        },
+        {
+          "frame": 390,
+          "time_s": 3.25,
+          "obj_sha256": "3304d1fccdd8dffc41d80d1443854cfec5f5f6f0e62ff855b9a90914d9694f17"
+        },
+        {
+          "frame": 400,
+          "time_s": 3.3333333333333335,
+          "obj_sha256": "0dc3b399a8a3ba76606a9745fc8633bcbd005835a2aa64f754133c7565f814b4"
+        },
+        {
+          "frame": 410,
+          "time_s": 3.4166666666666665,
+          "obj_sha256": "7d0aebc0711ad3c504e96a732cb5e3d52237541a390c242fa2a79bffd0fbf7b2"
+        },
+        {
+          "frame": 420,
+          "time_s": 3.5,
+          "obj_sha256": "aafa820c632c800088fae59ec0cf618e1a9f9dac84168dc2456b1c6ea8345913"
+        },
+        {
+          "frame": 430,
+          "time_s": 3.5833333333333335,
+          "obj_sha256": "49640294a9d47eaf3294ef213b36f61310c5ba6efe8f50b73625543f9aa50158"
+        },
+        {
+          "frame": 440,
+          "time_s": 3.6666666666666665,
+          "obj_sha256": "7bc1545236078e051e985eb2336163ff4c84434e297aacdfa920812603b4aeba"
+        },
+        {
+          "frame": 450,
+          "time_s": 3.75,
+          "obj_sha256": "c06a22aaeadf0d09eff7bcd92c415434e652955a95c05c30419e49a3087765ad"
+        },
+        {
+          "frame": 460,
+          "time_s": 3.8333333333333335,
+          "obj_sha256": "6cc54f0d21fd081397623036b1af5dca7e51d87409219c666286865cf8ba3055"
+        },
+        {
+          "frame": 470,
+          "time_s": 3.9166666666666665,
+          "obj_sha256": "bbb1050f9037dc8c28343e96e30a3c971cbe9cbbab9729d2766c4e342aedea68"
+        },
+        {
+          "frame": 480,
+          "time_s": 4.0,
+          "obj_sha256": "4462aaa1731c016a864d2e5613416a7b3a8071c659fafe7ac1df202f14dfa07d"
+        }
+      ]
+    },
+    {
+      "substeps": 48,
+      "result": "PASS",
+      "actual_exit": 0,
+      "simulated_seconds": 4,
+      "steps": 480,
+      "iterations": 32,
+      "replays": 2,
+      "replay_scope": "Final physical state hash; second replay has no exported frame sequence.",
+      "state_hash": "0x9a2e4f1734902d11",
+      "released_mask": 3088,
+      "released_fruits": [
+        4,
+        10,
+        11
+      ],
+      "max_knot_angle_error_rad": 0.086677663,
+      "max_published_local_node_overlap_m": 9.8e-07,
+      "max_published_fruit_yarn_overlap_m": 5e-09,
+      "max_published_nonlocal_yarn_overlap_m": 8.97e-07,
+      "max_published_ground_overlap_m": 0.0,
+      "max_grip_force_N": 311.957751903,
+      "max_speed_m_s": 26.905995522,
+      "numerical_escape_mask": 0,
+      "final_released_states": {
+        "4": {
+          "center_m": [
+            -5.95304742,
+            -0.218235059,
+            0.068
+          ],
+          "radius_m": 0.068,
+          "linear_velocity_m_s": [
+            -2.06563265,
+            -0.0868135724,
+            0.0
+          ]
+        },
+        "10": {
+          "center_m": [
+            -6.50662395,
+            1.57467066,
+            0.07
+          ],
+          "radius_m": 0.07,
+          "linear_velocity_m_s": [
+            -2.21804264,
+            0.507418859,
+            0.0
+          ]
+        },
+        "11": {
+          "center_m": [
+            -6.65941846,
+            -1.61035673,
+            0.067
+          ],
+          "radius_m": 0.067,
+          "linear_velocity_m_s": [
+            -2.2689378,
+            -0.531414653,
+            0.0
+          ]
+        }
+      },
+      "sampled_contact_audit": {
+        "all_49_pass": true,
+        "local_node_contacts_enforced": true,
+        "auditor_source_sha256": "c98af0fd52351d3a0b27a780857462e81215a4cb3594ee8164ff2a15588b7f13",
+        "maxima_m": {
+          "fruit_yarn_overlap_m": 4.972910833123123e-09,
+          "fruit_pair_overlap_m": 7.293927822837887e-09,
+          "nonlocal_yarn_overlap_m": 8.97126449574473e-07,
+          "local_node_overlap_m": 7.752671386095783e-07,
+          "ground_overlap_m": 0.0
+        }
+      },
+      "qualification_log_sha256": "7f0fca2bfc0d97e53db064003b2bca24add4bd13b285076fbed7fa6edf9d9232",
+      "exported_states": [
+        {
+          "frame": 0,
+          "time_s": 0.0,
+          "obj_sha256": "8839666a4a1fd9fc3297cbc6c4211a415c1039edbf62d21bde177ad26556d57d"
+        },
+        {
+          "frame": 10,
+          "time_s": 0.08333333333333333,
+          "obj_sha256": "c15a7221defdbce4c202e1ec9993bed20d05aef3b38b6ccdd4e0883600f12ece"
+        },
+        {
+          "frame": 20,
+          "time_s": 0.16666666666666666,
+          "obj_sha256": "47f6d172d3cd2320c78d2849098474a92f3b8413a3e171c83120d7d696d4dac9"
+        },
+        {
+          "frame": 30,
+          "time_s": 0.25,
+          "obj_sha256": "e3e7bef94f12fa7adcb97b71db8ec231016a0e2d8ac302e039127b0c7ff4a51a"
+        },
+        {
+          "frame": 40,
+          "time_s": 0.3333333333333333,
+          "obj_sha256": "09668d446452b2363b9618deadcf43df2f5cc6d7d3d99bfafb7bd5bcee59e7a7"
+        },
+        {
+          "frame": 50,
+          "time_s": 0.4166666666666667,
+          "obj_sha256": "c1a5a1bb0477d48dd8a0374fcd401e69f864977adb5b753dd6b638bd67503ed9"
+        },
+        {
+          "frame": 60,
+          "time_s": 0.5,
+          "obj_sha256": "054b684df554a9eb939bb2623eacd2ab9e66dfd2b59620137dce7622f6f05b45"
+        },
+        {
+          "frame": 70,
+          "time_s": 0.5833333333333334,
+          "obj_sha256": "3b1410797605edffb65afc85b48c6087d788cec825e6cfbfda06565ca1e18dff"
+        },
+        {
+          "frame": 80,
+          "time_s": 0.6666666666666666,
+          "obj_sha256": "e54d8f27e09efa9ab9d3b216c733efee6c8b8b835b9d10d297a87e76888d85fe"
+        },
+        {
+          "frame": 90,
+          "time_s": 0.75,
+          "obj_sha256": "ce47d78ec3b63dc35b181928fe815ca6d798f415b6f3a07788490fe3b492858d"
+        },
+        {
+          "frame": 100,
+          "time_s": 0.8333333333333334,
+          "obj_sha256": "131c23e57364a31bfbfac9167a5d7e4433e6386c0d6ee85376b9b2b1657ff257"
+        },
+        {
+          "frame": 110,
+          "time_s": 0.9166666666666666,
+          "obj_sha256": "37373c2314a3d6dc5ebfaba2caccf2067c19832f9ede5678b3d3e0bbaa5a91de"
+        },
+        {
+          "frame": 120,
+          "time_s": 1.0,
+          "obj_sha256": "a2438f980c8473aeb79a4bef74b56b009ada4a8b04c58be9c99e71024da3033a"
+        },
+        {
+          "frame": 130,
+          "time_s": 1.0833333333333333,
+          "obj_sha256": "77211533adf81e4659d06c0b627bd2cb101987dfd9e55f34eb2fe5e78183af67"
+        },
+        {
+          "frame": 140,
+          "time_s": 1.1666666666666667,
+          "obj_sha256": "b0b3da80d07346050ea92e74b54bc4e3a0f72abc5b426ae50739b2a75c42e8d4"
+        },
+        {
+          "frame": 150,
+          "time_s": 1.25,
+          "obj_sha256": "899a345eb99e7eedf32cc96705d59820b2c8ef0fcac86319de80d8b74c9d5ca8"
+        },
+        {
+          "frame": 160,
+          "time_s": 1.3333333333333333,
+          "obj_sha256": "f06682700fc6af532467eb746746d6a703b980894afba766559ec228149981df"
+        },
+        {
+          "frame": 170,
+          "time_s": 1.4166666666666667,
+          "obj_sha256": "37d12991b282b3778e8cb0370386d654f905d4178a98a230a31c0d3050f3afca"
+        },
+        {
+          "frame": 180,
+          "time_s": 1.5,
+          "obj_sha256": "38c4c14a02d2133c1523d74435bc732b6bb39531f02da35f8970572e5ef92d16"
+        },
+        {
+          "frame": 190,
+          "time_s": 1.5833333333333333,
+          "obj_sha256": "7318575ad12c48944919ee0fa1961a7699a9c484bfef09e8c60879759355f243"
+        },
+        {
+          "frame": 200,
+          "time_s": 1.6666666666666667,
+          "obj_sha256": "353f1d1f2185c0526f171790ca272ff024a82f69649383c6cae25bb8dcc79869"
+        },
+        {
+          "frame": 210,
+          "time_s": 1.75,
+          "obj_sha256": "8860f2bee738c4ef4784a4b9c21e9368697d6b041937c4a0aa8b0d93729adb9f"
+        },
+        {
+          "frame": 220,
+          "time_s": 1.8333333333333333,
+          "obj_sha256": "716748545a75e6ccf62faeb1435f81db314b468a817750ecd908d439274fb51b"
+        },
+        {
+          "frame": 230,
+          "time_s": 1.9166666666666667,
+          "obj_sha256": "2bf7dce3b377c134dacfc6feb095459456446fba51c1599e398811b98788557e"
+        },
+        {
+          "frame": 240,
+          "time_s": 2.0,
+          "obj_sha256": "f5103101468bf65022c7b65b30ea68cff411682a99fd33d21e52ca4cd9aa7858"
+        },
+        {
+          "frame": 250,
+          "time_s": 2.0833333333333335,
+          "obj_sha256": "e99307db98f3a52c6a49be14453b68095988fa6be53b9934ce00ea1731442d32"
+        },
+        {
+          "frame": 260,
+          "time_s": 2.1666666666666665,
+          "obj_sha256": "3dd53605dca641019a3b9d1e6dfecf888edf6f2db60dbe7f3995425430a2a1b8"
+        },
+        {
+          "frame": 270,
+          "time_s": 2.25,
+          "obj_sha256": "4cce5ed4a2edb8538045f108190388646ae539cbf6ae0b88432762184b135126"
+        },
+        {
+          "frame": 280,
+          "time_s": 2.3333333333333335,
+          "obj_sha256": "d4038fdf38e64234c710ea5f6c8ee53f4c5793130bb85d8eadfd9a6a4cbc81e0"
+        },
+        {
+          "frame": 290,
+          "time_s": 2.4166666666666665,
+          "obj_sha256": "8d72f17b33839c238329d028be40b6e37188cf3a6f0b5fe9f9f380d49be71771"
+        },
+        {
+          "frame": 300,
+          "time_s": 2.5,
+          "obj_sha256": "4e888d5f066a648400c210a3756985e882f9bbb2a46af83cde28f96226da8bbf"
+        },
+        {
+          "frame": 310,
+          "time_s": 2.5833333333333335,
+          "obj_sha256": "253305a8d7f97ac391c00c3e11a799c8697bac4a07b87e5ce594247010ac8336"
+        },
+        {
+          "frame": 320,
+          "time_s": 2.6666666666666665,
+          "obj_sha256": "20ed1e6e5783df46fa35e52287e3cd34e0b14144ab72827ec7801f9bc41d833e"
+        },
+        {
+          "frame": 330,
+          "time_s": 2.75,
+          "obj_sha256": "4436c66ce1f000cc13efd32b948aa8b9ad683a5537c2550cc8b424bd11821e8c"
+        },
+        {
+          "frame": 340,
+          "time_s": 2.8333333333333335,
+          "obj_sha256": "ac1a469dc4abba56b9d313bc3a7d0be5bb765c1117fce25cbad9ac434a0c9543"
+        },
+        {
+          "frame": 350,
+          "time_s": 2.9166666666666665,
+          "obj_sha256": "bbaf9cbc669ff80f1cc03d2f700de1cac104c9fe4cf6a74c8480d44270afd46c"
+        },
+        {
+          "frame": 360,
+          "time_s": 3.0,
+          "obj_sha256": "9cc761fe29e973a0bfbf0ad804c3dc484369dda51d60e28c380c542f337d25c2"
+        },
+        {
+          "frame": 370,
+          "time_s": 3.0833333333333335,
+          "obj_sha256": "285682cc1cbad83a367ca4197f37fb0143585f995c9561a08e3ecf56cb4ed5fa"
+        },
+        {
+          "frame": 380,
+          "time_s": 3.1666666666666665,
+          "obj_sha256": "b94182bc46875d2ee5595c0a7c8ebbe91807fcd7db5b0a7467c577ecbdd216a5"
+        },
+        {
+          "frame": 390,
+          "time_s": 3.25,
+          "obj_sha256": "cc68b93d625471f4f46b07feed966504cafdb406b093cd3b52bf74a0f8dbe10d"
+        },
+        {
+          "frame": 400,
+          "time_s": 3.3333333333333335,
+          "obj_sha256": "15a3f7f13d94e817ea9d6ccede866c49e659beeab91dc1577486945b1150da65"
+        },
+        {
+          "frame": 410,
+          "time_s": 3.4166666666666665,
+          "obj_sha256": "d4984c06093e417888efd9ac4440482c9b014401813375dfeb1371de8f630869"
+        },
+        {
+          "frame": 420,
+          "time_s": 3.5,
+          "obj_sha256": "85bb088efa4e3f8e2eaf139172f99d99cf3ae9badca6961c2598c7b954b56e01"
+        },
+        {
+          "frame": 430,
+          "time_s": 3.5833333333333335,
+          "obj_sha256": "336ac52db4ac87d07d152fc1f63605bcd65df479d6ac27c2a2775d425c5ebf8c"
+        },
+        {
+          "frame": 440,
+          "time_s": 3.6666666666666665,
+          "obj_sha256": "4775320348b814cc768e0ff99f14fb620120b98592e627c71caff16e0a6047c9"
+        },
+        {
+          "frame": 450,
+          "time_s": 3.75,
+          "obj_sha256": "42be945c6394db63dc2a4642bd466fef2323fcce26d16b0572ddbc8f1e8452c8"
+        },
+        {
+          "frame": 460,
+          "time_s": 3.8333333333333335,
+          "obj_sha256": "67e53dd750a3c1a963b7f52b74f7f75c8057544c9df5091de61fc90daf878373"
+        },
+        {
+          "frame": 470,
+          "time_s": 3.9166666666666665,
+          "obj_sha256": "ab5fcb64b90957c77850380c3aa98e07a3570a63607bfc3d966709794a4dda5a"
+        },
+        {
+          "frame": 480,
+          "time_s": 4.0,
+          "obj_sha256": "a94bcaba1302bbc69e4f648282d1ca8d02fc8f20d747e4b2ac022398fc386ae3"
+        }
+      ]
+    }
+  ],
+  "video_run_substeps": 96,
+  "video_frames": 49,
+  "video_fps": 12,
+  "video_sha256": "6330390a3999e8abec6cfce3fb199f5cfe3b2eda3ddf09d31d5c9b74ed4208ad",
+  "gif_sha256": "66946680a2ff2597e6a2965d4c91596daa501bcf2be1a03c39d25d4528f069e9",
+  "renderer_source_sha256": "c214df0857ae1871b50da60102b1b337b492ee6a92efe393893932d495729433",
+  "renderer_binary_sha256": "6c0cdfec7e942e2d6818776c81ca68716c0552332e20c22c49bd172bc35253f7",
+  "timestep_comparison_sha256": "55055d9227200c996c1ff81b78cab50e8c9b636588194868312d5994ab20f114",
+  "evidence_boundary": "Source-bound authored bag with rigid sphere fruit and an unbounded inelastic plane. Four released fruits in CPU96 and three in CPU48 finish outside the virtually capped mesh at their radii, Vz=0, still rolling. Both runs pass gates, but different release sets and metre-scale differences fail temporal convergence. This does not qualify native full-scene spill, finite-bench full scene, real fruit deformation/material calibration, yarn-interior support, or complete energy closure.",
+  "final_containment_96_sha256": "b1e52eb6c9d8e124b400bca726b658eaa8989bb753e24e2510785f04d8e6f319",
+  "final_containment_48_sha256": "c7fd352f25905c968e8a1e69aa5236ee475a8c5273276970550b1ff783cbbcf6"
+}

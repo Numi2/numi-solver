@@ -1,0 +1,1354 @@
+{
+  "yarn_radius_m": 0.004,
+  "yarn_count": 2904,
+  "local_node_contacts_enforced": true,
+  "all_snapshots_within_contact_tolerance": true,
+  "evidence_boundary": "Contacts of supplied exported states only. Exact authored axial graph and two-hop exclusions are reconstructed after validating every render triangle. Does not certify intervening substeps, dynamics, material calibration, strain or replay.",
+  "snapshots": [
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-0.obj",
+      "snapshot_sha256": "8839666a4a1fd9fc3297cbc6c4211a415c1039edbf62d21bde177ad26556d57d",
+      "fruit_yarn_overlap_m": 0.0,
+      "fruit_yarn_witness": null,
+      "fruit_pair_overlap_m": 0.0,
+      "fruit_pair_witness": null,
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 7394,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-10.obj",
+      "snapshot_sha256": "c15a7221defdbce4c202e1ec9993bed20d05aef3b38b6ccdd4e0883600f12ece",
+      "fruit_yarn_overlap_m": 3.359514472167646e-10,
+      "fruit_yarn_witness": {
+        "fruit": 9,
+        "yarn_endpoints": [
+          1307,
+          1308
+        ]
+      },
+      "fruit_pair_overlap_m": 0.0,
+      "fruit_pair_witness": null,
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 9485,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-20.obj",
+      "snapshot_sha256": "47f6d172d3cd2320c78d2849098474a92f3b8413a3e171c83120d7d696d4dac9",
+      "fruit_yarn_overlap_m": 5.576753364655573e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          302,
+          303
+        ]
+      },
+      "fruit_pair_overlap_m": 6.22583595788484e-10,
+      "fruit_pair_witness": [
+        0,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 4.959551345995461e-11,
+      "nonlocal_yarn_witness": [
+        [
+          117,
+          165
+        ],
+        [
+          1421,
+          1432
+        ]
+      ],
+      "self_broadphase_candidates": 10950,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-30.obj",
+      "snapshot_sha256": "e3e7bef94f12fa7adcb97b71db8ec231016a0e2d8ac302e039127b0c7ff4a51a",
+      "fruit_yarn_overlap_m": 5.411102954600011e-10,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1418,
+          1419
+        ]
+      },
+      "fruit_pair_overlap_m": 1.5128550079346326e-09,
+      "fruit_pair_witness": [
+        5,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12454,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-40.obj",
+      "snapshot_sha256": "09668d446452b2363b9618deadcf43df2f5cc6d7d3d99bfafb7bd5bcee59e7a7",
+      "fruit_yarn_overlap_m": 4.296854261287564e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          64,
+          65
+        ]
+      },
+      "fruit_pair_overlap_m": 8.015259567173416e-10,
+      "fruit_pair_witness": [
+        0,
+        1
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13100,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-50.obj",
+      "snapshot_sha256": "c1a5a1bb0477d48dd8a0374fcd401e69f864977adb5b753dd6b638bd67503ed9",
+      "fruit_yarn_overlap_m": 5.681965731252347e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1445,
+          1456
+        ]
+      },
+      "fruit_pair_overlap_m": 3.2708902253375527e-10,
+      "fruit_pair_witness": [
+        10,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13440,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-60.obj",
+      "snapshot_sha256": "054b684df554a9eb939bb2623eacd2ab9e66dfd2b59620137dce7622f6f05b45",
+      "fruit_yarn_overlap_m": 9.672074668953812e-10,
+      "fruit_yarn_witness": {
+        "fruit": 8,
+        "yarn_endpoints": [
+          94,
+          142
+        ]
+      },
+      "fruit_pair_overlap_m": 7.174585647806708e-10,
+      "fruit_pair_witness": [
+        4,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11871,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-70.obj",
+      "snapshot_sha256": "3b1410797605edffb65afc85b48c6087d788cec825e6cfbfda06565ca1e18dff",
+      "fruit_yarn_overlap_m": 5.794249385848715e-10,
+      "fruit_yarn_witness": {
+        "fruit": 9,
+        "yarn_endpoints": [
+          106,
+          107
+        ]
+      },
+      "fruit_pair_overlap_m": 3.015709321152471e-09,
+      "fruit_pair_witness": [
+        8,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11552,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-80.obj",
+      "snapshot_sha256": "e54d8f27e09efa9ab9d3b216c733efee6c8b8b835b9d10d297a87e76888d85fe",
+      "fruit_yarn_overlap_m": 4.378653134518018e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1434,
+          1445
+        ]
+      },
+      "fruit_pair_overlap_m": 7.063607199153665e-09,
+      "fruit_pair_witness": [
+        8,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10526,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.2687957733070743e-09,
+      "local_node_witness": [
+        11,
+        107
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-90.obj",
+      "snapshot_sha256": "ce47d78ec3b63dc35b181928fe815ca6d798f415b6f3a07788490fe3b492858d",
+      "fruit_yarn_overlap_m": 2.9614090624185962e-09,
+      "fruit_yarn_witness": {
+        "fruit": 9,
+        "yarn_endpoints": [
+          107,
+          108
+        ]
+      },
+      "fruit_pair_overlap_m": 2.1945819328461624e-09,
+      "fruit_pair_witness": [
+        7,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11069,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-100.obj",
+      "snapshot_sha256": "131c23e57364a31bfbfac9167a5d7e4433e6386c0d6ee85376b9b2b1657ff257",
+      "fruit_yarn_overlap_m": 7.622453362943205e-10,
+      "fruit_yarn_witness": {
+        "fruit": 6,
+        "yarn_endpoints": [
+          1381,
+          1382
+        ]
+      },
+      "fruit_pair_overlap_m": 5.501815725228454e-09,
+      "fruit_pair_witness": [
+        2,
+        3
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11096,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-110.obj",
+      "snapshot_sha256": "37373c2314a3d6dc5ebfaba2caccf2067c19832f9ede5678b3d3e0bbaa5a91de",
+      "fruit_yarn_overlap_m": 4.814900408933731e-09,
+      "fruit_yarn_witness": {
+        "fruit": 11,
+        "yarn_endpoints": [
+          1324,
+          1325
+        ]
+      },
+      "fruit_pair_overlap_m": 4.926188706955159e-09,
+      "fruit_pair_witness": [
+        4,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11156,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.6702091232566616e-10,
+      "local_node_witness": [
+        176,
+        272
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-120.obj",
+      "snapshot_sha256": "a2438f980c8473aeb79a4bef74b56b009ada4a8b04c58be9c99e71024da3033a",
+      "fruit_yarn_overlap_m": 1.995494824935662e-09,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          165,
+          166
+        ]
+      },
+      "fruit_pair_overlap_m": 5.221855725601188e-10,
+      "fruit_pair_witness": [
+        0,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10658,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-130.obj",
+      "snapshot_sha256": "77211533adf81e4659d06c0b627bd2cb101987dfd9e55f34eb2fe5e78183af67",
+      "fruit_yarn_overlap_m": 2.1318791454394415e-09,
+      "fruit_yarn_witness": {
+        "fruit": 1,
+        "yarn_endpoints": [
+          1404,
+          1415
+        ]
+      },
+      "fruit_pair_overlap_m": 7.293927822837887e-09,
+      "fruit_pair_witness": [
+        8,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 1.6683382973725625e-10,
+      "nonlocal_yarn_witness": [
+        [
+          214,
+          262
+        ],
+        [
+          406,
+          454
+        ]
+      ],
+      "self_broadphase_candidates": 12678,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-140.obj",
+      "snapshot_sha256": "b0b3da80d07346050ea92e74b54bc4e3a0f72abc5b426ae50739b2a75c42e8d4",
+      "fruit_yarn_overlap_m": 3.815011057062279e-09,
+      "fruit_yarn_witness": {
+        "fruit": 1,
+        "yarn_endpoints": [
+          1401,
+          1402
+        ]
+      },
+      "fruit_pair_overlap_m": 5.829325910866601e-10,
+      "fruit_pair_witness": [
+        5,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 5.561292659023165e-10,
+      "nonlocal_yarn_witness": [
+        [
+          36,
+          37
+        ],
+        [
+          180,
+          181
+        ]
+      ],
+      "self_broadphase_candidates": 9909,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-150.obj",
+      "snapshot_sha256": "899a345eb99e7eedf32cc96705d59820b2c8ef0fcac86319de80d8b74c9d5ca8",
+      "fruit_yarn_overlap_m": 4.86751500217153e-10,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          749,
+          750
+        ]
+      },
+      "fruit_pair_overlap_m": 1.7444840016977992e-10,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12488,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-160.obj",
+      "snapshot_sha256": "f06682700fc6af532467eb746746d6a703b980894afba766559ec228149981df",
+      "fruit_yarn_overlap_m": 8.779128812808068e-10,
+      "fruit_yarn_witness": {
+        "fruit": 8,
+        "yarn_endpoints": [
+          1188,
+          1189
+        ]
+      },
+      "fruit_pair_overlap_m": 4.4770431806284705e-10,
+      "fruit_pair_witness": [
+        6,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 6.240260102714779e-07,
+      "nonlocal_yarn_witness": [
+        [
+          574,
+          575
+        ],
+        [
+          717,
+          718
+        ]
+      ],
+      "self_broadphase_candidates": 16835,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-170.obj",
+      "snapshot_sha256": "37d12991b282b3778e8cb0370386d654f905d4178a98a230a31c0d3050f3afca",
+      "fruit_yarn_overlap_m": 8.830032122153497e-10,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          844,
+          845
+        ]
+      },
+      "fruit_pair_overlap_m": 4.153197508127704e-10,
+      "fruit_pair_witness": [
+        2,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 1.8363679327171312e-10,
+      "nonlocal_yarn_witness": [
+        [
+          544,
+          545
+        ],
+        [
+          688,
+          689
+        ]
+      ],
+      "self_broadphase_candidates": 12206,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-180.obj",
+      "snapshot_sha256": "38c4c14a02d2133c1523d74435bc732b6bb39531f02da35f8970572e5ef92d16",
+      "fruit_yarn_overlap_m": 3.422463007440868e-10,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          942,
+          990
+        ]
+      },
+      "fruit_pair_overlap_m": 5.208159736813656e-10,
+      "fruit_pair_witness": [
+        1,
+        2
+      ],
+      "nonlocal_yarn_overlap_m": 5.961433398021104e-07,
+      "nonlocal_yarn_witness": [
+        [
+          323,
+          324
+        ],
+        [
+          467,
+          468
+        ]
+      ],
+      "self_broadphase_candidates": 13633,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-190.obj",
+      "snapshot_sha256": "7318575ad12c48944919ee0fa1961a7699a9c484bfef09e8c60879759355f243",
+      "fruit_yarn_overlap_m": 5.41081277005695e-10,
+      "fruit_yarn_witness": {
+        "fruit": 6,
+        "yarn_endpoints": [
+          1368,
+          1379
+        ]
+      },
+      "fruit_pair_overlap_m": 5.183342088876941e-10,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13789,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-200.obj",
+      "snapshot_sha256": "353f1d1f2185c0526f171790ca272ff024a82f69649383c6cae25bb8dcc79869",
+      "fruit_yarn_overlap_m": 5.067604669228842e-10,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          837,
+          838
+        ]
+      },
+      "fruit_pair_overlap_m": 3.207324128506883e-10,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11950,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.1338983571529404e-10,
+      "local_node_witness": [
+        798,
+        894
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-210.obj",
+      "snapshot_sha256": "8860f2bee738c4ef4784a4b9c21e9368697d6b041937c4a0aa8b0d93729adb9f",
+      "fruit_yarn_overlap_m": 6.048728184993024e-10,
+      "fruit_yarn_witness": {
+        "fruit": 9,
+        "yarn_endpoints": [
+          1402,
+          1413
+        ]
+      },
+      "fruit_pair_overlap_m": 4.5537537629591895e-10,
+      "fruit_pair_witness": [
+        2,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 3.1728938573727383e-10,
+      "nonlocal_yarn_witness": [
+        [
+          166,
+          167
+        ],
+        [
+          23,
+          1410
+        ]
+      ],
+      "self_broadphase_candidates": 12080,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-220.obj",
+      "snapshot_sha256": "716748545a75e6ccf62faeb1435f81db314b468a817750ecd908d439274fb51b",
+      "fruit_yarn_overlap_m": 5.59764332108692e-10,
+      "fruit_yarn_witness": {
+        "fruit": 8,
+        "yarn_endpoints": [
+          1372,
+          1383
+        ]
+      },
+      "fruit_pair_overlap_m": 2.194785464482152e-09,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11892,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-230.obj",
+      "snapshot_sha256": "2bf7dce3b377c134dacfc6feb095459456446fba51c1599e398811b98788557e",
+      "fruit_yarn_overlap_m": 4.972910833123123e-09,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          1126,
+          1127
+        ]
+      },
+      "fruit_pair_overlap_m": 2.2893650308830615e-09,
+      "fruit_pair_witness": [
+        5,
+        6
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10585,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-240.obj",
+      "snapshot_sha256": "f5103101468bf65022c7b65b30ea68cff411682a99fd33d21e52ca4cd9aa7858",
+      "fruit_yarn_overlap_m": 2.4600519815676236e-09,
+      "fruit_yarn_witness": {
+        "fruit": 9,
+        "yarn_endpoints": [
+          1402,
+          1403
+        ]
+      },
+      "fruit_pair_overlap_m": 3.587306479646557e-09,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10526,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-250.obj",
+      "snapshot_sha256": "e99307db98f3a52c6a49be14453b68095988fa6be53b9934ce00ea1731442d32",
+      "fruit_yarn_overlap_m": 2.4215902061364147e-09,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          1126,
+          1127
+        ]
+      },
+      "fruit_pair_overlap_m": 5.686386500558527e-09,
+      "fruit_pair_witness": [
+        5,
+        6
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10602,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-260.obj",
+      "snapshot_sha256": "3dd53605dca641019a3b9d1e6dfecf888edf6f2db60dbe7f3995425430a2a1b8",
+      "fruit_yarn_overlap_m": 3.2722945741969767e-09,
+      "fruit_yarn_witness": {
+        "fruit": 8,
+        "yarn_endpoints": [
+          370,
+          418
+        ]
+      },
+      "fruit_pair_overlap_m": 1.0592308696821817e-09,
+      "fruit_pair_witness": [
+        6,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10451,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-270.obj",
+      "snapshot_sha256": "4cce5ed4a2edb8538045f108190388646ae539cbf6ae0b88432762184b135126",
+      "fruit_yarn_overlap_m": 3.250112984298781e-09,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          981,
+          1029
+        ]
+      },
+      "fruit_pair_overlap_m": 5.532250768602864e-10,
+      "fruit_pair_witness": [
+        0,
+        2
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10551,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 4.099261233913437e-07,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-280.obj",
+      "snapshot_sha256": "d4038fdf38e64234c710ea5f6c8ee53f4c5793130bb85d8eadfd9a6a4cbc81e0",
+      "fruit_yarn_overlap_m": 7.040663052571006e-10,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          1133,
+          1134
+        ]
+      },
+      "fruit_pair_overlap_m": 7.15816128593616e-10,
+      "fruit_pair_witness": [
+        7,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11639,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 8.003087390712205e-09,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-290.obj",
+      "snapshot_sha256": "8d72f17b33839c238329d028be40b6e37188cf3a6f0b5fe9f9f380d49be71771",
+      "fruit_yarn_overlap_m": 5.715881934431621e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          450,
+          451
+        ]
+      },
+      "fruit_pair_overlap_m": 5.405065839347856e-10,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12018,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 5.930293637546047e-07,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-300.obj",
+      "snapshot_sha256": "4e888d5f066a648400c210a3756985e882f9bbb2a46af83cde28f96226da8bbf",
+      "fruit_yarn_overlap_m": 5.097952615606971e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1443,
+          1444
+        ]
+      },
+      "fruit_pair_overlap_m": 0.0,
+      "fruit_pair_witness": null,
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12469,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 4.5006942791213367e-07,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-310.obj",
+      "snapshot_sha256": "253305a8d7f97ac391c00c3e11a799c8697bac4a07b87e5ce594247010ac8336",
+      "fruit_yarn_overlap_m": 7.471979424078512e-10,
+      "fruit_yarn_witness": {
+        "fruit": 8,
+        "yarn_endpoints": [
+          1372,
+          1383
+        ]
+      },
+      "fruit_pair_overlap_m": 7.243606547913117e-10,
+      "fruit_pair_witness": [
+        6,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10932,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.3470162150221463e-07,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-320.obj",
+      "snapshot_sha256": "20ed1e6e5783df46fa35e52287e3cd34e0b14144ab72827ec7801f9bc41d833e",
+      "fruit_yarn_overlap_m": 2.672479168519537e-09,
+      "fruit_yarn_witness": {
+        "fruit": 8,
+        "yarn_endpoints": [
+          1372,
+          1383
+        ]
+      },
+      "fruit_pair_overlap_m": 4.096335937120443e-09,
+      "fruit_pair_witness": [
+        0,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10364,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.6384811930836296e-07,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-330.obj",
+      "snapshot_sha256": "4436c66ce1f000cc13efd32b948aa8b9ad683a5537c2550cc8b424bd11821e8c",
+      "fruit_yarn_overlap_m": 2.964533826754767e-09,
+      "fruit_yarn_witness": {
+        "fruit": 8,
+        "yarn_endpoints": [
+          369,
+          370
+        ]
+      },
+      "fruit_pair_overlap_m": 3.315709734552641e-09,
+      "fruit_pair_witness": [
+        6,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10326,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 7.752671386095783e-07,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-340.obj",
+      "snapshot_sha256": "ac1a469dc4abba56b9d313bc3a7d0be5bb765c1117fce25cbad9ac434a0c9543",
+      "fruit_yarn_overlap_m": 2.513079133681373e-09,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1445,
+          1446
+        ]
+      },
+      "fruit_pair_overlap_m": 6.809498492854615e-09,
+      "fruit_pair_witness": [
+        0,
+        2
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10700,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.491817016724406e-07,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-350.obj",
+      "snapshot_sha256": "bbaf9cbc669ff80f1cc03d2f700de1cac104c9fe4cf6a74c8480d44270afd46c",
+      "fruit_yarn_overlap_m": 2.5888493432324466e-09,
+      "fruit_yarn_witness": {
+        "fruit": 8,
+        "yarn_endpoints": [
+          1372,
+          1383
+        ]
+      },
+      "fruit_pair_overlap_m": 2.135306709227791e-09,
+      "fruit_pair_witness": [
+        2,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10301,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 7.000626570628776e-08,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-360.obj",
+      "snapshot_sha256": "9cc761fe29e973a0bfbf0ad804c3dc484369dda51d60e28c380c542f337d25c2",
+      "fruit_yarn_overlap_m": 9.539291162541375e-10,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1426,
+          1427
+        ]
+      },
+      "fruit_pair_overlap_m": 1.7871280288961344e-09,
+      "fruit_pair_witness": [
+        6,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11351,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 4.91860780106948e-07,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-370.obj",
+      "snapshot_sha256": "285682cc1cbad83a367ca4197f37fb0143585f995c9561a08e3ecf56cb4ed5fa",
+      "fruit_yarn_overlap_m": 5.228312782712408e-10,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1395,
+          1406
+        ]
+      },
+      "fruit_pair_overlap_m": 6.811315678145746e-10,
+      "fruit_pair_witness": [
+        0,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12879,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.707007424294916e-07,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-380.obj",
+      "snapshot_sha256": "b94182bc46875d2ee5595c0a7c8ebbe91807fcd7db5b0a7467c577ecbdd216a5",
+      "fruit_yarn_overlap_m": 5.33621438703058e-10,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          746,
+          794
+        ]
+      },
+      "fruit_pair_overlap_m": 3.509442181304223e-10,
+      "fruit_pair_witness": [
+        7,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13079,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 5.745010982841081e-07,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-390.obj",
+      "snapshot_sha256": "cc68b93d625471f4f46b07feed966504cafdb406b093cd3b52bf74a0f8dbe10d",
+      "fruit_yarn_overlap_m": 4.489258409456909e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1454,
+          17
+        ]
+      },
+      "fruit_pair_overlap_m": 4.3677000904907004e-10,
+      "fruit_pair_witness": [
+        7,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11852,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.12570602560569e-08,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-400.obj",
+      "snapshot_sha256": "15a3f7f13d94e817ea9d6ccede866c49e659beeab91dc1577486945b1150da65",
+      "fruit_yarn_overlap_m": 2.344620581018475e-09,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          1085,
+          1133
+        ]
+      },
+      "fruit_pair_overlap_m": 2.297260048855776e-09,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11591,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.408114779800131e-08,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-410.obj",
+      "snapshot_sha256": "d4984c06093e417888efd9ac4440482c9b014401813375dfeb1371de8f630869",
+      "fruit_yarn_overlap_m": 4.987176643878044e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1422,
+          1433
+        ]
+      },
+      "fruit_pair_overlap_m": 4.724989260962431e-09,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10908,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.0119438989829597e-08,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-420.obj",
+      "snapshot_sha256": "85bb088efa4e3f8e2eaf139172f99d99cf3ae9badca6961c2598c7b954b56e01",
+      "fruit_yarn_overlap_m": 2.8899135445792368e-09,
+      "fruit_yarn_witness": {
+        "fruit": 7,
+        "yarn_endpoints": [
+          169,
+          170
+        ]
+      },
+      "fruit_pair_overlap_m": 2.385224601164637e-09,
+      "fruit_pair_witness": [
+        7,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11054,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.9306464683899183e-07,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-430.obj",
+      "snapshot_sha256": "336ac52db4ac87d07d152fc1f63605bcd65df479d6ac27c2a2775d425c5ebf8c",
+      "fruit_yarn_overlap_m": 3.22701887434107e-09,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          402,
+          403
+        ]
+      },
+      "fruit_pair_overlap_m": 2.6901579575078216e-09,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10905,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.242685530866705e-09,
+      "local_node_witness": [
+        289,
+        385
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-440.obj",
+      "snapshot_sha256": "4775320348b814cc768e0ff99f14fb620120b98592e627c71caff16e0a6047c9",
+      "fruit_yarn_overlap_m": 4.291752536689231e-09,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          1125,
+          1126
+        ]
+      },
+      "fruit_pair_overlap_m": 0.0,
+      "fruit_pair_witness": null,
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11288,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 7.429289839572251e-10,
+      "local_node_witness": [
+        450,
+        546
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-450.obj",
+      "snapshot_sha256": "42be945c6394db63dc2a4642bd466fef2323fcce26d16b0572ddbc8f1e8452c8",
+      "fruit_yarn_overlap_m": 8.285386543516182e-10,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          1077,
+          1078
+        ]
+      },
+      "fruit_pair_overlap_m": 2.708587243382965e-10,
+      "fruit_pair_witness": [
+        7,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11308,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-460.obj",
+      "snapshot_sha256": "67e53dd750a3c1a963b7f52b74f7f75c8057544c9df5091de61fc90daf878373",
+      "fruit_yarn_overlap_m": 8.397967460327393e-10,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          1125,
+          1126
+        ]
+      },
+      "fruit_pair_overlap_m": 2.6584234813498142e-11,
+      "fruit_pair_witness": [
+        8,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12028,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-470.obj",
+      "snapshot_sha256": "ab5fcb64b90957c77850380c3aa98e07a3570a63607bfc3d966709794a4dda5a",
+      "fruit_yarn_overlap_m": 9.365843239850236e-10,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1426,
+          1437
+        ]
+      },
+      "fruit_pair_overlap_m": 2.492497874762023e-11,
+      "fruit_pair_witness": [
+        6,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12779,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.772147611630361e-10,
+      "local_node_witness": [
+        592,
+        688
+      ]
+    },
+    {
+      "snapshot": "build/local-node-pickup-fp64-48-480.obj",
+      "snapshot_sha256": "a94bcaba1302bbc69e4f648282d1ca8d02fc8f20d747e4b2ac022398fc386ae3",
+      "fruit_yarn_overlap_m": 5.003104874834463e-10,
+      "fruit_yarn_witness": {
+        "fruit": 8,
+        "yarn_endpoints": [
+          1360,
+          1371
+        ]
+      },
+      "fruit_pair_overlap_m": 6.097217453149284e-10,
+      "fruit_pair_witness": [
+        0,
+        2
+      ],
+      "nonlocal_yarn_overlap_m": 8.97126449574473e-07,
+      "nonlocal_yarn_witness": [
+        [
+          401,
+          402
+        ],
+        [
+          545,
+          546
+        ]
+      ],
+      "self_broadphase_candidates": 12085,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    }
+  ]
+}

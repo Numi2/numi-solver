@@ -11,7 +11,38 @@ application scene.
 
 ## Pick up the bag and spill the fruit
 
-### Latest qualified replay · September 29, 2026
+### Latest qualified replay · local thickness repair · September 29, 2026
+
+[![Four fruits leave the repaired deformable bag and land in the finer CPU96 replay](docs/assets/cloth-local-node-pickup.gif)](docs/assets/cloth-local-node-pickup.mp4)
+
+The repaired four-second CPU FP64 run passes two complete 96-substep,
+32-iteration replays with final physical hash `0x5496d0e5fd2c9611`.
+Fruits 4, 8, 9, and 10 finish outside the capped bag mesh, at their support
+radii with zero vertical velocity, while continuing to roll. The 8 mm local
+node contact repair reduces the worst knot error from the retained finer-run
+failure of 0.818 radians to **0.069 radians**, below the unchanged 0.80 gate.
+All 49 exported states independently pass fruit, nonlocal yarn, local node,
+and plane contact checks.
+
+The repaired 48-substep run also passes, but releases three fruits (4, 10,
+and 11). Across matched times, cloth nodes differ by as much as 649 mm and
+fruit centers by 7.17 m. **Passing gates has not established timestep
+convergence.** The video uses one fixed camera and the finer run's exact
+exported states. Its collider is still an unbounded plane; full native spill
+qualification and material calibration remain open.
+
+[Watch the newest video](docs/assets/cloth-local-node-pickup.mp4),
+[inspect both source-bound results](docs/assets/cloth-local-node-pickup-evidence.json),
+or [read the timestep comparison](docs/assets/cloth-local-node-timestep-comparison.json).
+
+A new opt-in CPU scene adds a **1.5 × 1.0 m tabletop, 80 mm thickness, and
+room floor 750 mm below it**. Exact face/edge/corner sweeps, rolling off an
+edge, and floor landing pass focused checks; full four-second 48/96-substep
+bag runs are in progress. [Finite-bench implementation and evidence](docs/FRUIT_FALL.md#finite-tabletop-and-room-floor)
+are separate from the plane video above. Deformable volume/cloth coupling
+and native finite-bench contact remain open.
+
+### Earlier ground-support CPU48 replay
 
 [![Watch the latest CPU FP64 replay: fruit leave the deformable bag, fall, and land on the support plane](docs/assets/cloth-pickup-spill.gif)](docs/assets/cloth-pickup-spill.mp4)
 
