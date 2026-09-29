@@ -1,0 +1,4851 @@
+{
+  "schema": "numi.elastic-yarn.complete-FEM-shared-normal-block-step.v1",
+  "passed_bounded_controls": true,
+  "source_sha256": "dcfaeca294146fbec3e161dce05a7583d0ffdf34e8e181e2a008c92a0dc22176",
+  "copied_split_source_sha256": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+  "input_sha256": {
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/body.json": "7eda877b63f31f70661dea103c98fbec97cd4adb5e322ddc4222f4e6e2da7ceb",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/receipt.json": "6cb63eff549236e1e65b0c692f5b9cce96a89259531caa4751caff7ad6b32c59",
+    "/Users/home/numi-solver/docs/assets/elastic-yarn-fem-frame38-provenance.json": "1c7da0b0410abdbf3b1f8c614c8803830fe272a4c355057ce4b035cebdb0b26d",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/CMakeLists.txt": "6cbcced7a175e1de1574d19a38e572a61cbf43d00c3ad792809e33e36e88e738",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/tools/deformable_mesh.mm": "ad289c243c3ab4c3e251cb420fc4be74d8d1713007c3603265cc3c90ab73d87c",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/src/metal/DeformableTet.metal": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/src/metal/DeformableMesh.metal": "1d4c4cd80c956b3ac45877af6af3a155db5bd3728eb3ae06766809069d33887c",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/metalrobo/gpu_types.h": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/numi/deformable_mesh.h": "a0150503c14f4fd2fe622f5d7262ced435e9ee807048c54e76420acc8154205b",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/numi/deformable_tet.h": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-normal-block-step/centroid_step.py": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-normal-block-step/step.py": "dcfaeca294146fbec3e161dce05a7583d0ffdf34e8e181e2a008c92a0dc22176"
+  },
+  "physics_source_revision": "69736313414d3afd81f3b181116870143c13966e",
+  "dt_s": 1e-06,
+  "body_nodes": 2057,
+  "tetrahedra": 10240,
+  "one_step": {
+    "accepted": true,
+    "ledger": {
+      "dt_s": 1e-06,
+      "start": {
+        "K_J": 0.07794784351426866,
+        "strain_J": 0.3856712269844007,
+        "gravity_J": 0.05479105326586246,
+        "total_J": 0.5184101237645318,
+        "P_kg_m_s": [
+          2.2762939523126307e-05,
+          -1.452970168313173e-05,
+          0.07345913586043512
+        ],
+        "L_kg_m2_s": [
+          -9.488481483653325e-06,
+          1.5814548328894745e-05,
+          5.568731825666635e-07
+        ],
+        "minJ": 0.42433703402994905,
+        "maxJ": 1.7175678723338395,
+        "min_element": 7296,
+        "net_internal_force_N": [
+          -1.5542038142579706e-16,
+          -9.8879238130678e-17,
+          9.948639134726989e-16
+        ],
+        "net_internal_torque_Nm": [
+          -6.570646330088421e-18,
+          1.631470159706508e-17,
+          2.7747952319103625e-17
+        ]
+      },
+      "free_finish": {
+        "K_J": 0.07791453768144523,
+        "strain_J": 0.38567253713893207,
+        "gravity_J": 0.05479177400183315,
+        "total_J": 0.5183788488222104,
+        "P_kg_m_s": [
+          2.2762939523125968e-05,
+          -1.4529701683131713e-05,
+          0.07347989270253978
+        ],
+        "L_kg_m2_s": [
+          -9.486194974786969e-06,
+          1.581649916824962e-05,
+          5.568731825666698e-07
+        ],
+        "minJ": 0.4243286839455109,
+        "maxJ": 1.7171890029720074,
+        "min_element": 7296,
+        "net_internal_force_N": [
+          -5.904836081899179e-16,
+          -4.233809483555895e-16,
+          9.189155512900893e-16
+        ],
+        "net_internal_torque_Nm": [
+          1.4263187798815163e-17,
+          1.1794933790516132e-18,
+          4.585148162165138e-18
+        ]
+      },
+      "pre_final_row": {
+        "K_J": 0.07791453768144523,
+        "strain_J": 0.38567253713893207,
+        "gravity_J": 0.05479177400183315,
+        "total_J": 0.5183788488222104,
+        "P_kg_m_s": [
+          2.2762939523125968e-05,
+          -1.4529701683131713e-05,
+          0.07347989270253978
+        ],
+        "L_kg_m2_s": [
+          -9.486194974786969e-06,
+          1.581649916824962e-05,
+          5.568731825666698e-07
+        ],
+        "minJ": 0.4243286839455109,
+        "maxJ": 1.7171890029720074,
+        "min_element": 7296,
+        "net_internal_force_N": [
+          -5.904836081899179e-16,
+          -4.233809483555895e-16,
+          9.189155512900893e-16
+        ],
+        "net_internal_torque_Nm": [
+          1.4263187798815163e-17,
+          1.1794933790516132e-18,
+          4.585148162165138e-18
+        ]
+      },
+      "end": {
+        "K_J": 0.07791453768077579,
+        "strain_J": 0.38567253713893207,
+        "gravity_J": 0.05479177400183315,
+        "total_J": 0.5183788488215411,
+        "P_kg_m_s": [
+          2.2762939523125968e-05,
+          -1.4529701683131713e-05,
+          0.07347989270253978
+        ],
+        "L_kg_m2_s": [
+          -9.486194974786967e-06,
+          1.581649916824962e-05,
+          5.568731825666698e-07
+        ],
+        "minJ": 0.4243286839455109,
+        "maxJ": 1.7171890029720074,
+        "min_element": 7296,
+        "net_internal_force_N": [
+          -5.904836081899179e-16,
+          -4.233809483555895e-16,
+          9.189155512900893e-16
+        ],
+        "net_internal_torque_Nm": [
+          1.4263187798815163e-17,
+          1.1794933790516132e-18,
+          4.585148162165138e-18
+        ]
+      },
+      "contact_rows": [
+        {
+          "geometry": {
+            "distance": 0.003999000728261732,
+            "global_distance": 0.003999000418953998,
+            "gap": -9.997710358070414e-07,
+            "row_gap": -9.99461728073102e-07,
+            "normal": [
+              -0.31363837846163245,
+              0.2403596425394864,
+              0.9186175536066399
+            ],
+            "u": 0.5,
+            "beta": [
+              0.3333333134651184,
+              0.3333333432674408,
+              0.3333333432674408
+            ],
+            "oracle": {
+              "valid": true,
+              "distance": 0.003999000418953998,
+              "u": 0.0,
+              "bary": [
+                0.43333329757891675,
+                0.2333333885599467,
+                0.33333331386113657
+              ],
+              "active_mask": 1
+            },
+            "triangle_area_m2": 1.7744358171874793e-05,
+            "radius": 0.004000000189989805,
+            "endpoint_rows": [
+              {
+                "endpoint": 0,
+                "u": 0.0,
+                "bary": [
+                  0.4333332975789167,
+                  0.23333338855994673,
+                  0.3333333138611366
+                ],
+                "normal": [
+                  -0.3136384326883694,
+                  0.2403596581900733,
+                  0.9186175309972777
+                ],
+                "distance": 0.003999000418953998,
+                "gap": -9.997710358070414e-07,
+                "weight": [
+                  1.0,
+                  0.0,
+                  -0.4333332975789167,
+                  -0.23333338855994673,
+                  -0.3333333138611366
+                ],
+                "yarn_point": [
+                  -0.002672188449651003,
+                  -0.02336556650698185,
+                  0.05023100599646568
+                ],
+                "triangle_point": [
+                  -0.0014179482259301384,
+                  -0.024326764880783593,
+                  0.04655745410514908
+                ]
+              },
+              {
+                "endpoint": 1,
+                "u": 1.0,
+                "bary": [
+                  0.2333333960410715,
+                  0.4333333117789939,
+                  0.33333329217993457
+                ],
+                "normal": [
+                  -0.3136384326883693,
+                  0.24035965819007252,
+                  0.9186175309972778
+                ],
+                "distance": 0.0039990010375694504,
+                "gap": -9.99152420354775e-07,
+                "weight": [
+                  0.0,
+                  1.0,
+                  -0.2333333960410715,
+                  -0.4333333117789939,
+                  -0.33333329217993457
+                ],
+                "yarn_point": [
+                  -0.0026759947650134563,
+                  -0.022154364734888077,
+                  0.049912791699171066
+                ],
+                "triangle_point": [
+                  -0.0014217543472710113,
+                  -0.023115563257380015,
+                  0.046239239239583466
+                ]
+              }
+            ]
+          },
+          "normal_block": true,
+          "row_impulses_Ns": [
+            2.7875447870463416e-05,
+            3.441143498103918e-05
+          ],
+          "impulse_Ns": 6.228688285150259e-05,
+          "LCP_active_mask": 3,
+          "closing_before_rows_m_s": [
+            -0.9590160554841922,
+            -1.0411513872940579
+          ],
+          "closing_after_rows_m_s": [
+            1.6306400674181987e-16,
+            -6.938893903907228e-17
+          ],
+          "expected_after_rows_m_s": [
+            1.1102230246251565e-16,
+            0.0
+          ],
+          "W_inverse_mass": [
+            [
+              27350.249224611598,
+              5713.670734384809
+            ],
+            [
+              5713.670734384809,
+              25627.535064278516
+            ]
+          ],
+          "selected_LCP_kinetic_delta_J": -3.128025766543763e-05,
+          "analytic_kinetic_delta_J": -3.128025766543763e-05,
+          "kinetic_delta_decimal_J": "-0.000031280257665437630663122318013960578689053727574905292250233876263025403511559594",
+          "kinetic_delta_J": -3.128025766543763e-05,
+          "momentum_delta_Ns": [
+            2.541098841762901e-21,
+            8.470329472543003e-22,
+            0.0
+          ],
+          "angular_delta_Nms": [
+            -3.1763735522036263e-22,
+            5.293955920339377e-23,
+            0.0
+          ],
+          "momentum_rounding_bound_Ns": 4.809811106265934e-18,
+          "angular_rounding_bound_Nms": 4.486345879681713e-19,
+          "velocity_rounding_bound_m_s": 5.684341886080802e-14,
+          "moving_owners": 5,
+          "old_five_velocities": [
+            [
+              0.2276500016450882,
+              -0.14530327916145325,
+              -0.5240160997061729
+            ],
+            [
+              0.2276500016450882,
+              -0.14530327916145325,
+              -0.5240160997061729
+            ],
+            [
+              -0.10723937093357498,
+              -0.049133737752669736,
+              0.08842771356965227
+            ],
+            [
+              0.039560940990646165,
+              0.196382494728007,
+              0.5213683895330166
+            ],
+            [
+              -0.19039163914571688,
+              0.13799654538903755,
+              0.5742259327955089
+            ]
+          ],
+          "new_five_velocities": [
+            [
+              0.05279376161627822,
+              -0.01130061333546531,
+              -0.011878584804322467
+            ],
+            [
+              0.011795025511915802,
+              0.020119140014918185,
+              0.10820286507213284
+            ],
+            [
+              0.05573444333760062,
+              -0.1740301988030085,
+              -0.3889072915818002
+            ],
+            [
+              0.12634502290998428,
+              0.12987472625182273,
+              0.2671859592126263
+            ],
+            [
+              -0.08522228818671589,
+              0.05739905919481868,
+              0.26619477511358147
+            ]
+          ]
+        },
+        {
+          "geometry": {
+            "distance": 0.003999000728238009,
+            "global_distance": 0.003999000389168193,
+            "gap": -9.998008216119403e-07,
+            "row_gap": -9.994617517963128e-07,
+            "normal": [
+              -0.313638376295891,
+              0.24035964122286885,
+              0.9186175546905745
+            ],
+            "u": 0.5,
+            "beta": [
+              0.3333333134651184,
+              0.3333333432674408,
+              0.3333333432674408
+            ],
+            "oracle": {
+              "valid": true,
+              "distance": 0.003999000389168193,
+              "u": 0.0,
+              "bary": [
+                0.43324428624133815,
+                0.23338131038276608,
+                0.33337440337589574
+              ],
+              "active_mask": 1
+            },
+            "triangle_area_m2": 1.77449167966458e-05,
+            "radius": 0.004000000189989805,
+            "endpoint_rows": [
+              {
+                "endpoint": 0,
+                "u": 0.0,
+                "bary": [
+                  0.4332442862413381,
+                  0.2333813103827661,
+                  0.3333744033758958
+                ],
+                "normal": [
+                  -0.3135759168015687,
+                  0.2402641024275203,
+                  0.9186638696970476
+                ],
+                "distance": 0.003999000389168193,
+                "gap": -9.998008216119403e-07,
+                "weight": [
+                  1.0,
+                  0.0,
+                  -0.4332442862413381,
+                  -0.2333813103827661,
+                  -0.3333744033758958
+                ],
+                "yarn_point": [
+                  -0.0026721356558893866,
+                  -0.023365577807595184,
+                  0.05023099411788088
+                ],
+                "triangle_point": [
+                  -0.0014181454425661404,
+                  -0.024326394046705984,
+                  0.04655725694544763
+                ]
+              },
+              {
+                "endpoint": 1,
+                "u": 1.0,
+                "bary": [
+                  0.23324336905193982,
+                  0.4333719929579139,
+                  0.33338463799014634
+                ],
+                "normal": [
+                  -0.31357591680156877,
+                  0.24026410242752072,
+                  0.9186638696970473
+                ],
+                "distance": 0.003999001006627259,
+                "gap": -9.991833625462923e-07,
+                "weight": [
+                  0.0,
+                  1.0,
+                  -0.23324336905193982,
+                  -0.4333719929579139,
+                  -0.33338463799014634
+                ],
+                "yarn_point": [
+                  -0.0026759829699879445,
+                  -0.022154344615748063,
+                  0.04991289990203614
+                ],
+                "triangle_point": [
+                  -0.0014219925630444053,
+                  -0.023115161003212113,
+                  0.04623916216236555
+                ]
+              }
+            ]
+          },
+          "normal_block": true,
+          "row_impulses_Ns": [
+            3.5182877248749154e-09,
+            5.512384462264391e-09
+          ],
+          "impulse_Ns": 9.030672187139307e-09,
+          "LCP_active_mask": 3,
+          "closing_before_rows_m_s": [
+            -0.00012771390739292274,
+            -0.00016136828681789783
+          ],
+          "closing_after_rows_m_s": [
+            -4.5102810375396984e-17,
+            1.3877787807814457e-17
+          ],
+          "expected_after_rows_m_s": [
+            0.0,
+            0.0
+          ],
+          "W_inverse_mass": [
+            [
+              27348.98740572939,
+              5713.008758944563
+            ],
+            [
+              5713.008758944563,
+              25627.435676206405
+            ]
+          ],
+          "selected_LCP_kinetic_delta_J": -6.694291548167676e-13,
+          "analytic_kinetic_delta_J": -6.694291548167676e-13,
+          "kinetic_delta_decimal_J": "-6.6942915511262320981534085695964550536258129060588585721685081983657600603493E-13",
+          "kinetic_delta_J": -6.694291551126232e-13,
+          "momentum_delta_Ns": [
+            -4.698385879301197e-22,
+            -4.905181032439454e-22,
+            2.2404186890998755e-21
+          ],
+          "angular_delta_Nms": [
+            -3.15104114594419e-23,
+            -2.027238735608475e-23,
+            -9.519039392895389e-24
+          ],
+          "momentum_rounding_bound_Ns": 1.9214134515731564e-18,
+          "angular_rounding_bound_Nms": 2.0113595165727523e-19,
+          "velocity_rounding_bound_m_s": 5.684341886080802e-14,
+          "moving_owners": 5,
+          "old_five_velocities": [
+            [
+              0.05279376161627822,
+              -0.01130061333546531,
+              -0.011883489804532276
+            ],
+            [
+              0.011795025511915802,
+              0.020119140014918185,
+              0.10819796007192303
+            ],
+            [
+              0.05570072956869827,
+              -0.17407136411363522,
+              -0.38891434322489055
+            ],
+            [
+              0.12628175244785114,
+              0.1299016348950528,
+              0.2673216002808538
+            ],
+            [
+              -0.08523011760116511,
+              0.05748957298089554,
+              0.266269413005854
+            ]
+          ],
+          "new_five_velocities": [
+            [
+              0.05277169660974282,
+              -0.011283706970192242,
+              -0.011818847326578445
+            ],
+            [
+              0.011760454490812118,
+              0.02014562857768857,
+              0.10829924064330883
+            ],
+            [
+              0.055723499118897644,
+              -0.17408881030528517,
+              -0.38898104976061804
+            ],
+            [
+              0.1262947578696852,
+              0.12989167004814897,
+              0.26728349910500143
+            ],
+            [
+              -0.08521487048231524,
+              0.057477890529760794,
+              0.26622474446961175
+            ]
+          ]
+        }
+      ],
+      "plane_events": [
+        {
+          "node": 7,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5629777956403594e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 8,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5725762811540106e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 9,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0294995019107364e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 11,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.147939588621371e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 20,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.968176143117101e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 21,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.4952837438814146e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 27,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0131660546035139e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 34,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.346521904645136e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 43,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.036524212883903e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 44,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.5853844042201036e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 48,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.141441257247534e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 52,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0885233813299034e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 54,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.379470944844722e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 89,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2171566853075242e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 91,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.911722810165266e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 118,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.196230082333157e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 120,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.377875093587354e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 123,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.297253769457632e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 125,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.3910738751429954e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 161,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.889282434522064e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 164,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.560461570078914e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 165,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.3231309928865603e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 166,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.550222100879322e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 210,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1010267869840924e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 211,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1521443515184093e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 239,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.039928699503499e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 242,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.1489633617435335e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 243,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0779394953959432e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 244,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.2014051082591186e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 270,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.289886136386501e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 272,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.5366478071454267e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 274,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.971504369836213e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 276,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.42589135151066e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 297,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2172171100415143e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 299,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.642409922837919e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 300,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5631686859777527e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 302,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.531265806260699e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 303,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.23844864016792e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 305,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.02131181313293e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 306,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.5675921617154664e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 307,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.93914918845608e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 487,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.16868903677965e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 489,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1889355923501762e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 491,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.953474365188107e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 494,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.349748071677242e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 495,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.052608346565129e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 498,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.7919303112820895e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 506,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.842266427057152e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 508,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.381712949905639e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 658,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.813672683301931e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 671,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1775617401328295e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 673,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.507384748405034e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 677,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.743971240001651e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 678,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.166455488095234e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 681,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.3473444984549705e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 682,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.393425849153468e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 685,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.1220301153153335e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 689,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.69160846716861e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 691,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.299295688539783e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 698,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.8069131443876158e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 705,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.589172263544434e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 706,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0757413557392162e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 708,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.997026436432306e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 735,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.3536876716777586e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 736,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.511987322488254e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 737,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.3340237808656034e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 941,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.50992095857366e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 946,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.533693460823496e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 947,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.990598968826252e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 950,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.301000617717421e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 961,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.416686724841523e-10,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 964,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0244482760492088e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 965,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.28311092063184e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 968,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5521251038222902e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 970,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.3260272799651417e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 971,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.836008356572602e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 973,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.027576981041367e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 975,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.1302477304081415e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 979,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.8831085283536586e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 980,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1520132308016641e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 982,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.23534861402246e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1009,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.4754699192332564e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1010,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.1819086846824276e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1011,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.570609958407045e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1250,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.217620261499164e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1251,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2434912505918868e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1254,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.775466790305528e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1261,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.628333341071309e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1263,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2326456323778024e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1265,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.162422679366875e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1268,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.43741866442454e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1272,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.9491252703070798e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1439,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1399679385755366e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1443,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.0527238107953425e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1444,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.149237203833464e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1447,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5035572962696996e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1457,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.456241738214522e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1460,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0534035505449068e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1461,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.442541067154041e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1464,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.2648917371613246e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1466,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2455531829217166e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1467,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.19980324316346e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1469,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.913572718875253e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1471,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.7871777874201484e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1475,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.583854345492051e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1476,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2713715552558838e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1478,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.604021192589074e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1505,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.1202465826200294e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1506,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.922513471411417e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1507,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.419795806155387e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1687,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.4190070423182088e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1689,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.346062287361772e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1693,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.8706202884771714e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1694,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.958007538516715e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1697,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2103551763298303e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1698,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.291435399171015e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1701,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.1909709051687706e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1703,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1659414009996848e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1704,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.116480587266996e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1706,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.4930300614107458e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1713,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.3207987165273847e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1719,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.869986798980973e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1720,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0626556618220537e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1722,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.212825206506e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1749,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.576902842013366e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1750,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.749438595010828e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1751,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.7312817098697784e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1940,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2278848167720236e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1942,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.444277138612417e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1944,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.4371899017731426e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1945,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.032021449191325e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1948,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.176366674925378e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1952,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.50607953401673e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1953,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.80766693736215e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1956,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.305483360660147e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1958,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.42038430077875e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1962,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.4832969787967073e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1964,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.963257957083068e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1966,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.322507426032912e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1968,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.990564923661322e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1970,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.240226382358426e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1972,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.1841765868707174e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1973,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.813934064499827e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1975,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.963884104031958e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1977,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.8299430494885365e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1978,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.350970721627828e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2001,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.923700010639876e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2002,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.898485993251329e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2003,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.9410983487772065e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2009,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.919222375797917e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2010,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.159964693605751e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2012,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.674198433938427e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2014,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.340593219844808e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2015,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.073938230001478e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2018,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.821843389428227e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2020,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.9243815722022466e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2021,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.108429332995148e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2023,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.276635244674795e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2025,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.6152125099111575e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2027,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.605616519397387e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2028,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.884605156048605e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2030,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0829889526589101e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2032,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.791404642939911e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2033,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.257825615746417e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2053,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1890016278250254e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2054,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.3434649921150754e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2055,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.615775164407565e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 7,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5631157189589403e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 8,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5728942633667567e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 9,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0295920674409648e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 11,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.14930104538005e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 20,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.96799368945676e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 21,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.494446109126023e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 27,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0128181156997987e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 34,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.34624585838891e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 43,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.035419881284249e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 44,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.5855468456338494e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 48,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1412124271183574e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 52,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0883424847058255e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 54,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.3795602519377833e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 89,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2170288475974492e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 91,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.912023058931611e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 118,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.196063271516956e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 120,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.3758171359049976e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 123,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.297250806678983e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 125,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.391313135719981e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 161,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.886357110343153e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 164,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.558695096228925e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 165,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.323300077530391e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 166,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.549829061735317e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 210,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1012001220019612e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 211,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1522274661279897e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 239,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.036693609379156e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 242,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.14724147681885e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 243,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0776119510868515e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 244,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.201252752886182e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 270,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2897938975447097e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 272,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.5351233436872113e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 274,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.972005443489056e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 276,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.4259088056926203e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 297,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2171250548559483e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 299,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.640971498654917e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 300,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5628970935302005e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 302,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.527307093545747e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 303,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.238976135692684e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 305,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.019693530801231e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 306,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.565961332025363e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 307,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.935603185352264e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 487,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.168695577528001e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 489,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.188730758219422e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 491,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.953711464097638e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 494,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.34771101341953e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 495,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.056520291728457e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 498,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.7931534249419805e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 506,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.841888515852064e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 508,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.3819126441472345e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 658,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.819096253549182e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 671,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1775305766658304e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 673,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.504720394541678e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 677,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.742635039322109e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 678,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.165894135483474e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 681,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.3471262050102734e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 682,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.393956533585882e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 685,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.121763404555847e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 689,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.692972521700592e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 691,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.2971334175360234e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 698,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.8046361531029665e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 705,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.5892397561124946e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 706,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0755464199068052e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 708,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.997243070691764e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 735,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.3529782568639248e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 736,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.51058122445719e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 737,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.332843250489377e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 941,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.502672875371159e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 946,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.5369275112023054e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 947,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.987877400035317e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 950,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.3036129212788166e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 961,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.393439653371105e-10,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 964,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0242866672345407e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 965,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.281491535755166e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 968,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5499101771193327e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 970,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.326081593403667e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 971,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.834910185803616e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 973,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.0276913900160706e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 975,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.129900988793374e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 979,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.881917789083202e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 980,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.152005910274892e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 982,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.236345966336904e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1009,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.477845654157206e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1010,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.179150698801165e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1011,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.568346035435058e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1250,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2175854793241672e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1251,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2434312769832117e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1254,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.771140698267345e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1261,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.629228928878897e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1263,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2330480739074832e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1265,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.162295326479132e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1268,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.436886135112307e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1272,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.9469000519226807e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1439,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1396041579396718e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1443,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.054306379425256e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1444,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.147665825378459e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1447,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.504301337701924e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1457,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.453621553275592e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1460,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0531065524001579e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1461,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.44033299262674e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1464,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.26469939068548e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1466,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.245435412131649e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1467,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.196226332539222e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1469,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.913427538795481e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1471,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.786761194205569e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1475,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.5825905960598035e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1476,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2711123181908364e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1478,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.604202066037843e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1505,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.121828538077949e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1506,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.919355440345886e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1507,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.417393504941124e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1687,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.4188824808065136e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1689,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.34246594985196e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1693,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.871113210969552e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1694,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.957830635076089e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1697,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.210137007941165e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1698,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.29130898288473e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1701,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.193072214191422e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1703,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.166297084015721e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1704,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.115424802916703e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1706,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.4924623888163946e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1713,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.318733618545015e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1719,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.868668086523106e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1720,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.062654368377979e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1722,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.210931794758971e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1749,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5761004903298295e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1750,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.7487809822861605e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1751,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.7305366764986424e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1940,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.228057720430574e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1942,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.447308213051632e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1944,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.4370528321861584e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1945,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.031512425525592e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1948,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.175281616385832e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1952,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.502694490509131e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1953,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.807109778905918e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1956,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.305731075232876e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1958,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.4201813476948357e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1962,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.4833268007770618e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1964,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.963982836848116e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1966,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.322723613568238e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1968,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.990817192859352e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1970,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.241096315780714e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1972,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.183358110754438e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1973,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.810481492453568e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1975,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.9615892086789376e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1977,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.8308479694693955e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1978,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.348551536684363e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2001,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.92599227367336e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2002,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.897165860395174e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2003,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.939305174732906e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2009,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.91909331475653e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2010,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.158322264958253e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2012,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.674260737545918e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2014,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.341215670926152e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2015,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0739319329881855e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2018,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.817732199439537e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2020,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.9245715011246545e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2021,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.10816129527429e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2023,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.277598388442806e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2025,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.616120345007781e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2027,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.609984478207841e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2028,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.886115588173816e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2030,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0829424648069671e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2032,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.791866179544474e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2033,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.257770793102712e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2053,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1894964064670061e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2054,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.344536257566984e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2055,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.613763325115576e-08,
+          "kinetic_loss_J": 0.0
+        }
+      ],
+      "position_projections": [],
+      "contact_dissipation_J": 3.128025833486678e-05,
+      "plane_kinetic_removal_J": 0.0,
+      "gravity_work_J": -7.207359706908749e-07,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": 5.315344079995005e-09,
+      "physical_energy_balance_residual_J": 5.31534415568857e-09,
+      "mechanical_minus_gravity_work_residual_J": 5.315344052648706e-09,
+      "bookkeeping_identity_error_J": 7.569086416664428e-17,
+      "energy_closure_claim": false,
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -3.110935998160832e-06
+      ],
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        2.3867778102813745e-05
+      ],
+      "gravity_torque_impulse_Nms": [
+        2.232826158107591e-11,
+        -2.623984023381729e-12,
+        0.0
+      ],
+      "plane_torque_impulse_Nms": [
+        2.2641806047783223e-09,
+        1.9534633389078478e-09,
+        0.0
+      ],
+      "position_projection_angular_change_Nms": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "momentum_balance_residual_Ns": [
+        -3.3881317890172014e-19,
+        1.6940658945086007e-20,
+        7.643625316022806e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -1.6709048373571159e-21,
+        -8.775972708881347e-21,
+        6.3527471044072525e-21
+      ],
+      "final_geometry": {
+        "distance": 0.003999000728238009,
+        "global_distance": 0.003999000389168193,
+        "gap": -9.998008216119403e-07,
+        "row_gap": -9.994617517963128e-07,
+        "normal": [
+          -0.313638376295891,
+          0.24035964122286885,
+          0.9186175546905745
+        ],
+        "u": 0.5,
+        "beta": [
+          0.3333333134651184,
+          0.3333333432674408,
+          0.3333333432674408
+        ],
+        "oracle": {
+          "valid": true,
+          "distance": 0.003999000389168193,
+          "u": 0.0,
+          "bary": [
+            0.43324428624133815,
+            0.23338131038276608,
+            0.33337440337589574
+          ],
+          "active_mask": 1
+        },
+        "triangle_area_m2": 1.77449167966458e-05,
+        "radius": 0.004000000189989805,
+        "endpoint_rows": [
+          {
+            "endpoint": 0,
+            "u": 0.0,
+            "bary": [
+              0.4332442862413381,
+              0.2333813103827661,
+              0.3333744033758958
+            ],
+            "normal": [
+              -0.3135759168015687,
+              0.2402641024275203,
+              0.9186638696970476
+            ],
+            "distance": 0.003999000389168193,
+            "gap": -9.998008216119403e-07,
+            "weight": [
+              1.0,
+              0.0,
+              -0.4332442862413381,
+              -0.2333813103827661,
+              -0.3333744033758958
+            ],
+            "yarn_point": [
+              -0.0026721356558893866,
+              -0.023365577807595184,
+              0.05023099411788088
+            ],
+            "triangle_point": [
+              -0.0014181454425661404,
+              -0.024326394046705984,
+              0.04655725694544763
+            ]
+          },
+          {
+            "endpoint": 1,
+            "u": 1.0,
+            "bary": [
+              0.23324336905193982,
+              0.4333719929579139,
+              0.33338463799014634
+            ],
+            "normal": [
+              -0.31357591680156877,
+              0.24026410242752072,
+              0.9186638696970473
+            ],
+            "distance": 0.003999001006627259,
+            "gap": -9.991833625462923e-07,
+            "weight": [
+              0.0,
+              1.0,
+              -0.23324336905193982,
+              -0.4333719929579139,
+              -0.33338463799014634
+            ],
+            "yarn_point": [
+              -0.0026759829699879445,
+              -0.022154344615748063,
+              0.04991289990203614
+            ],
+            "triangle_point": [
+              -0.0014219925630444053,
+              -0.023115161003212113,
+              0.04623916216236555
+            ]
+          }
+        ]
+      },
+      "final_areas": {
+        "min_area_m2": 1.1107864489299575e-05,
+        "min_face": 810,
+        "min_relative_gate_ratio": 99231987856.49225,
+        "faces": 1280
+      },
+      "initial_full_boundary_minimum": {
+        "valid": true,
+        "distance": 0.003999000418953998,
+        "u": 0.0,
+        "bary": [
+          0.43333329757891675,
+          0.2333333885599467,
+          0.33333331386113657
+        ],
+        "active_mask": 1,
+        "face": 1088,
+        "nodes": [
+          5,
+          1814,
+          1347
+        ],
+        "gap_m": -9.997710358070414e-07,
+        "faces_checked": 1280,
+        "selected_row_face_matches_global_min": true
+      },
+      "final_full_boundary_minimum": {
+        "valid": true,
+        "distance": 0.003999000389168193,
+        "u": 0.0,
+        "bary": [
+          0.43324428624133815,
+          0.23338131038276608,
+          0.33337440337589574
+        ],
+        "active_mask": 1,
+        "face": 1088,
+        "nodes": [
+          5,
+          1814,
+          1347
+        ],
+        "gap_m": -9.998008216119403e-07,
+        "faces_checked": 1280,
+        "selected_row_face_matches_global_min": true
+      },
+      "initial_global_velocity_scan": {
+        "faces_checked": 1280,
+        "minimum": {
+          "valid": true,
+          "distance": 0.003999000418953998,
+          "u": 0.0,
+          "bary": [
+            0.43333329757891675,
+            0.2333333885599467,
+            0.33333331386113657
+          ],
+          "active_mask": 1,
+          "face": 1088,
+          "nodes": [
+            5,
+            1814,
+            1347
+          ],
+          "gap_m": -9.997710358070414e-07,
+          "closing_m_s": -0.9589480096325184,
+          "normal": [
+            -0.31363843268836944,
+            0.2403596581900733,
+            0.9186175309972777
+          ]
+        },
+        "contacts_within_2um": [
+          {
+            "valid": true,
+            "distance": 0.003999000418953998,
+            "u": 0.0,
+            "bary": [
+              0.43333329757891675,
+              0.2333333885599467,
+              0.33333331386113657
+            ],
+            "active_mask": 1,
+            "face": 1088,
+            "nodes": [
+              5,
+              1814,
+              1347
+            ],
+            "gap_m": -9.997710358070414e-07,
+            "closing_m_s": -0.9589480096325184,
+            "normal": [
+              -0.31363843268836944,
+              0.2403596581900733,
+              0.9186175309972777
+            ]
+          }
+        ],
+        "final_velocity_enforced": false,
+        "numerical_oracle_not_CCD": true
+      },
+      "final_global_velocity_scan": {
+        "faces_checked": 1280,
+        "minimum": {
+          "valid": true,
+          "distance": 0.003999000389168193,
+          "u": 0.0,
+          "bary": [
+            0.43324428624133815,
+            0.23338131038276608,
+            0.33337440337589574
+          ],
+          "active_mask": 1,
+          "face": 1088,
+          "nodes": [
+            5,
+            1814,
+            1347
+          ],
+          "gap_m": -9.998008216119403e-07,
+          "closing_m_s": 4.7704895589362195e-18,
+          "normal": [
+            -0.31357591680156877,
+            0.2402641024275203,
+            0.9186638696970476
+          ]
+        },
+        "contacts_within_2um": [
+          {
+            "valid": true,
+            "distance": 0.003999000389168193,
+            "u": 0.0,
+            "bary": [
+              0.43324428624133815,
+              0.23338131038276608,
+              0.33337440337589574
+            ],
+            "active_mask": 1,
+            "face": 1088,
+            "nodes": [
+              5,
+              1814,
+              1347
+            ],
+            "gap_m": -9.998008216119403e-07,
+            "closing_m_s": 4.7704895589362195e-18,
+            "normal": [
+              -0.31357591680156877,
+              0.2402641024275203,
+              0.9186638696970476
+            ]
+          }
+        ],
+        "final_velocity_enforced": true,
+        "numerical_oracle_not_CCD": true
+      },
+      "normal_manifold_operator": "Two endpoint-to-interior-triangle rows, shared2x2 nonnegative block; no friction/CCD"
+    },
+    "before_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+    "after_sha": "3eeeb9eaba502e7f9cd37557089dd75bbc4f6969866b83a5c7c9fef010b892a0"
+  },
+  "exact_replay": true,
+  "half_steps_accepted": [
+    true,
+    true
+  ],
+  "matched_interval": {
+    "interval_s": 1e-06,
+    "one_elapsed_s": 1e-06,
+    "two_elapsed_s": 1e-06,
+    "max_position_difference_m": 1.0115377543199306e-11,
+    "max_velocity_difference_m_s": 2.3443035099424903e-09,
+    "energy_difference_J": 3.333555653739495e-12,
+    "balance_residual_one_J": 5.31534415568857e-09,
+    "balance_residual_two_J": 2.658710669714534e-09,
+    "not_temporal_convergence": true
+  },
+  "negative_controls": [
+    {
+      "accepted": false,
+      "reason": "contact-nonreciprocal",
+      "detail": {
+        "geometry": {
+          "distance": 0.003999000728261732,
+          "global_distance": 0.003999000418953998,
+          "gap": -9.997710358070414e-07,
+          "row_gap": -9.99461728073102e-07,
+          "normal": [
+            -0.31363837846163245,
+            0.2403596425394864,
+            0.9186175536066399
+          ],
+          "u": 0.5,
+          "beta": [
+            0.3333333134651184,
+            0.3333333432674408,
+            0.3333333432674408
+          ],
+          "oracle": {
+            "valid": true,
+            "distance": 0.003999000418953998,
+            "u": 0.0,
+            "bary": [
+              0.43333329757891675,
+              0.2333333885599467,
+              0.33333331386113657
+            ],
+            "active_mask": 1
+          },
+          "triangle_area_m2": 1.7744358171874793e-05,
+          "radius": 0.004000000189989805,
+          "endpoint_rows": [
+            {
+              "endpoint": 0,
+              "u": 0.0,
+              "bary": [
+                0.4333332975789167,
+                0.23333338855994673,
+                0.3333333138611366
+              ],
+              "normal": [
+                -0.3136384326883694,
+                0.2403596581900733,
+                0.9186175309972777
+              ],
+              "distance": 0.003999000418953998,
+              "gap": -9.997710358070414e-07,
+              "weight": [
+                1.0,
+                0.0,
+                -0.4333332975789167,
+                -0.23333338855994673,
+                -0.3333333138611366
+              ],
+              "yarn_point": [
+                -0.002672188449651003,
+                -0.02336556650698185,
+                0.05023100599646568
+              ],
+              "triangle_point": [
+                -0.0014179482259301384,
+                -0.024326764880783593,
+                0.04655745410514908
+              ]
+            },
+            {
+              "endpoint": 1,
+              "u": 1.0,
+              "bary": [
+                0.2333333960410715,
+                0.4333333117789939,
+                0.33333329217993457
+              ],
+              "normal": [
+                -0.3136384326883693,
+                0.24035965819007252,
+                0.9186175309972778
+              ],
+              "distance": 0.0039990010375694504,
+              "gap": -9.99152420354775e-07,
+              "weight": [
+                0.0,
+                1.0,
+                -0.2333333960410715,
+                -0.4333333117789939,
+                -0.33333329217993457
+              ],
+              "yarn_point": [
+                -0.0026759947650134563,
+                -0.022154364734888077,
+                0.049912791699171066
+              ],
+              "triangle_point": [
+                -0.0014217543472710113,
+                -0.023115563257380015,
+                0.046239239239583466
+              ]
+            }
+          ]
+        },
+        "normal_block": true,
+        "row_impulses_Ns": [
+          2.7875447870463416e-05,
+          3.441143498103918e-05
+        ],
+        "impulse_Ns": 6.228688285150259e-05,
+        "LCP_active_mask": 3,
+        "closing_before_rows_m_s": [
+          -0.9590160554841922,
+          -1.0411513872940579
+        ],
+        "closing_after_rows_m_s": [
+          -0.4015070839910624,
+          -0.3529226702871547
+        ],
+        "expected_after_rows_m_s": [
+          1.1102230246251565e-16,
+          0.0
+        ],
+        "W_inverse_mass": [
+          [
+            27350.249224611598,
+            5713.670734384809
+          ],
+          [
+            5713.670734384809,
+            25627.535064278516
+          ]
+        ],
+        "selected_LCP_kinetic_delta_J": -3.128025766543763e-05,
+        "analytic_kinetic_delta_J": -3.128025766543763e-05,
+        "kinetic_delta_decimal_J": "-0.000016993827809069960672185806749639314798802685475737728294909570883639039892523907",
+        "kinetic_delta_J": -1.699382780906996e-05,
+        "momentum_delta_Ns": [
+          -1.953556031458934e-05,
+          1.4971253871912275e-05,
+          5.7217822538564e-05
+        ],
+        "angular_delta_Nms": [
+          -2.0480287564895565e-06,
+          -8.248393146792311e-07,
+          -4.834247317988279e-07
+        ],
+        "momentum_rounding_bound_Ns": 4.323586146563874e-18,
+        "angular_rounding_bound_Nms": 4.2380405750686513e-19,
+        "velocity_rounding_bound_m_s": 5.684341886080802e-14,
+        "moving_owners": 2,
+        "old_five_velocities": [
+          [
+            0.2276500016450882,
+            -0.14530327916145325,
+            -0.5240160997061729
+          ],
+          [
+            0.2276500016450882,
+            -0.14530327916145325,
+            -0.5240160997061729
+          ],
+          [
+            -0.10723937093357498,
+            -0.049133737752669736,
+            0.08842771356965227
+          ],
+          [
+            0.039560940990646165,
+            0.196382494728007,
+            0.5213683895330166
+          ],
+          [
+            -0.19039163914571688,
+            0.13799654538903755,
+            0.5742259327955089
+          ]
+        ],
+        "new_five_velocities": [
+          [
+            0.05279376161627822,
+            -0.01130061333546531,
+            -0.011878584804322467
+          ],
+          [
+            0.011795025511915802,
+            0.020119140014918185,
+            0.10820286507213284
+          ],
+          [
+            -0.10723937093357498,
+            -0.049133737752669736,
+            0.08842771356965227
+          ],
+          [
+            0.039560940990646165,
+            0.196382494728007,
+            0.5213683895330166
+          ],
+          [
+            -0.19039163914571688,
+            0.13799654538903755,
+            0.5742259327955089
+          ]
+        ]
+      },
+      "before_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "after_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "rollback_exact": true,
+      "elapsed_unchanged": 0.0,
+      "mode": "disabled-body",
+      "fault": null,
+      "unchanged_full_state": true
+    },
+    {
+      "accepted": false,
+      "reason": "contact-energy-positive",
+      "detail": {
+        "geometry": {
+          "distance": 0.003999000728261732,
+          "global_distance": 0.003999000418953998,
+          "gap": -9.997710358070414e-07,
+          "row_gap": -9.99461728073102e-07,
+          "normal": [
+            -0.31363837846163245,
+            0.2403596425394864,
+            0.9186175536066399
+          ],
+          "u": 0.5,
+          "beta": [
+            0.3333333134651184,
+            0.3333333432674408,
+            0.3333333432674408
+          ],
+          "oracle": {
+            "valid": true,
+            "distance": 0.003999000418953998,
+            "u": 0.0,
+            "bary": [
+              0.43333329757891675,
+              0.2333333885599467,
+              0.33333331386113657
+            ],
+            "active_mask": 1
+          },
+          "triangle_area_m2": 1.7744358171874793e-05,
+          "radius": 0.004000000189989805,
+          "endpoint_rows": [
+            {
+              "endpoint": 0,
+              "u": 0.0,
+              "bary": [
+                0.4333332975789167,
+                0.23333338855994673,
+                0.3333333138611366
+              ],
+              "normal": [
+                -0.3136384326883694,
+                0.2403596581900733,
+                0.9186175309972777
+              ],
+              "distance": 0.003999000418953998,
+              "gap": -9.997710358070414e-07,
+              "weight": [
+                1.0,
+                0.0,
+                -0.4333332975789167,
+                -0.23333338855994673,
+                -0.3333333138611366
+              ],
+              "yarn_point": [
+                -0.002672188449651003,
+                -0.02336556650698185,
+                0.05023100599646568
+              ],
+              "triangle_point": [
+                -0.0014179482259301384,
+                -0.024326764880783593,
+                0.04655745410514908
+              ]
+            },
+            {
+              "endpoint": 1,
+              "u": 1.0,
+              "bary": [
+                0.2333333960410715,
+                0.4333333117789939,
+                0.33333329217993457
+              ],
+              "normal": [
+                -0.3136384326883693,
+                0.24035965819007252,
+                0.9186175309972778
+              ],
+              "distance": 0.0039990010375694504,
+              "gap": -9.99152420354775e-07,
+              "weight": [
+                0.0,
+                1.0,
+                -0.2333333960410715,
+                -0.4333333117789939,
+                -0.33333329217993457
+              ],
+              "yarn_point": [
+                -0.0026759947650134563,
+                -0.022154364734888077,
+                0.049912791699171066
+              ],
+              "triangle_point": [
+                -0.0014217543472710113,
+                -0.023115563257380015,
+                0.046239239239583466
+              ]
+            }
+          ]
+        },
+        "normal_block": true,
+        "row_impulses_Ns": [
+          8.362634361139025e-05,
+          0.00010323430494311753
+        ],
+        "impulse_Ns": 0.0001868606485545078,
+        "LCP_active_mask": 3,
+        "closing_before_rows_m_s": [
+          -0.9590160554841922,
+          -1.0411513872940579
+        ],
+        "closing_after_rows_m_s": [
+          1.9180321109683849,
+          2.0823027745881157
+        ],
+        "expected_after_rows_m_s": [
+          1.1102230246251565e-16,
+          0.0
+        ],
+        "W_inverse_mass": [
+          [
+            27350.249224611598,
+            5713.670734384809
+          ],
+          [
+            5713.670734384809,
+            25627.535064278516
+          ]
+        ],
+        "selected_LCP_kinetic_delta_J": -3.128025766543763e-05,
+        "analytic_kinetic_delta_J": 9.384077299631296e-05,
+        "kinetic_delta_decimal_J": "0.000093840772996312921291137041146522328361761450890938950849878040674066704591476484",
+        "kinetic_delta_J": 9.384077299631292e-05,
+        "momentum_delta_Ns": [
+          3.3881317890172014e-21,
+          5.082197683525802e-21,
+          -2.710505431213761e-20
+        ],
+        "angular_delta_Nms": [
+          0.0,
+          1.0587911840678754e-22,
+          -1.5881867761018131e-22
+        ],
+        "momentum_rounding_bound_Ns": 1.0777010625128074e-17,
+        "angular_rounding_bound_Nms": 9.713280164086265e-19,
+        "velocity_rounding_bound_m_s": 5.684341886080802e-14,
+        "moving_owners": 5,
+        "old_five_velocities": [
+          [
+            0.2276500016450882,
+            -0.14530327916145325,
+            -0.5240160997061729
+          ],
+          [
+            0.2276500016450882,
+            -0.14530327916145325,
+            -0.5240160997061729
+          ],
+          [
+            -0.10723937093357498,
+            -0.049133737752669736,
+            0.08842771356965227
+          ],
+          [
+            0.039560940990646165,
+            0.196382494728007,
+            0.5213683895330166
+          ],
+          [
+            -0.19039163914571688,
+            0.13799654538903755,
+            0.5742259327955089
+          ]
+        ],
+        "new_five_velocities": [
+          [
+            -0.29691871844134177,
+            0.25670471831651065,
+            1.0123964449993783
+          ],
+          [
+            -0.419914926754429,
+            0.3509639783676611,
+            1.3726407946287444
+          ],
+          [
+            0.3816820718799519,
+            -0.42382312090368596,
+            -1.3435773018847053
+          ],
+          [
+            0.29991318674866047,
+            -0.003140810700545893,
+            -0.24117890142815446
+          ],
+          [
+            0.12511641373128612,
+            -0.10379591319361905,
+            -0.34986754025027356
+          ]
+        ]
+      },
+      "before_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "after_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "rollback_exact": true,
+      "elapsed_unchanged": 0.0,
+      "mode": "energy-positive",
+      "fault": null,
+      "unchanged_full_state": true
+    },
+    {
+      "accepted": false,
+      "reason": "invalid-J",
+      "detail": {
+        "element": 8256,
+        "J": -0.9307746463939398,
+        "gate": 9.999999974752427e-07
+      },
+      "before_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "after_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "rollback_exact": true,
+      "elapsed_unchanged": 0.0,
+      "mode": "correct",
+      "fault": "invalid-J",
+      "unchanged_full_state": true
+    },
+    {
+      "accepted": false,
+      "reason": "invalid-boundary-area",
+      "detail": {
+        "face": 661,
+        "nodes": [
+          1162,
+          5,
+          1347
+        ],
+        "cross_squared": 0.0,
+        "gate": 3.6192283978075095e-21
+      },
+      "before_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "after_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "rollback_exact": true,
+      "elapsed_unchanged": 0.0,
+      "mode": "correct",
+      "fault": "invalid-area",
+      "unchanged_full_state": true
+    }
+  ],
+  "baseline": {
+    "independent_force_path": "/Users/home/numi-solver/build/elastic-yarn-common-step-independent-review/constitutive-frame38-forces.f64x3.bin",
+    "independent_force_sha256": "3f9cd5206d22b2d2df9220dbb54e3de7956c080ffa8f72accbb06f91af8ff967",
+    "max_force_vector_difference_N": 2.5054633743874127e-16,
+    "witness_node": 42,
+    "passed": true,
+    "FEM_only_strain_J": 0.3856712269844007,
+    "FEM_only_kinetic_J": 0.07793046724978955,
+    "FEM_only_gravity_J": 0.05474193273223254
+  },
+  "energy_gradient_controls": {
+    "passed": true,
+    "controls": [
+      {
+        "node": 5,
+        "axis": 0,
+        "h_m": 1e-08,
+        "central_energy_derivative_N": 0.00260977350841074,
+        "minus_gathered_force_N": 0.0026097749208022726,
+        "absolute_error_N": 1.412391532722157e-09,
+        "tolerance_N": 1.0260977492080227e-05,
+        "passed": true
+      },
+      {
+        "node": 1814,
+        "axis": 2,
+        "h_m": 1e-08,
+        "central_energy_derivative_N": -0.02176873681314362,
+        "minus_gathered_force_N": -0.02176873627869063,
+        "absolute_error_N": 5.344529888096083e-10,
+        "tolerance_N": 1.2176873627869064e-05,
+        "passed": true
+      },
+      {
+        "node": 1347,
+        "axis": 1,
+        "h_m": 1e-08,
+        "central_energy_derivative_N": -0.011201664595894556,
+        "minus_gathered_force_N": -0.011201665103178996,
+        "absolute_error_N": 5.07284440148803e-10,
+        "tolerance_N": 1.11201665103179e-05,
+        "passed": true
+      },
+      {
+        "node": 7,
+        "axis": 2,
+        "h_m": 1e-08,
+        "central_energy_derivative_N": 0.3122159253354795,
+        "minus_gathered_force_N": 0.31221592574482265,
+        "absolute_error_N": 4.0934317047103264e-10,
+        "tolerance_N": 4.1221592574482265e-05,
+        "passed": true
+      },
+      {
+        "node": 0,
+        "axis": 0,
+        "h_m": 1e-08,
+        "central_energy_derivative_N": -0.000912792064156065,
+        "minus_gathered_force_N": -0.0009127904283694841,
+        "absolute_error_N": 1.635786580841958e-09,
+        "tolerance_N": 1.0091279042836948e-05,
+        "passed": true
+      },
+      {
+        "node": 1028,
+        "axis": 1,
+        "h_m": 1e-08,
+        "central_energy_derivative_N": -0.02273542187847255,
+        "minus_gathered_force_N": -0.022735421935728542,
+        "absolute_error_N": 5.725599161454653e-11,
+        "tolerance_N": 1.2273542193572855e-05,
+        "passed": true
+      }
+    ],
+    "difference_kind": "Independent central total-energy difference; full body recomputed twice per coordinate"
+  },
+  "geometry_binding_control": {
+    "translation_m": [
+      3000.0,
+      0.0,
+      0.0
+    ],
+    "actual_FP64_geometry": {
+      "distance": 0.003999000728193891,
+      "global_distance": 0.003999000418953998,
+      "gap": -9.997710358070414e-07,
+      "row_gap": -9.994617959138002e-07,
+      "normal": [
+        -0.3136383784128644,
+        0.24035964254356398,
+        0.9186175536222237
+      ],
+      "u": 0.5,
+      "beta": [
+        0.3333333134651184,
+        0.3333333432674408,
+        0.3333333432674408
+      ],
+      "oracle": {
+        "valid": true,
+        "distance": 0.003999000418953998,
+        "u": 0.0,
+        "bary": [
+          0.43333329757891675,
+          0.2333333885599467,
+          0.33333331386113657
+        ],
+        "active_mask": 1
+      },
+      "triangle_area_m2": 1.7744358171874793e-05,
+      "radius": 0.004000000189989805,
+      "endpoint_rows": [
+        {
+          "endpoint": 0,
+          "u": 0.0,
+          "bary": [
+            0.4333332975789167,
+            0.23333338855994673,
+            0.3333333138611366
+          ],
+          "normal": [
+            -0.3136384326872493,
+            0.2403596581901669,
+            0.9186175309976355
+          ],
+          "distance": 0.00399900041895244,
+          "gap": -9.99771037364823e-07,
+          "weight": [
+            1.0,
+            0.0,
+            -0.4333332975789167,
+            -0.23333338855994673,
+            -0.3333333138611366
+          ],
+          "yarn_point": [
+            2999.9973278115503,
+            -0.02336556650698185,
+            0.05023100599646568
+          ],
+          "triangle_point": [
+            2999.998582051774,
+            -0.024326764880783593,
+            0.04655745410514908
+          ]
+        },
+        {
+          "endpoint": 1,
+          "u": 1.0,
+          "bary": [
+            0.2333333960410715,
+            0.4333333117789939,
+            0.33333329217993457
+          ],
+          "normal": [
+            -0.31363843272231756,
+            0.24035965818723412,
+            0.9186175309864298
+          ],
+          "distance": 0.003999001037616675,
+          "gap": -9.991523731303978e-07,
+          "weight": [
+            0.0,
+            1.0,
+            -0.2333333960410715,
+            -0.4333333117789939,
+            -0.33333329217993457
+          ],
+          "yarn_point": [
+            2999.997324005235,
+            -0.022154364734888077,
+            0.049912791699171066
+          ],
+          "triangle_point": [
+            2999.998578245653,
+            -0.023115563257380015,
+            0.046239239239583466
+          ]
+        }
+      ]
+    },
+    "FP32_narrowed_geometry": {
+      "accepted": false,
+      "reason": "contact-manifold/gap",
+      "detail": {
+        "row_distance": 0.003988609352109572,
+        "oracle": {
+          "valid": true,
+          "distance": 0.003980841352659446,
+          "u": 1.0,
+          "bary": [
+            0.22912691425353215,
+            0.4432064607970598,
+            0.327666624949408
+          ],
+          "active_mask": 2
+        },
+        "radius": 0.004000000189989805
+      }
+    },
+    "actual_positions": [
+      [
+        2999.9973278115503,
+        -0.02336556650698185,
+        0.05023100599646568
+      ],
+      [
+        2999.997324005235,
+        -0.022154364734888077,
+        0.049912791699171066
+      ],
+      [
+        3000.0003836003307,
+        -0.02660437673330307,
+        0.0477684922516346
+      ],
+      [
+        3000.000364569132,
+        -0.020548366010189056,
+        0.046177417039871216
+      ],
+      [
+        2999.994992276188,
+        -0.02401074953377247,
+        0.045249130576848984
+      ]
+    ],
+    "narrowed_positions": [
+      [
+        2999.997314453125,
+        -0.02336556650698185,
+        0.05023100599646568
+      ],
+      [
+        2999.997314453125,
+        -0.022154364734888077,
+        0.049912791699171066
+      ],
+      [
+        3000.00048828125,
+        -0.02660437673330307,
+        0.0477684922516346
+      ],
+      [
+        3000.000244140625,
+        -0.020548366010189056,
+        0.046177417039871216
+      ],
+      [
+        2999.994873046875,
+        -0.02401074953377247,
+        0.045249130576848984
+      ]
+    ],
+    "bridge_rejected": true,
+    "not_an_end_to_end_production_claim": true,
+    "radius_unchanged": 0.004000000189989805
+  },
+  "block_algebra_controls": {
+    "passed": true,
+    "four_active_sets": [
+      {
+        "input_q": [
+          1.0,
+          1.0
+        ],
+        "expected_mask": 0,
+        "passed": true,
+        "result": {
+          "geometry": {
+            "distance": 0.003999000728261732,
+            "global_distance": 0.003999000418953998,
+            "gap": -9.997710358070414e-07,
+            "row_gap": -9.99461728073102e-07,
+            "normal": [
+              -0.31363837846163245,
+              0.2403596425394864,
+              0.9186175536066399
+            ],
+            "u": 0.5,
+            "beta": [
+              0.3333333134651184,
+              0.3333333432674408,
+              0.3333333432674408
+            ],
+            "oracle": {
+              "valid": true,
+              "distance": 0.003999000418953998,
+              "u": 0.0,
+              "bary": [
+                0.43333329757891675,
+                0.2333333885599467,
+                0.33333331386113657
+              ],
+              "active_mask": 1
+            },
+            "triangle_area_m2": 1.7744358171874793e-05,
+            "radius": 0.004000000189989805,
+            "endpoint_rows": [
+              {
+                "endpoint": 0,
+                "u": 0.0,
+                "bary": [
+                  0.4333332975789167,
+                  0.23333338855994673,
+                  0.3333333138611366
+                ],
+                "normal": [
+                  -0.3136384326883694,
+                  0.2403596581900733,
+                  0.9186175309972777
+                ],
+                "distance": 0.003999000418953998,
+                "gap": -9.997710358070414e-07,
+                "weight": [
+                  1.0,
+                  0.0,
+                  -0.4333332975789167,
+                  -0.23333338855994673,
+                  -0.3333333138611366
+                ],
+                "yarn_point": [
+                  -0.002672188449651003,
+                  -0.02336556650698185,
+                  0.05023100599646568
+                ],
+                "triangle_point": [
+                  -0.0014179482259301384,
+                  -0.024326764880783593,
+                  0.04655745410514908
+                ]
+              },
+              {
+                "endpoint": 1,
+                "u": 1.0,
+                "bary": [
+                  0.2333333960410715,
+                  0.4333333117789939,
+                  0.33333329217993457
+                ],
+                "normal": [
+                  -0.3136384326883693,
+                  0.24035965819007252,
+                  0.9186175309972778
+                ],
+                "distance": 0.0039990010375694504,
+                "gap": -9.99152420354775e-07,
+                "weight": [
+                  0.0,
+                  1.0,
+                  -0.2333333960410715,
+                  -0.4333333117789939,
+                  -0.33333329217993457
+                ],
+                "yarn_point": [
+                  -0.0026759947650134563,
+                  -0.022154364734888077,
+                  0.049912791699171066
+                ],
+                "triangle_point": [
+                  -0.0014217543472710113,
+                  -0.023115563257380015,
+                  0.046239239239583466
+                ]
+              }
+            ]
+          },
+          "normal_block": true,
+          "row_impulses_Ns": [
+            0.0,
+            0.0
+          ],
+          "impulse_Ns": 0.0,
+          "LCP_active_mask": 0,
+          "closing_before_rows_m_s": [
+            1.0000000000000002,
+            1.0
+          ],
+          "closing_after_rows_m_s": [
+            1.0000000000000002,
+            1.0
+          ],
+          "expected_after_rows_m_s": [
+            1.0000000000000002,
+            1.0
+          ],
+          "W_inverse_mass": [
+            [
+              27350.249224611598,
+              5713.670734384809
+            ],
+            [
+              5713.670734384809,
+              25627.535064278516
+            ]
+          ],
+          "selected_LCP_kinetic_delta_J": 0.0,
+          "analytic_kinetic_delta_J": 0.0,
+          "kinetic_delta_decimal_J": "0E-149",
+          "kinetic_delta_J": 0.0,
+          "momentum_delta_Ns": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "angular_delta_Nms": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "momentum_rounding_bound_Ns": 2.8421708712411236e-18,
+          "angular_rounding_bound_Nms": 3.130311827524132e-19,
+          "velocity_rounding_bound_m_s": 5.684341886080802e-14,
+          "moving_owners": 0,
+          "old_five_velocities": [
+            [
+              -0.3136384326883694,
+              0.2403596581900733,
+              0.9186175309972777
+            ],
+            [
+              -0.3136384326883694,
+              0.2403596581900733,
+              0.9186175309972777
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "new_five_velocities": [
+            [
+              -0.3136384326883694,
+              0.2403596581900733,
+              0.9186175309972777
+            ],
+            [
+              -0.3136384326883694,
+              0.2403596581900733,
+              0.9186175309972777
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ]
+          ]
+        }
+      },
+      {
+        "input_q": [
+          -1.0,
+          0.1
+        ],
+        "expected_mask": 1,
+        "passed": true,
+        "result": {
+          "geometry": {
+            "distance": 0.003999000728261732,
+            "global_distance": 0.003999000418953998,
+            "gap": -9.997710358070414e-07,
+            "row_gap": -9.99461728073102e-07,
+            "normal": [
+              -0.31363837846163245,
+              0.2403596425394864,
+              0.9186175536066399
+            ],
+            "u": 0.5,
+            "beta": [
+              0.3333333134651184,
+              0.3333333432674408,
+              0.3333333432674408
+            ],
+            "oracle": {
+              "valid": true,
+              "distance": 0.003999000418953998,
+              "u": 0.0,
+              "bary": [
+                0.43333329757891675,
+                0.2333333885599467,
+                0.33333331386113657
+              ],
+              "active_mask": 1
+            },
+            "triangle_area_m2": 1.7744358171874793e-05,
+            "radius": 0.004000000189989805,
+            "endpoint_rows": [
+              {
+                "endpoint": 0,
+                "u": 0.0,
+                "bary": [
+                  0.4333332975789167,
+                  0.23333338855994673,
+                  0.3333333138611366
+                ],
+                "normal": [
+                  -0.3136384326883694,
+                  0.2403596581900733,
+                  0.9186175309972777
+                ],
+                "distance": 0.003999000418953998,
+                "gap": -9.997710358070414e-07,
+                "weight": [
+                  1.0,
+                  0.0,
+                  -0.4333332975789167,
+                  -0.23333338855994673,
+                  -0.3333333138611366
+                ],
+                "yarn_point": [
+                  -0.002672188449651003,
+                  -0.02336556650698185,
+                  0.05023100599646568
+                ],
+                "triangle_point": [
+                  -0.0014179482259301384,
+                  -0.024326764880783593,
+                  0.04655745410514908
+                ]
+              },
+              {
+                "endpoint": 1,
+                "u": 1.0,
+                "bary": [
+                  0.2333333960410715,
+                  0.4333333117789939,
+                  0.33333329217993457
+                ],
+                "normal": [
+                  -0.3136384326883693,
+                  0.24035965819007252,
+                  0.9186175309972778
+                ],
+                "distance": 0.0039990010375694504,
+                "gap": -9.99152420354775e-07,
+                "weight": [
+                  0.0,
+                  1.0,
+                  -0.2333333960410715,
+                  -0.4333333117789939,
+                  -0.33333329217993457
+                ],
+                "yarn_point": [
+                  -0.0026759947650134563,
+                  -0.022154364734888077,
+                  0.049912791699171066
+                ],
+                "triangle_point": [
+                  -0.0014217543472710113,
+                  -0.023115563257380015,
+                  0.046239239239583466
+                ]
+              }
+            ]
+          },
+          "normal_block": true,
+          "row_impulses_Ns": [
+            3.6562738123063715e-05,
+            0.0
+          ],
+          "impulse_Ns": 3.6562738123063715e-05,
+          "LCP_active_mask": 1,
+          "closing_before_rows_m_s": [
+            -1.0000000000000002,
+            0.1
+          ],
+          "closing_after_rows_m_s": [
+            4.85722573273506e-17,
+            0.30890744678272497
+          ],
+          "expected_after_rows_m_s": [
+            0.0,
+            0.3089074467827249
+          ],
+          "W_inverse_mass": [
+            [
+              27350.249224611598,
+              5713.670734384809
+            ],
+            [
+              5713.670734384809,
+              25627.535064278516
+            ]
+          ],
+          "selected_LCP_kinetic_delta_J": -1.828136906153186e-05,
+          "analytic_kinetic_delta_J": -1.828136906153186e-05,
+          "kinetic_delta_decimal_J": "-0.000018281369061531860314277133331169382627660366598712036541067784605630864068769136",
+          "kinetic_delta_J": -1.828136906153186e-05,
+          "momentum_delta_Ns": [
+            -4.235164736271502e-22,
+            4.235164736271502e-22,
+            -3.3881317890172014e-21
+          ],
+          "angular_delta_Nms": [
+            1.0587911840678754e-22,
+            -7.940933880509066e-23,
+            -5.955700410381799e-23
+          ],
+          "momentum_rounding_bound_Ns": 2.6023694980962903e-18,
+          "angular_rounding_bound_Nms": 2.4713265917977404e-19,
+          "velocity_rounding_bound_m_s": 5.684341886080802e-14,
+          "moving_owners": 4,
+          "old_five_velocities": [
+            [
+              0.3136384326883694,
+              -0.2403596581900733,
+              -0.9186175309972777
+            ],
+            [
+              -0.03136384326883694,
+              0.02403596581900733,
+              0.09186175309972777
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "new_five_velocities": [
+            [
+              0.08428882930025114,
+              -0.06459550899484226,
+              -0.2468740696054339
+            ],
+            [
+              -0.03136384326883694,
+              0.02403596581900733,
+              0.09186175309972777
+            ],
+            [
+              0.12840876799182951,
+              -0.09840722426320524,
+              -0.37609722890134484
+            ],
+            [
+              0.034571599167512346,
+              -0.02649425865242705,
+              -0.10125696904448729
+            ],
+            [
+              0.06173498174618833,
+              -0.04731116331533211,
+              -0.18081596704123737
+            ]
+          ]
+        }
+      },
+      {
+        "input_q": [
+          0.1,
+          -1.0
+        ],
+        "expected_mask": 2,
+        "passed": true,
+        "result": {
+          "geometry": {
+            "distance": 0.003999000728261732,
+            "global_distance": 0.003999000418953998,
+            "gap": -9.997710358070414e-07,
+            "row_gap": -9.99461728073102e-07,
+            "normal": [
+              -0.31363837846163245,
+              0.2403596425394864,
+              0.9186175536066399
+            ],
+            "u": 0.5,
+            "beta": [
+              0.3333333134651184,
+              0.3333333432674408,
+              0.3333333432674408
+            ],
+            "oracle": {
+              "valid": true,
+              "distance": 0.003999000418953998,
+              "u": 0.0,
+              "bary": [
+                0.43333329757891675,
+                0.2333333885599467,
+                0.33333331386113657
+              ],
+              "active_mask": 1
+            },
+            "triangle_area_m2": 1.7744358171874793e-05,
+            "radius": 0.004000000189989805,
+            "endpoint_rows": [
+              {
+                "endpoint": 0,
+                "u": 0.0,
+                "bary": [
+                  0.4333332975789167,
+                  0.23333338855994673,
+                  0.3333333138611366
+                ],
+                "normal": [
+                  -0.3136384326883694,
+                  0.2403596581900733,
+                  0.9186175309972777
+                ],
+                "distance": 0.003999000418953998,
+                "gap": -9.997710358070414e-07,
+                "weight": [
+                  1.0,
+                  0.0,
+                  -0.4333332975789167,
+                  -0.23333338855994673,
+                  -0.3333333138611366
+                ],
+                "yarn_point": [
+                  -0.002672188449651003,
+                  -0.02336556650698185,
+                  0.05023100599646568
+                ],
+                "triangle_point": [
+                  -0.0014179482259301384,
+                  -0.024326764880783593,
+                  0.04655745410514908
+                ]
+              },
+              {
+                "endpoint": 1,
+                "u": 1.0,
+                "bary": [
+                  0.2333333960410715,
+                  0.4333333117789939,
+                  0.33333329217993457
+                ],
+                "normal": [
+                  -0.3136384326883693,
+                  0.24035965819007252,
+                  0.9186175309972778
+                ],
+                "distance": 0.0039990010375694504,
+                "gap": -9.99152420354775e-07,
+                "weight": [
+                  0.0,
+                  1.0,
+                  -0.2333333960410715,
+                  -0.4333333117789939,
+                  -0.33333329217993457
+                ],
+                "yarn_point": [
+                  -0.0026759947650134563,
+                  -0.022154364734888077,
+                  0.049912791699171066
+                ],
+                "triangle_point": [
+                  -0.0014217543472710113,
+                  -0.023115563257380015,
+                  0.046239239239583466
+                ]
+              }
+            ]
+          },
+          "normal_block": true,
+          "row_impulses_Ns": [
+            0.0,
+            3.9020529968716e-05
+          ],
+          "impulse_Ns": 3.9020529968716e-05,
+          "LCP_active_mask": 2,
+          "closing_before_rows_m_s": [
+            0.10000000000000002,
+            -1.0
+          ],
+          "closing_after_rows_m_s": [
+            0.32295046012243805,
+            -1.6653345369377348e-16
+          ],
+          "expected_after_rows_m_s": [
+            0.32295046012243805,
+            0.0
+          ],
+          "W_inverse_mass": [
+            [
+              27350.249224611598,
+              5713.670734384809
+            ],
+            [
+              5713.670734384809,
+              25627.535064278516
+            ]
+          ],
+          "selected_LCP_kinetic_delta_J": -1.9510264984358e-05,
+          "analytic_kinetic_delta_J": -1.9510264984358e-05,
+          "kinetic_delta_decimal_J": "-0.000019510264984358006808583796016080968459531776319191858797459113513937301678229835",
+          "kinetic_delta_J": -1.9510264984358008e-05,
+          "momentum_delta_Ns": [
+            -4.235164736271502e-22,
+            2.117582368135751e-21,
+            -1.6940658945086007e-21
+          ],
+          "angular_delta_Nms": [
+            -1.0587911840678754e-22,
+            -5.293955920339377e-23,
+            -3.970466940254533e-23
+          ],
+          "momentum_rounding_bound_Ns": 2.672224143773836e-18,
+          "angular_rounding_bound_Nms": 2.474110454924822e-19,
+          "velocity_rounding_bound_m_s": 5.684341886080802e-14,
+          "moving_owners": 4,
+          "old_five_velocities": [
+            [
+              -0.03136384326883694,
+              0.02403596581900733,
+              0.09186175309972777
+            ],
+            [
+              0.3136384326883694,
+              -0.2403596581900733,
+              -0.9186175309972777
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "new_five_velocities": [
+            [
+              -0.03136384326883694,
+              0.02403596581900733,
+              0.09186175309972777
+            ],
+            [
+              0.06887166926388821,
+              -0.05278042853790216,
+              -0.2017186549255452
+            ],
+            [
+              0.07379109775151334,
+              -0.05655047718800087,
+              -0.21612719922441975
+            ],
+            [
+              0.06852027679061777,
+              -0.0525111357282101,
+              -0.20068945935330687
+            ],
+            [
+              0.06588487822087132,
+              -0.05049147412618873,
+              -0.19297062430307677
+            ]
+          ]
+        }
+      },
+      {
+        "input_q": [
+          -1.0,
+          -1.0
+        ],
+        "expected_mask": 3,
+        "passed": true,
+        "result": {
+          "geometry": {
+            "distance": 0.003999000728261732,
+            "global_distance": 0.003999000418953998,
+            "gap": -9.997710358070414e-07,
+            "row_gap": -9.99461728073102e-07,
+            "normal": [
+              -0.31363837846163245,
+              0.2403596425394864,
+              0.9186175536066399
+            ],
+            "u": 0.5,
+            "beta": [
+              0.3333333134651184,
+              0.3333333432674408,
+              0.3333333432674408
+            ],
+            "oracle": {
+              "valid": true,
+              "distance": 0.003999000418953998,
+              "u": 0.0,
+              "bary": [
+                0.43333329757891675,
+                0.2333333885599467,
+                0.33333331386113657
+              ],
+              "active_mask": 1
+            },
+            "triangle_area_m2": 1.7744358171874793e-05,
+            "radius": 0.004000000189989805,
+            "endpoint_rows": [
+              {
+                "endpoint": 0,
+                "u": 0.0,
+                "bary": [
+                  0.4333332975789167,
+                  0.23333338855994673,
+                  0.3333333138611366
+                ],
+                "normal": [
+                  -0.3136384326883694,
+                  0.2403596581900733,
+                  0.9186175309972777
+                ],
+                "distance": 0.003999000418953998,
+                "gap": -9.997710358070414e-07,
+                "weight": [
+                  1.0,
+                  0.0,
+                  -0.4333332975789167,
+                  -0.23333338855994673,
+                  -0.3333333138611366
+                ],
+                "yarn_point": [
+                  -0.002672188449651003,
+                  -0.02336556650698185,
+                  0.05023100599646568
+                ],
+                "triangle_point": [
+                  -0.0014179482259301384,
+                  -0.024326764880783593,
+                  0.04655745410514908
+                ]
+              },
+              {
+                "endpoint": 1,
+                "u": 1.0,
+                "bary": [
+                  0.2333333960410715,
+                  0.4333333117789939,
+                  0.33333329217993457
+                ],
+                "normal": [
+                  -0.3136384326883693,
+                  0.24035965819007252,
+                  0.9186175309972778
+                ],
+                "distance": 0.0039990010375694504,
+                "gap": -9.99152420354775e-07,
+                "weight": [
+                  0.0,
+                  1.0,
+                  -0.2333333960410715,
+                  -0.4333333117789939,
+                  -0.33333329217993457
+                ],
+                "yarn_point": [
+                  -0.0026759947650134563,
+                  -0.022154364734888077,
+                  0.049912791699171066
+                ],
+                "triangle_point": [
+                  -0.0014217543472710113,
+                  -0.023115563257380015,
+                  0.046239239239583466
+                ]
+              }
+            ]
+          },
+          "normal_block": true,
+          "row_impulses_Ns": [
+            2.9798976294280955e-05,
+            3.237683449272844e-05
+          ],
+          "impulse_Ns": 6.21758107870094e-05,
+          "LCP_active_mask": 3,
+          "closing_before_rows_m_s": [
+            -1.0000000000000002,
+            -1.0
+          ],
+          "closing_after_rows_m_s": [
+            6.938893903907228e-17,
+            -1.249000902703301e-16
+          ],
+          "expected_after_rows_m_s": [
+            0.0,
+            0.0
+          ],
+          "W_inverse_mass": [
+            [
+              27350.249224611598,
+              5713.670734384809
+            ],
+            [
+              5713.670734384809,
+              25627.535064278516
+            ]
+          ],
+          "selected_LCP_kinetic_delta_J": -3.10879053935047e-05,
+          "analytic_kinetic_delta_J": -3.10879053935047e-05,
+          "kinetic_delta_decimal_J": "-0.000031087905393504705778574807190008525013241487966920401384010761300922571885423167",
+          "kinetic_delta_J": -3.1087905393504705e-05,
+          "momentum_delta_Ns": [
+            2.541098841762901e-21,
+            8.470329472543003e-22,
+            3.3881317890172014e-21
+          ],
+          "angular_delta_Nms": [
+            -3.1763735522036263e-22,
+            2.117582368135751e-22,
+            5.293955920339377e-23
+          ],
+          "momentum_rounding_bound_Ns": 4.609313699029284e-18,
+          "angular_rounding_bound_Nms": 4.365764099816104e-19,
+          "velocity_rounding_bound_m_s": 5.684341886080802e-14,
+          "moving_owners": 5,
+          "old_five_velocities": [
+            [
+              0.3136384326883694,
+              -0.2403596581900733,
+              -0.9186175309972777
+            ],
+            [
+              0.3136384326883694,
+              -0.2403596581900733,
+              -0.9186175309972777
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "new_five_velocities": [
+            [
+              0.12671634355319716,
+              -0.09711021944113873,
+              -0.3711402765728633
+            ],
+            [
+              0.11054603504362223,
+              -0.08471795681925803,
+              -0.3237789607060374
+            ],
+            [
+              0.16588166848905858,
+              -0.1271249215100024,
+              -0.4858518372221757
+            ],
+            [
+              0.08503008829996594,
+              -0.06516357955390782,
+              -0.249045147640453
+            ],
+            [
+              0.10498180965175398,
+              -0.08045376221205244,
+              -0.3074818667957738
+            ]
+          ]
+        }
+      }
+    ],
+    "unsupported_edge_feature": {
+      "rejected": true,
+      "reason": "unsupported-endpoint-feature",
+      "detail": {
+        "endpoint": 0,
+        "bary": [
+          4.600127551559082,
+          4.443269155784591,
+          -8.043396707343673
+        ]
+      }
+    },
+    "scope": "Direct shared-block algebra controls with altered velocities; not additional full-body trajectories"
+  },
+  "centroid_diagnostic_source_sha256": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+  "centroid_diagnostic_evidence_sha256": "0f1818e6911304dabafa956629c5e59f5d63c5051170e0d83effd566137311b7",
+  "centroid_diagnostic_global_velocity": {
+    "faces_checked": 1280,
+    "minimum": {
+      "valid": true,
+      "distance": 0.003998933186838994,
+      "u": 1.0,
+      "bary": [
+        0.23324062337191598,
+        0.43337425386305617,
+        0.33338512276502785
+      ],
+      "active_mask": 2,
+      "face": 1088,
+      "nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "gap_m": -1.0670031508107705e-06,
+      "closing_m_s": -0.06790141591103348,
+      "normal": [
+        -0.31357525141969284,
+        0.24026036225651384,
+        0.9186650750003754
+      ]
+    },
+    "contacts_within_2um": [
+      {
+        "valid": true,
+        "distance": 0.003998933186838994,
+        "u": 1.0,
+        "bary": [
+          0.23324062337191598,
+          0.43337425386305617,
+          0.33338512276502785
+        ],
+        "active_mask": 2,
+        "face": 1088,
+        "nodes": [
+          5,
+          1814,
+          1347
+        ],
+        "gap_m": -1.0670031508107705e-06,
+        "closing_m_s": -0.06790141591103348,
+        "normal": [
+          -0.31357525141969284,
+          0.24026036225651384,
+          0.9186650750003754
+        ]
+      }
+    ],
+    "final_velocity_enforced": false,
+    "numerical_oracle_not_CCD": true
+  },
+  "centroid_full_manifold_negative_reproduced": true,
+  "limits": [
+    "New FP64 split and normal2x2 block; not native checkpoint replay.",
+    "Only endpoint projections strictly inside the selected face and no other active boundary face are implemented; feature changes reject.",
+    "All1280 initial/final distances and velocities are numerical FP64 active-set evidence; not exact-real lower certificates or CCD.",
+    "The local yarn has two authored nodes and no internal yarn elasticity/friction/fullbag.",
+    "Initialwithin2um overlap is retained; whole-interval no-tunnelling is open.",
+    "Energy residual is measured and retained; no energy closure or full temporal convergence claim.",
+    "Historical inverse-upload/full native frame38 checkpoint absent; generic yarn-floor resting remains unqualified."
+  ],
+  "runtime_s": 21.257997035980225
+}

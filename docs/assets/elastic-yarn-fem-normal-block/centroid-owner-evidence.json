@@ -1,0 +1,3103 @@
+{
+  "schema": "isolated-FP64-common-yarn-FEM-step-v1",
+  "passed_bounded_controls": true,
+  "physics_source": "69736313414d3afd81f3b181116870143c13966e",
+  "source_script_sha256": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+  "input_sha256": {
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/body.json": "7eda877b63f31f70661dea103c98fbec97cd4adb5e322ddc4222f4e6e2da7ceb",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/receipt.json": "6cb63eff549236e1e65b0c692f5b9cce96a89259531caa4751caff7ad6b32c59",
+    "/Users/home/numi-solver/docs/assets/elastic-yarn-fem-frame38-provenance.json": "1c7da0b0410abdbf3b1f8c614c8803830fe272a4c355057ce4b035cebdb0b26d",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/CMakeLists.txt": "6cbcced7a175e1de1574d19a38e572a61cbf43d00c3ad792809e33e36e88e738",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/tools/deformable_mesh.mm": "ad289c243c3ab4c3e251cb420fc4be74d8d1713007c3603265cc3c90ab73d87c",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/src/metal/DeformableTet.metal": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/src/metal/DeformableMesh.metal": "1d4c4cd80c956b3ac45877af6af3a155db5bd3728eb3ae06766809069d33887c",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/metalrobo/gpu_types.h": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/numi/deformable_mesh.h": "a0150503c14f4fd2fe622f5d7262ced435e9ee807048c54e76420acc8154205b",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/numi/deformable_tet.h": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0"
+  },
+  "new_discretization": "FP64 source constitutive law and support-Verlet operator with reciprocal instantaneous contact rows before drift and after second kick",
+  "body_nodes": 2057,
+  "authored_yarn_nodes": 2,
+  "tetrahedra": 10240,
+  "all_node_masses_positive": true,
+  "total_FEM_mass_kg": 0.3170188445583335,
+  "dt_s": 1e-06,
+  "radius_m_exact_represented": 0.004000000189989805,
+  "native_J_gate": 9.999999974752427e-07,
+  "native_rest_consistency_gate": 0.00019999999494757503,
+  "contact_accuracy_m": 2e-06,
+  "max_rest_consistency_error": 2.4104842444305774e-07,
+  "initial_state_sha256": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+  "one_step": {
+    "accepted": true,
+    "ledger": {
+      "dt_s": 1e-06,
+      "start": {
+        "K_J": 0.07794784351426866,
+        "strain_J": 0.3856712269844007,
+        "gravity_J": 0.05479105326586246,
+        "total_J": 0.5184101237645318,
+        "P_kg_m_s": [
+          2.2762939523126307e-05,
+          -1.452970168313173e-05,
+          0.07345913586043512
+        ],
+        "L_kg_m2_s": [
+          -9.488481483653325e-06,
+          1.5814548328894745e-05,
+          5.568731825666635e-07
+        ],
+        "minJ": 0.42433703402994905,
+        "maxJ": 1.7175678723338395,
+        "min_element": 7296,
+        "net_internal_force_N": [
+          -1.5542038142579706e-16,
+          -9.8879238130678e-17,
+          9.948639134726989e-16
+        ],
+        "net_internal_torque_Nm": [
+          -6.570646330088421e-18,
+          1.631470159706508e-17,
+          2.7747952319103625e-17
+        ]
+      },
+      "free_finish": {
+        "K_J": 0.07791475942554699,
+        "strain_J": 0.38567253690478526,
+        "gravity_J": 0.05479177400183315,
+        "total_J": 0.5183790703321653,
+        "P_kg_m_s": [
+          2.2762939523125958e-05,
+          -1.4529701683131716e-05,
+          0.07347989270253978
+        ],
+        "L_kg_m2_s": [
+          -9.486194974786967e-06,
+          1.581649916824962e-05,
+          5.568731825666693e-07
+        ],
+        "minJ": 0.4243286839455109,
+        "maxJ": 1.7171890029720074,
+        "min_element": 7296,
+        "net_internal_force_N": [
+          -5.776900225545889e-16,
+          -4.238146292245837e-16,
+          9.259899704655572e-16
+        ],
+        "net_internal_torque_Nm": [
+          1.3863388247711134e-17,
+          1.9790924812596727e-18,
+          4.6800158522576196e-18
+        ]
+      },
+      "pre_final_row": {
+        "K_J": 0.07791475942554699,
+        "strain_J": 0.38567253690478526,
+        "gravity_J": 0.05479177400183315,
+        "total_J": 0.5183790703321653,
+        "P_kg_m_s": [
+          2.2762939523125958e-05,
+          -1.4529701683131716e-05,
+          0.07347989270253978
+        ],
+        "L_kg_m2_s": [
+          -9.486194974786967e-06,
+          1.581649916824962e-05,
+          5.568731825666693e-07
+        ],
+        "minJ": 0.4243286839455109,
+        "maxJ": 1.7171890029720074,
+        "min_element": 7296,
+        "net_internal_force_N": [
+          -5.776900225545889e-16,
+          -4.238146292245837e-16,
+          9.259899704655572e-16
+        ],
+        "net_internal_torque_Nm": [
+          1.3863388247711134e-17,
+          1.9790924812596727e-18,
+          4.6800158522576196e-18
+        ]
+      },
+      "end": {
+        "K_J": 0.0779147594253289,
+        "strain_J": 0.38567253690478526,
+        "gravity_J": 0.05479177400183315,
+        "total_J": 0.5183790703319473,
+        "P_kg_m_s": [
+          2.2762939523125958e-05,
+          -1.4529701683131716e-05,
+          0.07347989270253978
+        ],
+        "L_kg_m2_s": [
+          -9.486194974786967e-06,
+          1.581649916824962e-05,
+          5.568731825666693e-07
+        ],
+        "minJ": 0.4243286839455109,
+        "maxJ": 1.7171890029720074,
+        "min_element": 7296,
+        "net_internal_force_N": [
+          -5.776900225545889e-16,
+          -4.238146292245837e-16,
+          9.259899704655572e-16
+        ],
+        "net_internal_torque_Nm": [
+          1.3863388247711134e-17,
+          1.9790924812596727e-18,
+          4.6800158522576196e-18
+        ]
+      },
+      "contact_rows": [
+        {
+          "geometry": {
+            "distance": 0.003999000728261732,
+            "global_distance": 0.003999000418953998,
+            "gap": -9.997710358070414e-07,
+            "row_gap": -9.99461728073102e-07,
+            "normal": [
+              -0.31363837846163245,
+              0.2403596425394864,
+              0.9186175536066399
+            ],
+            "u": 0.5,
+            "beta": [
+              0.3333333134651184,
+              0.3333333432674408,
+              0.3333333432674408
+            ],
+            "oracle": {
+              "valid": true,
+              "distance": 0.003999000418953998,
+              "u": 0.0,
+              "bary": [
+                0.43333329757891675,
+                0.2333333885599467,
+                0.33333331386113657
+              ],
+              "active_mask": 1
+            },
+            "triangle_area_m2": 1.7744358171874793e-05,
+            "radius": 0.004000000189989805
+          },
+          "impulse_Ns": 6.211205956459123e-05,
+          "closing_before_m_s": -1.0000837393745416,
+          "closing_after_m_s": 1.1102230246251565e-16,
+          "effective_inverse_mass": 16101.281238863767,
+          "kinetic_delta_decimal_J": "-0.000031058630394805324036257561646551330196296777062300517855898602884763718174329895",
+          "kinetic_delta_J": -3.1058630394805326e-05,
+          "momentum_delta_Ns": [
+            -3.3881317890172014e-21,
+            -1.6940658945086007e-21,
+            3.3881317890172014e-21
+          ],
+          "angular_delta_Nms": [
+            -1.0587911840678754e-22,
+            -2.117582368135751e-22,
+            -1.0587911840678754e-22
+          ],
+          "momentum_rounding_bound_Ns": 4.7846090929314124e-18,
+          "angular_rounding_bound_Nms": 4.462157261342912e-19,
+          "velocity_update_operand_scale_Ns": 0.0002124628141214331,
+          "moving_owners": 5
+        },
+        {
+          "geometry": {
+            "distance": 0.0039990007282617295,
+            "global_distance": 0.003998933186838994,
+            "gap": -1.0670031508116379e-06,
+            "row_gap": -9.99461728075704e-07,
+            "normal": [
+              -0.3136383762823301,
+              0.24035964121895406,
+              0.9186175546962289
+            ],
+            "u": 0.5,
+            "beta": [
+              0.3333333134651184,
+              0.3333333432674408,
+              0.3333333432674408
+            ],
+            "oracle": {
+              "valid": true,
+              "distance": 0.003998933186838994,
+              "u": 1.0,
+              "bary": [
+                0.23324062337191598,
+                0.43337425386305617,
+                0.33338512276502785
+              ],
+              "active_mask": 2
+            },
+            "triangle_area_m2": 1.7744916804830266e-05,
+            "radius": 0.004000000189989805
+          },
+          "impulse_Ns": 5.2047773080671445e-09,
+          "closing_before_m_s": -8.380358322284537e-05,
+          "closing_after_m_s": 3.469446951953614e-17,
+          "effective_inverse_mass": 16101.281238863767,
+          "kinetic_delta_decimal_J": "-2.1808949450914938680205724618515129301792193531082466889117265814013059844679E-13",
+          "kinetic_delta_J": -2.180894945091494e-13,
+          "momentum_delta_Ns": [
+            7.134432783269864e-24,
+            -6.089083284155975e-22,
+            -9.820701822535821e-22
+          ],
+          "angular_delta_Nms": [
+            4.914616061301387e-23,
+            5.299125799167834e-25,
+            -1.0291290042896067e-24
+          ],
+          "momentum_rounding_bound_Ns": 1.8808543733415866e-18,
+          "angular_rounding_bound_Nms": 1.96574581613518e-19,
+          "velocity_update_operand_scale_Ns": 0.00013234295067849852,
+          "moving_owners": 5
+        }
+      ],
+      "plane_events": [
+        {
+          "node": 7,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5629777956403594e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 8,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5725762811540106e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 9,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0294995019107364e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 11,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.147939588621371e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 20,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.968176143117101e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 21,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.4952837438814146e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 27,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0131660546035139e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 34,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.346521904645136e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 43,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.036524212883903e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 44,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.5853844042201036e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 48,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.141441257247534e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 52,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0885233813299034e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 54,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.379470944844722e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 89,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2171566853075242e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 91,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.911722810165266e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 118,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.196230082333157e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 120,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.377875093587354e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 123,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.297253769457632e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 125,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.3910738751429954e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 161,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.889282434522064e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 164,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.560461570078914e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 165,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.3231309928865603e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 166,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.550222100879322e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 210,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1010267869840924e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 211,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1521443515184093e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 239,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.039928699503499e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 242,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.1489633617435335e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 243,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0779394953959432e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 244,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.2014051082591186e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 270,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.289886136386501e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 272,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.5366478071454267e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 274,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.971504369836213e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 276,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.42589135151066e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 297,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2172171100415143e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 299,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.642409922837919e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 300,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5631686859777527e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 302,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.531265806260699e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 303,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.23844864016792e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 305,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.02131181313293e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 306,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.5675921617154664e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 307,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.93914918845608e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 487,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.16868903677965e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 489,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1889355923501762e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 491,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.953474365188107e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 494,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.349748071677242e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 495,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.052608346565129e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 498,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.7919303112820895e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 506,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.842266427057152e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 508,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.381712949905639e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 658,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.813672683301931e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 671,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1775617401328295e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 673,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.507384748405034e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 677,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.743971240001651e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 678,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.166455488095234e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 681,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.3473444984549705e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 682,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.393425849153468e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 685,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.1220301153153335e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 689,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.69160846716861e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 691,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.299295688539783e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 698,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.8069131443876158e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 705,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.589172263544434e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 706,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0757413557392162e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 708,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.997026436432306e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 735,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.3536876716777586e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 736,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.511987322488254e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 737,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.3340237808656034e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 941,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.50992095857366e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 946,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.533693460823496e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 947,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.990598968826252e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 950,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.301000617717421e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 961,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.416686724841523e-10,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 964,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0244482760492088e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 965,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.28311092063184e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 968,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5521251038222902e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 970,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.3260272799651417e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 971,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.836008356572602e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 973,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.027576981041367e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 975,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.1302477304081415e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 979,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.8831085283536586e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 980,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1520132308016641e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 982,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.23534861402246e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1009,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.4754699192332564e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1010,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.1819086846824276e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1011,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.570609958407045e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1250,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.217620261499164e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1251,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2434912505918868e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1254,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.775466790305528e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1261,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.628333341071309e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1263,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2326456323778024e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1265,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.162422679366875e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1268,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.43741866442454e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1272,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.9491252703070798e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1439,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1399679385755366e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1443,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.0527238107953425e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1444,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.149237203833464e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1447,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5035572962696996e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1457,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.456241738214522e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1460,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0534035505449068e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1461,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.442541067154041e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1464,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.2648917371613246e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1466,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2455531829217166e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1467,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.19980324316346e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1469,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.913572718875253e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1471,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.7871777874201484e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1475,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.583854345492051e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1476,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2713715552558838e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1478,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.604021192589074e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1505,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.1202465826200294e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1506,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.922513471411417e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1507,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.419795806155387e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1687,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.4190070423182088e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1689,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.346062287361772e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1693,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.8706202884771714e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1694,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.958007538516715e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1697,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2103551763298303e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1698,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.291435399171015e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1701,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.1909709051687706e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1703,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1659414009996848e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1704,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.116480587266996e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1706,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.4930300614107458e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1713,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.3207987165273847e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1719,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.869986798980973e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1720,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0626556618220537e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1722,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.212825206506e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1749,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.576902842013366e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1750,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.749438595010828e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1751,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.7312817098697784e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1940,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2278848167720236e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1942,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.444277138612417e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1944,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.4371899017731426e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1945,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.032021449191325e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1948,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.176366674925378e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1952,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.50607953401673e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1953,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.80766693736215e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1956,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.305483360660147e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1958,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.42038430077875e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1962,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.4832969787967073e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1964,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.963257957083068e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1966,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.322507426032912e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1968,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.990564923661322e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1970,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.240226382358426e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1972,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.1841765868707174e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1973,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.813934064499827e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1975,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.963884104031958e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1977,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.8299430494885365e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1978,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.350970721627828e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2001,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.923700010639876e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2002,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.898485993251329e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2003,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.9410983487772065e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2009,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.919222375797917e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2010,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.159964693605751e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2012,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.674198433938427e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2014,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.340593219844808e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2015,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.073938230001478e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2018,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.821843389428227e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2020,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.9243815722022466e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2021,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.108429332995148e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2023,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.276635244674795e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2025,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.6152125099111575e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2027,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.605616519397387e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2028,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.884605156048605e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2030,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0829889526589101e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2032,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.791404642939911e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2033,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.257825615746417e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2053,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1890016278250254e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2054,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.3434649921150754e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2055,
+          "stage": "first-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.615775164407565e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 7,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5631157189589403e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 8,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5728942633667567e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 9,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0295920674409648e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 11,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.14930104538005e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 20,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.96799368945676e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 21,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.494446109126023e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 27,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0128181156997987e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 34,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.34624585838891e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 43,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.035419881284249e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 44,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.5855468456338494e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 48,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1412124271183574e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 52,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0883424847058255e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 54,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.3795602519377833e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 89,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2170288475974492e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 91,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.912023058931611e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 118,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.196063271516956e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 120,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.3758171359049976e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 123,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.297250806678983e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 125,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.391313135719981e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 161,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.886357110343153e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 164,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.558695096228925e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 165,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.323300077530391e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 166,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.549829061735317e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 210,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1012001220019612e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 211,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1522274661279897e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 239,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.036693609379156e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 242,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.14724147681885e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 243,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0776119510868515e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 244,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.201252752886182e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 270,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2897938975447097e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 272,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.5351233436872113e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 274,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.972005443489056e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 276,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.4259088056926203e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 297,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2171250548559483e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 299,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.640971498654917e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 300,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5628970935302005e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 302,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.527307093545747e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 303,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.238976135692684e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 305,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.019693530801231e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 306,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.565961332025363e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 307,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.935603185352264e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 487,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.168695577528001e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 489,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.188730758219422e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 491,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.953711464097638e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 494,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.34771101341953e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 495,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.056520291728457e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 498,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.7931534249419805e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 506,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.841888515852064e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 508,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.3819126441472345e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 658,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.819096253549182e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 671,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1775305766658304e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 673,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.504720394541678e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 677,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.742635039322109e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 678,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.165894135483474e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 681,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.3471262050102734e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 682,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.393956533585882e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 685,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.121763404555847e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 689,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.692972521700592e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 691,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.2971334175360234e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 698,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.8046361531029665e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 705,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.5892397561124946e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 706,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0755464199068052e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 708,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.997243070691764e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 735,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.3529782568639248e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 736,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.51058122445719e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 737,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.332843250489377e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 941,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.502672875371159e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 946,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.5369275112023054e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 947,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.987877400035317e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 950,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.3036129212788166e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 961,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.393439653371105e-10,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 964,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0242866672345407e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 965,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.281491535755166e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 968,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5499101771193327e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 970,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.326081593403667e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 971,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.834910185803616e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 973,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.0276913900160706e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 975,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.129900988793374e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 979,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.881917789083202e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 980,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.152005910274892e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 982,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.236345966336904e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1009,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.477845654157206e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1010,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.179150698801165e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1011,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.568346035435058e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1250,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2175854793241672e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1251,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2434312769832117e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1254,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.771140698267345e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1261,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.629228928878897e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1263,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2330480739074832e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1265,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.162295326479132e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1268,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.436886135112307e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1272,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.9469000519226807e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1439,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1396041579396718e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1443,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.054306379425256e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1444,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.147665825378459e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1447,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.504301337701924e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1457,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.453621553275592e-09,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1460,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0531065524001579e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1461,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.44033299262674e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1464,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.26469939068548e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1466,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.245435412131649e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1467,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.196226332539222e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1469,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.913427538795481e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1471,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.786761194205569e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1475,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.5825905960598035e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1476,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.2711123181908364e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1478,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.604202066037843e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1505,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.121828538077949e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1506,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.919355440345886e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1507,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.417393504941124e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1687,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.4188824808065136e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1689,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.34246594985196e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1693,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.871113210969552e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1694,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.957830635076089e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1697,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.210137007941165e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1698,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.29130898288473e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1701,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.193072214191422e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1703,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.166297084015721e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1704,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.115424802916703e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1706,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.4924623888163946e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1713,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 2.318733618545015e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1719,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.868668086523106e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1720,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.062654368377979e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1722,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.210931794758971e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1749,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.5761004903298295e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1750,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.7487809822861605e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1751,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.7305366764986424e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1940,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.228057720430574e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1942,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.447308213051632e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1944,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.4370528321861584e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1945,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.031512425525592e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1948,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.175281616385832e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1952,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.502694490509131e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1953,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.807109778905918e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1956,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.305731075232876e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1958,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.4201813476948357e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1962,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.4833268007770618e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1964,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.963982836848116e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1966,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.322723613568238e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1968,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.990817192859352e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1970,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.241096315780714e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1972,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.183358110754438e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1973,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.810481492453568e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1975,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.9615892086789376e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1977,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.8308479694693955e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 1978,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.348551536684363e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2001,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.92599227367336e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2002,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.897165860395174e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2003,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.939305174732906e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2009,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.91909331475653e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2010,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.158322264958253e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2012,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 7.674260737545918e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2014,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.341215670926152e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2015,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0739319329881855e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2018,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 3.817732199439537e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2020,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.9245715011246545e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2021,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.10816129527429e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2023,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.277598388442806e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2025,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.616120345007781e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2027,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 8.609984478207841e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2028,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.886115588173816e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2030,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.0829424648069671e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2032,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 6.791866179544474e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2033,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 9.257770793102712e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2053,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 1.1894964064670061e-07,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2054,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 4.344536257566984e-08,
+          "kinetic_loss_J": 0.0
+        },
+        {
+          "node": 2055,
+          "stage": "second-kick",
+          "kind": "resting-reaction",
+          "impulse_Ns": 5.613763325115576e-08,
+          "kinetic_loss_J": 0.0
+        }
+      ],
+      "position_projections": [],
+      "contact_dissipation_J": 3.105863061289482e-05,
+      "plane_kinetic_removal_J": 0.0,
+      "gravity_work_J": -7.207359706908709e-07,
+      "position_potential_work_J": 0.0,
+      "plane_force_response_kinetic_J": 0.0,
+      "free_split_integration_residual_J": 5.198028381775974e-09,
+      "physical_energy_balance_residual_J": 5.198028423468447e-09,
+      "mechanical_minus_gravity_work_residual_J": 5.198028375932958e-09,
+      "bookkeeping_identity_error_J": 4.169434979564568e-17,
+      "energy_closure_claim": false,
+      "gravity_impulse_Ns": [
+        0.0,
+        0.0,
+        -3.110935998160832e-06
+      ],
+      "plane_impulse_Ns": [
+        0.0,
+        0.0,
+        2.3867778102813745e-05
+      ],
+      "gravity_torque_impulse_Nms": [
+        2.232826158107591e-11,
+        -2.623984023381729e-12,
+        0.0
+      ],
+      "plane_torque_impulse_Nms": [
+        2.2641806047783223e-09,
+        1.9534633389078478e-09,
+        0.0
+      ],
+      "position_projection_angular_change_Nms": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "momentum_balance_residual_Ns": [
+        -3.4897757426877174e-19,
+        1.3552527156068805e-20,
+        7.643625316022806e-18
+      ],
+      "angular_balance_residual_Nms": [
+        -1.6709048373571159e-21,
+        -8.775972708881347e-21,
+        5.823351512373315e-21
+      ],
+      "final_geometry": {
+        "distance": 0.0039990007282617295,
+        "global_distance": 0.003998933186838994,
+        "gap": -1.0670031508116379e-06,
+        "row_gap": -9.99461728075704e-07,
+        "normal": [
+          -0.3136383762823301,
+          0.24035964121895406,
+          0.9186175546962289
+        ],
+        "u": 0.5,
+        "beta": [
+          0.3333333134651184,
+          0.3333333432674408,
+          0.3333333432674408
+        ],
+        "oracle": {
+          "valid": true,
+          "distance": 0.003998933186838994,
+          "u": 1.0,
+          "bary": [
+            0.23324062337191598,
+            0.43337425386305617,
+            0.33338512276502785
+          ],
+          "active_mask": 2
+        },
+        "triangle_area_m2": 1.7744916804830266e-05,
+        "radius": 0.004000000189989805
+      },
+      "final_areas": {
+        "min_area_m2": 1.1107864489299575e-05,
+        "min_face": 810,
+        "min_relative_gate_ratio": 99231987856.49225,
+        "faces": 1280
+      },
+      "initial_full_boundary_minimum": {
+        "valid": true,
+        "distance": 0.003999000418953998,
+        "u": 0.0,
+        "bary": [
+          0.43333329757891675,
+          0.2333333885599467,
+          0.33333331386113657
+        ],
+        "active_mask": 1,
+        "face": 1088,
+        "nodes": [
+          5,
+          1814,
+          1347
+        ],
+        "gap_m": -9.997710358070414e-07,
+        "faces_checked": 1280,
+        "selected_row_face_matches_global_min": true
+      },
+      "final_full_boundary_minimum": {
+        "valid": true,
+        "distance": 0.003998933186838994,
+        "u": 1.0,
+        "bary": [
+          0.23324062337191598,
+          0.43337425386305617,
+          0.33338512276502785
+        ],
+        "active_mask": 2,
+        "face": 1088,
+        "nodes": [
+          5,
+          1814,
+          1347
+        ],
+        "gap_m": -1.0670031508116379e-06,
+        "faces_checked": 1280,
+        "selected_row_face_matches_global_min": true
+      }
+    },
+    "before_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+    "after_sha": "639fca7ee7258f3514280690d95ec2e2614ab375d0229b72c099b54e8bd8732f"
+  },
+  "exact_replay": true,
+  "half_steps_accepted": [
+    true,
+    true
+  ],
+  "matched_interval": {
+    "same_total_interval_s": 1e-06,
+    "one_step_elapsed_s": 1e-06,
+    "two_step_elapsed_s": 1e-06,
+    "max_position_difference_m": 9.677294006911102e-13,
+    "max_velocity_difference_m_s": 2.0220254906066487e-09,
+    "energy_difference_J": 3.1157298963080393e-12,
+    "contact_impulse_one_Ns": 6.21172643418993e-05,
+    "contact_impulse_two_Ns": 6.21172643419117e-05,
+    "physical_balance_residual_one_J": 5.198028423468447e-09,
+    "physical_balance_residual_two_J": 2.600052815682537e-09,
+    "bounded_observation_only_not_temporal_convergence": true
+  },
+  "energy_gradient_controls": {
+    "passed": true,
+    "controls": [
+      {
+        "node": 5,
+        "axis": 0,
+        "h_m": 1e-08,
+        "central_energy_derivative_N": 0.00260977350841074,
+        "minus_gathered_force_N": 0.0026097749208022726,
+        "absolute_error_N": 1.412391532722157e-09,
+        "tolerance_N": 1.0260977492080227e-05,
+        "passed": true
+      },
+      {
+        "node": 1814,
+        "axis": 2,
+        "h_m": 1e-08,
+        "central_energy_derivative_N": -0.02176873681314362,
+        "minus_gathered_force_N": -0.02176873627869063,
+        "absolute_error_N": 5.344529888096083e-10,
+        "tolerance_N": 1.2176873627869064e-05,
+        "passed": true
+      },
+      {
+        "node": 1347,
+        "axis": 1,
+        "h_m": 1e-08,
+        "central_energy_derivative_N": -0.011201664595894556,
+        "minus_gathered_force_N": -0.011201665103178996,
+        "absolute_error_N": 5.07284440148803e-10,
+        "tolerance_N": 1.11201665103179e-05,
+        "passed": true
+      },
+      {
+        "node": 7,
+        "axis": 2,
+        "h_m": 1e-08,
+        "central_energy_derivative_N": 0.3122159253354795,
+        "minus_gathered_force_N": 0.31221592574482265,
+        "absolute_error_N": 4.0934317047103264e-10,
+        "tolerance_N": 4.1221592574482265e-05,
+        "passed": true
+      },
+      {
+        "node": 0,
+        "axis": 0,
+        "h_m": 1e-08,
+        "central_energy_derivative_N": -0.000912792064156065,
+        "minus_gathered_force_N": -0.0009127904283694841,
+        "absolute_error_N": 1.635786580841958e-09,
+        "tolerance_N": 1.0091279042836948e-05,
+        "passed": true
+      },
+      {
+        "node": 1028,
+        "axis": 1,
+        "h_m": 1e-08,
+        "central_energy_derivative_N": -0.02273542187847255,
+        "minus_gathered_force_N": -0.022735421935728542,
+        "absolute_error_N": 5.725599161454653e-11,
+        "tolerance_N": 1.2273542193572855e-05,
+        "passed": true
+      }
+    ],
+    "difference_kind": "Independent central total-energy difference; full body recomputed twice per coordinate"
+  },
+  "independent_constitutive_baseline": {
+    "independent_force_path": "/Users/home/numi-solver/build/elastic-yarn-common-step-independent-review/constitutive-frame38-forces.f64x3.bin",
+    "independent_force_sha256": "3f9cd5206d22b2d2df9220dbb54e3de7956c080ffa8f72accbb06f91af8ff967",
+    "max_force_vector_difference_N": 2.5054633743874127e-16,
+    "witness_node": 42,
+    "passed": true,
+    "FEM_only_strain_J": 0.3856712269844007,
+    "FEM_only_kinetic_J": 0.07793046724978955,
+    "FEM_only_gravity_J": 0.05474193273223254
+  },
+  "negative_controls": [
+    {
+      "accepted": false,
+      "reason": "contact-nonreciprocal",
+      "detail": {
+        "geometry": {
+          "distance": 0.003999000728261732,
+          "global_distance": 0.003999000418953998,
+          "gap": -9.997710358070414e-07,
+          "row_gap": -9.99461728073102e-07,
+          "normal": [
+            -0.31363837846163245,
+            0.2403596425394864,
+            0.9186175536066399
+          ],
+          "u": 0.5,
+          "beta": [
+            0.3333333134651184,
+            0.3333333432674408,
+            0.3333333432674408
+          ],
+          "oracle": {
+            "valid": true,
+            "distance": 0.003999000418953998,
+            "u": 0.0,
+            "bary": [
+              0.43333329757891675,
+              0.2333333885599467,
+              0.33333331386113657
+            ],
+            "active_mask": 1
+          },
+          "triangle_area_m2": 1.7744358171874793e-05,
+          "radius": 0.004000000189989805
+        },
+        "impulse_Ns": 6.211205956459123e-05,
+        "closing_before_m_s": -1.0000837393745416,
+        "closing_after_m_s": -0.37896312803780285,
+        "effective_inverse_mass": 16101.281238863767,
+        "kinetic_delta_decimal_J": "-0.000017213419633993398217908449195724506424805487521105975103908715548920070960320669",
+        "kinetic_delta_J": -1.72134196339934e-05,
+        "momentum_delta_Ns": [
+          -1.9480725644750725e-05,
+          1.4929232434336437e-05,
+          5.70572282066947e-05
+        ],
+        "angular_delta_Nms": [
+          -2.0461555687378756e-06,
+          -8.228606688808977e-07,
+          -4.833027811019638e-07
+        ],
+        "momentum_rounding_bound_Ns": 4.284338170059586e-18,
+        "angular_rounding_bound_Nms": 4.19716587100724e-19,
+        "velocity_update_operand_scale_Ns": 0.00023937143709493292,
+        "moving_owners": 2
+      },
+      "before_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "after_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "rollback_exact": true,
+      "elapsed_unchanged": 0.0,
+      "mode": "disabled-body",
+      "fault": null,
+      "unchanged_full_state": true
+    },
+    {
+      "accepted": false,
+      "reason": "contact-energy-positive",
+      "detail": {
+        "geometry": {
+          "distance": 0.003999000728261732,
+          "global_distance": 0.003999000418953998,
+          "gap": -9.997710358070414e-07,
+          "row_gap": -9.99461728073102e-07,
+          "normal": [
+            -0.31363837846163245,
+            0.2403596425394864,
+            0.9186175536066399
+          ],
+          "u": 0.5,
+          "beta": [
+            0.3333333134651184,
+            0.3333333432674408,
+            0.3333333432674408
+          ],
+          "oracle": {
+            "valid": true,
+            "distance": 0.003999000418953998,
+            "u": 0.0,
+            "bary": [
+              0.43333329757891675,
+              0.2333333885599467,
+              0.33333331386113657
+            ],
+            "active_mask": 1
+          },
+          "triangle_area_m2": 1.7744358171874793e-05,
+          "radius": 0.004000000189989805
+        },
+        "impulse_Ns": 0.0001863361786937737,
+        "closing_before_m_s": -1.0000837393745416,
+        "closing_after_m_s": 2.0001674787490833,
+        "effective_inverse_mass": 16101.281238863767,
+        "kinetic_delta_decimal_J": "0.000093175891184416005656972751360653085837141059246563528550657451255558680379118227",
+        "kinetic_delta_J": 9.3175891184416e-05,
+        "momentum_delta_Ns": [
+          -1.0164395367051604e-20,
+          -1.6940658945086007e-21,
+          1.3552527156068805e-20
+        ],
+        "angular_delta_Nms": [
+          -4.235164736271502e-22,
+          -6.352747104407253e-22,
+          -1.5881867761018131e-22
+        ],
+        "momentum_rounding_bound_Ns": 1.0752887707483843e-17,
+        "angular_rounding_bound_Nms": 9.703293204415777e-19,
+        "velocity_update_operand_scale_Ns": 0.0003839948468715311,
+        "moving_owners": 5
+      },
+      "before_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "after_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "rollback_exact": true,
+      "elapsed_unchanged": 0.0,
+      "mode": "energy-positive",
+      "fault": null,
+      "unchanged_full_state": true
+    },
+    {
+      "accepted": false,
+      "reason": "invalid-J",
+      "detail": {
+        "element": 8256,
+        "J": -0.9307743834718565,
+        "gate": 9.999999974752427e-07
+      },
+      "before_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "after_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "rollback_exact": true,
+      "elapsed_unchanged": 0.0,
+      "mode": "correct",
+      "fault": "invalid-J",
+      "unchanged_full_state": true
+    },
+    {
+      "accepted": false,
+      "reason": "invalid-boundary-area",
+      "detail": {
+        "face": 661,
+        "nodes": [
+          1162,
+          5,
+          1347
+        ],
+        "cross_squared": 0.0,
+        "gate": 3.619208830883543e-21
+      },
+      "before_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "after_sha": "d6bfcefb136b8d7029c715f11be8900aeacecbf3e12ad9148de0a638a9a9a222",
+      "rollback_exact": true,
+      "elapsed_unchanged": 0.0,
+      "mode": "correct",
+      "fault": "invalid-area",
+      "unchanged_full_state": true
+    }
+  ],
+  "geometry_binding_control": {
+    "translation_m": [
+      3000.0,
+      0.0,
+      0.0
+    ],
+    "actual_FP64_geometry": {
+      "distance": 0.003999000728193891,
+      "global_distance": 0.003999000418953998,
+      "gap": -9.997710358070414e-07,
+      "row_gap": -9.994617959138002e-07,
+      "normal": [
+        -0.3136383784128644,
+        0.24035964254356398,
+        0.9186175536222237
+      ],
+      "u": 0.5,
+      "beta": [
+        0.3333333134651184,
+        0.3333333432674408,
+        0.3333333432674408
+      ],
+      "oracle": {
+        "valid": true,
+        "distance": 0.003999000418953998,
+        "u": 0.0,
+        "bary": [
+          0.43333329757891675,
+          0.2333333885599467,
+          0.33333331386113657
+        ],
+        "active_mask": 1
+      },
+      "triangle_area_m2": 1.7744358171874793e-05,
+      "radius": 0.004000000189989805
+    },
+    "FP32_narrowed_geometry": {
+      "accepted": false,
+      "reason": "contact-manifold/gap",
+      "detail": {
+        "row_distance": 0.003988609352109572,
+        "oracle": {
+          "valid": true,
+          "distance": 0.003980841352659446,
+          "u": 1.0,
+          "bary": [
+            0.22912691425353215,
+            0.4432064607970598,
+            0.327666624949408
+          ],
+          "active_mask": 2
+        },
+        "radius": 0.004000000189989805
+      }
+    },
+    "actual_positions": [
+      [
+        2999.9973278115503,
+        -0.02336556650698185,
+        0.05023100599646568
+      ],
+      [
+        2999.997324005235,
+        -0.022154364734888077,
+        0.049912791699171066
+      ],
+      [
+        3000.0003836003307,
+        -0.02660437673330307,
+        0.0477684922516346
+      ],
+      [
+        3000.000364569132,
+        -0.020548366010189056,
+        0.046177417039871216
+      ],
+      [
+        2999.994992276188,
+        -0.02401074953377247,
+        0.045249130576848984
+      ]
+    ],
+    "narrowed_positions": [
+      [
+        2999.997314453125,
+        -0.02336556650698185,
+        0.05023100599646568
+      ],
+      [
+        2999.997314453125,
+        -0.022154364734888077,
+        0.049912791699171066
+      ],
+      [
+        3000.00048828125,
+        -0.02660437673330307,
+        0.0477684922516346
+      ],
+      [
+        3000.000244140625,
+        -0.020548366010189056,
+        0.046177417039871216
+      ],
+      [
+        2999.994873046875,
+        -0.02401074953377247,
+        0.045249130576848984
+      ]
+    ],
+    "bridge_rejected": true,
+    "not_an_end_to_end_production_claim": true,
+    "radius_unchanged": 0.004000000189989805
+  },
+  "boundaries": [
+    "No native byte exact continuation: inverse-rest is owning-source reconstruction; full frame38 historical native checkpoint absent.",
+    "The complete FEM body responds, but the yarn is a local authored two-node segment with no internal yarn stress, friction, full bag or full scene.",
+    "Startup approximately 1 micrometre overlap is within the unchanged 2 micrometre target. This is not a moving CCD or no-tunnelling proof.",
+    "Energy residual is retained as measured; bookkeeping identity is not physical energy closure.",
+    "One 1us step vs two 0.5us steps is a bounded numerical observation, not temporal convergence."
+  ],
+  "runtime_s": 11.007187843322754
+}

@@ -1,0 +1,89 @@
+{
+  "schema": "numi.elastic-yarn.normal-block.published-portable-reproduction.v1",
+  "actual_published_path_exit": 0,
+  "centroid_source_exit": 0,
+  "normal_block_source_exit": 0,
+  "initial_full_FEM_body_payloads_verified": 9,
+  "frozen_physical_sources_verified": 7,
+  "centroid_complete_output_files_byte_identical": 9,
+  "normal_block_complete_output_files_byte_identical": 9,
+  "centroid_metric_sha256": "f93a8104e660b9f808616a5b3ccd65be94e8a928a50a4a14e0cd9b2247c0ff29",
+  "normal_block_metric_sha256": "9913e913eb4928727237a3ac09860e2bd3e9c9a84016312a9b2890715411d2ee",
+  "normal_block_source_sha256": "dcfaeca294146fbec3e161dce05a7583d0ffdf34e8e181e2a008c92a0dc22176",
+  "centroid_source_sha256": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+  "independent_review_result_sha256": "5ae100ed7b1c1e99b626ce8e01d867a18bf6f027cc07f096f0c490779fe3b3eb",
+  "physical_energy_residual_J": 5.31534415568857e-09,
+  "energy_closure_claim": false,
+  "historical_native_checkpoint_identity_claimed": false,
+  "scope": "One new FP64 one-microsecond full-body local two-endpoint shared normal block; no CCD, friction, whole bag or trajectory qualification.",
+  "artifacts": {
+    "centroid-owner-evidence.json": {
+      "sha256": "0f1818e6911304dabafa956629c5e59f5d63c5051170e0d83effd566137311b7",
+      "bytes": 90787
+    },
+    "independent-review-result.json": {
+      "sha256": "5ae100ed7b1c1e99b626ce8e01d867a18bf6f027cc07f096f0c490779fe3b3eb",
+      "bytes": 98376
+    },
+    "independent-frame38-force.f64x3.bin.gz": {
+      "sha256": "1f3633cc14094bafa971a17983b2e7d6c6c9105a0c8f5fe34f32879a2ff26aa9",
+      "bytes": 47320
+    },
+    "published-run.log": {
+      "sha256": "f5eaa8c0727d50ad057f44d51c6e2b7adccde3904707b9d4d1edd8eca78750f7",
+      "bytes": 534
+    },
+    "independent-review.md": {
+      "sha256": "2e6154e1ce8cf1d7a75a647a9334e92f6c3461b388e25490121bca2e98e54f91",
+      "bytes": 5334
+    },
+    "centroid_step.py": {
+      "sha256": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+      "bytes": 29406
+    },
+    "reproduce.py": {
+      "sha256": "653b9315998980cf367164f4cd71756a40882c78b0f4746b5676c679b4dd6dee",
+      "bytes": 11239
+    },
+    "late-rollback-result.json": {
+      "sha256": "631e3d25bf3434ff244a0b7c036f4f8928834004a33e62d1b1e6a8f7f2eae46a",
+      "bytes": 2165
+    },
+    "normal-block-owner-evidence.json": {
+      "sha256": "cbe4aa603533d0a8cc31f38cd943dfee17c9d8756ef54d91106bef03801445b4",
+      "bytes": 139971
+    },
+    "reproduction-manifest.json": {
+      "sha256": "c7b18f5fa5f428227fbc46ba62e6fdba5d7b9bc174bc9ea7cd172b1dc6768a2e",
+      "bytes": 6468
+    },
+    "normal-block-owner-receipt.json": {
+      "sha256": "382bfe40c5cc2a8b1905d8377d09151b4b9db63936fbc989f6e74f1f17fe9f06",
+      "bytes": 4312
+    },
+    "centroid-owner-receipt.json": {
+      "sha256": "dd0af62e7154e8bc05150bc01ab47643f94c2751e5a1a4853069972af6279656",
+      "bytes": 4556
+    },
+    "README.md": {
+      "sha256": "3db3ae9bdfee96edec5010ff27f07ba263a151b451e6c24f371ccdc3ee0fa7b9",
+      "bytes": 4793
+    },
+    "step.py": {
+      "sha256": "dcfaeca294146fbec3e161dce05a7583d0ffdf34e8e181e2a008c92a0dc22176",
+      "bytes": 16887
+    },
+    "published-reproduction-result.json": {
+      "sha256": "489f726912e895cf244bc00f18b89d3543776b5179f656df26090ff8dd842ade",
+      "bytes": 6226
+    },
+    "published-launch.json": {
+      "sha256": "a6475ab342f71a74893ca7e723270f829c4cd88c6ac85fa3939232b3df960d57",
+      "bytes": 4081
+    },
+    "published-run.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    }
+  }
+}

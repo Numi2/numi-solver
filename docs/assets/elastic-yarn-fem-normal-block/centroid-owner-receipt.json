@@ -1,0 +1,90 @@
+{
+  "actual_program_exit": 0,
+  "artifacts": {
+    "evidence.json": {
+      "sha256": "0f1818e6911304dabafa956629c5e59f5d63c5051170e0d83effd566137311b7",
+      "bytes": 90787
+    },
+    "initial-failed-run.log": {
+      "sha256": "784699978db4420a20a516da01fc483224ca5a50b2480512ce4829ebba910d07",
+      "bytes": 1052
+    },
+    "initial.piola-J-energy.f64x11.bin": {
+      "sha256": "c946e98e2d985f19eed659759a1806cdd4e12288717b44045316a452bfae3307",
+      "bytes": 901120
+    },
+    "two-half-us.ledgers.json": {
+      "sha256": "75b40e92d9817c79a273860acbb5e1533bec892298564480137ebb71b8764cba",
+      "bytes": 140946
+    },
+    "initial-failed-actual.exit": {
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "bytes": 2
+    },
+    "step.py": {
+      "sha256": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+      "bytes": 29406
+    },
+    "one-us.piola-J-energy.f64x11.bin": {
+      "sha256": "a883aef59dc98197a86a399da42dfec948c26a825ab6f945b2a4af35b42854b1",
+      "bytes": 901120
+    },
+    "initial.state.f64x6.bin": {
+      "sha256": "4137a357c68af88f646904bb3404487b61972003f8a48a27709cb866657f7214",
+      "bytes": 98832
+    },
+    "one-us.force.f64x3.bin": {
+      "sha256": "749d0da2e8c8933ace0718c870a0edbf9167ef41f8852b057b751335eb327816",
+      "bytes": 49416
+    },
+    "initial.force.f64x3.bin": {
+      "sha256": "abf614e028cd2ba028e8150f22000df5f6b62ba75d4d540f4d54fa8587d1d6a9",
+      "bytes": 49416
+    },
+    "initial-failed-step.py": {
+      "sha256": "dd22e3dd1f8e15c6cd369b84977028734a67d656dfc8ea8cbd92d7f22d9abcde",
+      "bytes": 27069
+    },
+    "one-us.ledger.json": {
+      "sha256": "b42dcc73b490984712a37787ad89cdd1e7af5e87879aa1fb5f2a9718681d79e5",
+      "bytes": 65100
+    },
+    "two-half-us.state.f64x6.bin": {
+      "sha256": "72f863ec0b370971526ae58378c85c1b866ca609393ac419215b5755988c9a18",
+      "bytes": 98832
+    },
+    "one-us.state.f64x6.bin": {
+      "sha256": "5feb3a620ddcdfdb7546765d922e801d2df30514e01b834ca2c58d022c1936ec",
+      "bytes": 98832
+    },
+    "README.md": {
+      "sha256": "10bd294d21f31899d3bb43dabe57b56b17beffaab82a63e9d6c104553172c44f",
+      "bytes": 9869
+    },
+    "initial-failed-contact-detail.json": {
+      "sha256": "4ad2cdc1b553459b3e6b84dc86acaa3d7162ac73b45f14696eed7c59e355640f",
+      "bytes": 2205
+    }
+  },
+  "inputs": {
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/body.json": "7eda877b63f31f70661dea103c98fbec97cd4adb5e322ddc4222f4e6e2da7ceb",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/receipt.json": "6cb63eff549236e1e65b0c692f5b9cce96a89259531caa4751caff7ad6b32c59",
+    "/Users/home/numi-solver/docs/assets/elastic-yarn-fem-frame38-provenance.json": "1c7da0b0410abdbf3b1f8c614c8803830fe272a4c355057ce4b035cebdb0b26d",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/CMakeLists.txt": "6cbcced7a175e1de1574d19a38e572a61cbf43d00c3ad792809e33e36e88e738",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/tools/deformable_mesh.mm": "ad289c243c3ab4c3e251cb420fc4be74d8d1713007c3603265cc3c90ab73d87c",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/src/metal/DeformableTet.metal": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/src/metal/DeformableMesh.metal": "1d4c4cd80c956b3ac45877af6af3a155db5bd3728eb3ae06766809069d33887c",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/metalrobo/gpu_types.h": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/numi/deformable_mesh.h": "a0150503c14f4fd2fe622f5d7262ced435e9ee807048c54e76420acc8154205b",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/frozen/include/numi/deformable_tet.h": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0"
+  },
+  "interpreter": "/opt/homebrew/opt/python@3.14/bin/python3.14",
+  "python_version": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
+  "source_sha256": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+  "actual_terminal_exit_marker": {
+    "path": "actual.exit",
+    "value": 0,
+    "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+  },
+  "actual_terminal_log_sha256": "cc875d2d61b28f4650db33b42c40fc2641148fcb31db7f3fd55c3fe7da8c51c1"
+}

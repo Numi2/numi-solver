@@ -1,0 +1,11 @@
+{
+  "actual_exit": 0,
+  "fresh_root": "/Users/home/numi-solver/build/elastic-yarn-normal-block-public-replay-_mqhwa_8",
+  "centroid_outputs_identical": 9,
+  "normal_block_outputs_identical": 9,
+  "centroid_metric_digest": "f93a8104e660b9f808616a5b3ccd65be94e8a928a50a4a14e0cd9b2247c0ff29",
+  "normal_block_metric_digest": "9913e913eb4928727237a3ac09860e2bd3e9c9a84016312a9b2890715411d2ee",
+  "final_global_closing_m_s": 4.7704895589362195e-18,
+  "physical_energy_residual_J": 5.31534415568857e-09,
+  "runtime_s": 29.695657968521118
+}

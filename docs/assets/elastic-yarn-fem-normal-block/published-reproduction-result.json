@@ -1,0 +1,148 @@
+{
+  "schema": "numi.elastic-yarn.normal-block.portable-public-reproduction.v1",
+  "actual_reproduction_exit": 0,
+  "centroid_source_exit": 0,
+  "normal_block_source_exit": 0,
+  "fresh_root": "/Users/home/numi-solver/build/elastic-yarn-normal-block-public-replay-_mqhwa_8",
+  "frozen_centroid_source_sha256": "b249e25faaeba30e486e8c2b70d76ab875b69d3a716518f9a62858a6c5b4379b",
+  "frozen_normal_block_source_sha256": "dcfaeca294146fbec3e161dce05a7583d0ffdf34e8e181e2a008c92a0dc22176",
+  "owner_centroid_evidence_sha256": "0f1818e6911304dabafa956629c5e59f5d63c5051170e0d83effd566137311b7",
+  "fresh_centroid_evidence_sha256": "ae415a584461daf9679c5288d9f5adf52fa4332cba08d7f10cd2deaab70b68fe",
+  "owner_normal_block_evidence_sha256": "cbe4aa603533d0a8cc31f38cd943dfee17c9d8756ef54d91106bef03801445b4",
+  "owner_normal_block_receipt_sha256": "382bfe40c5cc2a8b1905d8377d09151b4b9db63936fbc989f6e74f1f17fe9f06",
+  "new_input_provenance_receipt": true,
+  "historical_native_checkpoint_identity_claimed": false,
+  "decoded_payloads": 9,
+  "frozen_physical_sources": 7,
+  "centroid_runtime_input_hashes_verified": 10,
+  "normal_block_runtime_input_hashes_verified": 12,
+  "centroid_nine_outputs_byte_identical": true,
+  "normal_block_nine_outputs_byte_identical": true,
+  "centroid_physical_outputs": {
+    "initial.state.f64x6.bin": {
+      "sha256": "4137a357c68af88f646904bb3404487b61972003f8a48a27709cb866657f7214",
+      "bytes": 98832,
+      "byte_identical_to_owner": true
+    },
+    "one-us.state.f64x6.bin": {
+      "sha256": "5feb3a620ddcdfdb7546765d922e801d2df30514e01b834ca2c58d022c1936ec",
+      "bytes": 98832,
+      "byte_identical_to_owner": true
+    },
+    "two-half-us.state.f64x6.bin": {
+      "sha256": "72f863ec0b370971526ae58378c85c1b866ca609393ac419215b5755988c9a18",
+      "bytes": 98832,
+      "byte_identical_to_owner": true
+    },
+    "initial.piola-J-energy.f64x11.bin": {
+      "sha256": "c946e98e2d985f19eed659759a1806cdd4e12288717b44045316a452bfae3307",
+      "bytes": 901120,
+      "byte_identical_to_owner": true
+    },
+    "one-us.piola-J-energy.f64x11.bin": {
+      "sha256": "a883aef59dc98197a86a399da42dfec948c26a825ab6f945b2a4af35b42854b1",
+      "bytes": 901120,
+      "byte_identical_to_owner": true
+    },
+    "initial.force.f64x3.bin": {
+      "sha256": "abf614e028cd2ba028e8150f22000df5f6b62ba75d4d540f4d54fa8587d1d6a9",
+      "bytes": 49416,
+      "byte_identical_to_owner": true
+    },
+    "one-us.force.f64x3.bin": {
+      "sha256": "749d0da2e8c8933ace0718c870a0edbf9167ef41f8852b057b751335eb327816",
+      "bytes": 49416,
+      "byte_identical_to_owner": true
+    },
+    "one-us.ledger.json": {
+      "sha256": "b42dcc73b490984712a37787ad89cdd1e7af5e87879aa1fb5f2a9718681d79e5",
+      "bytes": 65100,
+      "byte_identical_to_owner": true
+    },
+    "two-half-us.ledgers.json": {
+      "sha256": "75b40e92d9817c79a273860acbb5e1533bec892298564480137ebb71b8764cba",
+      "bytes": 140946,
+      "byte_identical_to_owner": true
+    }
+  },
+  "normal_block_physical_outputs": {
+    "initial.state.f64x6.bin": {
+      "sha256": "4137a357c68af88f646904bb3404487b61972003f8a48a27709cb866657f7214",
+      "bytes": 98832,
+      "byte_identical_to_owner": true
+    },
+    "one-us.state.f64x6.bin": {
+      "sha256": "fc3c291513c6128a3a159b7f0769871e7fc3b0083f19b4f3beca61955f573157",
+      "bytes": 98832,
+      "byte_identical_to_owner": true
+    },
+    "two-half-us.state.f64x6.bin": {
+      "sha256": "51676f73606cb3de587542b1f12717e24f3186e04ff94b05466c2a36265e11c4",
+      "bytes": 98832,
+      "byte_identical_to_owner": true
+    },
+    "initial.piola-J-energy.f64x11.bin": {
+      "sha256": "c946e98e2d985f19eed659759a1806cdd4e12288717b44045316a452bfae3307",
+      "bytes": 901120,
+      "byte_identical_to_owner": true
+    },
+    "one-us.piola-J-energy.f64x11.bin": {
+      "sha256": "79ecbdaa6f3046eab0bbe538b28046be248a35537dd9d33aecc87a524e67a158",
+      "bytes": 901120,
+      "byte_identical_to_owner": true
+    },
+    "initial.force.f64x3.bin": {
+      "sha256": "abf614e028cd2ba028e8150f22000df5f6b62ba75d4d540f4d54fa8587d1d6a9",
+      "bytes": 49416,
+      "byte_identical_to_owner": true
+    },
+    "one-us.force.f64x3.bin": {
+      "sha256": "b3ae704a3cb48577565adbeba420bae47ba959608513fb736611190d09285fd3",
+      "bytes": 49416,
+      "byte_identical_to_owner": true
+    },
+    "one-us.ledger.json": {
+      "sha256": "ff52450553620bf424f700a82b4cf81752025e0b0d155c1bc012c1285409c6bb",
+      "bytes": 76707,
+      "byte_identical_to_owner": true
+    },
+    "two-half-us.ledgers.json": {
+      "sha256": "2b202c3ba658cf4a77fed51d32947a6f108950e1b21e663071cdee5ebb800e98",
+      "bytes": 166144,
+      "byte_identical_to_owner": true
+    }
+  },
+  "centroid_physical_metric_digest": "f93a8104e660b9f808616a5b3ccd65be94e8a928a50a4a14e0cd9b2247c0ff29",
+  "normal_block_physical_metric_digest": "9913e913eb4928727237a3ac09860e2bd3e9c9a84016312a9b2890715411d2ee",
+  "retained_independent_review_result_sha256": "5ae100ed7b1c1e99b626ce8e01d867a18bf6f027cc07f096f0c490779fe3b3eb",
+  "retained_independent_review_actual_exit": 0,
+  "exact_replay": true,
+  "half_steps_accepted": [
+    true,
+    true
+  ],
+  "normal_block_mask_controls": [
+    true,
+    true,
+    true,
+    true
+  ],
+  "full_state_rollback_rejections": [
+    "contact-nonreciprocal",
+    "contact-energy-positive",
+    "invalid-J",
+    "invalid-boundary-area"
+  ],
+  "centroid_global_closing_m_s": -0.06790141591103348,
+  "final_global_closing_m_s": 4.7704895589362195e-18,
+  "final_global_gap_m": -9.998008216119403e-07,
+  "contact_dissipation_J": 3.128025833486678e-05,
+  "physical_energy_balance_residual_J": 5.31534415568857e-09,
+  "energy_closure_claim": false,
+  "runtime_s": 29.695657968521118,
+  "launch_sha256": "a6475ab342f71a74893ca7e723270f829c4cd88c6ac85fa3939232b3df960d57",
+  "centroid_terminal_exit_marker_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+  "normal_block_terminal_exit_marker_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+  "centroid_terminal_log_sha256": "37600a2a802561318c455d54bd29e845279aecc5eecd710a830cd1673f23a4ac",
+  "normal_block_terminal_log_sha256": "e6ef3d60c7079fd46c64421c5f327c89a56164701d44a228402e6bbc8fa07b24"
+}

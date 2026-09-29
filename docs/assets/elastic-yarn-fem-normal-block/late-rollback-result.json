@@ -1,0 +1,64 @@
+{
+  "schema": "numi.elastic-yarn.normal-block.late-owned-rollback-negative.v1",
+  "actual_control_exit": 0,
+  "frozen_source_sha256": "dcfaeca294146fbec3e161dce05a7583d0ffdf34e8e181e2a008c92a0dc22176",
+  "control_source_sha256": "8eaa96040b1d2121109d6b241147cb32c236400eddb4f5054745a3c6a3edd9d0",
+  "passed": true,
+  "positive_prior_state_sha256": "3eeeb9eaba502e7f9cd37557089dd75bbc4f6969866b83a5c7c9fef010b892a0",
+  "after_failed_candidate_state_sha256": "3eeeb9eaba502e7f9cd37557089dd75bbc4f6969866b83a5c7c9fef010b892a0",
+  "prior_clock_s": 1e-06,
+  "prior_steps": 1,
+  "prior_ledger_entries": 1,
+  "prior_cache_keys": [
+    "accepted_geometry",
+    "accepted_global_velocity_scan",
+    "last_impulse_Ns",
+    "minJ",
+    "strain_J"
+  ],
+  "privately_accepted_second_step_before_global_gate": {
+    "elapsed": 2e-06,
+    "steps": 2,
+    "ledger_entries": 2,
+    "cache_keys": [
+      "accepted_geometry",
+      "last_impulse_Ns",
+      "minJ",
+      "strain_J"
+    ],
+    "private_trial_sha": "47f8d064cc71b22726725a5cfc926bca50b0424ec078f8d629a145c037fb8156"
+  },
+  "result": {
+    "accepted": false,
+    "reason": "global-normal-manifold-closing",
+    "detail": {
+      "valid": true,
+      "distance": 0.003999000359356897,
+      "u": 0.0,
+      "bary": [
+        0.4331552369010304,
+        0.23342926249351972,
+        0.3334155006054499
+      ],
+      "active_mask": 1,
+      "face": 1088,
+      "nodes": [
+        5,
+        1814,
+        1347
+      ],
+      "gap_m": -9.998306329138049e-07,
+      "closing_m_s": -0.009999999999999986,
+      "normal": [
+        -0.3135133885290661,
+        0.24016848619919817,
+        0.9187102119002534
+      ]
+    },
+    "before_sha": "3eeeb9eaba502e7f9cd37557089dd75bbc4f6969866b83a5c7c9fef010b892a0",
+    "after_sha": "3eeeb9eaba502e7f9cd37557089dd75bbc4f6969866b83a5c7c9fef010b892a0",
+    "rollback_exact": true,
+    "elapsed_unchanged": 1e-06
+  },
+  "scope": "An explicit 0.01m/s incoming yarn velocity is injected only by this negative-control subclass after normal-block admission. The actual frozen wrapper rejects at the late global gate and preserves all previously accepted state/clock/warm/cache/ledger."
+}
