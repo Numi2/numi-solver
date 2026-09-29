@@ -184,19 +184,27 @@ for step in 0 15 30 45 60; do
 done
 
 ./build/numi-solver-cloth-bag \
-  --scenario pickup --steps 240 --substeps 48 --iterations 32 --replays 2 \
+  --scenario pickup --steps 480 --substeps 48 --iterations 32 --replays 2 \
   --dump-frames build/cloth-pickup --dump-every 10
 
+python3 tools/audit_cloth_snapshot.py build/cloth-pickup-*.obj \
+  --output build/cloth-pickup-contacts.json
+
+for step in $(seq 0 10 480); do
+  printf '%s\n' "cloth-pickup-${step}.obj"
+done > build/cloth-pickup-framing.txt
+
 mkdir -p build/cloth-pickup-png
-for step in $(seq 0 10 240); do
+for step in $(seq 0 10 480); do
   swift tools/render_cloth_obj.swift \
     "build/cloth-pickup-${step}.obj" \
-    "build/cloth-pickup-png/frame-${step}.png" pickup
+    "build/cloth-pickup-png/frame-${step}.png" trajectory \
+    --framing-list build/cloth-pickup-framing.txt
 done
 
 swift tools/compose_cloth_gif.swift \
-  docs/assets/cloth-pickup-spill.gif 0.08 \
-  $(for step in $(seq 0 10 240); do
+  docs/assets/cloth-pickup-spill.gif 0.0833333333 \
+  $(for step in $(seq 0 10 480); do
     printf '%s ' "build/cloth-pickup-png/frame-${step}.png"
   done)
 ```
@@ -240,15 +248,25 @@ one:
   --pickup-prefix build/metal-pickup --pickup-steps 480 \
   --pickup-dump-every 10
 
+python3 tools/audit_fruit_trace.py build/metal-pickup-fruits.csv \
+  --expected-frames 480 --output build/metal-pickup-fruits.json
+python3 tools/audit_cloth_snapshot.py build/metal-pickup-*.obj \
+  --output build/metal-pickup-contacts.json
+
+for step in $(seq 0 10 480); do
+  printf '%s\n' "metal-pickup-${step}.obj"
+done > build/metal-pickup-framing.txt
+
 mkdir -p build/metal-pickup-png
 for step in $(seq 0 10 480); do
   swift tools/render_cloth_obj.swift \
     "build/metal-pickup-${step}.obj" \
-    "build/metal-pickup-png/frame-${step}.png" pickup-wide
+    "build/metal-pickup-png/frame-${step}.png" trajectory \
+    --framing-list build/metal-pickup-framing.txt
 done
 
 swift tools/compose_cloth_gif.swift \
-  docs/assets/cloth-metal-pickup-spill.gif 0.08 \
+  docs/assets/cloth-metal-pickup-spill.gif 0.0833333333 \
   $(for step in $(seq 0 10 480); do
     printf '%s ' "build/metal-pickup-png/frame-${step}.png"
   done)

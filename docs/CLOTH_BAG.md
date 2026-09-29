@@ -1,5 +1,10 @@
 # Explicit-yarn produce-bag reference
 
+The full-trajectory numbers and images in this document are historical evidence
+from before the September 29 gravity/publication and initial-packing fixes.
+They do not qualify the current source. Current checks, corrected geometry,
+and replacement replay status are tracked in [FRUIT_FALL.md](FRUIT_FALL.md).
+
 ## Purpose and evidence boundary
 
 `numi-solver-cloth-bag` is a deterministic FP64 mechanics reference for an

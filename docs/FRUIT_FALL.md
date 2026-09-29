@@ -139,3 +139,25 @@ The earlier full Metal run was deliberately stopped and retained as an
 invalid-initialization diagnostic baseline. Fresh four-second CPU and Metal
 pickup/settling runs use the corrected geometry and bind source and binary
 hashes; their completed outcomes remain required.
+
+## Independent exported-state contact audit
+
+```sh
+python3 tools/audit_cloth_snapshot.py build/fruit-pickup-*.obj \
+  --yarn-radius 0.004 --output build/fruit-pickup-contacts.json
+```
+
+The standalone auditor validates all 2,880 render triangles before reconstructing
+the exact 2,904 axial yarns and graph-derived two-hop self-contact exclusions.
+It measures sphere/yarn, sphere/sphere, nonlocal capsule/capsule, and ground
+overlap independently of the solver. Inflated segment AABBs in a spatial grid
+produce a conservative self-contact candidate set; exact segment distance
+decides overlap. Every supplied OBJ is bound to its SHA-256. Its tolerance
+is 2 micrometres. A material using another yarn radius must supply that value.
+
+It independently reproduces both original initial defects (5.12519 mm
+fruit/yarn and 4.48591 mm nonlocal yarn), and confirms zero overlap in the
+corrected cold seed. Corrected native frames 10 and 20 are within tolerance
+(under 14 nm fruit/yarn overlap). These are sampled published states; the
+auditor does not certify intervening substeps, strain, or dynamics. The full
+trajectory and the native solver's failure/replay/strain gates remain required.

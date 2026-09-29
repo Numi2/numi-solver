@@ -1,5 +1,10 @@
 # Cloth realism audit
 
+The full-trajectory numbers and images in this document are historical evidence
+from before the September 29 gravity/publication and initial-packing fixes.
+They do not qualify the current source. Current checks, corrected geometry,
+and replacement replay status are tracked in [FRUIT_FALL.md](FRUIT_FALL.md).
+
 This file separates executable mechanics from the physical evidence that is
 still missing. A passing replay or convincing GIF does not calibrate the model
 to a real produce bag.
