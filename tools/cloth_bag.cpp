@@ -377,6 +377,10 @@ struct Metrics {
     std::uint32_t maximumWarpExtensionSecond{};
     double maximumBendError{};
     double maximumKnotAngleError{};
+    std::uint32_t maximumKnotAngleConstraint{};
+    std::uint32_t maximumKnotAngleFrame{};
+    double maximumKnotCurrentAngle{};
+    double maximumKnotRestAngle{};
     double maximumBallPenetration{};
     double maximumPublishedBallPenetration{};
     double maximumPublishedPrimitiveSelfPenetration{};
@@ -4381,7 +4385,8 @@ void updateMetrics(
             std::abs(chord - bend.restChord) / bend.restArc
         );
     }
-    for (const KnotConstraint& knot : cloth.knots) {
+    for (std::uint32_t index = 0; index < cloth.knots.size(); ++index) {
+        const KnotConstraint& knot = cloth.knots[index];
         const Vec3 warp = normalized(
             cloth.particles[knot.warpSecond].position -
             cloth.particles[knot.warpFirst].position
@@ -4396,10 +4401,13 @@ void updateMetrics(
         const double restAngle = std::acos(std::clamp(
             knot.restCosine, -1.0, 1.0
         ));
-        metrics.maximumKnotAngleError = std::max(
-            metrics.maximumKnotAngleError,
-            std::abs(currentAngle - restAngle)
-        );
+        const double error = std::abs(currentAngle - restAngle);
+        if (error > metrics.maximumKnotAngleError) {
+            metrics.maximumKnotAngleError = error;
+            metrics.maximumKnotAngleConstraint = index;
+            metrics.maximumKnotCurrentAngle = currentAngle;
+            metrics.maximumKnotRestAngle = restAngle;
+        }
     }
     for (const Triangle triangle : cloth.renderTriangles) {
         const Vec3 first = cloth.particles[triangle.first].position;
@@ -4789,7 +4797,9 @@ SimulationResult simulate(
     const Scenario scenario,
     const std::vector<std::uint32_t>* captureSteps = nullptr,
     std::vector<SimulationResult>* captures = nullptr,
-    const numi::GripTrajectory* gripTrajectory = nullptr
+    const numi::GripTrajectory* gripTrajectory = nullptr,
+    SimulationResult* knotPeakCapture = nullptr,
+    std::ostream* knotTrace = nullptr
 ) {
     if ((scenario == Scenario::recorded) != (gripTrajectory != nullptr)) {
         throw std::runtime_error(
@@ -5376,7 +5386,28 @@ SimulationResult simulate(
             result.metrics.maximumPublishedStrainLimitViolation,
             measureStrainLimitViolation(result.cloth)
         );
+        const double previousKnotPeak = result.metrics.maximumKnotAngleError;
         updateMetrics(result.cloth, result.balls, result.metrics);
+        if (result.metrics.maximumKnotAngleError > previousKnotPeak) {
+            result.metrics.maximumKnotAngleFrame = step + 1u;
+            if (knotPeakCapture != nullptr) {
+                *knotPeakCapture = result;
+            }
+            if (knotTrace != nullptr) {
+                const KnotConstraint& knot = result.cloth.knots[
+                    result.metrics.maximumKnotAngleConstraint
+                ];
+                *knotTrace << std::setprecision(17) << step + 1u << ','
+                          << (step + 1u) * frameTimestep << ','
+                          << result.metrics.maximumKnotAngleConstraint << ','
+                          << result.metrics.maximumKnotAngleError << ','
+                          << result.metrics.maximumKnotCurrentAngle << ','
+                          << result.metrics.maximumKnotRestAngle << ','
+                          << knot.warpFirst << ',' << knot.warpSecond << ','
+                          << knot.weftFirst << ',' << knot.weftSecond
+                          << std::endl;
+            }
+        }
         capture(step + 1u);
     }
 
@@ -5603,6 +5634,8 @@ int main(int argc, char** argv) try {
     std::uint32_t replays = 2u;
     double timestep = 1.0 / 120.0;
     std::string dumpPath;
+    std::string knotPeakPath;
+    std::string knotTracePath;
     std::string framePrefix;
     std::string materialPath;
     std::string gripTrajectoryPath;
@@ -5639,6 +5672,10 @@ int main(int argc, char** argv) try {
             timestep = std::stod(argv[++argument]);
         } else if (value == "--dump-obj" && argument + 1 < argc) {
             dumpPath = argv[++argument];
+        } else if (value == "--dump-knot-peak" && argument + 1 < argc) {
+            knotPeakPath = argv[++argument];
+        } else if (value == "--knot-trace" && argument + 1 < argc) {
+            knotTracePath = argv[++argument];
         } else if (value == "--dump-frames" && argument + 1 < argc) {
             framePrefix = argv[++argument];
         } else if (value == "--dump-every") {
@@ -5690,6 +5727,7 @@ int main(int argc, char** argv) try {
                          "[--scenario grounded|spin|pickup|recorded] "
                          "[--material FILE] [--grip-trajectory FILE] "
                          "[--dump-obj PATH] [--dump-frames PREFIX] "
+                         "[--dump-knot-peak PATH] [--knot-trace PATH] "
                          "[--dump-every N] [--rolling-probe] "
                          "[--self-ccd-probe] [--strain-probe] "
                          "[--self-friction-probe] "
@@ -5782,6 +5820,16 @@ int main(int argc, char** argv) try {
             captureSteps.push_back(steps);
         }
     }
+    SimulationResult knotPeakCapture;
+    std::ofstream knotTrace;
+    if (!knotTracePath.empty()) {
+        knotTrace.open(knotTracePath);
+        if (!knotTrace) {
+            throw std::runtime_error("failed to open knot trace: " + knotTracePath);
+        }
+        knotTrace << "frame,time_s,knot_index,error_rad,current_angle_rad,rest_angle_rad,"
+                     "warp_first,warp_second,weft_first,weft_second\n";
+    }
     const SimulationResult first = simulate(
         steps,
         timestep,
@@ -5790,7 +5838,9 @@ int main(int argc, char** argv) try {
         scenario,
         framePrefix.empty() ? nullptr : &captureSteps,
         framePrefix.empty() ? nullptr : &captures,
-        gripTrajectoryPointer
+        gripTrajectoryPointer,
+        knotPeakPath.empty() ? nullptr : &knotPeakCapture,
+        knotTracePath.empty() ? nullptr : &knotTrace
     );
     const std::uint64_t firstHash = hashResult(first);
     std::uint64_t replayHash = 0u;
@@ -5809,6 +5859,12 @@ int main(int argc, char** argv) try {
     const bool deterministic = replays == 2u && firstHash == replayHash;
     if (!dumpPath.empty()) {
         dumpOBJ(dumpPath, first);
+    }
+    if (!knotPeakPath.empty()) {
+        if (knotPeakCapture.cloth.particles.empty()) {
+            throw std::runtime_error("no knot peak state was captured");
+        }
+        dumpOBJ(knotPeakPath, knotPeakCapture);
     }
     for (std::size_t index = 0; index < captures.size(); ++index) {
         dumpOBJ(
@@ -5884,6 +5940,10 @@ int main(int argc, char** argv) try {
               << " max_yarn_bend_chord_error="
               << metrics.maximumBendError
               << " min_triangle_area=" << metrics.minimumTriangleArea << '\n';
+    std::cout << "max_knot_angle_frame=" << metrics.maximumKnotAngleFrame
+              << " max_knot_angle_constraint=" << metrics.maximumKnotAngleConstraint
+              << " max_knot_current_angle_rad=" << metrics.maximumKnotCurrentAngle
+              << " max_knot_rest_angle_rad=" << metrics.maximumKnotRestAngle << '\n';
     std::cout << "max_warp_extension=" << metrics.maximumWarpExtension
               << " max_warp_compression=" << metrics.maximumWarpCompression
               << " max_weft_extension=" << metrics.maximumWeftExtension

@@ -238,3 +238,11 @@ outside the virtually capped render mesh at their ground radii with zero
 vertical velocity. Those landing and sampled-contact observations do not
 erase the knot failure. The maximum knot peak requires further diagnosis;
 the material coefficients and acceptance threshold remain unchanged.
+
+`--knot-trace PATH` records every new maximum with its exact frame, constraint,
+current/rest angles, and four endpoint indices. `--dump-knot-peak PATH`
+retains the corresponding complete solver state, even when the peak lies
+between the regular sparse snapshots. These are observation controls; the
+20-frame observer run reproduces the earlier final and peak-frame OBJ bytes
+and final state hash `0xfbe152b73f646f19` exactly. That short diagnostic does
+not qualify a spill or replace the failed full run.
