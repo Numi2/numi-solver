@@ -117,13 +117,13 @@ Mesh makeMesh(const uint32_t refinement=0){
     }
     mesh.offsets.push_back(uint32_t(mesh.incidence.size()));
     if(mesh.incidence.size()!=4*mesh.elements.size())throw std::runtime_error("incorrect incidence count");
-    for(auto face:mesh.faces)for(int edge=0;edge<3;++edge){
-        uint32_t a=face[edge],b=face[(edge+1)%3];int forward=0,reverse=0;
-        for(auto other:mesh.faces)for(int e=0;e<3;++e){
-            forward+=other[e]==a&&other[(e+1)%3]==b;
-            reverse+=other[e]==b&&other[(e+1)%3]==a;
-        }
-        if(forward!=1||reverse!=1)throw std::runtime_error("boundary is not an oriented manifold");
+    std::map<std::pair<uint32_t,uint32_t>,uint32_t> directedEdges;
+    for(auto face:mesh.faces)for(int edge=0;edge<3;++edge)
+        ++directedEdges[{face[edge],face[(edge+1)%3]}];
+    for(auto [edge,count]:directedEdges){
+        auto reverse=directedEdges.find({edge.second,edge.first});
+        if(count!=1||reverse==directedEdges.end()||reverse->second!=1)
+            throw std::runtime_error("boundary is not an oriented manifold");
     }
     return mesh;
 }
@@ -137,7 +137,8 @@ struct Pipelines {
 std::vector<Frame> simulate(id<MTLDevice> device,Pipelines pipelines,const Mesh& mesh,float dt,bool plane=true,
                           uint32_t stepLimit=0,uint32_t abi=NUMI_DEFORMABLE_MESH_ABI_VERSION,
                           Frame* lastFreePrediction=nullptr,
-                          uint32_t integrator=NUMI_DEFORMABLE_MESH_INTEGRATOR_EULER){
+                          uint32_t integrator=NUMI_DEFORMABLE_MESH_INTEGRATOR_EULER,
+                          const char* phase=nullptr){
     auto buffer=[&](const void* data,size_t bytes){
         id<MTLBuffer> result=data?[device newBufferWithBytes:data length:bytes options:MTLResourceStorageModeShared]:
             [device newBufferWithLength:bytes options:MTLResourceStorageModeShared];
@@ -167,7 +168,10 @@ std::vector<Frame> simulate(id<MTLDevice> device,Pipelines pipelines,const Mesh&
         std::memcpy(frame.positions.data(),positions.contents,positions.length);
         std::memcpy(frame.velocities.data(),velocities.contents,velocities.length);
         std::memcpy(&frame.status,status.contents,sizeof(initial));frames.push_back(frame);};
-    capture();uint32_t steps=stepLimit?stepLimit:uint32_t(std::lround(.5/dt)),batch=std::max(1u,steps/100);
+    capture();uint32_t steps=stepLimit?stepLimit:uint32_t(std::lround(.5/dt)),captureInterval=std::max(1u,steps/100);
+    // Keep large-mesh command buffers bounded while preserving the same 101
+    // capture times and the ordered accepted-step sequence.
+    uint32_t batch=mesh.positions.size()>2057?std::min(50u,captureInterval):captureInterval;
     for(uint32_t completed=0;completed<steps;completed+=batch){
         auto command=[queue commandBuffer];auto encoder=[command computeCommandEncoder];
         [encoder setBytes:&config length:sizeof(config) atIndex:0];
@@ -196,7 +200,13 @@ std::vector<Frame> simulate(id<MTLDevice> device,Pipelines pipelines,const Mesh&
         }
         [encoder endEncoding];[command commit];[command waitUntilCompleted];
         if(command.status!=MTLCommandBufferStatusCompleted)throw std::runtime_error(command.error.localizedDescription.UTF8String);
-        capture();
+        if((completed+batch)%captureInterval==0){
+            capture();
+            if(phase&&(frames.size()-1)%20==0)
+                std::cerr<<"mesh_progress phase="<<phase<<" captured="<<frames.size()-1<<"/100 accepted_steps="
+                    <<frames.back().status.control.w<<" rejected_steps="<<frames.back().status.control.z
+                    <<" minimum_volume_ratio="<<frames.back().status.ledger.y<<'\n';
+        }
     }
     if(lastFreePrediction){
         lastFreePrediction->positions.resize(mesh.positions.size());
@@ -264,15 +274,28 @@ void exportFrames(const std::string& prefix,const Mesh& mesh,const std::vector<F
 }
 int topologyProbe(){
     bool pass=true;
-    const std::array<uint32_t,4> expectedNodes{13,55,309,2057};
-    for(uint32_t level=0;level<4;++level){
+    const std::array<uint32_t,5> expectedNodes{13,55,309,2057,14993};
+    for(uint32_t level=0;level<expectedNodes.size();++level){
         const auto mesh=makeMesh(level);
         std::vector<mr_uint4> legacy;
         std::vector<uint32_t> offsets;
-        for(uint32_t node=0;node<mesh.positions.size();++node){
+        if(level<4)for(uint32_t node=0;node<mesh.positions.size();++node){
             offsets.push_back(uint32_t(legacy.size()));
             for(uint32_t element=0;element<mesh.elements.size();++element)for(uint32_t n=0;n<4;++n)
                 if(corner(mesh.elements[element].nodes,n)==node)legacy.push_back({element,n,node,0});
+        }
+        if(level==4){
+            // Independent flat corner sort has the node/element/corner order
+            // of the legacy scan without its node-times-element cost.
+            for(uint32_t e=0;e<mesh.elements.size();++e)for(uint32_t n=0;n<4;++n)
+                legacy.push_back({e,n,corner(mesh.elements[e].nodes,n),0});
+            std::sort(legacy.begin(),legacy.end(),[](auto a,auto b){
+                return a.z!=b.z?a.z<b.z:(a.x!=b.x?a.x<b.x:a.y<b.y);});
+            size_t entry=0;
+            for(uint32_t node=0;node<mesh.positions.size();++node){
+                offsets.push_back(uint32_t(entry));
+                while(entry<legacy.size()&&legacy[entry].z==node)++entry;
+            }
         }
         offsets.push_back(uint32_t(legacy.size()));
         const bool exact=offsets==mesh.offsets&&legacy.size()==mesh.incidence.size()&&
@@ -282,7 +305,8 @@ int topologyProbe(){
         pass&=exact&&counts;
         std::cout<<"mesh_topology_refinement="<<level<<" shared_nodes="<<mesh.positions.size()
             <<" tetrahedra="<<mesh.elements.size()<<" boundary_triangles="<<mesh.faces.size()
-            <<" sorted_incidence_byte_identical_to_legacy="<<exact<<" expected_counts="<<counts<<'\n';
+            <<" sorted_incidence_reference_exact="<<exact
+            <<" reference="<<(level<4?"legacy_scan":"independent_flat_corner_sort")<<" expected_counts="<<counts<<'\n';
     }
     std::cout<<"mesh_topology_probe_qualified="<<pass<<'\n';
     return pass?0:1;
@@ -299,9 +323,9 @@ int run(const std::string& prefix,const uint32_t refinement,const float timestep
         pipeline(@"numi_deformable_mesh_finish_verlet"),
         pipeline(@"numi_deformable_mesh_validate"),pipeline(@"numi_deformable_mesh_commit")};
     auto mesh=makeMesh(refinement);
-    auto motion=simulate(device,pipelines,mesh,timestep,true,0,NUMI_DEFORMABLE_MESH_ABI_VERSION,nullptr,integrator),
-         replay=simulate(device,pipelines,mesh,timestep,true,0,NUMI_DEFORMABLE_MESH_ABI_VERSION,nullptr,integrator),
-         fine=simulate(device,pipelines,mesh,timestep/2,true,0,NUMI_DEFORMABLE_MESH_ABI_VERSION,nullptr,integrator);
+    auto motion=simulate(device,pipelines,mesh,timestep,true,0,NUMI_DEFORMABLE_MESH_ABI_VERSION,nullptr,integrator,"primary"),
+         replay=simulate(device,pipelines,mesh,timestep,true,0,NUMI_DEFORMABLE_MESH_ABI_VERSION,nullptr,integrator,"replay"),
+         fine=simulate(device,pipelines,mesh,timestep/2,true,0,NUMI_DEFORMABLE_MESH_ABI_VERSION,nullptr,integrator,"half_timestep");
     bool rollbackExact=true;uint32_t rejectedCases=0;
     auto reject=[&](Mesh malformed,uint32_t bit,uint32_t abi=NUMI_DEFORMABLE_MESH_ABI_VERSION,bool invalidIntegrator=false){
         auto states=simulate(device,pipelines,malformed,1e-4f,true,1,abi,nullptr,invalidIntegrator?2:integrator);
@@ -447,9 +471,9 @@ int main(int argc,const char* const* argv){@autoreleasepool{try{
         }
         else if(option=="--mesh-refinement"&&argument+1<argc){
             std::string value=argv[++argument];
-            if(value!="0"&&value!="1"&&value!="2"&&value!="3")throw std::runtime_error("mesh refinement must be 0, 1, 2, or 3");
+            if(value!="0"&&value!="1"&&value!="2"&&value!="3"&&value!="4")throw std::runtime_error("mesh refinement must be 0, 1, 2, 3, or 4");
             refinement=uint32_t(std::stoul(value));
-        } else throw std::runtime_error("usage: numi-solver-deformable-mesh [--trajectory PREFIX] [--mesh-refinement 0|1|2|3] [--timestep DT] [--integrator euler|support-verlet] [--topology-probe]");
+        } else throw std::runtime_error("usage: numi-solver-deformable-mesh [--trajectory PREFIX] [--mesh-refinement 0|1|2|3|4] [--timestep DT] [--integrator euler|support-verlet] [--topology-probe]");
     }
     if(topologyOnly)return topologyProbe();
     return run(prefix,refinement,timestep,integrator);

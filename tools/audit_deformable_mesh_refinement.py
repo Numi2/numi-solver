@@ -25,7 +25,7 @@ def load(prefix):
 
 def compare(prefixes, tolerance):
     levels = [load(prefix) for prefix in prefixes]
-    supported = [13, 55, 309, 2057]
+    supported = [13, 55, 309, 2057, 14993]
     counts = [level[0]['nodes'] for level in levels]
     if len(counts) < 2 or counts[0] not in supported or \
             counts != supported[supported.index(counts[0]):supported.index(counts[0]) + len(counts)]:

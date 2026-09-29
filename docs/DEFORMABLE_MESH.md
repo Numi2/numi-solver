@@ -1,5 +1,23 @@
 # Native shared-node elastic mesh drop
 
+[![Newest support-aware native volume compression](assets/deformable-support-10240-38.png)](assets/deformable-support-10240.mp4)
+
+The newest source-bound Apple Metal trajectory uses support-aware velocity Verlet on **2,057 shared nodes and 10,240 tetrahedra**. Its independent numerical energy bound is **0.846 percent** at 100 us, versus **144.949 percent** for the earlier Euler method at the same mesh and timestep. The half-timestep bound is 0.330 percent. These pass the authored 1 percent budget; physical material and whole-scene energy closure remain open.
+
+The volume compresses from 85.065 to 47.809 mm and recovers to 70.599 mm through its own elastic stress. Two complete native replays match exactly, the half-timestep maximum nodal difference is 307.00 micrometres, and all six rejected candidates preserve accepted state and every ledger. The resting-support probe produces positive reaction impulse with exactly zero kinetic removal and position work. All 101 exported states pass independent geometry and mass checks.
+
+The video retains the exact 1,280-triangle native boundary at 6.7x slow playback. [Full source, binary, states, video and energy receipt](assets/deformable-support-evidence.json), [owning nodal trace](assets/deformable-support-10240-trajectory.csv), [topology](assets/deformable-support-10240-topology.csv), and [independent geometry audit](assets/deformable-support-10240-geometry.json) bind this result to physics source `6973631`.
+
+Spatial convergence remains **FAIL**: the new 1,280-to-10,240-element pair differs by up to 14.927 mm against the unchanged 1 mm target ([report](assets/deformable-support-10240-spatial.json)). The next level constructs 14,993 nodes, 81,920 tetrahedra and 5,120 surface triangles with independent topology checks. Its complete native replay, half-timestep and energy study is running; construction alone does not qualify runtime physics.
+
+```sh
+./build/numi-solver-deformable-mesh --mesh-refinement 3 --integrator support-verlet \
+  --trajectory build/support-verlet-level3
+python3 tools/audit_deformable_mesh_energy.py build/support-verlet-level3
+```
+
+## Historical Euler trajectory
+
 [![Native mesh compresses and recovers on the plane](assets/deformable-mesh-10240-drop-38.png)](assets/deformable-mesh-10240-drop.mp4)
 
 This Apple Metal trajectory drops a nonlinear elastic volume onto the support
@@ -169,7 +187,7 @@ also remains open.
 
 The newer [native energy accounting study](DEFORMABLE_ENERGY.md) measures
 substantial integration defects and projection potential changes even when
-the original energy-increase gate passes. Its 1 percent numerical budget is
-not satisfied by the completed 100-to-3.125 us level-2 study. The media above
-remain bound to their original ABI-1 source; accounting consistency does not
-qualify energy closure.
+the original energy-increase gate passes. The historical Euler 1 percent numerical budget is
+not satisfied by the completed 100-to-1.5625 us level-2 study. Historical Euler
+media remain bound to their original ABI-1 source. The newer support-Verlet
+authored numerical budget passes; it does not qualify physical energy closure.

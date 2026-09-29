@@ -168,26 +168,26 @@ from those selected indices rather than a fixed rendering location.
 
 ## Growing toward coupled deformable volumes
 
-[![Watch the newest native elastic mesh drop, compress and recover](docs/assets/deformable-mesh-10240-drop-38.png)](docs/assets/deformable-mesh-10240-drop.mp4)
+[![Watch the newest support-aware native elastic volume drop](docs/assets/deformable-support-10240-38.png)](docs/assets/deformable-support-10240.mp4)
 
-The native [shared-node elastic mesh](docs/DEFORMABLE_MESH.md) now advances
+The native [shared-node elastic mesh](docs/DEFORMABLE_MESH.md) advances
 2,057 nodes and 10,240 tetrahedra for 0.5 seconds on the M4 Pro. It compresses
-from 85.07 to 47.80 mm before recovering to 70.62 mm through its own volumetric
-stress. Two complete native replays match exactly; the half-step run differs by
-at most 335.37 µm. All 101 exported states pass independent geometry and mass
-checks. The video renders the exact 1,280-triangle boundary at 6.7x slow playback.
+from 85.07 to 47.81 mm and recovers to 70.60 mm through its own volumetric stress.
+Two complete native replays match exactly; the half-step run differs by at most
+307.00 µm. All 101 exported states pass independent geometry and mass checks.
+The video renders the exact 1,280-triangle boundary at 6.7x slow playback.
 
-Spatial refinement preserves the same initial surface and material. The
-1,280-to-10,240-element comparison differs by up to 15.00 mm at matched nodes,
-exceeding the unchanged 1 mm target. The previous pair differed by 36.39 mm.
-Individual timestep checks pass; mesh-resolution convergence remains open.
+Support-aware velocity Verlet supplies resting contact reactions before the
+force kicks. Its [independently audited numerical energy bound](docs/DEFORMABLE_ENERGY.md)
+is **0.85 percent**, down from **144.95 percent** for Euler at the same mesh and
+timestep, passing the authored 1 percent budget. Six rejected candidates retain
+all accepted state and ledgers. Physical material and whole-scene energy closure
+remain open.
 
-A new [native energy audit](docs/DEFORMABLE_ENERGY.md) exposes a further gap:
-at 1,280 tetrahedra, integration loses 0.146 J while plane projection adds
-0.080 J of mechanical energy. The old energy-increase check partly hides this
-cancellation. Per-step accounting now separates kinetic loss, elastic/gravity
-position work and integration error. Smaller timesteps reduce the error, but
-the new 1 percent numerical budget still fails; finer studies are running.
+The new 1,280-to-10,240-element spatial comparison differs by 14.93 mm against
+the unchanged 1 mm target. The next **81,920-tetrahedron** level has independently
+checked topology; its complete native replay, timestep and energy study is running.
+It retains the same initial surface, authored material and volume-derived masses.
 
 The [independent-element foundation](docs/DEFORMABLE_VOLUMES.md) separately
 qualifies the nonlinear elastic forces. Coupling these volumes to the woven

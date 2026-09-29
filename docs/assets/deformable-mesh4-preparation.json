@@ -1,0 +1,34 @@
+{
+  "schema": "numi.deformable.mesh4-preparation.v1",
+  "frozen_root": "/Users/n/numi-solver-mesh4-verlet-20260929",
+  "base_source_revision": "69736313414d3afd81f3b181116870143c13966e",
+  "frozen_source_binary_sha256": {
+    "CMakeLists.txt": "6cbcced7a175e1de1574d19a38e572a61cbf43d00c3ad792809e33e36e88e738",
+    "tools/deformable_mesh.mm": "0885344a6e302141cec38a0facc8e8f2a5d1cbdda9f1eff5e2670b2df13143ce",
+    "src/metal/DeformableMesh.metal": "1d4c4cd80c956b3ac45877af6af3a155db5bd3728eb3ae06766809069d33887c",
+    "src/metal/DeformableTet.metal": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072",
+    "include/numi/deformable_mesh.h": "a0150503c14f4fd2fe622f5d7262ced435e9ee807048c54e76420acc8154205b",
+    "include/numi/deformable_tet.h": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0",
+    "include/metalrobo/gpu_types.h": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8",
+    "tools/audit_deformable_mesh_energy.py": "17333aaaa1b428a92a8853d1f89b53cf12872a5967347d4cee2e46c23483e9e0",
+    "tools/audit_deformable_mesh_trajectory.py": "1dc1e0377848ad244027526b4c8d7a7c18bd620caf45576e9966d493f810facf",
+    "tools/audit_deformable_mesh_refinement.py": "5e5075707f283eac420ea792b5135e93ced365c4a3c5be4dcc3b159c092c6d27",
+    "tools/render_deformable_mesh.py": "9b1427ccf091c856a0cdb07856289a0d618b4d21e9881703aed3c9997a700dad",
+    "build/numi-solver-deformable-mesh": "9ccefad622727240b87ac33f6e61b5ea45aecc79cd818b2fbac87e6de8df3b6f",
+    "build/shaders/NumiDeformableMesh.metallib": "eb0fae773ff1fcf7aa2ebb59692e4f2766fc296fabdc28b04cea8013b56a500a"
+  },
+  "cpu_topology_probe": "mesh_topology_refinement=0 shared_nodes=13 tetrahedra=20 boundary_triangles=20 sorted_incidence_reference_exact=1 reference=legacy_scan expected_counts=1\nmesh_topology_refinement=1 shared_nodes=55 tetrahedra=160 boundary_triangles=80 sorted_incidence_reference_exact=1 reference=legacy_scan expected_counts=1\nmesh_topology_refinement=2 shared_nodes=309 tetrahedra=1280 boundary_triangles=320 sorted_incidence_reference_exact=1 reference=legacy_scan expected_counts=1\nmesh_topology_refinement=3 shared_nodes=2057 tetrahedra=10240 boundary_triangles=1280 sorted_incidence_reference_exact=1 reference=legacy_scan expected_counts=1\nmesh_topology_refinement=4 shared_nodes=14993 tetrahedra=81920 boundary_triangles=5120 sorted_incidence_reference_exact=1 reference=independent_flat_corner_sort expected_counts=1\nmesh_topology_probe_qualified=1\n",
+  "previous_level2_regression_actual_exit": 0,
+  "previous_level2_regression_retained_files_exact": 104,
+  "pending_native_case": {
+    "shared_nodes": 14993,
+    "tetrahedra": 81920,
+    "boundary_triangles": 5120,
+    "simulated_seconds": 0.5,
+    "timestep_s": 2.5e-05,
+    "half_timestep_s": 1.25e-05,
+    "replays": 2,
+    "integrator": "support-verlet"
+  },
+  "boundary": "Constructed rest topology and prior level regression pass. Level4 native accepted volumes, full replay, timestep, contact work, energy budget and spatial convergence remain pending."
+}

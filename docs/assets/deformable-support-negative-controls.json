@@ -1,0 +1,7 @@
+{
+  "wrong_force_response": true,
+  "wrong_kinetic_contact": true,
+  "changed_integrator": true,
+  "nonfinite_response": true,
+  "missing_force_bound": true
+}

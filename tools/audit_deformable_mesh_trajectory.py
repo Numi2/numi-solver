@@ -27,7 +27,8 @@ def audit(prefix):
         raise ValueError('unexpected trajectory schema')
     rows = list(reader)
     node_count = sum(int(row['frame']) == 0 for row in rows)
-    contracts = {13: (20, 20), 55: (160, 80), 309: (1280, 320), 2057: (10240, 1280)}
+    contracts = {13: (20, 20), 55: (160, 80), 309: (1280, 320),
+                 2057: (10240, 1280), 14993: (81920, 5120)}
     if node_count not in contracts or len(rows) != 101 * node_count:
         raise ValueError('expected 101 complete supported mesh states')
     element_count, boundary_count = contracts[node_count]
