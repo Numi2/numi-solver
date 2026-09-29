@@ -37,8 +37,11 @@ or [read the timestep comparison](docs/assets/cloth-local-node-timestep-comparis
 
 A new opt-in CPU scene adds a **1.5 × 1.0 m tabletop, 80 mm thickness, and
 room floor 750 mm below it**. Exact face/edge/corner sweeps, rolling off an
-edge, and floor landing pass focused checks; full four-second 48/96-substep
-bag runs are in progress. [Finite-bench implementation and evidence](docs/FRUIT_FALL.md#finite-tabletop-and-room-floor)
+edge, and floor landing pass focused checks. The original full CPU48 run
+lands four released fruits but **fails** the unchanged fruit/yarn overlap
+gate (173.4 um versus 2 um). A support-aware constraint repair passes focused
+loading cases; its complete four-second replay is pending, alongside the
+original CPU96 failure (11.26 um overlap and one released fruit). [Finite-bench implementation and evidence](docs/FRUIT_FALL.md#finite-tabletop-and-room-floor)
 are separate from the plane video above. Deformable volume/cloth coupling
 and native finite-bench contact remain open.
 A [six-second loaded-bag drop](docs/DEFORMABLE_STRESS.md) now runs a harder

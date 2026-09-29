@@ -255,11 +255,51 @@ outcome gate. [Render receipt](assets/finite-bench-render-evidence.json).
 
 ![Startup diagnostic of the bag on the finite tabletop, with the lower room floor visible](assets/finite-bench-startup.png)
 
-Full four-second finite-bench bag runs at 48 and 96 substeps are launched from
-frozen source/binary and await their actual terminal result. This option is
-CPU-only; the native Metal bag still uses the plane. Constraint-induced
-contacts are closed by alternating projection, with no claim of continuous
-CCD for every intermediate constraint move or yarn interior. Volumetric fruit,
+### Full CPU48 failure and support-aware repair
+
+The original finite-bench CPU48 job completed both four-second replays with
+actual exit 1: **FAIL**. Final physical hash `0xf015ffea31591f84` and the
+ordered digest `0x24eee4095ab1bbcb` of all 481 accepted frame states match.
+Fruits 4, 9, 10 and 11 finish on the lower floor with zero vertical velocity
+(to roundoff), but the worst published fruit/yarn overlap is **173.4 um**,
+above the unchanged 2 um gate. All 49 sparsely exported contact snapshots
+pass: those samples do not certify the intervening accepted frames.
+[Failure receipt](assets/finite-bench-pickup-48-failure.json),
+[actual terminal log](assets/finite-bench-pickup-48-failed.log), and
+[independent two-replay fruit audit](assets/finite-bench-pickup-48-fruit-audit.json)
+retain both the landings and the failed scene qualification.
+An observer-only replay matches both hashes and the final OBJ byte for byte.
+Its [worst-frame snapshot](assets/finite-bench-failed-peak.obj) and
+[independent audit](assets/finite-bench-failed-peak-audit.json) locate fruit 4
+against bottom yarn 1366:1377 at frame 19 (0.15833 s). Both endpoints sit on
+the tabletop at the 4 mm cloth support height. The independent OBJ audit
+reproduces 173.415 um overlap; the 25 pm difference from the runtime value is
+export rounding.
+
+The repair makes bend, local-node and sphere/yarn constraint responses respect
+the actual support normal. A node already resting on the collider cannot
+contribute an inward response that later ground projection would undo.
+Incoming corrections project into the surface tangent; exact box/floor casts
+limit motion to first arrival, and contact response is recomputed there.
+The stable tangent projection and coordinate-scale roundoff bounds also avoid
+false inward motion at rounded edges. Material values and acceptance gates
+are unchanged, and the default plane branch retains its existing response.
+
+[Source-bound focused checks](assets/finite-bench-active-support-evidence.json)
+cover five production sphere/yarn loading cases on the tabletop, lower
+floor, side, rounded edge and arrival from clearance. New
+`--contact-peak-prefix PREFIX` output captures the worst accepted fruit/yarn
+state of each replay, including maxima between the regular ten-frame exports.
+The full repaired four-second job is a separate candidate and remains required.
+The original CPU96 job also completed both full replays with actual exit 1:
+its worst fruit/yarn overlap is 11.26 um, and only fruit 4 has a latched
+release. Exact replay does not close either failed gate. The original
+six-second loaded-cloth drop still awaits its actual terminal result.
+
+This option is CPU-only; the native Metal bag still uses the plane. Point-node
+static support does not certify continuous contact of every yarn interior.
+Transmitted support reactions, calibrated friction under cloth-mediated load,
+and full contact-work closure remain separate open checks. Volumetric fruit,
 reciprocal cloth/volume coupling, material calibration and whole-scene energy
 closure remain open.
 

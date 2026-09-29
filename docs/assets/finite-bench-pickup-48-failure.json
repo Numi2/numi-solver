@@ -1,0 +1,86 @@
+{
+  "schema": "numi.finite-bench.failed-pickup.v1",
+  "source_commit": "4186cfa",
+  "source_binary_sha256": {
+    "cloth_bag.cpp": "fa22b0c6e1bac96d2034e4e3edcd2adbb0208db2d8951b21015187ae6bea8b08",
+    "finite_bench_geometry.h": "2cb87f12e55e6ac4f73217ff986e8268915b1ccb0f0df7fb425b329451042a1c",
+    "cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd",
+    "grip_trajectory.h": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+    "numi-solver-cloth-bag": "fba0c342a36380de631bc7cfe8ee52a7a462ecdcdf8a39ca09b7ff09f0580eeb"
+  },
+  "actual_exit_code": 1,
+  "result": "FAIL",
+  "configuration": {
+    "scenario": "pickup",
+    "steps": 480,
+    "simulated_seconds": 4,
+    "substeps": 48,
+    "iterations": 32,
+    "replays": 2,
+    "cloth_nodes": 1465,
+    "fruit_count": 12,
+    "finite_bench": true
+  },
+  "final_physical_hash": "0xf015ffea31591f84",
+  "ordered_481_frame_hash": "0x24eee4095ab1bbcb",
+  "both_replay_hashes_match": true,
+  "failed_gate": {
+    "metric": "maximum_published_fruit_yarn_overlap_m",
+    "log_rounded_value": 0.000173415,
+    "unchanged_limit_m": 2e-06
+  },
+  "released_fruits": [
+    4,
+    9,
+    10,
+    11
+  ],
+  "all_four_observed_on_lower_floor_at_end": true,
+  "all_49_sparse_obj_contact_audits_pass": true,
+  "artifacts_sha256": {
+    "finite-bench-pickup-48-failed.log": "0e64df4ee59b4362c110cc6e35f6f394edb31175409b74b46a56e9de5a2d39fc",
+    "finite-bench-pickup-48-sampled-contacts.json": "8b9847d1eb92f84093efb6fdaadcb7adbab15299c7757b889e1124c678960f6a",
+    "finite-bench-pickup-48-fruit-audit.json": "7b260ef096e83d0e90ad1691f19b7cb097bf400ce9582dc74b4598b86b4e9d27",
+    "finite-bench-failed-peak.obj": "c6f931d5c32d7c7918ea5a45251f2f7604075ebb749a4fa9e5d2b458a77bfc85",
+    "finite-bench-failed-peaks.csv": "604a4ee5be8d690be66dc7c98b1399c84f8be32cb5be8c4ff7fcfd33628ae4fc",
+    "finite-bench-failed-peak-audit.json": "05288c4b591b877d2a78f4b8d0f209369de09614bafa8e9a49ab0e2b7dcd1ebf"
+  },
+  "boundary": "Four landings and exact replay do not qualify this run. Sparse exported states miss the intervening worst accepted frame. No qualified finite-bench video is claimed. A new support-aware constraint response is a separate candidate; its full execution is still required.",
+  "auditor_sha256": {
+    "tools/audit_replayed_finite_fruit_trace.py": "b3ba916fd204ac4991921853ec1bef88ad895650dfeaab5384e523a117547107",
+    "tools/audit_cloth_snapshot.py": "b437c1884ad35fde3aab547e13684e27388f75aa72b83746edf8e3c931285d99"
+  },
+  "static_geometry": {
+    "box_min_m": [
+      -0.75,
+      -0.5,
+      -0.08
+    ],
+    "box_max_m": [
+      0.75,
+      0.5,
+      0
+    ],
+    "floor_height_m": -0.75
+  },
+  "worst_accepted_frame_witness": {
+    "frame": 19,
+    "time_s": 0.15833333333333333,
+    "runtime_overlap_m": 0.0001734152339239875,
+    "independent_obj_overlap_m": 0.00017341525897048016,
+    "fruit": 4,
+    "yarn_endpoints": [
+      1366,
+      1377
+    ],
+    "both_endpoint_z_m": 0.004,
+    "observer_replays": 1,
+    "observer_actual_exit_code": 1,
+    "observer_final_physical_hash_matches_original": true,
+    "observer_ordered_481_frame_hash_matches_original": true,
+    "observer_final_obj_byte_identical": true,
+    "observer_source_sha256": "c91e835f02e83dbdacc2331aaddc4dd4a51ad7ca5f2c86c4f480a20db0906a53",
+    "observer_binary_sha256": "f5e2e3e1e91672feb4c2e904bb76d6c8f3eeb9d8a50fd4dbe4b68cfbc9eeba42",
+    "boundary": "Observer adds only capture of contact maxima to frozen 4186cfa CPU physics. The whole accepted trajectory hash matches the original failed two-replay result; this one observer replay does not independently qualify replay."
+  }
+}

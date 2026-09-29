@@ -1,0 +1,44 @@
+{
+  "yarn_radius_m": 0.004,
+  "yarn_count": 2904,
+  "local_node_contacts_enforced": true,
+  "all_snapshots_within_contact_tolerance": false,
+  "evidence_boundary": "Contacts of supplied exported states only. Exact authored axial graph and two-hop exclusions are reconstructed after validating every render triangle. Does not certify intervening substeps, dynamics, material calibration, strain or replay.",
+  "snapshots": [
+    {
+      "snapshot": "build/finite-bench-contact-witness-48-peak.obj",
+      "snapshot_sha256": "c6f931d5c32d7c7918ea5a45251f2f7604075ebb749a4fa9e5d2b458a77bfc85",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 0.00017341525897048016,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          1366,
+          1377
+        ]
+      },
+      "fruit_pair_overlap_m": 3.683590227288036e-08,
+      "fruit_pair_witness": [
+        4,
+        10
+      ],
+      "nonlocal_yarn_overlap_m": 1.0456093803290489e-10,
+      "nonlocal_yarn_witness": [
+        [
+          164,
+          165
+        ],
+        [
+          21,
+          1432
+        ]
+      ],
+      "self_broadphase_candidates": 10782,
+      "ground_overlap_m": 3.469446951953614e-18,
+      "within_contact_tolerance": false,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null
+    }
+  ]
+}

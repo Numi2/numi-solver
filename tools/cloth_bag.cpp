@@ -27,6 +27,7 @@ constexpr std::uint32_t kBottomGrid = 13;
 constexpr std::uint32_t kBottomInterior = kBottomGrid - 2u;
 constexpr std::size_t kFruitCount = 12;
 bool gFiniteBench = false;
+std::string gContactPeakPrefix;
 const numi::bench::Box kBench{};
 constexpr double kRoomFloorHeight = -0.75;
 constexpr double kAirborneLift = 0.52;
@@ -300,6 +301,25 @@ double publishStaticVelocity(const Vec3 position, const double radius,
     const double current = dot(velocity, normal);
     if (incoming < 0.0 && current < 0.0) velocity -= normal * current;
     return std::max(0.0, dot(velocity - predictedVelocity, normal) / inverseMass);
+}
+
+Vec3 supportedStaticResponse(const Vec3 position, const double radius, Vec3 response) {
+    const auto surface = staticSurface(position, radius);
+    const Vec3 normal = clothVector(surface.normal);
+    const double incoming = dot(response, normal);
+    if (surface.gap <= 1.0e-9 && incoming < 0.0)
+        response = cross(normal, cross(response, normal)) / lengthSquared(normal);
+    return response;
+}
+
+double staticArrivalFraction(const Vec3 position, const double radius, const Vec3 correction) {
+    if (length(correction) <= 64.0 * std::numeric_limits<double>::epsilon() *
+            std::max(1.0, length(position))) return 1.0;
+    const Vec3 end = position + correction;
+    auto hit = numi::bench::cast(kBench, benchVector(position), benchVector(end), radius);
+    const auto floor = numi::bench::castFloor(benchVector(position), benchVector(end), radius, kRoomFloorHeight);
+    if (floor.contact && (!hit.contact || floor.time < hit.time)) hit = floor;
+    return hit.contact ? hit.time : 1.0;
 }
 
 struct BallPairContactImpulse {
@@ -1866,6 +1886,39 @@ void solveBend(
     const double timestep,
     const bool groundEnabled
 ) {
+    if (gFiniteBench && groundEnabled) {
+        const std::array<std::uint32_t, 2> nodes{{constraint.first, constraint.third}};
+        for (const auto node : nodes) projectStaticSurface(
+            particles[node].position, kClothRadius, particles[node].surfaceNormal);
+        const Vec3 difference = particles[nodes[1]].position - particles[nodes[0]].position;
+        const double chord = length(difference);
+        if (chord < 1.0e-12) return;
+        const std::array<Vec3, 2> gradients{{difference / -chord, difference / chord}};
+        const double alpha = constraint.compliance / (timestep * timestep);
+        const double numerator = -(chord - constraint.restChord) - alpha * constraint.lambda;
+        const double sign = numerator < 0.0 ? -1.0 : 1.0;
+        std::array<Vec3, 2> response{};
+        double denominator = alpha;
+        for (std::size_t index = 0; index < nodes.size(); ++index) {
+            const auto& particle = particles[nodes[index]];
+            response[index] = supportedStaticResponse(particle.position, kClothRadius,
+                gradients[index] * (particle.inverseMass * sign)) * sign;
+            denominator += dot(gradients[index], response[index]);
+        }
+        if (denominator < 1.0e-16) return;
+        const double delta = numerator / denominator;
+        double fraction = 1.0;
+        for (std::size_t index = 0; index < nodes.size(); ++index)
+            fraction = std::min(fraction, staticArrivalFraction(
+                particles[nodes[index]].position, kClothRadius, response[index] * delta));
+        constraint.lambda += delta * fraction;
+        for (std::size_t index = 0; index < nodes.size(); ++index) {
+            auto& particle = particles[nodes[index]];
+            particle.position += response[index] * (delta * fraction);
+            projectStaticSurface(particle.position, kClothRadius, particle.surfaceNormal);
+        }
+        return;
+    }
     const std::array<std::uint32_t, 2> indices{{
         constraint.first,
         constraint.third,
@@ -1949,6 +2002,8 @@ Vec3 deformableParticleResponse(
     const bool groundEnabled
 ) {
     Vec3 response = load * particle.inverseMass;
+    if (gFiniteBench && groundEnabled)
+        return supportedStaticResponse(particle.position, kClothRadius, response);
     if (groundEnabled &&
         particle.position.z <= kClothRadius + 1.0e-6 &&
         response.z < 0.0) {
@@ -2994,6 +3049,41 @@ double applyBallYarnCorrection(
     const std::array<std::uint32_t, 2> indices{{
         segment.first, segment.second,
     }};
+    if (gFiniteBench && groundEnabled) {
+        double remaining = correctionDistance, accumulated = 0.0;
+        for (unsigned iteration = 0; iteration < 6u && remaining > 1.0e-14; ++iteration) {
+            projectStaticSurface(ball.position, ball.radius, ball.surfaceNormal);
+            for (const auto node : indices) projectStaticSurface(
+                particles[node].position, kClothRadius, particles[node].surfaceNormal);
+            const Vec3 ballResponse = supportedStaticResponse(ball.position, ball.radius,
+                normal * -ball.inverseMass);
+            std::array<Vec3, 2> clothResponse{};
+            double denominator = dot(normal * -1.0, ballResponse);
+            for (std::size_t index = 0; index < indices.size(); ++index) {
+                const auto& particle = particles[indices[index]];
+                clothResponse[index] = supportedStaticResponse(particle.position, kClothRadius,
+                    normal * particle.inverseMass);
+                denominator += dot(normal, clothResponse[index]) * weights[index] * weights[index];
+            }
+            if (denominator < 1.0e-16) break;
+            const double lambda = remaining / denominator;
+            double fraction = staticArrivalFraction(ball.position, ball.radius, ballResponse * lambda);
+            for (std::size_t index = 0; index < indices.size(); ++index)
+                fraction = std::min(fraction, staticArrivalFraction(particles[indices[index]].position,
+                    kClothRadius, clothResponse[index] * (weights[index] * lambda)));
+            ball.position += ballResponse * (lambda * fraction);
+            for (std::size_t index = 0; index < indices.size(); ++index) {
+                auto& particle = particles[indices[index]];
+                particle.position += clothResponse[index] * (weights[index] * lambda * fraction);
+                projectStaticSurface(particle.position, kClothRadius, particle.surfaceNormal);
+            }
+            projectStaticSurface(ball.position, ball.radius, ball.surfaceNormal);
+            accumulated += lambda * fraction;
+            remaining = std::max(0.0, remaining - denominator * lambda * fraction);
+            if (fraction >= 1.0 - 1.0e-14 || fraction <= 1.0e-16) break;
+        }
+        return accumulated;
+    }
     std::array<bool, 2> groundActive{};
     if (groundEnabled && normal.z < 0.0) {
         for (std::size_t index = 0u; index < indices.size(); ++index) {
@@ -4372,6 +4462,10 @@ double solveLocalNodePair(Particle& first, Particle& second, const bool groundEn
     const double target = 2.0 * kClothRadius;
     double maximumCorrection = 0.0;
     for (std::uint32_t pass = 0; pass < 4; ++pass) {
+        if (gFiniteBench && groundEnabled) {
+            projectStaticSurface(first.position, kClothRadius, first.surfaceNormal);
+            projectStaticSurface(second.position, kClothRadius, second.surfaceNormal);
+        }
         const Vec3 relative = second.position - first.position;
         const Vec3 previous = second.previous - first.previous;
         const Vec3 delta = relative - previous;
@@ -4395,6 +4489,24 @@ double solveLocalNodePair(Particle& first, Particle& second, const bool groundEn
             }
         }
         if (!(overlap > 0.0)) break;
+        if (gFiniteBench && groundEnabled) {
+            const Vec3 firstResponse = supportedStaticResponse(first.position, kClothRadius,
+                normal * -first.inverseMass);
+            const Vec3 secondResponse = supportedStaticResponse(second.position, kClothRadius,
+                normal * second.inverseMass);
+            const double denominator = dot(normal * -1.0, firstResponse) + dot(normal, secondResponse);
+            if (denominator < 1.0e-16) break;
+            const double lambda = overlap / denominator;
+            const double fraction = std::min(
+                staticArrivalFraction(first.position, kClothRadius, firstResponse * lambda),
+                staticArrivalFraction(second.position, kClothRadius, secondResponse * lambda));
+            first.position += firstResponse * (lambda * fraction);
+            second.position += secondResponse * (lambda * fraction);
+            projectStaticSurface(first.position, kClothRadius, first.surfaceNormal);
+            projectStaticSurface(second.position, kClothRadius, second.surfaceNormal);
+            maximumCorrection = std::max(maximumCorrection, overlap * fraction);
+            continue;
+        }
         const bool blockedFirst = groundEnabled &&
             first.position.z <= kClothRadius + 1.0e-9 && normal.z > 0.0;
         const bool blockedSecond = groundEnabled &&
@@ -5023,6 +5135,7 @@ bool runEscapeClassificationProbe() {
 }
 
 std::uint64_t hashResult(const SimulationResult& result);
+void dumpOBJ(const std::string& path, const SimulationResult& result);
 
 SimulationResult simulate(
     const std::uint32_t steps,
@@ -5063,7 +5176,7 @@ SimulationResult simulate(
     std::vector<Vec3> predictedClothPositions(result.cloth.particles.size());
     std::vector<Vec3> predictedFruitPositions(result.balls.size());
     std::vector<Vec3> predictedFruitVelocities(result.balls.size());
-    const bool planarGround = scenario != Scenario::spin && !gFiniteBench;
+    const bool staticGround = scenario != Scenario::spin;
     std::vector<double> clothGroundNormalImpulses(
         result.cloth.particles.size()
     );
@@ -5215,7 +5328,7 @@ SimulationResult simulate(
                     }
                 )
             );
-            solveLocalNodeContacts(result.cloth, planarGround,
+            solveLocalNodeContacts(result.cloth, staticGround,
                 result.metrics.localNodeContacts);
 
             for (std::size_t ballIndex = 0;
@@ -5231,7 +5344,7 @@ SimulationResult simulate(
                             result.cloth.yarnSegments[segmentIndex],
                             result.balls[ballIndex],
                             timestep,
-                            planarGround,
+                            staticGround,
                             yarnContacts[
                                 ballIndex * result.cloth.yarnSegments.size() +
                                 segmentIndex
@@ -5255,7 +5368,7 @@ SimulationResult simulate(
                             result.cloth.particles,
                             constraint,
                             timestep,
-                            planarGround
+                            staticGround
                         );
                     }
                 }
@@ -5293,7 +5406,7 @@ SimulationResult simulate(
                             result.cloth,
                             result.balls,
                             timestep,
-                            planarGround,
+                            staticGround,
                             yarnContacts,
                             result.metrics
                         );
@@ -5312,7 +5425,7 @@ SimulationResult simulate(
                         }
                     )
                 );
-                solveLocalNodeContacts(result.cloth, planarGround,
+                solveLocalNodeContacts(result.cloth, staticGround,
                     result.metrics.localNodeContacts);
                 if (scenario != Scenario::spin) {
                     result.metrics.maximumGroundPenetration = std::max(
@@ -5355,7 +5468,7 @@ SimulationResult simulate(
                             result.cloth,
                             result.balls,
                             timestep,
-                            planarGround,
+                            staticGround,
                             yarnContacts,
                             result.metrics
                         );
@@ -5450,7 +5563,7 @@ SimulationResult simulate(
                 for (std::uint32_t pass = 0u;
                      pass < finalContactPasses;
                      ++pass) {
-                    solveLocalNodeContacts(result.cloth, planarGround,
+                    solveLocalNodeContacts(result.cloth, staticGround,
                         result.metrics.localNodeContacts);
                     std::size_t pairIndex = 0u;
                     for (std::size_t first = 0u;
@@ -5474,7 +5587,7 @@ SimulationResult simulate(
                                 result.cloth,
                                 result.balls,
                                 timestep,
-                                planarGround,
+                                staticGround,
                                 yarnContacts,
                                 result.metrics
                             );
@@ -5607,7 +5720,7 @@ SimulationResult simulate(
                 result.balls,
                 yarnContacts,
                 result.metrics,
-                planarGround
+                staticGround
             );
             applyBallPairFriction(result.balls, pairContacts, result.metrics);
             applyBallGroundFriction(
@@ -5647,13 +5760,18 @@ SimulationResult simulate(
             result.metrics.maximumPublishedPrimitiveSelfPenetration,
             publishedPrimitiveResidual
         );
+        const double publishedBallContact = measureBallYarnPenetration(result.cloth, result.balls);
+        if (!gContactPeakPrefix.empty() &&
+            publishedBallContact > result.metrics.maximumPublishedBallPenetration) {
+            dumpOBJ(gContactPeakPrefix + "-r" + std::to_string(replayIndex) + "-peak.obj", result);
+            std::ofstream witness(gContactPeakPrefix + "-peaks.csv", std::ios::app);
+            if (!witness) throw std::runtime_error("failed to append contact peak trace");
+            witness << std::setprecision(17) << replayIndex << ',' << step + 1u << ','
+                    << (step + 1u) * frameTimestep << ',' << publishedBallContact << std::endl;
+            if (!witness) throw std::runtime_error("failed to write contact peak trace");
+        }
         result.metrics.maximumPublishedBallPenetration = std::max(
-            result.metrics.maximumPublishedBallPenetration,
-            measureBallYarnPenetration(
-                result.cloth,
-                result.balls
-            )
-        );
+            result.metrics.maximumPublishedBallPenetration, publishedBallContact);
         result.metrics.maximumPublishedGroundPenetration = std::max(
             result.metrics.maximumPublishedGroundPenetration,
             scenario == Scenario::spin ? 0.0 : measureGroundPenetration(
@@ -5983,7 +6101,45 @@ FiniteBenchProbeResult finiteBenchTrajectory(const std::uint32_t steps) {
     return result;
 }
 
+bool runFiniteSupportedYarnProbe() {
+    bool pass = true;
+    for (unsigned index = 0; index < 5u; ++index) {
+        const double root = std::sqrt(0.5);
+        const Vec3 normal = index == 2 ? Vec3{1,0,0} :
+            (index == 3 ? Vec3{root,0,root} : Vec3{0,0,1});
+        const Vec3 origin = index == 1 || index == 4 ? Vec3{1.5,0,kRoomFloorHeight} :
+            (index == 2 ? Vec3{0.75,0,-0.04} : (index == 3 ? Vec3{0.75,0,0} : Vec3{}));
+        const Vec3 tangent = index == 2 || index == 3 ? Vec3{0,0.02,0} : Vec3{0.02,0,0};
+        const double clearance = index == 4 ? 0.002 : 0.0;
+        std::vector<Particle> particles(2);
+        for (unsigned node = 0; node < 2; ++node) {
+            auto& particle = particles[node];
+            particle.position = origin + normal * (kClothRadius + clearance) + tangent * (node == 0 ? -1.0 : 1.0);
+            particle.previous = particle.position;
+            particle.mass = kClothNodeMass; particle.inverseMass = 1.0 / particle.mass;
+        }
+        Ball ball; ball.radius = 0.07; ball.inverseMass = 5.0;
+        ball.position = origin + normal * (ball.radius + (index == 4 ? 0.006 : 0.0));
+        ball.previous = ball.position;
+        BallYarnContactImpulse contact; std::uint64_t count = 0;
+        solveBallYarn(particles, Edge{0,1}, ball, 1.0e-4, true, contact, count);
+        const auto closest = closestPointsOnSegments(ball.position, ball.position,
+            particles[0].position, particles[1].position);
+        const double error = std::abs(length(closest.secondPoint - ball.position) - ball.radius - kClothRadius);
+        const double ground = std::max({0.0, -staticSurface(ball.position, ball.radius).gap,
+            -staticSurface(particles[0].position, kClothRadius).gap,
+            -staticSurface(particles[1].position, kClothRadius).gap});
+        const bool row = error < 1.0e-10 && ground < 1.0e-10 && count == 1u;
+        pass &= row;
+        std::cout << std::setprecision(12) << "finite_supported_yarn_case=" << index
+            << " separation_error_m=" << error << " collider_penetration_m=" << ground
+            << " passed=" << row << '\n';
+    }
+    return pass;
+}
+
 bool runFiniteBenchProbe() {
+    const bool supportedYarn = runFiniteSupportedYarnProbe();
     const auto first = finiteBenchTrajectory(12000u);
     const auto replay = finiteBenchTrajectory(12000u);
     const auto fine = finiteBenchTrajectory(24000u);
@@ -6008,7 +6164,7 @@ bool runFiniteBenchProbe() {
         std::abs(balls[0].position.x - 0.82) < 1.0e-12 && balls[0].surfaceNormal.x == 1.0;
     const auto& final = first.captures.back();
     const bool deterministic = first.captures == replay.captures;
-    const bool pass = deterministic && first.leftBench && first.reachedFloor && side &&
+    const bool pass = supportedYarn && deterministic && first.leftBench && first.reachedFloor && side &&
         first.maximumPenetration < 1.0e-9 && fine.maximumPenetration < 1.0e-9 &&
         first.maximumFrictionRatio <= 1.0 + 1.0e-12 && maximumPositionDifference < 0.002 &&
         std::abs(final[2] - (kRoomFloorHeight + 0.07)) < 1.0e-9 && std::abs(final[5]) < 1.0e-10;
@@ -6078,6 +6234,8 @@ int main(int argc, char** argv) try {
             knotTracePath = argv[++argument];
         } else if (value == "--fruit-trace" && argument + 1 < argc) {
             fruitTracePath = argv[++argument];
+        } else if (value == "--contact-peak-prefix" && argument + 1 < argc) {
+            gContactPeakPrefix = argv[++argument];
         } else if (value == "--dump-frames" && argument + 1 < argc) {
             framePrefix = argv[++argument];
         } else if (value == "--dump-every") {
@@ -6138,6 +6296,7 @@ int main(int argc, char** argv) try {
                          "[--dump-obj PATH] [--dump-frames PREFIX] "
                          "[--dump-knot-peak PATH] [--knot-trace PATH] "
                          "[--fruit-trace CSV] "
+                         "[--contact-peak-prefix PREFIX] "
                          "[--dump-every N] [--rolling-probe] "
                          "[--self-ccd-probe] [--strain-probe] "
                          "[--self-friction-probe] "
@@ -6240,6 +6399,11 @@ int main(int argc, char** argv) try {
         }
     }
     SimulationResult knotPeakCapture;
+    if (!gContactPeakPrefix.empty()) {
+        std::ofstream witness(gContactPeakPrefix + "-peaks.csv");
+        if (!witness) throw std::runtime_error("failed to open contact peak trace");
+        witness << "replay,frame,time_s,fruit_yarn_overlap_m\n";
+    }
     std::ofstream fruitTrace;
     if (!fruitTracePath.empty()) {
         fruitTrace.open(fruitTracePath);

@@ -85,10 +85,15 @@ inline Hit cast(const Box& box,Vec3 start,Vec3 end,double radius){
     if(!finite(delta))throw std::invalid_argument("unbounded finite bench displacement");
     Sample initial=sample(box,start,radius);
     if(initial.gap< -1e-9)throw std::invalid_argument("finite bench sweep starts inside the collider");
-    if(initial.gap<=1e-10&&dot(delta,initial.normal)<-1e-16)
+    for(int axis=0;axis<3;++axis)
+        if(std::min(start[axis],end[axis])>box.maximum[axis]+radius ||
+           std::max(start[axis],end[axis])<box.minimum[axis]-radius)return hit;
+    const double closingTolerance=32*std::numeric_limits<double>::epsilon()*
+        std::max({1.0,length(start),length(end)});
+    if(initial.gap<=1e-10&&dot(delta,initial.normal)<-closingTolerance)
         return {true,0,initial.normal,4};
     auto accept=[&](double time,Vec3 normal,unsigned feature){
-        if(!std::isfinite(time)||time< -1e-10||time>1+1e-10||!finite(normal)||dot(delta,normal)>=-1e-16)return;
+        if(!std::isfinite(time)||time< -1e-10||time>1+1e-10||!finite(normal)||dot(delta,normal)>=-closingTolerance)return;
         time=std::clamp(time,0.0,1.0);
         if(!hit.contact||time<hit.time){hit={true,time,normal,feature};}
     };

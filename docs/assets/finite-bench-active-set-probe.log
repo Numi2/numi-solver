@@ -1,0 +1,7 @@
+finite_supported_yarn_case=0 separation_error_m=3.46944695195e-18 collider_penetration_m=0 passed=1
+finite_supported_yarn_case=1 separation_error_m=5.89805981832e-17 collider_penetration_m=0 passed=1
+finite_supported_yarn_case=2 separation_error_m=5.89805981832e-17 collider_penetration_m=0 passed=1
+finite_supported_yarn_case=3 separation_error_m=3.46944695195e-18 collider_penetration_m=1.47451495458e-17 passed=1
+finite_supported_yarn_case=4 separation_error_m=5.89805981832e-17 collider_penetration_m=0 passed=1
+probe=production_finite_bench backend=CPU_FP64 simulated_seconds=2 captures=241 exact_captured_replay=true left_bench=true reached_lower_floor=true cloth_fruit_side_ccd=true maximum_penetration_m=0 maximum_half_step_position_difference_m=0.000176893979686 max_friction_cone_ratio=0.00165771973086 final_z_m=-0.68 final_vz_m_s=2.21368930131e-13
+result=PASS

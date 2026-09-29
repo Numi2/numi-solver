@@ -1,0 +1,28 @@
+{
+  "schema": "numi.finite-bench.active-support-probe.v1",
+  "source_binary_sha256": {
+    "numi-solver-cloth-bag": "eede1b7050b2698fa45f6f3192a9bc739d62a188f9802dd08083e4eb4936877b",
+    "cloth_bag.cpp": "221dfef3346e32c46ee59701f0bf128b66a3d7fe38f8fb003ee21cbecac6cc3f",
+    "grip_trajectory.h": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+    "finite_bench_geometry.h": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade",
+    "cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd"
+  },
+  "focused_ctest_passed": 3,
+  "supported_yarn_cases": [
+    "tabletop",
+    "lower_floor",
+    "side",
+    "rounded_edge",
+    "floor_arrival_from_clearance"
+  ],
+  "maximum_supported_yarn_separation_error_m": 5.89805981832e-17,
+  "production_two_second_rolloff_probe_pass": true,
+  "probe_replay_captures": 241,
+  "probe_half_step_maximum_position_difference_m": 0.000176893979686,
+  "unchanged_fruit_yarn_gate_m": 2e-06,
+  "artifacts_sha256": {
+    "finite-bench-active-set-checks.log": "305ca9078bbd07254e8bfedaae68e9db4af368cb22f84528724e457961d7cbfd",
+    "finite-bench-active-set-probe.log": "c8066f6d0d94df4f858290ab5c66832074e76bb6dacc8116de36407737b258f0"
+  },
+  "boundary": "Focused CPU checks only. Full repaired pickup and loaded-cloth drop remain required. No calibrated transmitted reaction, full cloth contact-work balance, native finite-bench or deformable-volume coupling qualification."
+}
