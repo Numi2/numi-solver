@@ -14,6 +14,7 @@
 #include <limits>
 #include <numbers>
 #include <stdexcept>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -28,6 +29,7 @@ constexpr std::uint32_t kBottomInterior = kBottomGrid - 2u;
 constexpr std::size_t kFruitCount = 12;
 bool gFiniteBench = false;
 std::string gContactPeakPrefix;
+bool gTrajectoryProgress = false;
 const numi::bench::Box kBench{};
 constexpr double kRoomFloorHeight = -0.75;
 constexpr double kAirborneLift = 0.52;
@@ -476,6 +478,7 @@ struct Metrics {
     std::uint64_t localNodeContacts{};
     double maximumBallPenetration{};
     double maximumPublishedBallPenetration{};
+    double maximumPublishedBallPairPenetration{};
     double maximumPublishedPrimitiveSelfPenetration{};
     double maximumPublishedStrainLimitViolation{};
     double maximumSelfPenetration{};
@@ -508,6 +511,9 @@ struct Metrics {
     std::uint32_t gripPatchSelectionCount{};
     std::uint32_t maximumGripPatchRingShift{};
     std::uint64_t ballYarnContacts{};
+    std::uint64_t coupledBallYarnBlocks{};
+    std::uint64_t coupledBallYarnFallbacks{};
+    std::uint32_t maximumCoupledBallYarnBlockSize{};
     std::uint64_t sweptBallYarnContacts{};
     std::uint64_t selfContacts{};
     std::uint64_t edgeEdgeSelfContacts{};
@@ -3340,6 +3346,13 @@ double solveSweptBallYarn(
     return removedAdvance;
 }
 
+double measureBallPairPenetration(const std::array<Ball,kFruitCount>& balls) {
+    double maximum=0;
+    for(std::size_t a=0;a<balls.size();++a)for(std::size_t b=a+1;b<balls.size();++b)
+        maximum=std::max(maximum,balls[a].radius+balls[b].radius-length(balls[b].position-balls[a].position));
+    return maximum;
+}
+
 double measureBallYarnPenetration(
     const ClothModel& cloth,
     const std::array<Ball, kFruitCount>& balls
@@ -3368,6 +3381,149 @@ double measureBallYarnPenetration(
         }
     }
     return maximum;
+}
+
+// Simultaneous normal projection for fruit sharing an airborne yarn. Sequential
+// light-yarn/heavy-fruit projections can repeatedly undo each other when the
+// same yarn is squeezed between fruit. The small contact-space complementarity
+// solve retains the actual masses and the supported fruit responses. A yarn
+// already on static geometry stays in the existing support-aware scalar path;
+// its combined unilateral static active set is not approximated here.
+bool solveBallYarnBlock(
+    ClothModel& cloth, std::array<Ball, kFruitCount>& balls,
+    const std::size_t segmentIndex, const double timestep,
+    std::vector<BallYarnContactImpulse>& contacts, Metrics& metrics
+) {
+    const Edge edge = cloth.yarnSegments[segmentIndex];
+    auto& first = cloth.particles[edge.first];
+    auto& second = cloth.particles[edge.second];
+    if (staticSurface(first.position, kClothRadius).gap <= 1.0e-9 ||
+        staticSurface(second.position, kClothRadius).gap <= 1.0e-9) return false;
+    struct Contact { std::size_t fruit; Vec3 normal, ballResponse; std::array<double,2> weights; double penetration; };
+    std::array<Contact, kFruitCount> candidates{};
+    std::size_t count = 0;
+    double maximum = 0.0;
+    for (std::size_t fruit = 0; fruit < balls.size(); ++fruit) {
+        const auto& ball = balls[fruit];
+        const double target = ball.radius + kClothRadius;
+        if (ball.position.x < std::min(first.position.x,second.position.x)-target-2.0e-6 ||
+            ball.position.x > std::max(first.position.x,second.position.x)+target+2.0e-6 ||
+            ball.position.y < std::min(first.position.y,second.position.y)-target-2.0e-6 ||
+            ball.position.y > std::max(first.position.y,second.position.y)+target+2.0e-6 ||
+            ball.position.z < std::min(first.position.z,second.position.z)-target-2.0e-6 ||
+            ball.position.z > std::max(first.position.z,second.position.z)+target+2.0e-6) continue;
+        const auto closest = closestPointsOnSegments(ball.position,ball.position,first.position,second.position);
+        const Vec3 separation = closest.secondPoint-ball.position;
+        const double distance = length(separation), penetration = target-distance;
+        if (distance < 1.0e-12 || penetration < -2.0e-6) continue;
+        const Vec3 normal = separation/distance;
+        candidates[count++] = {fruit,normal,supportedStaticResponse(ball.position,ball.radius,
+            normal*-ball.inverseMass),{1.0-closest.secondWeight,closest.secondWeight},penetration};
+        maximum = std::max(maximum,penetration);
+    }
+    if (count < 2 || maximum <= 1.0e-9) return false;
+    std::array<std::array<double,kFruitCount>,kFruitCount> matrix{};
+    std::array<double,kFruitCount> lambda{};
+    std::array<bool,kFruitCount> active{};
+    for (std::size_t i=0;i<count;++i) {
+        active[i] = candidates[i].penetration > 0;
+        for (std::size_t j=0;j<count;++j) {
+            matrix[i][j] = dot(candidates[i].normal,candidates[j].normal) *
+                (first.inverseMass*candidates[i].weights[0]*candidates[j].weights[0] +
+                 second.inverseMass*candidates[i].weights[1]*candidates[j].weights[1]);
+            if(i==j) matrix[i][j] += dot(candidates[i].normal*-1.0,candidates[i].ballResponse);
+        }
+    }
+    bool solved = false;
+    // Active-set changes are bounded. Singular or cycling systems publish no
+    // block correction and fall back to the scalar path; strict scene gates
+    // still decide whether the resulting state is admissible.
+    for (std::size_t iteration=0;iteration<4*count;++iteration) {
+        std::array<std::size_t,kFruitCount> indices{};std::size_t size=0;
+        for(std::size_t i=0;i<count;++i)if(active[i])indices[size++]=i;
+        if(size==0)break;
+        std::array<std::array<double,kFruitCount>,kFruitCount> lower{};
+        std::array<double,kFruitCount> rhs{},answer{};
+        bool positive=true;
+        for(std::size_t i=0;i<size&&positive;++i) {
+            for(std::size_t j=0;j<=i;++j) {
+                double value=matrix[indices[i]][indices[j]];
+                for(std::size_t k=0;k<j;++k)value-=lower[i][k]*lower[j][k];
+                if(i==j) {
+                    if(!std::isfinite(value)||value<=matrix[indices[i]][indices[i]]*1.0e-12){positive=false;break;}
+                    lower[i][j]=std::sqrt(value);
+                }else lower[i][j]=value/lower[j][j];
+            }
+        }
+        if(!positive)break;
+        for(std::size_t i=0;i<size;++i) {
+            double value=candidates[indices[i]].penetration;
+            for(std::size_t j=0;j<i;++j)value-=lower[i][j]*rhs[j];
+            rhs[i]=value/lower[i][i];
+        }
+        for(std::size_t i=size;i-->0;) {
+            double value=rhs[i];
+            for(std::size_t j=i+1;j<size;++j)value-=lower[j][i]*answer[j];
+            answer[i]=value/lower[i][i];
+        }
+        lambda.fill(0);
+        double mostNegative=0;std::size_t remove=count;
+        for(std::size_t i=0;i<size;++i) {
+            if(!std::isfinite(answer[i])){positive=false;break;}
+            lambda[indices[i]]=answer[i];
+            if(answer[i]<mostNegative){mostNegative=answer[i];remove=indices[i];}
+        }
+        if(!positive)break;
+        if(remove<count){active[remove]=false;continue;}
+        double largestViolation=1.0e-12;std::size_t add=count;
+        for(std::size_t i=0;i<count;++i)if(!active[i]) {
+            double residual=candidates[i].penetration;
+            for(std::size_t j=0;j<count;++j)residual-=matrix[i][j]*lambda[j];
+            if(residual>largestViolation){largestViolation=residual;add=i;}
+        }
+        if(add<count){active[add]=true;continue;}
+        solved=true;
+        for(std::size_t i=0;i<count;++i) {
+            double residual=candidates[i].penetration;
+            for(std::size_t j=0;j<count;++j)residual-=matrix[i][j]*lambda[j];
+            if(!std::isfinite(residual)||lambda[i]<0||
+                (active[i]?std::abs(residual)>1e-9:residual>1e-12))solved=false;
+        }
+        break;
+    }
+    if(!solved){++metrics.coupledBallYarnFallbacks;return false;}
+    std::array<Vec3,2> nodeCorrections{};
+    double fraction=1.0;
+    for(std::size_t i=0;i<count;++i) {
+        const auto& c=candidates[i];
+        nodeCorrections[0]+=c.normal*(first.inverseMass*c.weights[0]*lambda[i]);
+        nodeCorrections[1]+=c.normal*(second.inverseMass*c.weights[1]*lambda[i]);
+        fraction=std::min(fraction,staticArrivalFraction(balls[c.fruit].position,
+            balls[c.fruit].radius,c.ballResponse*lambda[i]));
+    }
+    fraction=std::min(fraction,staticArrivalFraction(first.position,kClothRadius,nodeCorrections[0]));
+    fraction=std::min(fraction,staticArrivalFraction(second.position,kClothRadius,nodeCorrections[1]));
+    if(!(fraction>0)||!std::isfinite(fraction)){++metrics.coupledBallYarnFallbacks;return false;}
+    first.position+=nodeCorrections[0]*fraction;second.position+=nodeCorrections[1]*fraction;
+    projectStaticSurface(first.position,kClothRadius,first.surfaceNormal);
+    projectStaticSurface(second.position,kClothRadius,second.surfaceNormal);
+    for(std::size_t i=0;i<count;++i)if(lambda[i]>0) {
+        const auto& c=candidates[i];auto& ball=balls[c.fruit];
+        const double applied=lambda[i]*fraction,impulse=applied/timestep;
+        ball.position+=c.ballResponse*applied;
+        ball.blockedStaticPositionImpulse+=blockedStaticReaction(c.normal*-ball.inverseMass,
+            c.ballResponse,ball.inverseMass,applied);
+        projectStaticSurface(ball.position,ball.radius,ball.surfaceNormal);
+        auto& contact=contacts[c.fruit*cloth.yarnSegments.size()+segmentIndex];
+        contact.weightedNormalOnBall-=c.normal*impulse;
+        contact.weightedSegment[0]+=c.weights[0]*impulse;
+        contact.weightedSegment[1]+=c.weights[1]*impulse;
+        contact.normalImpulse+=impulse;++metrics.ballYarnContacts;
+    }
+    ++metrics.coupledBallYarnBlocks;
+    metrics.maximumCoupledBallYarnBlockSize=std::max(metrics.maximumCoupledBallYarnBlockSize,
+        static_cast<std::uint32_t>(count));
+    return true;
 }
 
 void solveBallYarnContactSweep(
@@ -3404,6 +3560,10 @@ void solveBallYarnContactSweep(
                 penetration
             );
         }
+    }
+    if (gFiniteBench && groundEnabled) {
+        for (std::size_t segment=0;segment<cloth.yarnSegments.size();++segment)
+            solveBallYarnBlock(cloth,balls,segment,timestep,contacts,metrics);
     }
 }
 
@@ -5671,6 +5831,7 @@ SimulationResult simulate(
                     if (publishedPrimitiveResidual < 1.0e-6 &&
                         measureLocalNodePenetration(result.cloth) < 1.0e-6 &&
                         publishedBallResidual < 1.0e-6 &&
+                        measureBallPairPenetration(result.balls) < 1.0e-6 &&
                         publishedGroundResidual < 1.0e-9 &&
                         publishedStrainResidual < 1.0e-6) {
                         break;
@@ -5796,6 +5957,8 @@ SimulationResult simulate(
             result.metrics.maximumPublishedPrimitiveSelfPenetration,
             publishedPrimitiveResidual
         );
+        result.metrics.maximumPublishedBallPairPenetration=std::max(
+            result.metrics.maximumPublishedBallPairPenetration,measureBallPairPenetration(result.balls));
         const double publishedBallContact = measureBallYarnPenetration(result.cloth, result.balls);
         if (!gContactPeakPrefix.empty() &&
             publishedBallContact > result.metrics.maximumPublishedBallPenetration) {
@@ -5845,6 +6008,13 @@ SimulationResult simulate(
             }
         }
         capture(step + 1u);
+        if(gTrajectoryProgress&&((step+1u)%20u==0u||step+1u==steps))
+            std::cout<<std::setprecision(17)<<"cloth_progress replay="<<replayIndex
+                <<" frame="<<step+1u<<'/'<<steps<<" released_mask="<<result.metrics.releasedMask
+                <<" maximum_fruit_yarn_overlap_m="<<result.metrics.maximumPublishedBallPenetration
+                <<" maximum_fruit_pair_overlap_m="<<result.metrics.maximumPublishedBallPairPenetration
+                <<" coupled_blocks="<<result.metrics.coupledBallYarnBlocks
+                <<" block_fallbacks="<<result.metrics.coupledBallYarnFallbacks<<std::endl;
     }
 
     for (std::size_t ballIndex = 0; ballIndex < result.balls.size(); ++ballIndex) {
@@ -6059,6 +6229,7 @@ bool acceptable(const SimulationResult& result, const bool deterministic) {
         result.metrics.maximumKnotAngleError < 0.80 &&
         result.metrics.maximumBallPenetration < 0.010 &&
         result.metrics.maximumPublishedBallPenetration < 2.0e-6 &&
+        result.metrics.maximumPublishedBallPairPenetration < 2.0e-6 &&
         result.metrics.maximumPublishedGroundPenetration < 2.0e-6 &&
         result.metrics.maximumPublishedPrimitiveSelfPenetration < 2.0e-6 &&
         result.metrics.maximumPublishedLocalNodePenetration < 2.0e-6 &&
@@ -6294,6 +6465,136 @@ bool runFiniteBenchProbe() {
     return pass;
 }
 
+bool runCoupledBallYarnProbe() {
+    gFiniteBench=true;
+    bool pass=true;double maximumResidual=0,maximumMomentumError=0,maximumSupportError=0;
+    std::uint64_t appliedBlocks=0;bool inactiveExact=true;
+    for(const double mass:{0.00005,0.05,0.5})for(const bool supported:{false,true}) {
+        ClothModel cloth;cloth.yarnSegments={{0,1}};
+        const double lower=supported?.04:.3,yarn=lower+.0435;
+        for(const double x:{-.02,.02}) {
+            Particle p;p.position=p.previous=p.rest={x,0,yarn};p.mass=mass;p.inverseMass=1/mass;
+            cloth.particles.push_back(p);
+        }
+        auto balls=makeBalls(Scenario::pickup);
+        for(std::size_t i=0;i<balls.size();++i){balls[i].position={3.0+double(i),0,3};balls[i].radius=.004;}
+        balls[0].position={0,0,lower};balls[0].radius=.04;balls[0].inverseMass=5;
+        balls[1].position={0,0,lower+.087};balls[1].radius=.04;balls[1].inverseMass=5;
+        // A nearby, inactive small fruit must receive no attractive impulse.
+        balls[2].position={0,.008001,yarn};balls[2].radius=.004;balls[2].inverseMass=100;
+        const auto before=balls;const auto nodesBefore=cloth.particles;
+        std::vector<BallYarnContactImpulse> contacts(12);Metrics metrics;
+        const bool applied=solveBallYarnBlock(cloth,balls,0,1e-4,contacts,metrics);
+        Vec3 displacement{};
+        for(std::size_t i=0;i<2;++i)displacement+=(cloth.particles[i].position-nodesBefore[i].position)*mass;
+        double support=0;
+        for(std::size_t i=0;i<12;++i){displacement+=(balls[i].position-before[i].position)/balls[i].inverseMass;support+=balls[i].blockedStaticPositionImpulse;}
+        const double residual=measureBallYarnPenetration(cloth,balls);
+        maximumResidual=std::max(maximumResidual,residual);
+        maximumMomentumError=std::max(maximumMomentumError,length(displacement-Vec3{0,0,support}));
+        if(supported)maximumSupportError=std::max(maximumSupportError,std::abs(balls[0].position.z-.04));
+        inactiveExact=inactiveExact&&contacts[2].normalImpulse==0&&length(balls[2].position-before[2].position)==0;
+        pass=pass&&applied&&residual<1e-11&&length(displacement-Vec3{0,0,support})<1e-12&&
+            contacts[2].normalImpulse==0&&length(balls[2].position-before[2].position)==0&&
+            (!supported||(balls[0].position.z==.04&&support>0))&&measureBallPairPenetration(balls)<1e-12;
+        appliedBlocks+=metrics.coupledBallYarnBlocks;
+    }
+    ClothModel singular;singular.yarnSegments={{0,1}};
+    for(double x:{-.02,.02}){Particle p;p.position=p.previous=p.rest={x,0,.3435};p.mass=.00005;p.inverseMass=20000;singular.particles.push_back(p);}
+    auto locked=makeBalls(Scenario::pickup);
+    for(std::size_t i=0;i<12;++i){locked[i].position={3.0+double(i),0,3};locked[i].radius=.004;}
+    locked[0].position={0,0,.3};locked[1].position={0,0,.387};
+    locked[0].radius=locked[1].radius=.04;locked[0].inverseMass=locked[1].inverseMass=0;
+    const auto nodes=singular.particles;const auto before=locked;
+    std::vector<BallYarnContactImpulse> contacts(12);Metrics metrics;
+    const bool applied=solveBallYarnBlock(singular,locked,0,1e-4,contacts,metrics);
+    bool unchanged=true;
+    for(std::size_t i=0;i<2;++i)unchanged=unchanged&&length(nodes[i].position-singular.particles[i].position)==0;
+    for(std::size_t i=0;i<12;++i)unchanged=unchanged&&length(before[i].position-locked[i].position)==0;
+    pass=pass&&!applied&&metrics.coupledBallYarnFallbacks==1&&unchanged&&measureBallYarnPenetration(singular,locked)>2e-6;
+    std::cout<<std::setprecision(17)<<"coupled_yarn_probe_pass="<<std::boolalpha<<pass
+        <<" cases=6 applied_blocks="<<appliedBlocks<<" maximum_normal_residual_m="<<maximumResidual
+        <<" maximum_mass_weighted_displacement_balance_error_kg_m="<<maximumMomentumError
+        <<" maximum_static_support_error_m="<<maximumSupportError
+        <<" inactive_contact_zero_impulse="<<inactiveExact<<" singular_system_rejected="<<(!applied&&unchanged)
+        <<" full_replay=NOT_QUALIFIED\n";
+    return pass;
+}
+
+bool runCoupledBallYarnSnapshotProbe(const std::string& path,const std::string& output) {
+    gFiniteBench=true;SimulationResult result;
+    result.cloth=makeCloth(Scenario::pickup);result.balls=makeBalls(Scenario::pickup);
+    std::ifstream stream(path);if(!stream)throw std::invalid_argument("cannot read contact snapshot");
+    std::string line;std::size_t node=0,face=0,fruits=0;bool bench=false;
+    std::array<bool,kFruitCount> seen{};
+    const auto finite=[](Vec3 p){return std::isfinite(p.x)&&std::isfinite(p.y)&&std::isfinite(p.z);};
+    while(std::getline(stream,line)) {
+        std::istringstream row(line);std::string type;row>>type;
+        if(type=="v") {
+            if(node>=result.cloth.particles.size())throw std::invalid_argument("excess snapshot vertices");
+            auto& p=result.cloth.particles[node++];
+            if(!(row>>p.position.x>>p.position.y>>p.position.z)||!finite(p.position))throw std::invalid_argument("invalid snapshot vertex");
+            p.previous=p.position;
+        } else if(type=="f") {
+            if(face>=result.cloth.renderTriangles.size())throw std::invalid_argument("excess snapshot faces");
+            unsigned a,b,c;const auto expected=result.cloth.renderTriangles[face++];
+            if(!(row>>a>>b>>c)||a!=expected.first+1||b!=expected.second+1||c!=expected.third+1)
+                throw std::invalid_argument("snapshot topology differs from authored yarn model");
+        } else if(line.rfind("# static_bench ",0)==0) {
+            if(bench||line!="# static_bench min -0.75 -0.5 -0.08 max 0.75 0.5 0 floor -0.75")
+                throw std::invalid_argument("snapshot static model differs from authored bench");
+            bench=true;
+        } else if(line.rfind("# ball ",0)==0) {
+            row.str(line.substr(7));row.clear();std::size_t index;std::string center,radius;Vec3 position;double r;
+            if(!(row>>index>>center>>position.x>>position.y>>position.z>>radius>>r)||index>=12||seen[index]||
+                center!="center"||radius!="radius"||!finite(position)||!std::isfinite(r)||
+                std::abs(r-result.balls[index].radius)>1e-12)throw std::invalid_argument("invalid or duplicate snapshot fruit");
+            seen[index]=true;++fruits;auto& b=result.balls[index];b.position=b.previous=position;
+        }
+    }
+    if(!stream.eof()||node!=1465||face!=2880||fruits!=12||!bench)
+        throw std::invalid_argument("incomplete authored contact snapshot");
+    const double before=measureBallYarnPenetration(result.cloth,result.balls),dt=1./(120*96);
+    std::vector<BallYarnContactImpulse> contacts(12*result.cloth.yarnSegments.size());
+    std::array<BallPairContactImpulse,kBallPairCount> pairs{};std::array<double,12> ground{};
+    unsigned passes=0;bool pass=false;
+    for(unsigned iteration=0;iteration<16;++iteration) {
+        solvePrimitiveSelfCollision(result.cloth,false,result.metrics,dt,nullptr);
+        for(unsigned i=0;i<3;++i)solveStrainLimits(result.cloth.particles,result.cloth.distances);
+        for(unsigned i=0;i<2;++i) {
+            solveLocalNodeContacts(result.cloth,true,result.metrics.localNodeContacts);
+            std::size_t pair=0;
+            for(std::size_t a=0;a<12;++a)for(std::size_t b=a+1;b<12;++b)
+                solveBallPair(result.balls[a],result.balls[b],dt,pairs[pair++]);
+            solveBallYarnContactSweep(result.cloth,result.balls,dt,true,contacts,result.metrics);
+            double clothCorrection=0,fruitCorrection=0;
+            solveGround(result.cloth.particles,result.balls,dt,ground,clothCorrection,fruitCorrection);
+        }
+        passes=iteration+1;
+        pass=measureBallYarnPenetration(result.cloth,result.balls)<1e-6&&
+            measureBallPairPenetration(result.balls)<1e-6&&
+            measurePrimitiveSelfPenetration(result.cloth)<1e-6&&
+            measureLocalNodePenetration(result.cloth)<1e-6&&
+            measureStrainLimitViolation(result.cloth)<1e-6&&
+            measureGroundPenetration(result.cloth.particles,result.balls)<1e-9;
+        if(pass)break;
+    }
+    if(!output.empty())dumpOBJ(output,result);
+    std::cout<<std::setprecision(17)<<"coupled_yarn_snapshot_probe_pass="<<std::boolalpha<<pass
+        <<" input_fruit_yarn_overlap_m="<<before
+        <<" projected_fruit_yarn_overlap_m="<<measureBallYarnPenetration(result.cloth,result.balls)
+        <<" fruit_pair_overlap_m="<<measureBallPairPenetration(result.balls)
+        <<" primitive_overlap_m="<<measurePrimitiveSelfPenetration(result.cloth)
+        <<" local_overlap_m="<<measureLocalNodePenetration(result.cloth)
+        <<" strain_violation_m="<<measureStrainLimitViolation(result.cloth)
+        <<" static_overlap_m="<<measureGroundPenetration(result.cloth.particles,result.balls)
+        <<" certificate_passes="<<passes<<" applied_blocks="<<result.metrics.coupledBallYarnBlocks
+        <<" block_fallbacks="<<result.metrics.coupledBallYarnFallbacks
+        <<" maximum_block_size="<<result.metrics.maximumCoupledBallYarnBlockSize
+        <<" snapshot_projection_only=true dynamics=NOT_RUN full_replay=NOT_QUALIFIED\n";
+    return pass;
+}
+
 int main(int argc, char** argv) try {
     std::uint32_t steps = 120u;
     std::uint32_t substeps = 24u;
@@ -6321,6 +6622,8 @@ int main(int argc, char** argv) try {
     bool escapeClassificationProbe = false;
     bool localNodeProbe = false;
     bool finiteBenchProbe = false;
+    bool coupledYarnProbe = false;
+    std::string coupledYarnSnapshot;
     Scenario scenario = Scenario::grounded;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string value = argv[argument];
@@ -6380,6 +6683,12 @@ int main(int argc, char** argv) try {
             escapeClassificationProbe = true;
         } else if (value == "--finite-bench") {
             gFiniteBench = true;
+        } else if (value == "--progress") {
+            gTrajectoryProgress = true;
+        } else if (value == "--coupled-yarn-probe") {
+            coupledYarnProbe = true;
+        } else if (value == "--coupled-yarn-snapshot-probe" && argument+1<argc) {
+            coupledYarnSnapshot=argv[++argument];
         } else if (value == "--finite-bench-probe") {
             finiteBenchProbe = true;
             gFiniteBench = true;
@@ -6421,7 +6730,9 @@ int main(int argc, char** argv) try {
                          "[--rolling-resistance-probe] "
                          "[--mouth-release-probe] "
                          "[--escape-classification-probe] [--local-node-probe] "
-                         "[--finite-bench] [--finite-bench-probe]\n";
+                         "[--finite-bench] [--finite-bench-probe] "
+                         "[--coupled-yarn-probe] [--coupled-yarn-snapshot-probe OBJ] "
+                         "[--progress]\n";
             return 0;
         } else {
             throw std::invalid_argument("unknown argument: " + value);
@@ -6442,6 +6753,8 @@ int main(int argc, char** argv) try {
             "--scenario recorded and --grip-trajectory must be used together"
         );
     }
+    if(coupledYarnProbe)return runCoupledBallYarnProbe()?0:1;
+    if(!coupledYarnSnapshot.empty())return runCoupledBallYarnSnapshotProbe(coupledYarnSnapshot,dumpPath)?0:1;
     if (finiteBenchProbe) {
         return runFiniteBenchProbe() ? 0 : 1;
     }
@@ -6681,12 +6994,16 @@ int main(int argc, char** argv) try {
               << metrics.maximumBallPenetration
               << " max_published_ball_penetration="
               << metrics.maximumPublishedBallPenetration
+              << " max_published_fruit_pair_penetration=" << metrics.maximumPublishedBallPairPenetration
               << " max_published_primitive_self_penetration="
               << metrics.maximumPublishedPrimitiveSelfPenetration
               << " max_published_strain_limit_violation="
               << metrics.maximumPublishedStrainLimitViolation
               << " max_self_penetration=" << metrics.maximumSelfPenetration
               << " ball_yarn_contacts=" << metrics.ballYarnContacts
+              << " coupled_ball_yarn_blocks=" << metrics.coupledBallYarnBlocks
+              << " coupled_ball_yarn_fallbacks=" << metrics.coupledBallYarnFallbacks
+              << " max_coupled_ball_yarn_block_size=" << metrics.maximumCoupledBallYarnBlockSize
               << " self_contacts=" << metrics.selfContacts
               << " outside_diagnostic_bounds_mask=" << metrics.outsideDiagnosticBoundsMask
               << " escaped_mask=" << metrics.escapedMask

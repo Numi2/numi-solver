@@ -276,6 +276,34 @@ target_compile_definitions(
         NUMI_TEMPORAL_CONE_METALLIB="${NUMI_SOLVER_METALLIB}"
 )
 
+# Independent native static-geometry qualification does not rebuild the frozen
+# cloth replay library or imply qualification of full cloth/bench responses.
+set(NUMI_STATIC_GEOMETRY_METALLIB "${NUMI_SOLVER_SHADER_DIR}/NumiStaticGeometry.metallib")
+add_custom_command(
+    OUTPUT "${NUMI_STATIC_GEOMETRY_METALLIB}"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${NUMI_SOLVER_SHADER_DIR}"
+    COMMAND "${XCRUN_EXECUTABLE}" -sdk macosx metal -std=metal4.0 -O3 -fno-fast-math
+        -I "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        -c "${CMAKE_CURRENT_SOURCE_DIR}/src/metal/StaticContactGeometry.metal"
+        -o "${NUMI_SOLVER_SHADER_DIR}/NumiStaticGeometry.air"
+    COMMAND "${XCRUN_EXECUTABLE}" -sdk macosx metallib
+        "${NUMI_SOLVER_SHADER_DIR}/NumiStaticGeometry.air" -o "${NUMI_STATIC_GEOMETRY_METALLIB}"
+    DEPENDS src/metal/StaticContactGeometry.metal include/numi/static_contact_geometry.h
+    VERBATIM)
+add_custom_target(numi_static_geometry DEPENDS "${NUMI_STATIC_GEOMETRY_METALLIB}")
+add_executable(numi-solver-static-geometry tools/static_contact_geometry.cpp)
+target_include_directories(numi-solver-static-geometry PRIVATE include)
+target_compile_features(numi-solver-static-geometry PRIVATE cxx_std_23)
+target_compile_options(numi-solver-static-geometry PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
+add_executable(numi-solver-static-geometry-metal tools/static_contact_geometry_metal.mm)
+add_dependencies(numi-solver-static-geometry-metal numi_static_geometry)
+target_include_directories(numi-solver-static-geometry-metal PRIVATE include)
+set_target_properties(numi-solver-static-geometry-metal PROPERTIES OBJCXX_STANDARD 23 OBJCXX_STANDARD_REQUIRED YES)
+target_compile_options(numi-solver-static-geometry-metal PRIVATE -fobjc-arc -Wall -Wextra -Wpedantic -ffp-contract=off)
+target_compile_definitions(numi-solver-static-geometry-metal PRIVATE
+    NUMI_STATIC_GEOMETRY_METALLIB="${NUMI_STATIC_GEOMETRY_METALLIB}")
+target_link_libraries(numi-solver-static-geometry-metal PRIVATE "${FOUNDATION_FRAMEWORK}" "${METAL_FRAMEWORK}")
+
 add_executable(numi-solver-cloth-bag tools/cloth_bag.cpp)
 add_executable(numi-solver-finite-bench tools/finite_bench.cpp)
 target_include_directories(numi-solver-finite-bench PRIVATE include)
@@ -416,8 +444,17 @@ target_compile_definitions(
 
 include(CTest)
 if(BUILD_TESTING)
+    add_test(NAME static_contact.host COMMAND $<TARGET_FILE:numi-solver-static-geometry>)
+    add_test(NAME static_contact.metal COMMAND $<TARGET_FILE:numi-solver-static-geometry-metal>)
+    set_tests_properties(static_contact.host PROPERTIES LABELS "cpu;physics;contact;finite_bench" TIMEOUT 30)
+    set_tests_properties(static_contact.metal PROPERTIES LABELS "metal;physics;contact;finite_bench" TIMEOUT 30)
     add_test(NAME finite_bench.reference COMMAND $<TARGET_FILE:numi-solver-finite-bench>)
     add_test(NAME cloth_bag.finite_bench COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --finite-bench-probe)
+    add_test(NAME cloth_bag.coupled_yarn COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --coupled-yarn-probe)
+    add_test(NAME cloth_bag.coupled_yarn_peak COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
+        --coupled-yarn-snapshot-probe "${CMAKE_CURRENT_SOURCE_DIR}/docs/assets/finite-bench-load-pickup-96-failed-peak.obj")
+    set_tests_properties(cloth_bag.coupled_yarn cloth_bag.coupled_yarn_peak
+        PROPERTIES LABELS "cpu;physics;cloth;contact;finite_bench;coupled" TIMEOUT 30)
     set_tests_properties(finite_bench.reference cloth_bag.finite_bench
         PROPERTIES LABELS "physics;cloth;contact;ccd;finite_bench" TIMEOUT 30)
     add_test(NAME deformable_tet.constitutive COMMAND $<TARGET_FILE:numi-solver-deformable-tet>)
