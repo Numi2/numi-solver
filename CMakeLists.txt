@@ -59,6 +59,7 @@ set(
     include/numi/temporal_cone_probe.h
     include/numi/braided_bag.h
     include/numi/cloth_bag_gpu.h
+    include/numi/static_contact_geometry.h
 )
 
 add_custom_command(
@@ -792,6 +793,14 @@ if(BUILD_TESTING)
     set_tests_properties(
         cloth_bag.initial_geometry
         PROPERTIES LABELS "physics;cloth;fruit;geometry" TIMEOUT 15
+    )
+    add_test(
+        NAME cloth_bag.metal_finite_bench_response
+        COMMAND $<TARGET_FILE:numi-solver-cloth-metal> --finite-bench-probe
+    )
+    set_tests_properties(
+        cloth_bag.metal_finite_bench_response
+        PROPERTIES LABELS "metal;physics;cloth;fruit;finite_bench;friction" TIMEOUT 120
     )
     add_test(
         NAME cloth_bag.metal_fruit_flight

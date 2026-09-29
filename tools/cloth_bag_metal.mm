@@ -4,6 +4,7 @@
 #include "numi/cloth_bag_gpu.h"
 #include "numi/cloth_material.h"
 #include "numi/grip_trajectory.h"
+#include "numi/finite_bench_geometry.h"
 
 #include <algorithm>
 #include <array>
@@ -48,6 +49,15 @@ constexpr std::uint32_t kReconciliationPasses = 8u;
 constexpr std::uint32_t kFinalContactPasses = 2u;
 constexpr std::uint32_t kCertificatePasses = 8u;
 numi::ClothMaterialArtifact gClothMaterial{};
+bool gFiniteBench = false;
+
+double nativeStaticClearance(const mr_float4& position, const double radius,
+                             const bool finiteBench) {
+    if (!finiteBench) return static_cast<double>(position.z) - radius;
+    const numi::bench::Vec3 point{position.x, position.y, position.z};
+    return std::min(numi::bench::sample(numi::bench::Box{}, point, radius).gap,
+                    point.z + 0.75 - radius);
+}
 float kFruitPairFriction = static_cast<float>(
     gClothMaterial.values.fruitPairFriction
 );
@@ -5024,6 +5034,9 @@ void dumpGPUOBJ(
     }
     output << std::setprecision(9);
     output << "# Numi Solver explicit-yarn Metal cloth bag\n";
+    if (config.constraintCounts.z == 2u) {
+        output << "# static_bench min -0.75 -0.5 -0.08 max 0.75 0.5 0 floor -0.75\n";
+    }
     output << "# vertices " << particles.size()
            << " render_triangles "
            << (2u * kAround * (kLevels - 1u) +
@@ -5199,8 +5212,8 @@ InitialState makeTrajectoryInitialState(
                 static_cast<float>(kSpinAirborneLift);
         }
     }
-    state.config.constraintCounts.z =
-        scenario == TrajectoryScenario::spin ? 0u : 1u;
+    state.config.constraintCounts.z = gFiniteBench ? 2u :
+        (scenario == TrajectoryScenario::spin ? 0u : 1u);
     const TrajectoryGripPose pose = trajectoryGripPose(
         scenario, 0.0, trajectory
     );
@@ -5238,39 +5251,62 @@ TrajectoryReplay runTrajectoryReplay(
     );
     TrajectoryReplay replay;
     replay.frameHashes.reserve(steps);
-    std::ofstream fruitTrace;
+    std::ofstream fruitTrace, combinedTrace;
+    const bool finiteBench = state.config.constraintCounts.z == 2u;
     if (!dumpPrefix.empty()) {
-        fruitTrace.open(dumpPrefix + "-fruits.csv");
-        if (!fruitTrace) {
-            throw std::runtime_error("failed to open fruit trajectory trace");
+        fruitTrace.open(dumpPrefix + "-r" + std::to_string(replayIndex) + "-fruits.csv");
+        if (finiteBench || replayIndex == 1u) {
+            combinedTrace.open(dumpPrefix + "-fruits.csv",
+                finiteBench && replayIndex != 1u ? std::ios::app : std::ios::out);
+            if (!combinedTrace) throw std::runtime_error("failed to open combined fruit trace");
         }
-        fruitTrace << "frame,time_s,fruit,x_m,y_m,z_m,radius_m,vx_m_s,vy_m_s,vz_m_s,"
-                      "wx_rad_s,wy_rad_s,wz_rad_s,last_substep_ground_impulse_Ns,released\n";
-        fruitTrace << std::setprecision(12);
+        if (!fruitTrace) throw std::runtime_error("failed to open per-replay fruit trace");
+        const auto header = [&](std::ostream& output) {
+            if (finiteBench) output << "replay,";
+            output << "frame,time_s,fruit,x_m,y_m,z_m,radius_m,vx_m_s,vy_m_s,vz_m_s,"
+                      "wx_rad_s,wy_rad_s,wz_rad_s,";
+            if (finiteBench) output << "static_clearance_m,released,last_substep_ground_impulse_Ns\n";
+            else output << "last_substep_ground_impulse_Ns,released\n";
+        };
+        header(fruitTrace);
+        if (combinedTrace.is_open() && replayIndex == 1u) header(combinedTrace);
     }
-    const auto traceFruits = [&](const std::uint32_t frame,
-                                  const auto& fruits,
+    const auto traceFruits = [&](const std::uint32_t frame, const auto& fruits,
                                   const std::uint32_t releasedMask) {
-        if (!fruitTrace.is_open()) {
-            return;
-        }
-        for (std::size_t index = 0; index < fruits.size(); ++index) {
-            const auto& fruit = fruits[index];
-            fruitTrace << frame << ',' << static_cast<double>(frame) *
-                    kPickupSubstepsPerFrame * kTimestep << ',' << index << ','
-                << fruit.positionAndInverseMass.x << ',' << fruit.positionAndInverseMass.y << ','
-                << fruit.positionAndInverseMass.z << ',' << fruit.previousAndRadius.w << ','
-                << fruit.velocityAndGroundImpulse.x << ',' << fruit.velocityAndGroundImpulse.y << ','
-                << fruit.velocityAndGroundImpulse.z << ',' << fruit.angularVelocity.x << ','
-                << fruit.angularVelocity.y << ',' << fruit.angularVelocity.z << ','
-                << fruit.velocityAndGroundImpulse.w << ',' << ((releasedMask >> index) & 1u) << '\n';
-        }
-        fruitTrace.flush();
+        const auto write = [&](std::ofstream& output) {
+            if (!output.is_open()) return;
+            output << std::setprecision(17);
+            for (std::size_t index = 0; index < fruits.size(); ++index) {
+                const auto& fruit = fruits[index];
+                if (finiteBench) output << replayIndex << ',';
+                output << frame << ',' << static_cast<double>(frame) *
+                        kPickupSubstepsPerFrame * kTimestep << ',' << index << ','
+                    << fruit.positionAndInverseMass.x << ',' << fruit.positionAndInverseMass.y << ','
+                    << fruit.positionAndInverseMass.z << ',' << fruit.previousAndRadius.w << ','
+                    << fruit.velocityAndGroundImpulse.x << ',' << fruit.velocityAndGroundImpulse.y << ','
+                    << fruit.velocityAndGroundImpulse.z << ',' << fruit.angularVelocity.x << ','
+                    << fruit.angularVelocity.y << ',' << fruit.angularVelocity.z << ',';
+                if (finiteBench) {
+                    output << nativeStaticClearance(fruit.positionAndInverseMass,
+                        fruit.previousAndRadius.w, true) << ',' << ((releasedMask >> index) & 1u)
+                        << ',' << fruit.velocityAndGroundImpulse.w << '\n';
+                } else {
+                    output << fruit.velocityAndGroundImpulse.w << ',' << ((releasedMask >> index) & 1u) << '\n';
+                }
+            }
+            output.flush();
+            if (!output) throw std::runtime_error("failed to write fruit trajectory trace");
+        };
+        write(fruitTrace); write(combinedTrace);
     };
+    // Keep the historical replay-one OBJ names and give replay two its own
+    // prefix. Both CSV sequences and snapshots survive an entire invocation.
+    const std::string snapshotPrefix = dumpPrefix.empty() ? std::string{} :
+        replayIndex == 1u ? dumpPrefix : dumpPrefix + "-r" + std::to_string(replayIndex);
     traceFruits(0u, state.fruits, state.initialReleasedMask);
     if (!dumpPrefix.empty()) {
         dumpGPUOBJ(
-            dumpPrefix + "-0.obj",
+            snapshotPrefix + "-0.obj",
             state.particles,
             state.fruits,
             state.grips,
@@ -5354,7 +5390,7 @@ TrajectoryReplay runTrajectoryReplay(
             (completedSteps % dumpEvery == 0u ||
              completedSteps == steps)) {
             dumpGPUOBJ(
-                dumpPrefix + "-" + std::to_string(completedSteps) + ".obj",
+                snapshotPrefix + "-" + std::to_string(completedSteps) + ".obj",
                 replay.final.particles,
                 replay.final.fruits,
                 replay.final.grips,
@@ -5400,21 +5436,20 @@ double maximumStrainViolation(
 double maximumGroundPenetration(
     const std::vector<NumiClothBagGPUParticle>& particles,
     const std::vector<NumiClothBagGPUFruit>& fruits,
-    const double clothRadius
+    const double clothRadius,
+    const bool finiteBench = false
 ) {
     double maximum = 0.0;
     for (const NumiClothBagGPUParticle& particle : particles) {
         maximum = std::max(
             maximum,
-            clothRadius -
-                static_cast<double>(particle.positionAndInverseMass.z)
+            -nativeStaticClearance(particle.positionAndInverseMass, clothRadius, finiteBench)
         );
     }
     for (const NumiClothBagGPUFruit& fruit : fruits) {
         maximum = std::max(
             maximum,
-            static_cast<double>(fruit.previousAndRadius.w) -
-                static_cast<double>(fruit.positionAndInverseMass.z)
+            -nativeStaticClearance(fruit.positionAndInverseMass, fruit.previousAndRadius.w, finiteBench)
         );
     }
     return maximum;
@@ -5502,10 +5537,8 @@ double minimumFruitClearance(const GPUResult& result) {
     for (const NumiClothBagGPUFruit& fruit : result.fruits) {
         minimum = std::min(
             minimum,
-            static_cast<double>(
-                fruit.positionAndInverseMass.z -
-                fruit.previousAndRadius.w
-            )
+            nativeStaticClearance(fruit.positionAndInverseMass,
+                fruit.previousAndRadius.w, gFiniteBench)
         );
     }
     return minimum;
@@ -5518,8 +5551,7 @@ std::uint32_t groundedClothCount(
     std::uint32_t count = 0u;
     for (const NumiClothBagGPUParticle& particle : result.particles) {
         if (std::abs(
-            static_cast<double>(particle.positionAndInverseMass.z) -
-            yarnRadius
+            nativeStaticClearance(particle.positionAndInverseMass, yarnRadius, gFiniteBench)
         ) <= 2.0e-6) {
             ++count;
         }
@@ -5530,9 +5562,8 @@ std::uint32_t groundedClothCount(
 std::uint32_t groundedFruitCount(const GPUResult& result) {
     std::uint32_t count = 0u;
     for (const NumiClothBagGPUFruit& fruit : result.fruits) {
-        if (std::abs(static_cast<double>(
-            fruit.positionAndInverseMass.z - fruit.previousAndRadius.w
-        )) <= 2.0e-6) {
+        if (std::abs(nativeStaticClearance(fruit.positionAndInverseMass,
+            fruit.previousAndRadius.w, gFiniteBench)) <= 2.0e-6) {
             ++count;
         }
     }
@@ -5703,6 +5734,225 @@ int runFruitFlightProbe(
     return passed ? 0 : 1;
 }
 
+
+int runFiniteBenchProbe(id<MTLDevice> device, id<MTLCommandQueue> queue,
+                        const Pipelines& pipelines) {
+    struct Feature { DVec3 point, normal; const char* name; };
+    std::vector<Feature> features;
+    const std::array<double, 3> low{-.75, -.5, -.08}, high{.75, .5, 0};
+    const auto component = [](DVec3& value, const int axis) -> double& {
+        return axis == 0 ? value.x : axis == 1 ? value.y : value.z;
+    };
+    for (int axis = 0; axis < 3; ++axis) for (int sign : {-1, 1}) {
+        DVec3 point{0, 0, -.04}, normal{};
+        component(point, axis) = sign > 0 ? high[axis] : low[axis];
+        component(normal, axis) = sign;
+        features.push_back({point, normal, "face"});
+    }
+    for (int axis = 0; axis < 3; ++axis) {
+        const int first = (axis + 1) % 3, second = (axis + 2) % 3;
+        for (int a : {-1, 1}) for (int b : {-1, 1}) {
+            DVec3 point{0, 0, -.04}, normal{};
+            component(point, first) = a > 0 ? high[first] : low[first];
+            component(point, second) = b > 0 ? high[second] : low[second];
+            component(normal, first) = a / std::sqrt(2.0);
+            component(normal, second) = b / std::sqrt(2.0);
+            features.push_back({point, normal, "edge"});
+        }
+    }
+    for (int a : {-1, 1}) for (int b : {-1, 1}) for (int c : {-1, 1}) {
+        features.push_back({{a > 0 ? high[0] : low[0],
+            b > 0 ? high[1] : low[1], c > 0 ? high[2] : low[2]},
+            {a / std::sqrt(3.0), b / std::sqrt(3.0), c / std::sqrt(3.0)}, "corner"});
+    }
+    features.push_back({{2, 2, -.75}, {0, 0, 1}, "floor"});
+    const auto initialState = [](DVec3 position, DVec3 velocity, DVec3 gravity,
+                                 float radius, float timestep) {
+        InitialState state;
+        state.config.control = u4(NUMI_CLOTH_BAG_GPU_ABI_VERSION, 1, 0, 0);
+        state.config.constraintCounts = u4(0, 0, 2, 1);
+        state.config.gravityAndTimestep = f4(gravity.x, gravity.y, gravity.z, timestep);
+        state.config.clothMaterial = f4(radius, 0, 0, 0);
+        NumiClothBagGPUParticle particle{};
+        particle.positionAndInverseMass = f4(position.x, position.y, position.z, 5);
+        particle.previousAndMass = f4(position.x, position.y, position.z, .2f);
+        particle.velocity = f4(velocity.x, velocity.y, velocity.z, 0);
+        state.particles = {particle};
+        state.fruits = {makeProbeFruit(position, 5, radius)};
+        state.fruits[0].velocityAndGroundImpulse = particle.velocity;
+        return state;
+    };
+    bool passed = true;
+    std::uint32_t cases = 0;
+    double maximumPositionError = 0, maximumVelocityError = 0, maximumImpulseError = 0;
+    double minimumGap = 0;
+    const auto check = [&](const InitialState& initial, const std::uint32_t steps,
+                           DVec3 expectedPosition, DVec3 expectedParticleVelocity,
+                           DVec3 expectedFruitVelocity, DVec3 expectedAngularVelocity,
+                           double expectedImpulse, const char* feature, const char* phase) {
+        const std::vector<NumiClothBagGPUConfig> configs(steps, initial.config);
+        const GPUResult first = runGPU(device, queue, pipelines, initial, 1, 0, configs);
+        const GPUResult second = runGPU(device, queue, pipelines, initial, 1, 0, configs);
+        const double radius = initial.config.clothMaterial.x;
+        const double positionError = std::max(length(d3(first.particles[0].positionAndInverseMass) - expectedPosition),
+            length(d3(first.fruits[0].positionAndInverseMass) - expectedPosition));
+        const double velocityError = std::max({length(d3(first.particles[0].velocity) - expectedParticleVelocity),
+            length(d3(first.fruits[0].velocityAndGroundImpulse) - expectedFruitVelocity),
+            radius * length(d3(first.fruits[0].angularVelocity) - expectedAngularVelocity)});
+        const double impulseError = std::max(std::abs(first.particles[0].velocity.w - expectedImpulse),
+            std::abs(first.fruits[0].velocityAndGroundImpulse.w - expectedImpulse));
+        const double gap = std::min(nativeStaticClearance(first.particles[0].positionAndInverseMass, radius, true),
+            nativeStaticClearance(first.fruits[0].positionAndInverseMass, radius, true));
+        const bool exact = bitwiseEqualPhysicalState(first, second);
+        const bool valid = first.failure == 0 && second.failure == 0 && exact &&
+            std::isfinite(positionError) && std::isfinite(velocityError) && std::isfinite(impulseError) &&
+            positionError <= 2e-6 && velocityError <= 1e-3 && impulseError <= 1e-4 && gap >= -2e-6;
+        passed &= valid;
+        ++cases;
+        maximumPositionError = std::max(maximumPositionError, positionError);
+        maximumVelocityError = std::max(maximumVelocityError, velocityError);
+        maximumImpulseError = std::max(maximumImpulseError, impulseError);
+        minimumGap = std::min(minimumGap, gap);
+        std::cout << "finite_bench_response case=" << cases << " feature=" << feature << " phase=" << phase
+                  << " radius_m=" << radius << " steps=" << steps << " position_error_m=" << positionError
+                  << " velocity_error_m_s=" << velocityError << " impulse_error_Ns=" << impulseError
+                  << " independent_static_gap_m=" << gap << " replay_exact=" << exact
+                  << " failure=" << first.failure << ',' << second.failure << " passed=" << valid << '\n';
+    };
+    // Exact radial feature impacts have zero remaining normal velocity. These
+    // expected states are analytic; gaps use a separate FP64 box-distance implementation.
+    for (const Feature& feature : features) for (float radius : {.004f, .05f}) {
+        const float timestep = .001f;
+        const DVec3 start = feature.point + feature.normal * (radius + .1);
+        const DVec3 velocity = feature.normal * -200.0;
+        const InitialState initial = initialState(start, velocity, {}, radius, timestep);
+        // The supplied start/velocity are FP32. A rounded start is not
+        // perfectly radial at a 4 mm edge: compare the actual represented ray
+        // against the independent FP64 cast rather than an unrepresented ideal.
+        const auto& particle = initial.particles[0];
+        const numi::bench::Vec3 representedStart{particle.positionAndInverseMass.x,
+            particle.positionAndInverseMass.y, particle.positionAndInverseMass.z};
+        const numi::bench::Vec3 representedVelocity{particle.velocity.x, particle.velocity.y, particle.velocity.z};
+        const numi::bench::Vec3 representedEnd{
+            std::fma(particle.velocity.x, timestep, particle.positionAndInverseMass.x),
+            std::fma(particle.velocity.y, timestep, particle.positionAndInverseMass.y),
+            std::fma(particle.velocity.z, timestep, particle.positionAndInverseMass.z)};
+        numi::bench::Box referenceBox;
+        referenceBox.minimum.z = -.08f;
+        auto hit = numi::bench::cast(referenceBox, representedStart, representedEnd, radius);
+        const auto floor = numi::bench::castFloor(representedStart, representedEnd, radius, -.75);
+        if (floor.contact && (!hit.contact || floor.time < hit.time)) hit = floor;
+        if (!hit.contact) throw std::logic_error("authored finite impact misses independent geometry");
+        const double incoming = numi::bench::dot(representedVelocity, hit.normal);
+        const auto expectedVelocity = representedVelocity - hit.normal * incoming;
+        const auto impact = representedStart + (representedEnd - representedStart) * hit.time;
+        const auto remainder = representedEnd - impact;
+        const auto expectedPosition = representedEnd - hit.normal * numi::bench::dot(remainder, hit.normal);
+        check(initial, 1, {expectedPosition.x, expectedPosition.y, expectedPosition.z},
+              {expectedVelocity.x, expectedVelocity.y, expectedVelocity.z},
+              {expectedVelocity.x, expectedVelocity.y, expectedVelocity.z}, {},
+              -incoming / 5.0, feature.name, "impact");
+    }
+    // Keep force/normal response separate from an impact impulse. Each body
+    // starts at support and must carry m*g*dt every published substep.
+    for (const Feature& feature : features) {
+        const float radius = .05f, timestep = .001f;
+        const DVec3 position = feature.point + feature.normal * radius;
+        const InitialState initial = initialState(position, {}, feature.normal * -9.81f, radius, timestep);
+        check(initial, 64, position, {}, {}, {}, 9.81f * timestep / 5.0,
+              feature.name, "sustained_support");
+    }
+    // Analytic Coulomb sliding/rotation on each planar face, including the
+    // lower room floor. Surface friction must act in the local tangent plane.
+    for (const Feature& feature : features) if (std::string_view(feature.name) == "face" ||
+                                               std::string_view(feature.name) == "floor") {
+        const float radius = .05f, timestep = .01f;
+        const DVec3 tangent = std::abs(feature.normal.x) == 1 ? DVec3{0, 1, 0} : DVec3{1, 0, 0};
+        const DVec3 position = feature.point + feature.normal * radius;
+        InitialState initial = initialState(position, tangent, feature.normal * -9.81f, radius, timestep);
+        initial.config.clothMaterial.z = .5f;
+        initial.config.fruitMaterial.y = .35f;
+        const double fruitImpulse = .35f * 9.81f * timestep / 5.0;
+        check(initial, 1, position + tangent * timestep,
+              tangent * (1.0 - .5f * 9.81f * timestep),
+              tangent * (1.0 - .35f * 9.81f * timestep),
+              cross(feature.normal, tangent) * (fruitImpulse * radius * (2.5 * 5 / (radius * radius))),
+              9.81f * timestep / 5.0, feature.name, "sliding_friction");
+        initial = initialState(position, {}, feature.normal * -9.81f, radius, timestep);
+        initial.config.fruitMaterial.z = .01f;
+        const DVec3 initialAngular = tangent * 10 + feature.normal * 3;
+        initial.fruits[0].angularVelocity = f4(initialAngular.x, initialAngular.y, initialAngular.z, 0);
+        const double angularReduction = .01f * radius * (9.81f * timestep / 5.0) * (2.5 * 5 / (radius * radius));
+        check(initial, 1, position, {}, {}, initialAngular - tangent * angularReduction,
+              9.81f * timestep / 5.0, feature.name, "rolling_resistance");
+    }
+    for (const Feature& feature : features) if (std::string_view(feature.name) == "face" ||
+                                               std::string_view(feature.name) == "floor") {
+        const float radius = .05f, timestep = .01f;
+        const DVec3 firstPosition = feature.point + feature.normal * radius;
+        InitialState initial = initialState(firstPosition, {}, {}, radius, timestep);
+        initial.particles.clear(); initial.config.control.y = 0;
+        initial.config.constraintCounts.w = 2; initial.config.contactCounts.x = 1;
+        initial.fruits.push_back(makeProbeFruit(feature.point + feature.normal * (3 * radius - .01), 5, radius));
+        NumiClothBagGPUFruitPair pair{};
+        pair.fruitsAndColor = u4(0, 1, 0, 0);
+        initial.fruitPairs = {pair}; initial.fruitPairBatches = {{u4(0, 1, 0, 0)}};
+        const GPUResult first = runGPU(device, queue, pipelines, initial, 1, 0);
+        const GPUResult second = runGPU(device, queue, pipelines, initial, 1, 0);
+        const double gap = length(d3(first.fruits[1].positionAndInverseMass) -
+            d3(first.fruits[0].positionAndInverseMass)) - 2 * radius;
+        const double heldError = length(d3(first.fruits[0].positionAndInverseMass) - firstPosition);
+        const double motionError = length(d3(first.fruits[1].velocityAndGroundImpulse) - feature.normal);
+        const double reactionError = std::abs(first.fruits[0].velocityAndGroundImpulse.w - .2);
+        const bool exact = bitwiseEqualPhysicalState(first, second);
+        const bool valid = first.failure == 0 && second.failure == 0 && exact &&
+            std::isfinite(gap) && std::isfinite(heldError) && std::isfinite(motionError) &&
+            std::isfinite(reactionError) && gap >= -2e-6 && heldError <= 2e-6 &&
+            motionError <= 1e-3 && reactionError <= 1e-4;
+        passed &= valid; ++cases;
+        std::cout << "finite_bench_supported_pair case=" << cases << " feature=" << feature.name
+                  << " pair_gap_m=" << gap << " held_error_m=" << heldError
+                  << " moving_velocity_error_m_s=" << motionError << " reaction_error_Ns=" << reactionError
+                  << " replay_exact=" << exact << " passed=" << valid << '\n';
+    }
+    {
+        // A short yarn under tension lifts a node that touched the bench
+        // during free prediction. Its final unsupported state cannot retain
+        // bench friction or receive a normal-velocity clamp.
+        InitialState initial = initialState({0, 0, .05f}, {}, {0, 0, -9.81f}, .05f, .01f);
+        initial.fruits.clear(); initial.config.constraintCounts.w = 0;
+        auto secondNode = initial.particles[0];
+        secondNode.positionAndInverseMass.z = .2f; secondNode.previousAndMass.z = .2f;
+        initial.particles.push_back(secondNode);
+        initial.config.control.y = 2; initial.config.control.z = 1;
+        initial.config.clothMaterial.z = .5f;
+        NumiClothBagGPUDistance yarn{};
+        yarn.particlesAndColor = u4(0, 1, 0, 0);
+        yarn.material = f4(.1f, 0, 0, 1);
+        initial.distances = {yarn}; initial.distanceBatches = {{u4(0, 1, 0, 0)}};
+        const GPUResult first = runGPU(device, queue, pipelines, initial, 1, 0);
+        const GPUResult second = runGPU(device, queue, pipelines, initial, 1, 0);
+        const auto& lifted = first.particles[0];
+        const double gap = nativeStaticClearance(lifted.positionAndInverseMass, .05f, true);
+        const bool exact = bitwiseEqualPhysicalState(first, second);
+        const bool valid = first.failure == 0 && second.failure == 0 && exact &&
+            gap > .02 && lifted.velocity.z > 2.0f && lifted.velocity.w == 0 &&
+            length(d3(lifted.staticNormalAndBlockedReaction)) == 0;
+        passed &= valid; ++cases;
+        std::cout << "finite_bench_departure case=" << cases << " gap_m=" << gap
+                  << " upward_velocity_m_s=" << lifted.velocity.z
+                  << " stale_support_impulse_Ns=" << lifted.velocity.w
+                  << " replay_exact=" << exact << " passed=" << valid << '\n';
+    }
+    std::cout << "device=" << device.name.UTF8String << " finite_bench_response_cases=" << cases
+              << " maximum_position_error_m=" << maximumPositionError
+              << " maximum_velocity_error_m_s=" << maximumVelocityError
+              << " maximum_impulse_error_Ns=" << maximumImpulseError
+              << " minimum_independent_gap_m=" << minimumGap
+              << " finite_bench_probe_passed=" << passed << '\n';
+    return passed ? 0 : 1;
+}
+
 int runLocalNodeProbe(
     id<MTLDevice> device, id<MTLCommandQueue> queue,
     id<MTLComputePipelineState> pipeline, const InitialState& authored
@@ -5832,6 +6082,7 @@ int runLocalNodeProbe(
 
 int run(const int argc, const char* const* argv) {
     bool localNodeProbe = false;
+    bool finiteBenchProbe = false;
     bool fruitFlightProbe = false;
     bool initialStateProbe = false;
     std::uint32_t replays = 2u;
@@ -5854,7 +6105,11 @@ int run(const int argc, const char* const* argv) {
     std::string metallibPath = NUMI_TEMPORAL_CONE_METALLIB;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string_view value(argv[argument]);
-        if (value == "--local-node-probe") {
+        if (value == "--finite-bench") {
+            gFiniteBench = true;
+        } else if (value == "--finite-bench-probe") {
+            finiteBenchProbe = true;
+        } else if (value == "--local-node-probe") {
             localNodeProbe = true;
         } else if (value == "--initial-state-probe") {
             initialStateProbe = true;
@@ -5935,13 +6190,19 @@ int run(const int argc, const char* const* argv) {
                    "[--spin-prefix PATH] [--spin-steps N] "
                    "[--spin-dump-every N] [--pickup-prefix PATH] "
                    "[--pickup-steps N] [--pickup-dump-every N] "
-                   "[--fruit-flight-probe] [--initial-state-probe]\n";
+                   "[--fruit-flight-probe] [--initial-state-probe] [--finite-bench] "
+                   "[--finite-bench-probe]\n";
             return 0;
         } else {
             throw std::runtime_error(
                 "unknown argument: " + std::string(value)
             );
         }
+    }
+    if (gFiniteBench) {
+        std::cout << "trajectory_static_contact=finite_bench box_min_m=-.75,-.5,-.08 "
+                     "box_max_m=.75,.5,0 room_floor_height_m=-.75 native_ABI="
+                  << NUMI_CLOTH_BAG_GPU_ABI_VERSION << '\n';
     }
     if (!materialPath.empty()) {
         applyClothMaterial(numi::loadClothMaterialArtifact(materialPath));
@@ -6160,6 +6421,9 @@ int run(const int argc, const char* const* argv) {
         ),
     };
 
+    if (finiteBenchProbe) {
+        return runFiniteBenchProbe(device, queue, pipelines);
+    }
     if (localNodeProbe) {
         return runLocalNodeProbe(device, queue, pipelines.localNode, initial);
     }
@@ -6515,7 +6779,7 @@ int run(const int argc, const char* const* argv) {
             groundedSteps,
             groundedDumpEvery,
             2u,
-            {}
+            groundedPrefix
         );
         groundedReplayExact = groundedFirst.frameHashes ==
                 groundedSecond.frameHashes &&
@@ -6547,7 +6811,7 @@ int run(const int argc, const char* const* argv) {
         groundedGroundPenetration = maximumGroundPenetration(
             groundedFirst.final.particles,
             groundedFirst.final.fruits,
-            initial.config.clothMaterial.x
+            initial.config.clothMaterial.x, gFiniteBench
         );
         groundedSelfPenetration = maximumSelfPenetration(
             groundedFirst.final.particles,
@@ -6570,8 +6834,8 @@ int run(const int argc, const char* const* argv) {
          groundedSecond.failureFree && groundedReplayExact &&
          groundedReleasedMask == 0u && groundedEscapeMask == 0u &&
          groundedClothContacts > 0u &&
-         groundedMinimumClothHeight >=
-            static_cast<double>(initial.config.clothMaterial.x) - 1.0e-6 &&
+         (gFiniteBench || groundedMinimumClothHeight >=
+            static_cast<double>(initial.config.clothMaterial.x) - 1.0e-6) &&
          groundedMinimumFruitClearance >= -1.0e-6 &&
          groundedStrainViolation <= 2.0e-6 &&
          groundedGroundPenetration <= 1.0e-6 &&
@@ -6617,7 +6881,7 @@ int run(const int argc, const char* const* argv) {
             spinSteps,
             spinDumpEvery,
             2u,
-            {}
+            spinPrefix
         );
         spinReplayExact = spinFirst.frameHashes == spinSecond.frameHashes &&
             bitwiseEqualPhysicalState(spinFirst.final, spinSecond.final);
@@ -6697,7 +6961,7 @@ int run(const int argc, const char* const* argv) {
             pickupSteps,
             pickupDumpEvery,
             2u,
-            {}
+            pickupPrefix
         );
         pickupReplayExact = pickupFirst.frameHashes ==
                 pickupSecond.frameHashes &&
@@ -6712,12 +6976,9 @@ int run(const int argc, const char* const* argv) {
             const NumiClothBagGPUFruit& fruit =
                 pickupFirst.final.fruits[index];
             if ((pickupReleasedMask & (1u << index)) != 0u &&
-                std::abs(
-                    static_cast<double>(
-                        fruit.positionAndInverseMass.z -
-                        fruit.previousAndRadius.w
-                    )
-                ) <= 2.0e-6) {
+                std::abs(nativeStaticClearance(fruit.positionAndInverseMass,
+                    fruit.previousAndRadius.w, gFiniteBench)) <= 2.0e-6 &&
+                (!gFiniteBench || length(d3(fruit.velocityAndGroundImpulse)) <= 1.0e-3)) {
                 ++pickupGroundedReleasedCount;
             }
         }
@@ -6728,7 +6989,7 @@ int run(const int argc, const char* const* argv) {
         pickupGroundPenetration = maximumGroundPenetration(
             pickupFirst.final.particles,
             pickupFirst.final.fruits,
-            initial.config.clothMaterial.x
+            initial.config.clothMaterial.x, gFiniteBench
         );
         pickupSelfPenetration = maximumSelfPenetration(
             pickupFirst.final.particles,
@@ -6808,7 +7069,7 @@ int run(const int argc, const char* const* argv) {
             recordedSteps,
             recordedDumpEvery,
             2u,
-            {},
+            recordedPrefix,
             gripTrajectoryPointer
         );
         recordedReplayExact = recordedFirst.frameHashes ==
@@ -6827,7 +7088,7 @@ int run(const int argc, const char* const* argv) {
         recordedGroundPenetration = maximumGroundPenetration(
             recordedFirst.final.particles,
             recordedFirst.final.fruits,
-            initial.config.clothMaterial.x
+            initial.config.clothMaterial.x, gFiniteBench
         );
         recordedSelfPenetration = maximumSelfPenetration(
             recordedFirst.final.particles,

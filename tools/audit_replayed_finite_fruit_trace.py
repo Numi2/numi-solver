@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check both CPU fruit replays and independently reconstruct finite-bench gaps."""
+"""Check both CPU/native fruit replays and independently reconstruct finite-bench gaps."""
 
 import argparse
 import csv
@@ -18,22 +18,26 @@ COLUMNS = ('replay,frame,time_s,fruit,x_m,y_m,z_m,radius_m,vx_m_s,vy_m_s,vz_m_s,
 def audit(path, expected_frames):
     payload = path.read_bytes()
     reader = csv.DictReader(io.StringIO(payload.decode('utf-8')))
-    if reader.fieldnames != COLUMNS:
-        raise ValueError('expected the exact replayed CPU fruit columns')
+    columns = reader.fieldnames
+    native = columns == COLUMNS + ['last_substep_ground_impulse_Ns']
+    if columns != COLUMNS and not native:
+        raise ValueError('expected exact replayed CPU or native finite-bench fruit columns')
     replays = {1: {}, 2: {}}
     discrepancy = 0.0
     minimum_gap = math.inf
     for row in reader:
-        if set(row) != set(COLUMNS) or any(value is None for value in row.values()):
+        if set(row) != set(columns) or any(value is None for value in row.values()):
             raise ValueError('incomplete or malformed trace row; this is not terminal evidence')
         replay, frame, fruit = (int(row[key]) for key in ('replay', 'frame', 'fruit'))
         if replay not in replays or not 0 <= frame <= expected_frames or not 0 <= fruit < 12:
             raise ValueError('invalid replay, frame or fruit identity')
-        state = {key: float(row[key]) for key in COLUMNS[2:] if key != 'fruit'}
+        state = {key: float(row[key]) for key in columns[2:] if key != 'fruit'}
         if not all(math.isfinite(value) for value in state.values()):
-            raise ValueError('nonfinite CPU fruit state')
+            raise ValueError('nonfinite fruit state')
         if state['radius_m'] <= 0 or state['released'] not in (0, 1):
             raise ValueError('invalid radius or release bit')
+        if native and state['last_substep_ground_impulse_Ns'] < 0:
+            raise ValueError('negative native static normal impulse')
         key = frame, fruit
         if key in replays[replay]:
             raise ValueError('duplicate fruit state')
@@ -92,6 +96,7 @@ def audit(path, expected_frames):
     geometry = minimum_gap >= -2e-6 and discrepancy <= 1e-9
     return {'schema': 'numi.finite-bench.fruit-trace-audit.v1', 'trace': str(path),
         'trace_sha256': hashlib.sha256(payload).hexdigest(), 'simulated_seconds': expected_frames * dt,
+        'backend': 'native_fp32' if native else 'cpu_fp64',
         'both_replays_complete': complete, 'serialized_fruit_replay_exact': exact,
         'minimum_independent_static_gap_m': minimum_gap,
         'maximum_exported_gap_discrepancy_m': discrepancy, 'independent_geometry_pass': geometry,

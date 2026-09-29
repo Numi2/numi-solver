@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 14u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 15u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
 #define NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY 4096u
 #define NUMI_CLOTH_BAG_GPU_MOUTH_RIM_CAPACITY 64u
@@ -20,7 +20,8 @@ typedef struct MR_ALIGN16 NumiClothBagGPUConfig {
     // x ABI, y particle count, z distance count, w grip count.
     mr_uint4 control;
     // x crossing-angle knot count, y yarn-bend count,
-    // z 1 when ground response is active, w fruit count.
+    // z static contact mode: 0 none, 1 unbounded z=0 plane,
+    // 2 authored finite bench and z=-.75 room floor; w fruit count.
     mr_uint4 constraintCounts;
     // x fruit-pair count, y sphere/yarn candidate count,
     // z nonlocal yarn/yarn pair count, w yarn/yarn batch count.
@@ -63,6 +64,15 @@ typedef struct MR_ALIGN16 NumiClothBagGPUParticle {
     mr_float4 previousAndMass;
     // xyz velocity, w accumulated cloth/ground normal impulse after finalize.
     mr_float4 velocity;
+    // xyz current static-surface normal; w accumulated blocked constraint
+    // position reaction (kg*m), converted to friction capacity by /dt.
+    mr_float4 staticNormalAndBlockedReaction;
+    // xyz rounded position after static CCD, w validity (0 or 1).
+    mr_float4 staticPredictionAndValidity;
+    // xyz force-integrated velocity after the static impact impulse, w reserved.
+    // Reconstruct later constraint motion relative to staticPrediction, never
+    // the whole chord from the pre-impact position around a curved feature.
+    mr_float4 staticPredictionVelocity;
 } NumiClothBagGPUParticle;
 
 typedef struct MR_ALIGN16 NumiClothBagGPUDistance {
@@ -112,6 +122,15 @@ typedef struct MR_ALIGN16 NumiClothBagGPUFruit {
     mr_float4 orientation;
     // x appearance, yzw reserved.
     mr_uint4 identity;
+    // xyz current static-surface normal; w blocked constraint position
+    // reaction (kg*m), accumulated over the current substep.
+    mr_float4 staticNormalAndBlockedReaction;
+    // xyz rounded position after static CCD, w validity (0 or 1).
+    mr_float4 staticPredictionAndValidity;
+    // xyz force-integrated velocity after the static impact impulse, w reserved.
+    // Reconstruct later constraint motion relative to staticPrediction, never
+    // the whole chord from the pre-impact position around a curved feature.
+    mr_float4 staticPredictionVelocity;
 } NumiClothBagGPUFruit;
 
 typedef struct MR_ALIGN16 NumiClothBagGPUFruitPair {
@@ -198,12 +217,12 @@ typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
 
 #ifndef __METAL_VERSION__
 static_assert(sizeof(NumiClothBagGPUConfig) == 240);
-static_assert(sizeof(NumiClothBagGPUParticle) == 48);
+static_assert(sizeof(NumiClothBagGPUParticle) == 96);
 static_assert(sizeof(NumiClothBagGPUDistance) == 32);
 static_assert(sizeof(NumiClothBagGPUGrip) == 48);
 static_assert(sizeof(NumiClothBagGPUKnot) == 48);
 static_assert(sizeof(NumiClothBagGPUBend) == 32);
-static_assert(sizeof(NumiClothBagGPUFruit) == 96);
+static_assert(sizeof(NumiClothBagGPUFruit) == 144);
 static_assert(sizeof(NumiClothBagGPUFruitPair) == 32);
 static_assert(sizeof(NumiClothBagGPUYarnContact) == 112);
 static_assert(sizeof(NumiClothBagGPUSelfPair) == 8);

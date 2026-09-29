@@ -1,6 +1,7 @@
 #include <metal_stdlib>
 
 #include "numi/cloth_bag_gpu.h"
+#include "numi/static_contact_geometry.h"
 
 using namespace metal;
 
@@ -19,6 +20,10 @@ inline bool validConfig(
 ) {
     if (config.control.x != NUMI_CLOTH_BAG_GPU_ABI_VERSION) {
         recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_ABI);
+        return false;
+    }
+    if (config.constraintCounts.z > 2u) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE);
         return false;
     }
     if (!(config.gravityAndTimestep.w > 0.0f) ||
@@ -52,6 +57,105 @@ inline bool validConfig(
         return false;
     }
     return true;
+}
+
+inline NumiStaticVec3 staticVector(float3 p) { return {p.x,p.y,p.z}; }
+inline float3 staticVector(NumiStaticVec3 p) { return float3(p.x,p.y,p.z); }
+inline float nativeStaticProject(thread float3& position,float radius,
+                                thread float4& support,device atomic_uint* failure) {
+    float removed=0;
+    if(!all(isfinite(support))||support.w<0){recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);return 0;}
+    for(uint pass=0;pass<3;++pass){
+        auto sample=numiStaticSceneSample(staticVector(position),radius);
+        if(!sample.valid){recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);return removed;}
+        float3 normal=staticVector(sample.normal);
+        if(sample.gap<=numiStaticTolerance(staticVector(position),staticVector(position)))support.xyz=normal;
+        if(sample.gap>=0)break;
+        position+=normal*(-sample.gap);removed-=sample.gap;
+        // Exact representable floor support avoids repeated subtract/recover
+        // cycles at z=-.75. Box edges retain their Euclidean rounded geometry.
+        if(normal.z==1&&position.z<-.08f)position.z=numiStaticFloorHeight()+radius;
+    }
+    return removed;
+}
+inline float3 nativeStaticResponse(float3 position,float radius,float3 response,
+                                  device atomic_uint* failure) {
+    auto sample=numiStaticSceneSample(staticVector(position),radius);
+    if(!sample.valid||!all(isfinite(response))){recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);return float3(0);}
+    float3 normal=staticVector(sample.normal);
+    if(sample.gap<=numiStaticTolerance(staticVector(position),staticVector(position))&&dot(response,normal)<0)
+        response=cross(normal,cross(response,normal))/dot(normal,normal);
+    return response;
+}
+inline float nativeStaticArrival(float3 position,float radius,float3 correction,
+                                device atomic_uint* failure) {
+    auto hit=numiStaticSceneCast(staticVector(position),staticVector(position+correction),radius);
+    if(!hit.valid){recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);return 0;}
+    return hit.contact?hit.time:1;
+}
+inline float nativeBlockedReaction(float3 freeResponse,float3 response,float inverseMass,float lambda) {
+    return inverseMass>0?length((response-freeResponse)*(lambda/inverseMass)):0;
+}
+inline float nativeStaticSweep(float3 previous,thread float3& position,float radius,
+                              thread float4& support,thread float3& velocity,device atomic_uint* failure) {
+    auto hit=numiStaticSceneCast(staticVector(previous),staticVector(position),radius);
+    if(!hit.valid){recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);return 0;}
+    if(!hit.contact)return 0;
+    float3 normal=staticVector(hit.normal);support.xyz=normal;
+    float3 impact=fma(position-previous,float3(hit.time),previous);
+    float removed=max(0.0f,-dot(position-impact,normal));
+    const float incoming = dot(velocity, normal);
+    if (incoming < 0.0f) velocity -= normal * (incoming / dot(normal, normal));
+    position+=normal*removed;
+    nativeStaticProject(position,radius,support,failure);
+    return removed;
+}
+inline float nativeStaticProject(thread float4& position,float radius,
+                                thread float4& support,device atomic_uint* failure) {
+    float3 p=position.xyz;float removed=nativeStaticProject(p,radius,support,failure);position.xyz=p;return removed;
+}
+inline float nativeStaticSweep(float3 previous,thread float4& position,float radius,
+                              thread float4& support,thread float3& velocity,device atomic_uint* failure) {
+    float3 p=position.xyz;float removed=nativeStaticSweep(previous,p,radius,support,velocity,failure);position.xyz=p;return removed;
+}
+
+// Publish inelastic static support along the actual face/edge/corner normal.
+// At an exactly represented planar support coordinate, remove the force-
+// integrated incoming component even if rounded free prediction would produce
+// a tiny outward reconstruction. Constraint motion away from support survives.
+inline float nativePublishStaticVelocity(float3 position,float3 previous,float radius,
+    thread float3& velocity,float3 predicted,float inverseMass,float timestep,
+    thread float4& support,device atomic_uint* failure) {
+    auto sample=numiStaticSceneSample(staticVector(position),radius);
+    if(!sample.valid||!all(isfinite(support))||support.w<0||!all(isfinite(velocity))||
+        !all(isfinite(predicted))||!isfinite(inverseMass)||inverseMass<0){
+        recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);return 0;
+    }
+    if(sample.gap>numiStaticTolerance(staticVector(position),staticVector(position))){
+        // Contact earlier in the substep cannot clamp a constraint-driven
+        // departure or supply friction at an unsupported final position.
+        // The published impulse is current support capacity, not a complete
+        // history of all static impulses across the substep.
+        support.xyz=float3(0);return 0;
+    }
+    support.xyz=staticVector(sample.normal);
+    float squared=dot(support.xyz,support.xyz);
+    if(!isfinite(squared)){recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);return 0;}
+    if(squared<.5f||!(inverseMass>0))return 0;
+    float3 normal=support.xyz*rsqrt(squared);support.xyz=normal;
+    float incoming=dot(predicted,normal),current=dot(velocity,normal);
+    bool planarSupport=false;
+    NumiStaticBox box=numiStaticBench();
+    for(uint axis=0;axis<3;++axis)if(abs(normal[axis])==1.0f){
+        float coordinate=normal[axis]>0?numiStaticComponent(box.maximum,axis)+radius:
+            numiStaticComponent(box.minimum,axis)-radius;
+        if(axis==2&&normal.z==1&&position.z<box.minimum.z)coordinate=numiStaticFloorHeight()+radius;
+        planarSupport=position[axis]==coordinate&&dot(previous-position,normal)>=0;
+    }
+    if(incoming<0&&(current<0||planarSupport))velocity-=normal*current;
+    float impulse=max(0.0f,dot(velocity-predicted,normal)/inverseMass)+support.w/timestep;
+    if(!isfinite(impulse)||!all(isfinite(velocity))){recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);return 0;}
+    return impulse;
 }
 
 struct PointSegmentSample {
@@ -98,6 +202,30 @@ inline void applyFruitImpulse(
         impulse * fruit.positionAndInverseMass.w;
     fruit.angularVelocity.xyz +=
         cross(contactOffset, impulse) * fruitInverseInertia(fruit);
+}
+
+// Velocity reaction is an impulse (Ns); the positional blocked-reaction
+// field is kg*m and is consumed only during velocity reconstruction.
+inline void applySupportedFruitImpulse(
+    thread NumiClothBagGPUFruit& fruit,
+    const float3 impulse,
+    const float3 contactOffset,
+    const float3 response,
+    device atomic_uint* failure
+) {
+    const float inverseMass = fruit.positionAndInverseMass.w;
+    const float3 freeChange = impulse * inverseMass;
+    fruit.velocityAndGroundImpulse.xyz += response;
+    if (inverseMass > 0.0f) {
+        fruit.velocityAndGroundImpulse.w +=
+            length(response - freeChange) / inverseMass;
+    }
+    fruit.angularVelocity.xyz +=
+        cross(contactOffset, impulse) * fruitInverseInertia(fruit);
+    if (!all(isfinite(fruit.velocityAndGroundImpulse)) ||
+        !all(isfinite(fruit.angularVelocity))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+    }
 }
 
 inline void recordFrictionStatus(
@@ -363,6 +491,42 @@ inline float applyYarnCorrection(
 ) {
     NumiClothBagGPUParticle first = particles[firstIndex];
     NumiClothBagGPUParticle second = particles[secondIndex];
+    if(config.constraintCounts.z==2u){
+        float remaining=correctionDistance,accumulated=0;
+        for(uint iteration=0;iteration<6&&remaining>1e-14f;++iteration){
+            nativeStaticProject(fruit.positionAndInverseMass,fruit.previousAndRadius.w,fruit.staticNormalAndBlockedReaction,failure);
+            nativeStaticProject(first.positionAndInverseMass,config.clothMaterial.x,first.staticNormalAndBlockedReaction,failure);
+            nativeStaticProject(second.positionAndInverseMass,config.clothMaterial.x,second.staticNormalAndBlockedReaction,failure);
+            float3 fruitFree=-normal*fruit.positionAndInverseMass.w;
+            float3 firstFree=normal*first.positionAndInverseMass.w,secondFree=normal*second.positionAndInverseMass.w;
+            float3 fruitResponse=nativeStaticResponse(fruit.positionAndInverseMass.xyz,fruit.previousAndRadius.w,fruitFree,failure);
+            float3 firstResponse=nativeStaticResponse(first.positionAndInverseMass.xyz,config.clothMaterial.x,firstFree,failure);
+            float3 secondResponse=nativeStaticResponse(second.positionAndInverseMass.xyz,config.clothMaterial.x,secondFree,failure);
+            float denominator=dot(-normal,fruitResponse)+dot(normal,firstResponse)*firstWeight*firstWeight+
+                dot(normal,secondResponse)*secondWeight*secondWeight;
+            if(!(denominator>1e-16f)||!isfinite(denominator))break;
+            float lambda=remaining/denominator;
+            float fraction=min(nativeStaticArrival(fruit.positionAndInverseMass.xyz,fruit.previousAndRadius.w,fruitResponse*lambda,failure),
+                min(nativeStaticArrival(first.positionAndInverseMass.xyz,config.clothMaterial.x,firstResponse*(firstWeight*lambda),failure),
+                    nativeStaticArrival(second.positionAndInverseMass.xyz,config.clothMaterial.x,secondResponse*(secondWeight*lambda),failure)));
+            float applied=lambda*fraction;
+            fruit.staticNormalAndBlockedReaction.w+=nativeBlockedReaction(fruitFree,fruitResponse,fruit.positionAndInverseMass.w,applied);
+            first.staticNormalAndBlockedReaction.w+=nativeBlockedReaction(firstFree,firstResponse,first.positionAndInverseMass.w,firstWeight*applied);
+            second.staticNormalAndBlockedReaction.w+=nativeBlockedReaction(secondFree,secondResponse,second.positionAndInverseMass.w,secondWeight*applied);
+            fruit.positionAndInverseMass.xyz+=fruitResponse*applied;
+            first.positionAndInverseMass.xyz+=firstResponse*(firstWeight*applied);
+            second.positionAndInverseMass.xyz+=secondResponse*(secondWeight*applied);
+            nativeStaticProject(fruit.positionAndInverseMass,fruit.previousAndRadius.w,fruit.staticNormalAndBlockedReaction,failure);
+            nativeStaticProject(first.positionAndInverseMass,config.clothMaterial.x,first.staticNormalAndBlockedReaction,failure);
+            nativeStaticProject(second.positionAndInverseMass,config.clothMaterial.x,second.staticNormalAndBlockedReaction,failure);
+            accumulated+=applied;remaining=max(0.0f,remaining-denominator*applied);
+            if(fraction>=1.0f-1e-7f||fraction<=1e-16f)break;
+        }
+        if(!all(isfinite(fruit.positionAndInverseMass))||!all(isfinite(first.positionAndInverseMass))||
+            !all(isfinite(second.positionAndInverseMass))||!isfinite(accumulated))
+            recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        particles[firstIndex]=first;particles[secondIndex]=second;return accumulated;
+    }
     const bool groundEnabled = config.constraintCounts.z != 0u;
     const float groundHeight = config.clothMaterial.x;
     bool firstGroundActive = groundEnabled && normal.z < 0.0f &&
@@ -516,6 +680,9 @@ kernel void numi_cloth_bag_begin_substep(
         }
         particle.previousAndMass.xyz = position;
         particle.velocity.w = 0.0f;
+        particle.staticNormalAndBlockedReaction=float4(0);
+        particle.staticPredictionAndValidity=float4(0);
+        particle.staticPredictionVelocity=float4(0);
         if (inverseMass > 0.0f) {
             const float timestep = config.gravityAndTimestep.w;
             particle.velocity.xyz = fma(
@@ -560,6 +727,9 @@ kernel void numi_cloth_bag_begin_substep(
             velocity
         );
         fruit.velocityAndGroundImpulse.w = 0.0f;
+        fruit.staticNormalAndBlockedReaction=float4(0);
+        fruit.staticPredictionAndValidity=float4(0);
+        fruit.staticPredictionVelocity=float4(0);
         fruits[index] = fruit;
     }
     if (index < config.contactCounts.x) {
@@ -923,6 +1093,13 @@ kernel void numi_cloth_bag_advance_positions(
                 float3(timestep),
                 particle.positionAndInverseMass.xyz
             );
+            if(config.constraintCounts.z==2u) {
+                float3 velocity = particle.velocity.xyz;
+                nativeStaticSweep(particle.previousAndMass.xyz,particle.positionAndInverseMass,
+                    config.clothMaterial.x,particle.staticNormalAndBlockedReaction,velocity,failure);
+                particle.staticPredictionAndValidity = float4(particle.positionAndInverseMass.xyz, 1);
+                particle.staticPredictionVelocity = float4(velocity, 0);
+            }
             particles[index] = particle;
         }
     }
@@ -933,6 +1110,13 @@ kernel void numi_cloth_bag_advance_positions(
             float3(timestep),
             fruit.positionAndInverseMass.xyz
         );
+        if(config.constraintCounts.z==2u) {
+            float3 velocity = fruit.velocityAndGroundImpulse.xyz;
+            nativeStaticSweep(fruit.previousAndRadius.xyz,fruit.positionAndInverseMass,
+                fruit.previousAndRadius.w,fruit.staticNormalAndBlockedReaction,velocity,failure);
+            fruit.staticPredictionAndValidity = float4(fruit.positionAndInverseMass.xyz, 1);
+            fruit.staticPredictionVelocity = float4(velocity, 0);
+        }
         fruits[index] = fruit;
     }
 }
@@ -1346,6 +1530,10 @@ kernel void numi_cloth_bag_solve_local_node_contact(
     float target = 2 * config.clothMaterial.x;
     bool ground = config.constraintCounts.z != 0;
     for (uint pass = 0; pass < 4; ++pass) {
+        if(config.constraintCounts.z==2u){
+            nativeStaticProject(first.positionAndInverseMass,config.clothMaterial.x,first.staticNormalAndBlockedReaction,failure);
+            nativeStaticProject(second.positionAndInverseMass,config.clothMaterial.x,second.staticNormalAndBlockedReaction,failure);
+        }
         float3 relative = second.positionAndInverseMass.xyz - first.positionAndInverseMass.xyz;
         float3 previous = second.previousAndMass.xyz - first.previousAndMass.xyz;
         float3 delta = relative - previous;
@@ -1367,6 +1555,23 @@ kernel void numi_cloth_bag_solve_local_node_contact(
             }
         }
         if (!(overlap > 0)) break;
+        if(config.constraintCounts.z==2u){
+            float3 firstFree=-normal*first.positionAndInverseMass.w,secondFree=normal*second.positionAndInverseMass.w;
+            float3 firstResponse=nativeStaticResponse(first.positionAndInverseMass.xyz,config.clothMaterial.x,firstFree,failure);
+            float3 secondResponse=nativeStaticResponse(second.positionAndInverseMass.xyz,config.clothMaterial.x,secondFree,failure);
+            float denominator=dot(-normal,firstResponse)+dot(normal,secondResponse);
+            if(!(denominator>1e-16f)||!isfinite(denominator))break;
+            float lambda=overlap/denominator;
+            float fraction=min(nativeStaticArrival(first.positionAndInverseMass.xyz,config.clothMaterial.x,firstResponse*lambda,failure),
+                nativeStaticArrival(second.positionAndInverseMass.xyz,config.clothMaterial.x,secondResponse*lambda,failure));
+            float applied=lambda*fraction;
+            first.staticNormalAndBlockedReaction.w+=nativeBlockedReaction(firstFree,firstResponse,first.positionAndInverseMass.w,applied);
+            second.staticNormalAndBlockedReaction.w+=nativeBlockedReaction(secondFree,secondResponse,second.positionAndInverseMass.w,applied);
+            first.positionAndInverseMass.xyz+=firstResponse*applied;second.positionAndInverseMass.xyz+=secondResponse*applied;
+            nativeStaticProject(first.positionAndInverseMass,config.clothMaterial.x,first.staticNormalAndBlockedReaction,failure);
+            nativeStaticProject(second.positionAndInverseMass,config.clothMaterial.x,second.staticNormalAndBlockedReaction,failure);
+            continue;
+        }
         bool blockedFirst = ground && first.positionAndInverseMass.z <= config.clothMaterial.x + 1e-9f && normal.z > 0;
         bool blockedSecond = ground && second.positionAndInverseMass.z <= config.clothMaterial.x + 1e-9f && normal.z < 0;
         float firstMass = first.positionAndInverseMass.w, secondMass = second.positionAndInverseMass.w;
@@ -1428,6 +1633,10 @@ kernel void numi_cloth_bag_solve_bend(
     }
     NumiClothBagGPUParticle first = particles[firstIndex];
     NumiClothBagGPUParticle third = particles[thirdIndex];
+    if(config.constraintCounts.z==2u){
+        nativeStaticProject(first.positionAndInverseMass,config.clothMaterial.x,first.staticNormalAndBlockedReaction,failure);
+        nativeStaticProject(third.positionAndInverseMass,config.clothMaterial.x,third.staticNormalAndBlockedReaction,failure);
+    }
     const float3 difference =
         third.positionAndInverseMass.xyz -
         first.positionAndInverseMass.xyz;
@@ -1457,6 +1666,26 @@ kernel void numi_cloth_bag_solve_bend(
         return;
     }
     const float numerator = -value - alpha * constraint.material.w;
+    if(config.constraintCounts.z==2u){
+        float sign=numerator<0?-1.0f:1.0f;
+        float3 firstFree=gradients[0]*inverseMasses[0],thirdFree=gradients[1]*inverseMasses[1];
+        float3 firstResponse=nativeStaticResponse(first.positionAndInverseMass.xyz,config.clothMaterial.x,firstFree*sign,failure)*sign;
+        float3 thirdResponse=nativeStaticResponse(third.positionAndInverseMass.xyz,config.clothMaterial.x,thirdFree*sign,failure)*sign;
+        float denominator=alpha+dot(gradients[0],firstResponse)+dot(gradients[1],thirdResponse);
+        if(!(denominator>=1e-16f)||!isfinite(denominator))return;
+        float delta=numerator/denominator;
+        float fraction=min(nativeStaticArrival(first.positionAndInverseMass.xyz,config.clothMaterial.x,firstResponse*delta,failure),
+            nativeStaticArrival(third.positionAndInverseMass.xyz,config.clothMaterial.x,thirdResponse*delta,failure));
+        float applied=delta*fraction;constraint.material.w+=applied;
+        first.staticNormalAndBlockedReaction.w+=nativeBlockedReaction(firstFree,firstResponse,inverseMasses[0],applied);
+        third.staticNormalAndBlockedReaction.w+=nativeBlockedReaction(thirdFree,thirdResponse,inverseMasses[1],applied);
+        first.positionAndInverseMass.xyz+=firstResponse*applied;third.positionAndInverseMass.xyz+=thirdResponse*applied;
+        nativeStaticProject(first.positionAndInverseMass,config.clothMaterial.x,first.staticNormalAndBlockedReaction,failure);
+        nativeStaticProject(third.positionAndInverseMass,config.clothMaterial.x,third.staticNormalAndBlockedReaction,failure);
+        if(!all(isfinite(first.positionAndInverseMass))||!all(isfinite(third.positionAndInverseMass))||!isfinite(constraint.material.w))
+            recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+        particles[firstIndex]=first;particles[thirdIndex]=third;bends[constraintIndex]=constraint;return;
+    }
     const float freeDeltaLambda = numerator / freeDenominator;
     const bool groundEnabled = config.constraintCounts.z != 0u;
     const float groundHeight = config.clothMaterial.x;
@@ -1630,6 +1859,64 @@ kernel void numi_cloth_bag_solve_fruit_pair(
     if (!(currentLength < target) || !(currentLength > 1.0e-12f)) {
         return;
     }
+    if (config.constraintCounts.z == 2u) {
+        const float3 normal = difference / currentLength;
+        float remaining = target - currentLength;
+        float accumulated = 0.0f;
+        for (uint active = 0u; active < 6u && remaining > 1.0e-14f; ++active) {
+            nativeStaticProject(first.positionAndInverseMass,
+                first.previousAndRadius.w, first.staticNormalAndBlockedReaction, failure);
+            nativeStaticProject(second.positionAndInverseMass,
+                second.previousAndRadius.w, second.staticNormalAndBlockedReaction, failure);
+            const float3 firstFree = -normal * first.positionAndInverseMass.w;
+            const float3 secondFree = normal * second.positionAndInverseMass.w;
+            const float3 firstResponse = nativeStaticResponse(
+                first.positionAndInverseMass.xyz, first.previousAndRadius.w, firstFree, failure);
+            const float3 secondResponse = nativeStaticResponse(
+                second.positionAndInverseMass.xyz, second.previousAndRadius.w, secondFree, failure);
+            const float denominator = dot(-normal, firstResponse) + dot(normal, secondResponse);
+            if (!isfinite(denominator)) {
+                recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+                return;
+            }
+            if (!(denominator > 1.0e-16f)) break;
+            const float lambda = remaining / denominator;
+            const float fraction = min(
+                nativeStaticArrival(first.positionAndInverseMass.xyz,
+                    first.previousAndRadius.w, firstResponse * lambda, failure),
+                nativeStaticArrival(second.positionAndInverseMass.xyz,
+                    second.previousAndRadius.w, secondResponse * lambda, failure));
+            const float applied = lambda * fraction;
+            first.staticNormalAndBlockedReaction.w += nativeBlockedReaction(
+                firstFree, firstResponse, first.positionAndInverseMass.w, applied);
+            second.staticNormalAndBlockedReaction.w += nativeBlockedReaction(
+                secondFree, secondResponse, second.positionAndInverseMass.w, applied);
+            first.positionAndInverseMass.xyz += firstResponse * applied;
+            second.positionAndInverseMass.xyz += secondResponse * applied;
+            accumulated += applied;
+            remaining = max(0.0f, remaining - applied * denominator);
+            nativeStaticProject(first.positionAndInverseMass,
+                first.previousAndRadius.w, first.staticNormalAndBlockedReaction, failure);
+            nativeStaticProject(second.positionAndInverseMass,
+                second.previousAndRadius.w, second.staticNormalAndBlockedReaction, failure);
+            if (fraction == 0.0f) break;
+        }
+        const float impulse = accumulated / config.gravityAndTimestep.w;
+        pair.contact.xyz += normal * impulse;
+        pair.contact.w += impulse;
+        if (!all(isfinite(first.positionAndInverseMass)) ||
+            !all(isfinite(second.positionAndInverseMass)) ||
+            !all(isfinite(first.staticNormalAndBlockedReaction)) ||
+            !all(isfinite(second.staticNormalAndBlockedReaction)) ||
+            !all(isfinite(pair.contact))) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
+            return;
+        }
+        fruits[firstIndex] = first;
+        fruits[secondIndex] = second;
+        pairs[pairIndex] = pair;
+        return;
+    }
     const float denominator =
         first.positionAndInverseMass.w + second.positionAndInverseMass.w;
     if (!(denominator > 0.0f) || !isfinite(denominator)) {
@@ -1673,7 +1960,9 @@ kernel void numi_cloth_bag_solve_ground(
             recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);
             return;
         }
-        particle.positionAndInverseMass.z = max(
+        if(config.constraintCounts.z==2u){
+            nativeStaticProject(particle.positionAndInverseMass,config.clothMaterial.x,particle.staticNormalAndBlockedReaction,failure);
+        }else particle.positionAndInverseMass.z = max(
             particle.positionAndInverseMass.z,
             config.clothMaterial.x
         );
@@ -1681,6 +1970,10 @@ kernel void numi_cloth_bag_solve_ground(
     }
     if (index < config.constraintCounts.w) {
         NumiClothBagGPUFruit fruit = fruits[index];
+        if(config.constraintCounts.z==2u){
+            nativeStaticProject(fruit.positionAndInverseMass,fruit.previousAndRadius.w,fruit.staticNormalAndBlockedReaction,failure);
+            fruits[index]=fruit;return;
+        }
         const float penetration =
             fruit.previousAndRadius.w - fruit.positionAndInverseMass.z;
         if (!isfinite(penetration)) {
@@ -2750,7 +3043,21 @@ kernel void numi_cloth_bag_apply_self_friction(
                         if (slipSpeed > 1.0e-10f) {
                             const float3 tangent =
                                 tangentVelocity / slipSpeed;
-                            const float denominator =
+                            float3 firstStartResponse = -tangent * firstStart.positionAndInverseMass.w;
+                            float3 firstEndResponse = -tangent * firstEnd.positionAndInverseMass.w;
+                            float3 secondStartResponse = tangent * secondStart.positionAndInverseMass.w;
+                            float3 secondEndResponse = tangent * secondEnd.positionAndInverseMass.w;
+                            if (config.constraintCounts.z == 2u) {
+                                firstStartResponse = nativeStaticResponse(firstStart.positionAndInverseMass.xyz,
+                                    config.clothMaterial.x, firstStartResponse, failure);
+                                firstEndResponse = nativeStaticResponse(firstEnd.positionAndInverseMass.xyz,
+                                    config.clothMaterial.x, firstEndResponse, failure);
+                                secondStartResponse = nativeStaticResponse(secondStart.positionAndInverseMass.xyz,
+                                    config.clothMaterial.x, secondStartResponse, failure);
+                                secondEndResponse = nativeStaticResponse(secondEnd.positionAndInverseMass.xyz,
+                                    config.clothMaterial.x, secondEndResponse, failure);
+                            }
+                            float denominator =
                                 firstStart.positionAndInverseMass.w *
                                     firstWeights.x * firstWeights.x +
                                 firstEnd.positionAndInverseMass.w *
@@ -2759,7 +3066,13 @@ kernel void numi_cloth_bag_apply_self_friction(
                                     secondWeights.x * secondWeights.x +
                                 secondEnd.positionAndInverseMass.w *
                                     secondWeights.y * secondWeights.y;
-                            if (denominator > 0.0f) {
+                            if (config.constraintCounts.z == 2u) {
+                                denominator = dot(-tangent, firstStartResponse) * firstWeights.x * firstWeights.x +
+                                    dot(-tangent, firstEndResponse) * firstWeights.y * firstWeights.y +
+                                    dot(tangent, secondStartResponse) * secondWeights.x * secondWeights.x +
+                                    dot(tangent, secondEndResponse) * secondWeights.y * secondWeights.y;
+                            }
+                            if (denominator > 0.0f && isfinite(denominator)) {
                                 const float frictionLimit =
                                     friction * normalImpulse;
                                 const float tangentialImpulse = min(
@@ -2767,6 +3080,20 @@ kernel void numi_cloth_bag_apply_self_friction(
                                     frictionLimit
                                 );
                                 if (tangentialImpulse > 0.0f) {
+                                    if (config.constraintCounts.z == 2u) {
+                                        firstStart.velocity.xyz += firstStartResponse * (tangentialImpulse * firstWeights.x);
+                                        firstEnd.velocity.xyz += firstEndResponse * (tangentialImpulse * firstWeights.y);
+                                        secondStart.velocity.xyz += secondStartResponse * (tangentialImpulse * secondWeights.x);
+                                        secondEnd.velocity.xyz += secondEndResponse * (tangentialImpulse * secondWeights.y);
+                                        firstStart.velocity.w += nativeBlockedReaction(-tangent * firstStart.positionAndInverseMass.w,
+                                            firstStartResponse, firstStart.positionAndInverseMass.w, tangentialImpulse * firstWeights.x);
+                                        firstEnd.velocity.w += nativeBlockedReaction(-tangent * firstEnd.positionAndInverseMass.w,
+                                            firstEndResponse, firstEnd.positionAndInverseMass.w, tangentialImpulse * firstWeights.y);
+                                        secondStart.velocity.w += nativeBlockedReaction(tangent * secondStart.positionAndInverseMass.w,
+                                            secondStartResponse, secondStart.positionAndInverseMass.w, tangentialImpulse * secondWeights.x);
+                                        secondEnd.velocity.w += nativeBlockedReaction(tangent * secondEnd.positionAndInverseMass.w,
+                                            secondEndResponse, secondEnd.positionAndInverseMass.w, tangentialImpulse * secondWeights.y);
+                                    } else {
                                     const float3 impulseOnFirst =
                                         tangent * -tangentialImpulse;
                                     firstStart.velocity.xyz +=
@@ -2785,6 +3112,7 @@ kernel void numi_cloth_bag_apply_self_friction(
                                         impulseOnFirst *
                                         (secondEnd.positionAndInverseMass.w *
                                          secondWeights.y);
+                                    }
                                     particles[first.x] = firstStart;
                                     particles[first.y] = firstEnd;
                                     particles[second.x] = secondStart;
@@ -2984,6 +3312,7 @@ kernel void numi_cloth_bag_finalize_substep(
     NumiClothBagGPUParticle particle = particles[index];
     const float inverseTimestep = 1.0f / config.gravityAndTimestep.w;
     const float predictedVerticalVelocity = particle.velocity.w;
+    const float3 predictedVelocity = particle.velocity.xyz;
     // Keep the force-integrated velocity. Reconstruct only constraint motion,
     // relative to the identically rounded free prediction from advance_positions.
     // Differencing absolute endpoints feeds FP32 position quantization back
@@ -2995,6 +3324,24 @@ kernel void numi_cloth_bag_finalize_substep(
     );
     particle.velocity.xyz +=
         (particle.positionAndInverseMass.xyz - prediction) * inverseTimestep;
+    if(config.constraintCounts.z==2u){
+        float3 velocity=particle.velocity.xyz;
+        if (particle.positionAndInverseMass.w > 0) {
+            if (particle.staticPredictionAndValidity.w != 1 ||
+                !all(isfinite(particle.staticPredictionAndValidity)) ||
+                !all(isfinite(particle.staticPredictionVelocity))) {
+                recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE); return;
+            }
+            velocity = particle.staticPredictionVelocity.xyz +
+                (particle.positionAndInverseMass.xyz - particle.staticPredictionAndValidity.xyz) /
+                config.gravityAndTimestep.w;
+        }
+        particle.velocity.w=nativePublishStaticVelocity(particle.positionAndInverseMass.xyz,
+            particle.previousAndMass.xyz,config.clothMaterial.x,velocity,predictedVelocity,
+            particle.positionAndInverseMass.w,config.gravityAndTimestep.w,
+            particle.staticNormalAndBlockedReaction,failure);
+        particle.velocity.xyz=velocity;particles[index]=particle;return;
+    }
     if (config.constraintCounts.z != 0u &&
         particle.positionAndInverseMass.z == config.clothMaterial.x &&
         particle.previousAndMass.z >= config.clothMaterial.x &&
@@ -3030,6 +3377,7 @@ kernel void numi_cloth_bag_finalize_fruit(
         return;
     }
     NumiClothBagGPUFruit fruit = fruits[index];
+    const float3 predictedVelocity=fruit.velocityAndGroundImpulse.xyz;
     const float3 prediction = fma(
         fruit.velocityAndGroundImpulse.xyz,
         float3(config.gravityAndTimestep.w),
@@ -3038,6 +3386,24 @@ kernel void numi_cloth_bag_finalize_fruit(
     fruit.velocityAndGroundImpulse.xyz +=
         (fruit.positionAndInverseMass.xyz - prediction) /
         config.gravityAndTimestep.w;
+    if(config.constraintCounts.z==2u){
+        float3 velocity=fruit.velocityAndGroundImpulse.xyz;
+        if (fruit.positionAndInverseMass.w > 0) {
+            if (fruit.staticPredictionAndValidity.w != 1 ||
+                !all(isfinite(fruit.staticPredictionAndValidity)) ||
+                !all(isfinite(fruit.staticPredictionVelocity))) {
+                recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE); return;
+            }
+            velocity = fruit.staticPredictionVelocity.xyz +
+                (fruit.positionAndInverseMass.xyz - fruit.staticPredictionAndValidity.xyz) /
+                config.gravityAndTimestep.w;
+        }
+        fruit.velocityAndGroundImpulse.w=nativePublishStaticVelocity(fruit.positionAndInverseMass.xyz,
+            fruit.previousAndRadius.xyz,fruit.previousAndRadius.w,velocity,predictedVelocity,
+            fruit.positionAndInverseMass.w,config.gravityAndTimestep.w,
+            fruit.staticNormalAndBlockedReaction,failure);
+        fruit.velocityAndGroundImpulse.xyz=velocity;fruits[index]=fruit;return;
+    }
     // This plane is inelastic. A fruit accepted exactly on it has no normal
     // motion, including the fractional impact substep. Publish the matching
     // velocity impulse rather than a quantized positional reaction; otherwise
@@ -3115,9 +3481,13 @@ kernel void numi_cloth_bag_apply_cloth_ground_friction(
     if (!(normalImpulse > 0.0f) || !(inverseMass > 0.0f)) {
         return;
     }
-    const float3 tangentVelocity = float3(
-        particle.velocity.x, particle.velocity.y, 0.0f
-    );
+    const float3 normal=config.constraintCounts.z==2u?
+        particle.staticNormalAndBlockedReaction.xyz:float3(0,0,1);
+    const float normalSquared=dot(normal,normal);
+    if(!all(isfinite(normal))||normalSquared<.5f){recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);return;}
+    const float3 tangentVelocity = config.constraintCounts.z==2u?
+        particle.velocity.xyz-normal*(dot(particle.velocity.xyz,normal)/normalSquared):
+        float3(particle.velocity.x,particle.velocity.y,0);
     const float slipSpeed = length(tangentVelocity);
     if (!(slipSpeed > 1.0e-10f)) {
         return;
@@ -3216,14 +3586,25 @@ kernel void numi_cloth_bag_apply_yarn_friction(
                 if (slipSpeed > 1.0e-10f) {
                     const float3 tangent = tangentVelocity / slipSpeed;
                     const float3 ballLever = cross(ballOffset, tangent);
-                    float denominator = fruit.positionAndInverseMass.w +
-                        fruitInverseInertia(fruit) *
-                            dot(ballLever, ballLever);
+                    const float3 fruitFree = -tangent * fruit.positionAndInverseMass.w;
+                    const float3 fruitResponse = config.constraintCounts.z == 2u
+                        ? nativeStaticResponse(fruit.positionAndInverseMass.xyz,
+                            fruit.previousAndRadius.w, fruitFree, failure)
+                        : fruitFree;
+                    float denominator = config.constraintCounts.z == 2u
+                        ? dot(-tangent, fruitResponse)
+                        : fruit.positionAndInverseMass.w;
+                    denominator += fruitInverseInertia(fruit) * dot(ballLever, ballLever);
                     float3 firstResponse =
                         tangent * first.positionAndInverseMass.w;
                     float3 secondResponse =
                         tangent * second.positionAndInverseMass.w;
-                    if (config.constraintCounts.z != 0u) {
+                    if(config.constraintCounts.z==2u){
+                        firstResponse=nativeStaticResponse(first.positionAndInverseMass.xyz,
+                            config.clothMaterial.x,firstResponse,failure);
+                        secondResponse=nativeStaticResponse(second.positionAndInverseMass.xyz,
+                            config.clothMaterial.x,secondResponse,failure);
+                    } else if (config.constraintCounts.z != 0u) {
                         if (first.positionAndInverseMass.z <=
                                 config.clothMaterial.x + 1.0e-6f &&
                             firstResponse.z < 0.0f) {
@@ -3245,11 +3626,22 @@ kernel void numi_cloth_bag_apply_yarn_friction(
                             slipSpeed / denominator, frictionLimit
                         );
                         if (tangentialImpulse > 0.0f) {
-                            applyFruitImpulse(
-                                fruit,
-                                tangent * -tangentialImpulse,
-                                ballOffset
-                            );
+                            if (config.constraintCounts.z == 2u) {
+                                applySupportedFruitImpulse(fruit,
+                                    tangent * -tangentialImpulse, ballOffset,
+                                    fruitResponse * tangentialImpulse, failure);
+                                first.velocity.w += nativeBlockedReaction(
+                                    tangent * first.positionAndInverseMass.w,
+                                    firstResponse, first.positionAndInverseMass.w,
+                                    tangentialImpulse * weights.x);
+                                second.velocity.w += nativeBlockedReaction(
+                                    tangent * second.positionAndInverseMass.w,
+                                    secondResponse, second.positionAndInverseMass.w,
+                                    tangentialImpulse * weights.y);
+                            } else {
+                                applyFruitImpulse(fruit,
+                                    tangent * -tangentialImpulse, ballOffset);
+                            }
                             first.velocity.xyz += firstResponse *
                                 (tangentialImpulse * weights.x);
                             second.velocity.xyz += secondResponse *
@@ -3334,12 +3726,20 @@ kernel void numi_cloth_bag_apply_fruit_pair_friction(
     const float3 tangent = tangentVelocity / slipSpeed;
     const float3 firstLever = cross(firstOffset, tangent);
     const float3 secondLever = cross(secondOffset, tangent);
-    const float denominator =
-        first.positionAndInverseMass.w + second.positionAndInverseMass.w +
-        fruitInverseInertia(first) *
-            dot(firstLever, firstLever) +
-        fruitInverseInertia(second) *
-            dot(secondLever, secondLever);
+    const float3 firstFree = tangent * first.positionAndInverseMass.w;
+    const float3 secondFree = -tangent * second.positionAndInverseMass.w;
+    const float3 firstResponse = config.constraintCounts.z == 2u
+        ? nativeStaticResponse(first.positionAndInverseMass.xyz,
+            first.previousAndRadius.w, firstFree, failure) : firstFree;
+    const float3 secondResponse = config.constraintCounts.z == 2u
+        ? nativeStaticResponse(second.positionAndInverseMass.xyz,
+            second.previousAndRadius.w, secondFree, failure) : secondFree;
+    const float translationalResponse = config.constraintCounts.z == 2u
+        ? dot(tangent, firstResponse) + dot(-tangent, secondResponse)
+        : first.positionAndInverseMass.w + second.positionAndInverseMass.w;
+    const float denominator = translationalResponse +
+        fruitInverseInertia(first) * dot(firstLever, firstLever) +
+        fruitInverseInertia(second) * dot(secondLever, secondLever);
     if (!(denominator > 0.0f) || !isfinite(denominator)) {
         return;
     }
@@ -3351,8 +3751,15 @@ kernel void numi_cloth_bag_apply_fruit_pair_friction(
         return;
     }
     const float3 impulseOnSecond = tangent * -tangentialImpulse;
-    applyFruitImpulse(second, impulseOnSecond, secondOffset);
-    applyFruitImpulse(first, -impulseOnSecond, firstOffset);
+    if (config.constraintCounts.z == 2u) {
+        applySupportedFruitImpulse(second, impulseOnSecond, secondOffset,
+            secondResponse * tangentialImpulse, failure);
+        applySupportedFruitImpulse(first, -impulseOnSecond, firstOffset,
+            firstResponse * tangentialImpulse, failure);
+    } else {
+        applyFruitImpulse(second, impulseOnSecond, secondOffset);
+        applyFruitImpulse(first, -impulseOnSecond, firstOffset);
+    }
     if (!all(isfinite(first.velocityAndGroundImpulse)) ||
         !all(isfinite(second.velocityAndGroundImpulse)) ||
         !all(isfinite(first.angularVelocity)) ||
@@ -3391,9 +3798,11 @@ kernel void numi_cloth_bag_apply_fruit_ground_friction(
     if (!(normalImpulse > 0.0f)) {
         return;
     }
-    const float3 normal = float3(0.0f, 0.0f, 1.0f);
-    const float3 contactOffset =
-        float3(0.0f, 0.0f, -fruit.previousAndRadius.w);
+    const float3 normal=config.constraintCounts.z==2u?
+        fruit.staticNormalAndBlockedReaction.xyz:float3(0,0,1);
+    if(!all(isfinite(normal))||dot(normal,normal)<.5f){recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE);return;}
+    const float3 contactOffset = config.constraintCounts.z==2u?
+        normal * -fruit.previousAndRadius.w:float3(0,0,-fruit.previousAndRadius.w);
     const float3 contactVelocity = fruit.velocityAndGroundImpulse.xyz +
         cross(fruit.angularVelocity.xyz, contactOffset);
     const float3 tangentVelocity = contactVelocity -
@@ -3420,9 +3829,9 @@ kernel void numi_cloth_bag_apply_fruit_ground_friction(
             );
         }
     }
-    const float3 rollingAngularVelocity = float3(
-        fruit.angularVelocity.x, fruit.angularVelocity.y, 0.0f
-    );
+    const float3 rollingAngularVelocity = config.constraintCounts.z==2u?
+        fruit.angularVelocity.xyz-normal*(dot(fruit.angularVelocity.xyz,normal)/dot(normal,normal)):
+        float3(fruit.angularVelocity.x,fruit.angularVelocity.y,0);
     const float rollingSpeed = length(rollingAngularVelocity);
     if (rollingSpeed > 1.0e-12f && rollingResistance > 0.0f) {
         const float inverseInertia = fruitInverseInertia(fruit);

@@ -124,8 +124,12 @@ inline NumiStaticHit numiStaticBoxCast(NumiStaticBox box,NumiStaticVec3 start,Nu
             hit.valid=hit.valid&&roots.valid;
             for(unsigned root=0;root<2;++root){
                 float time=root==0?roots.first:roots.second;if(time<0||time>1)continue;
-                NumiStaticVec3 p=numiStaticAdd(start,numiStaticScale(delta,time)),normal=numiStaticSub(p,edge);
-                normal=numiStaticSub(normal,numiStaticAxis(axis,numiStaticComponent(normal,axis)));
+                NumiStaticVec3 p=numiStaticAdd(start,numiStaticScale(delta,time));
+                // Form the radial normal in feature-local coordinates. World
+                // add/subtract cancellation is amplified by thin radii and by
+                // the remaining displacement in the contact response.
+                NumiStaticVec3 normal{numiStaticFma(motion.x,time,offset.x),
+                    numiStaticFma(motion.y,time,offset.y),numiStaticFma(motion.z,time,offset.z)};
                 if(numiStaticComponent(p,axis)<numiStaticComponent(box.minimum,axis)-tolerance||
                     numiStaticComponent(p,axis)>numiStaticComponent(box.maximum,axis)+tolerance||
                     numiStaticComponent(normal,first)*s1< -tolerance||numiStaticComponent(normal,second)*s2< -tolerance)continue;
@@ -141,7 +145,8 @@ inline NumiStaticHit numiStaticBoxCast(NumiStaticBox box,NumiStaticVec3 start,Nu
         hit.valid=hit.valid&&roots.valid;
         for(unsigned root=0;root<2;++root){
             float time=root==0?roots.first:roots.second;if(time<0||time>1)continue;
-            NumiStaticVec3 normal=numiStaticSub(numiStaticAdd(start,numiStaticScale(delta,time)),cornerPoint);
+            NumiStaticVec3 normal{numiStaticFma(delta.x,time,offset.x),
+                numiStaticFma(delta.y,time,offset.y),numiStaticFma(delta.z,time,offset.z)};
             if(normal.x*sx< -tolerance||normal.y*sy< -tolerance||normal.z*sz< -tolerance)continue;
             float size=numiStaticLength(normal);
             if(size>0)hit=numiStaticAccept(hit,time,numiStaticScale(normal,1/size),3,delta,closing);
