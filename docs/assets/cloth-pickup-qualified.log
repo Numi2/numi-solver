@@ -1,0 +1,30 @@
+material_schema=numi.cloth.material.v1 material_artifact_loaded=false parameters_hash=authored-defaults observations_hash=none
+model=explicit_yarn_cloth_reference scenario=pickup nodes=1465 render_triangles=2880 stretch_constraints=2904 bend_constraints=2834 yarn_segments=2904 knot_constraints=1369 balls=12 cloth_mass_kg=0.078050000 fruit_mass_kg=2.330000000 steps=480 substeps=48 iterations=32 replays=2 simulated_seconds=4.000000000
+captured_frames=49 frame_prefix=build/release-aware-pickup-fp64-frames
+max_warp_strain=0.285000000 max_weft_strain=0.106778244 max_knot_angle_error=0.357612844 max_yarn_bend_chord_error=0.982609995 min_triangle_area=0.000003315
+max_warp_extension=0.285000000 max_warp_compression=0.255307064 max_weft_extension=0.106778244 max_weft_compression=0.058993510 max_warp_extension_edge=1150:1198
+max_bottom_strain=0.049342110 max_bottom_extension=0.049342110 max_bottom_compression=0.035766806
+max_ball_contact_correction=0.002060444 max_published_ball_penetration=0.000000200 max_published_primitive_self_penetration=0.000000960 max_published_strain_limit_violation=0.000000000 max_self_penetration=0.006320049 ball_yarn_contacts=21603097 self_contacts=681605 outside_diagnostic_bounds_mask=2064 escaped_mask=0 spilled_mask=0 mouth_candidate_mask=3857 released_mask=3089
+max_ball_contact_correction_by_fruit=0.000420381,0.000182165,0.000363293,0.002060444,0.002027893,0.000287688,0.000525359,0.000220333,0.000394333,0.000284603,0.000119904,0.000340518
+max_mouth_clearance_by_fruit=3.479318580,0.000000000,0.000000000,0.000000000,6.622420612,0.000000000,0.000000000,0.000000000,0.000000000,0.000000000,2.622975263,8.714976532
+max_ground_contact_correction=0.000913200 max_cloth_ground_correction=0.000913200 max_ball_ground_correction=0.000079073 max_published_ground_penetration=0.000000000 max_contact_reconciliation_passes=8 max_primitive_certificate_passes=9 max_swept_ground_advance=0.001000831 max_swept_ball_advance=0.001163935 max_swept_self_advance=0.001133542 final_primitive_self_penetration=0.000000000 max_strain_limit_correction=0.000700855 final_strain_limit_violation=0.000000000 max_speed=15.592633251 max_angular_speed=55.598663967 max_yarn_aerodynamic_force=0.067332197 max_fruit_aerodynamic_force=0.106974386 max_fruit_aerodynamic_torque=0.000189256 aerodynamic_dissipation=10.481368974 max_grip_force=143.545322797 max_grip_impulse=0.024921063 regrab_count=0 max_regrab_capture_distance=0.000000000 max_regrab_capture_error=0.000000000 inactive_grip_substeps=0 patch_selection_count=0 maximum_patch_ring_shift=0 selected_patch_center_ring=0 patch_particles_unique=true patch_topology_exact=true max_friction_cone_ratio=1.000000000 max_rolling_resistance_ratio=1.000000000 tangential_impulse=25.821904925 cloth_friction_contacts=705875 pair_friction_contacts=225537 ground_friction_contacts=55503 rolling_resistance_contacts=55503 swept_ball_yarn_contacts=238311 edge_edge_self_contacts=132350 swept_edge_edge_self_contacts=28579 edge_edge_candidate_pairs=1772900640 edge_edge_sphere_candidate_pairs=808344057 cloth_self_friction_contacts=105459 cloth_ground_friction_contacts=18374 deterministic=true state_hash=0x23465c2d4a1627f4
+ball_cloth_solve_seconds=106.541101263 primitive_self_solve_seconds=106.930283571 point_self_solve_seconds=131.758306646 strain_limit_solve_seconds=0.481744283 primitive_certificate_seconds=1.126466688
+result=PASS
+      865.80 real       862.60 user         2.29 sys
+            45580288  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                3061  page reclaims
+                   1  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   8  voluntary context switches
+               57572  involuntary context switches
+      12704906109084  instructions retired
+       3440149520990  cycles elapsed
+            42140008  peak memory footprint

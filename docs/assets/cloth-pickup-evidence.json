@@ -1,0 +1,341 @@
+{
+  "schema": "numi.fruit-bag.reference-evidence.v1",
+  "backend": "CPU FP64",
+  "source_commit": "1284f70",
+  "source_sha256": "28fabebd948c6d00f9e1a52993c372de2e55f9e7b0dc7663d49dc88013a955e2",
+  "executable_sha256": "ede5cf1482240c52fe26b321f36d2c7e2ca8379823f7e1018b0e8193244b3c43",
+  "command": "numi-solver-cloth-bag --scenario pickup --steps 480 --substeps 48 --iterations 32 --replays 2 --dump-frames PREFIX --dump-every 10 --dump-obj FINAL.obj",
+  "result": "PASS",
+  "exit_code": 0,
+  "replays": 2,
+  "simulated_seconds": 4,
+  "physical_state_hash": "0x23465c2d4a1627f4",
+  "released_mask": 3089,
+  "released_fruits": [
+    0,
+    4,
+    10,
+    11
+  ],
+  "outside_diagnostic_bounds_mask": 2064,
+  "numerical_escape_mask": 0,
+  "published_sphere_yarn_overlap_m": 2e-07,
+  "published_nonlocal_yarn_overlap_m": 9.6e-07,
+  "published_ground_penetration_m": 0,
+  "published_strain_violation_m": 0,
+  "final_released_states": {
+    "0": {
+      "center_m": [
+        -3.25854077,
+        1.19374738,
+        0.07
+      ],
+      "radius_m": 0.07,
+      "linear_velocity_m_s": [
+        -1.05528485,
+        0.422662736,
+        0.0
+      ]
+    },
+    "4": {
+      "center_m": [
+        -6.40776744,
+        -1.74638439,
+        0.068
+      ],
+      "radius_m": 0.068,
+      "linear_velocity_m_s": [
+        -2.23649251,
+        -0.614920264,
+        0.0
+      ]
+    },
+    "10": {
+      "center_m": [
+        -2.31319358,
+        1.15578692,
+        0.07
+      ],
+      "radius_m": 0.07,
+      "linear_velocity_m_s": [
+        -0.763851712,
+        0.320977913,
+        0.0
+      ]
+    },
+    "11": {
+      "center_m": [
+        -8.64839677,
+        1.35905858,
+        0.067
+      ],
+      "radius_m": 0.067,
+      "linear_velocity_m_s": [
+        -2.92872169,
+        0.453712142,
+        0.0
+      ]
+    }
+  },
+  "snapshots": [
+    {
+      "frame": 0,
+      "time_s": 0.0,
+      "obj_sha256": "8839666a4a1fd9fc3297cbc6c4211a415c1039edbf62d21bde177ad26556d57d"
+    },
+    {
+      "frame": 10,
+      "time_s": 0.08333333333333333,
+      "obj_sha256": "0475a47a6f578e8201b91933d4b88f050b3660a8ca02dec232fe2ec17058b5e9"
+    },
+    {
+      "frame": 20,
+      "time_s": 0.16666666666666666,
+      "obj_sha256": "afdbc1b7f7a1b8280cd974994333124b86e7a982a6cfe49504df543190f3fc06"
+    },
+    {
+      "frame": 30,
+      "time_s": 0.25,
+      "obj_sha256": "ed972bc24938aa4f82d0e9a49b09521a6395937bfeb370dfee9bd4942e8cac2b"
+    },
+    {
+      "frame": 40,
+      "time_s": 0.3333333333333333,
+      "obj_sha256": "43f3cbdbe30aa6fe435bea791d03631f5653767295aedbcad592b0265bd7c761"
+    },
+    {
+      "frame": 50,
+      "time_s": 0.4166666666666667,
+      "obj_sha256": "ed228022dd03f24b36388889876ed84e6ff011cf790d04ec171cc5ff8dab4ae3"
+    },
+    {
+      "frame": 60,
+      "time_s": 0.5,
+      "obj_sha256": "fd4f4b0c308ae1e50f0fd36efef31391047a08b862cfbe8aaac12665b4fe32c1"
+    },
+    {
+      "frame": 70,
+      "time_s": 0.5833333333333334,
+      "obj_sha256": "509267fb6a3a065df783ad4ac7d71cc152ec2cc3d7a08d001e3acc32dcbaf6a0"
+    },
+    {
+      "frame": 80,
+      "time_s": 0.6666666666666666,
+      "obj_sha256": "6c305f6ea62eb5f88fb930cf7b830bbe0e94c1156acda39d9233c1f40d4d3e09"
+    },
+    {
+      "frame": 90,
+      "time_s": 0.75,
+      "obj_sha256": "70a9ce136323e3c6fc8630ace9111364d3469f961060aaf70615f502267bc0b5"
+    },
+    {
+      "frame": 100,
+      "time_s": 0.8333333333333334,
+      "obj_sha256": "15494db1118112df53571b8a8b23c40b1870726c685543ba688bb1bf479ef05c"
+    },
+    {
+      "frame": 110,
+      "time_s": 0.9166666666666666,
+      "obj_sha256": "ef03382d8e9dea9fa45064698bddfe902a3b092aa3084dc90d6cb0a13fc6b1bd"
+    },
+    {
+      "frame": 120,
+      "time_s": 1.0,
+      "obj_sha256": "824e4619e2e107cfdc4c5639288dcf7eabbbd9c12785090d39c38bdb44b36b7f"
+    },
+    {
+      "frame": 130,
+      "time_s": 1.0833333333333333,
+      "obj_sha256": "9360b18f8391606af39640fb2f6a851ca38ca2b7b45c4dc8b7514a62ee5cc3fd"
+    },
+    {
+      "frame": 140,
+      "time_s": 1.1666666666666667,
+      "obj_sha256": "5a9c4c00f3b96e763adf0b3729b47ee4f4a7819178862aa43e02a534b6841178"
+    },
+    {
+      "frame": 150,
+      "time_s": 1.25,
+      "obj_sha256": "6bd50b765d97f90e5299f752a27b6c99e8a4e359808b8fc819a0a15a23f448a4"
+    },
+    {
+      "frame": 160,
+      "time_s": 1.3333333333333333,
+      "obj_sha256": "872dd57591acfd1ce8c66213cb7dc61fa5c01b98c571897f41c770df9890b031"
+    },
+    {
+      "frame": 170,
+      "time_s": 1.4166666666666667,
+      "obj_sha256": "7449f2afae6772ebc841e0cbede9fec5cd72763f988e47f9242866e885802325"
+    },
+    {
+      "frame": 180,
+      "time_s": 1.5,
+      "obj_sha256": "ead6c99b635af9034f30dd7f7291509676c5f7cbbadd9e92fa1c3bbc1f50eca1"
+    },
+    {
+      "frame": 190,
+      "time_s": 1.5833333333333333,
+      "obj_sha256": "eade063e17a94d4225779795118ee0801ea78f9ee2c1fb640a3fbe4974c1a65f"
+    },
+    {
+      "frame": 200,
+      "time_s": 1.6666666666666667,
+      "obj_sha256": "3370d511d88bfd45222fbeaa5efc17f840b68dfc76f83d24da5cafa050e874e0"
+    },
+    {
+      "frame": 210,
+      "time_s": 1.75,
+      "obj_sha256": "1222450282c28d0716b5ea66270b96890b51bcf53d436a6497662fa137e2f8bf"
+    },
+    {
+      "frame": 220,
+      "time_s": 1.8333333333333333,
+      "obj_sha256": "8865cc863fbdb8ab2b58ae1f46a57b3f197c7622267b0e3ed43179058f648eb9"
+    },
+    {
+      "frame": 230,
+      "time_s": 1.9166666666666667,
+      "obj_sha256": "1cea03f1f24f54d4ed5e054c0069a9731c268b0c80bcb6460235c68300ad928e"
+    },
+    {
+      "frame": 240,
+      "time_s": 2.0,
+      "obj_sha256": "3b717d56af52e600e73740414abf231338e4df60ed483621433514ceee96f603"
+    },
+    {
+      "frame": 250,
+      "time_s": 2.0833333333333335,
+      "obj_sha256": "7caf377e20a1b2e8a5c34872b0e45ac8d32895359eb9f5e2a47d7ea3c38aa07c"
+    },
+    {
+      "frame": 260,
+      "time_s": 2.1666666666666665,
+      "obj_sha256": "66863f6268791e095927799000abfc6b82463e1a5c6aac120b67b1fa8633dbb7"
+    },
+    {
+      "frame": 270,
+      "time_s": 2.25,
+      "obj_sha256": "6250cbecbcab109c2d2c425bb879b50ffe887863098314ca662ad5a5558491c7"
+    },
+    {
+      "frame": 280,
+      "time_s": 2.3333333333333335,
+      "obj_sha256": "2a6aa8db7856df7efc7c2aa80166af952a066d1583bbe64aac747d182d313d52"
+    },
+    {
+      "frame": 290,
+      "time_s": 2.4166666666666665,
+      "obj_sha256": "22947545000de6e83874c138e3ad9d0462f21549bd53b27964db161621f4f8f6"
+    },
+    {
+      "frame": 300,
+      "time_s": 2.5,
+      "obj_sha256": "b9bb7dc6cce0e672e066ffc27857458e34d1de274b2f77e8e563a890c5f2edc7"
+    },
+    {
+      "frame": 310,
+      "time_s": 2.5833333333333335,
+      "obj_sha256": "40714fa7c21e91e75b839d1fe357e8556efdc777a280543965205ce90a84946b"
+    },
+    {
+      "frame": 320,
+      "time_s": 2.6666666666666665,
+      "obj_sha256": "0e280198503e457c53809a7c3f6b30d870e387ca2b209ce2ca587f7759f184a0"
+    },
+    {
+      "frame": 330,
+      "time_s": 2.75,
+      "obj_sha256": "b0f4ca4a46e7b7c49f58b1521e7f0c2dff6100f201658e7d5615fa01e99d58ef"
+    },
+    {
+      "frame": 340,
+      "time_s": 2.8333333333333335,
+      "obj_sha256": "33d6968211949f3bcfee39d51f54948332d5691f08242cb0a11754f7182b400d"
+    },
+    {
+      "frame": 350,
+      "time_s": 2.9166666666666665,
+      "obj_sha256": "7d8b1eb91a45d87b7defcbcd2a9b35bb59ab9c6ae54cb1e2ee2698ab77b91717"
+    },
+    {
+      "frame": 360,
+      "time_s": 3.0,
+      "obj_sha256": "654e0e0fda9aec1e915e8275a3446ed63feb723276d9880e7e3501e3810511ef"
+    },
+    {
+      "frame": 370,
+      "time_s": 3.0833333333333335,
+      "obj_sha256": "719002387a5391db4e74adaae3581aaa607b80cef8019790091e8e54a97d25f3"
+    },
+    {
+      "frame": 380,
+      "time_s": 3.1666666666666665,
+      "obj_sha256": "57352a8047175e8929a18d1849d40b844dc857e5af538bfa5bb905650203ca04"
+    },
+    {
+      "frame": 390,
+      "time_s": 3.25,
+      "obj_sha256": "868f69a2cc4bb048974c1d0b4879e57dffafb686faac45cfb82d9ca85a256c46"
+    },
+    {
+      "frame": 400,
+      "time_s": 3.3333333333333335,
+      "obj_sha256": "db89b4b74a7680c625fadb4f6f256991401da94ce0b7fb63dea6f21581a55012"
+    },
+    {
+      "frame": 410,
+      "time_s": 3.4166666666666665,
+      "obj_sha256": "6862e6d3425329fb0c898ccaefe44c819c975205dd76dcd935592e0cbca58721"
+    },
+    {
+      "frame": 420,
+      "time_s": 3.5,
+      "obj_sha256": "0714d43b904204de300c6aa1029ff2c3447fc9967b2d21fb8ad2a148fd2d95c4"
+    },
+    {
+      "frame": 430,
+      "time_s": 3.5833333333333335,
+      "obj_sha256": "1810e74486267d3e80e484bd8cc095c857e2ca86e27b2069bd78b5a915efcc3c"
+    },
+    {
+      "frame": 440,
+      "time_s": 3.6666666666666665,
+      "obj_sha256": "1f02cdf4f04c7d022275f921bcf306a6a78c1782eff0860471b9d19a04d8ea79"
+    },
+    {
+      "frame": 450,
+      "time_s": 3.75,
+      "obj_sha256": "9980b9c10dd54ee917cb06d53f05c302a5bbac439ef87c59e01de61d467e7648"
+    },
+    {
+      "frame": 460,
+      "time_s": 3.8333333333333335,
+      "obj_sha256": "34246fd36480a6d883731e109e30dbc13f58e578862fb3638f14b6377c932874"
+    },
+    {
+      "frame": 470,
+      "time_s": 3.9166666666666665,
+      "obj_sha256": "a18a8ecf73b241c6761251a31d24ba187253d1854e77dc3879937e63757bf233"
+    },
+    {
+      "frame": 480,
+      "time_s": 4.0,
+      "obj_sha256": "04ff28c1319aa3e1eb0277b5eb116523424b4babb8c9df1ad4586f251c1751d3"
+    }
+  ],
+  "independent_sampled_contacts": {
+    "auditor_source_sha256": "a5758990327251b7c9eab38f41dc5e1458bc607e57f1c9bbead008c67dd51731",
+    "yarn_radius_m": 0.004,
+    "snapshots": 49,
+    "all_within_2um": true,
+    "maximum_sphere_yarn_overlap_m": 5.912844019961838e-09,
+    "maximum_sphere_sphere_overlap_m": 7.117734179828972e-09,
+    "maximum_nonlocal_yarn_overlap_m": 6.206150780785347e-09,
+    "maximum_ground_overlap_m": 0.0
+  },
+  "renderer_source_sha256": "c214df0857ae1871b50da60102b1b337b492ee6a92efe393893932d495729433",
+  "animation_sha256": "112818143721b62c43fcb6a40e8ca81568bcd946e9057ff129ab49ce1e9262b3",
+  "video_sha256": "8737a294595f0c6c84e667f4365ae3a26b1f9d44579c175357f1686193d335e2",
+  "evidence_boundary": "Authored dynamic bag with sphere fruit and an unbounded inelastic support plane. Landed fruit still roll. Independent snapshot contacts do not certify intervening substeps. CPU qualification is distinct from pending full Metal qualification and from material/specimen calibration."
+}

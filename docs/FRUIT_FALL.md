@@ -183,8 +183,11 @@ box. Unreleased fruit retains the original containment bounds. Nonfinite state,
 invalid radius, below-plane positions, and the existing independent contact,
 strain, speed, orientation and force gates still reject invalid runs. Focused
 checks retain those rejections and accept valid far-field rolling and flight.
-A fresh source/binary-bound four-second replay is running to verify the final
-classification and unchanged physical state; the earlier FAIL is retained.
+A fresh source/binary-bound four-second replay has now passed. The physical
+hash remains `0x23465c2d4a1627f4`; all 49 exported OBJ states and the final
+OBJ match the earlier run byte for byte. The old FAIL is retained. The fresh
+run reports `escaped_mask=0`, `outside_diagnostic_bounds_mask=2064`, and all
+four released fruits at their contact radii with zero vertical velocity.
 
 The completed trajectory also exposed a display mismatch: the renderer drew
 a finite +/-4 m square over the unbounded collision plane. Landed fruit beyond
@@ -193,3 +196,8 @@ the support plane across the complete orthographic viewport, inverts the world
 projection to cover the visible grid, and retains the world-position shadows.
 Grid density is bounded; with a shared trajectory framing list the grid and
 camera stay fixed for every frame. It changes no simulated positions.
+
+The corrected four-second FP64 GIF, video, log, and source/binary/frame
+fingerprints are now published in `docs/assets/cloth-pickup-*`. They qualify
+the CPU reference described above. The full Metal pickup and settling run
+remains live and requires its own complete outcome and two-replay agreement.
