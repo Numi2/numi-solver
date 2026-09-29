@@ -1,5 +1,35 @@
 # Six-second loaded-bag drop
 
+[![Newest six-second loaded-bag release and floor impact](assets/finite-bench-loaded-drop-repaired-floor-impact.png)](assets/finite-bench-loaded-drop-repaired.mp4)
+
+## Newest complete authored-case result: PASS
+
+The repaired `6f1e450` CPU FP64 simulation completes both full six-second runs
+with actual exit 0. It keeps the same 121-pose grip input, 48 substeps,
+32 iterations, material and acceptance limits. The cloth is carried, turned
+180 degrees and released at 3.8 seconds. After the first saved inactive-grip
+state, its mass center descends **1.717 m**; the first saved floor contact is
+at **4.417 s**, and **28 cloth nodes** finish against the lower floor.
+Fruits 10 and 11 spill and both finish at their floor radii with zero vertical
+velocity. Both complete 721-frame fruit sequences match exactly.
+
+All **73** exported states independently pass fruit, local node, nonlocal yarn,
+and whole-yarn/static contact checks. The unchanged solver gates pass too:
+maximum speed is **16.16 m/s**, and published ground penetration, strain-limit
+violation and ground correction are zero to log precision. The final physical
+hash is `0xc5d60d0e3ab5a9ba`; the ordered 721-frame digest is `0xe9b999601b9d16e2`.
+
+[Terminal log](assets/finite-bench-loaded-drop-repaired.log),
+[complete independent audit](assets/finite-bench-loaded-drop-repaired-audit.json),
+and [source, binary, state and video fingerprints](assets/finite-bench-loaded-drop-repaired-evidence.json).
+The video shows all 73 states with one fixed camera at 12 fps. Sphere collision
+geometry remains rigid; authored cloth/sphere gates do not establish material
+calibration, temporal convergence, native finite-bench execution, measured
+support reactions or full contact-work/energy closure.
+
+## Retained original failure
+
+
 [![Unqualified stress replay: loaded cloth lands on the lower floor](assets/finite-bench-loaded-drop-floor-impact.png)](assets/finite-bench-loaded-drop-diagnostic.mp4)
 
 **Diagnostic replay: contact, strain and motion gates fail.**

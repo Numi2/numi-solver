@@ -1,0 +1,1780 @@
+{
+  "yarn_radius_m": 0.004,
+  "yarn_count": 2904,
+  "local_node_contacts_enforced": true,
+  "whole_yarn_static_contacts_enforced": true,
+  "all_snapshots_within_contact_tolerance": true,
+  "evidence_boundary": "Contacts of supplied exported states only. Exact authored axial graph and two-hop exclusions are reconstructed after validating every render triangle. Does not certify intervening substeps, dynamics, material calibration, strain or replay.",
+  "snapshots": [
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-0.obj",
+      "snapshot_sha256": "21483357b0deb815b8cb071e40c171b46f05bd285425d0ed4661e2c0d68b3122",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 0.0,
+      "fruit_yarn_witness": null,
+      "fruit_pair_overlap_m": 0.0,
+      "fruit_pair_witness": null,
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 7394,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-10.obj",
+      "snapshot_sha256": "dc4a7a8f477c165b7fe96228c4911cbab54b35ce28aa6515334a34b985799b59",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.1276911616195946e-11,
+      "fruit_yarn_witness": {
+        "fruit": 7,
+        "yarn_endpoints": [
+          1403,
+          1404
+        ]
+      },
+      "fruit_pair_overlap_m": 0.0,
+      "fruit_pair_witness": null,
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 9959,
+      "ground_overlap_m": 3.469446951953614e-18,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 3.469446951953614e-18,
+      "yarn_static_witness": {
+        "yarn_endpoints": [
+          30,
+          31
+        ],
+        "segment_parameter": 1.0
+      }
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-20.obj",
+      "snapshot_sha256": "2f8300f0452d85954dde766803551b4d33b7e007c74ee3a02c2c5f2ba9b0a5ca",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.830036232084112e-10,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          321,
+          322
+        ]
+      },
+      "fruit_pair_overlap_m": 4.774917405914181e-10,
+      "fruit_pair_witness": [
+        0,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 1.5280749235402347e-10,
+      "nonlocal_yarn_witness": [
+        [
+          118,
+          166
+        ],
+        [
+          1410,
+          1421
+        ]
+      ],
+      "self_broadphase_candidates": 11711,
+      "ground_overlap_m": 3.469446951953614e-18,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 3.469446951953614e-18,
+      "yarn_static_witness": {
+        "yarn_endpoints": [
+          25,
+          26
+        ],
+        "segment_parameter": 1.0
+      }
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-30.obj",
+      "snapshot_sha256": "f708b37905dd9da5cf6475c7f192996f78ae6beea2221e8e801eea30f8912cba",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.872962727775487e-10,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          128,
+          176
+        ]
+      },
+      "fruit_pair_overlap_m": 2.869690596263297e-10,
+      "fruit_pair_witness": [
+        8,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 16052,
+      "ground_overlap_m": 3.469446951953614e-18,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 3.469446951953614e-18,
+      "yarn_static_witness": {
+        "yarn_endpoints": [
+          22,
+          23
+        ],
+        "segment_parameter": 1.0
+      }
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-40.obj",
+      "snapshot_sha256": "95c33e4c5a68f03a908e07770ad60eee330f46b2450953008fd3330907bcd2db",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 8.193123679500758e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1454,
+          17
+        ]
+      },
+      "fruit_pair_overlap_m": 6.194010859772447e-10,
+      "fruit_pair_witness": [
+        1,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 5.270634866050283e-10,
+      "nonlocal_yarn_witness": [
+        [
+          154,
+          155
+        ],
+        [
+          1460,
+          11
+        ]
+      ],
+      "self_broadphase_candidates": 16401,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.0308630510786074e-07,
+      "local_node_witness": [
+        488,
+        584
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-50.obj",
+      "snapshot_sha256": "83c9fc39d3a464c23d0fc1406833c46640e7ef27d0ebf9df7283b07455cd588a",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.328986280028758e-10,
+      "fruit_yarn_witness": {
+        "fruit": 6,
+        "yarn_endpoints": [
+          1371,
+          1382
+        ]
+      },
+      "fruit_pair_overlap_m": 5.790804780136938e-10,
+      "fruit_pair_witness": [
+        4,
+        5
+      ],
+      "nonlocal_yarn_overlap_m": 3.044906497079447e-10,
+      "nonlocal_yarn_witness": [
+        [
+          154,
+          155
+        ],
+        [
+          1460,
+          11
+        ]
+      ],
+      "self_broadphase_candidates": 15672,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 9.109805397533588e-08,
+      "local_node_witness": [
+        262,
+        358
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-60.obj",
+      "snapshot_sha256": "248738bcd472b0d1628eb08565a66d4bcdc5786c5b0a8142afdf650dcd12383e",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 8.407890772499371e-10,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          1345,
+          1356
+        ]
+      },
+      "fruit_pair_overlap_m": 8.79350287030789e-10,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 7.410314931122208e-10,
+      "nonlocal_yarn_witness": [
+        [
+          418,
+          419
+        ],
+        [
+          561,
+          562
+        ]
+      ],
+      "self_broadphase_candidates": 13986,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.692418493016602e-10,
+      "local_node_witness": [
+        573,
+        669
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-70.obj",
+      "snapshot_sha256": "13a07e6168a300503d4839f14479659263e6e506d8c52a05f957615b833c3fa6",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.973373241012879e-10,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          362,
+          410
+        ]
+      },
+      "fruit_pair_overlap_m": 8.670164031165939e-10,
+      "fruit_pair_witness": [
+        1,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 8.420512377649292e-11,
+      "nonlocal_yarn_witness": [
+        [
+          726,
+          727
+        ],
+        [
+          870,
+          871
+        ]
+      ],
+      "self_broadphase_candidates": 12566,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 8.797158264003957e-09,
+      "local_node_witness": [
+        488,
+        584
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-80.obj",
+      "snapshot_sha256": "6bcd14ac3b9f2b96cc6709c3cd954b5fe7d982a622719ef241386d64a7d39abd",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.0514230874836272e-09,
+      "fruit_yarn_witness": {
+        "fruit": 7,
+        "yarn_endpoints": [
+          1390,
+          1401
+        ]
+      },
+      "fruit_pair_overlap_m": 3.957912025898125e-09,
+      "fruit_pair_witness": [
+        2,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 5.730712345636269e-10,
+      "nonlocal_yarn_witness": [
+        [
+          154,
+          155
+        ],
+        [
+          1460,
+          11
+        ]
+      ],
+      "self_broadphase_candidates": 11550,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.2249254261891283e-09,
+      "local_node_witness": [
+        573,
+        669
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-90.obj",
+      "snapshot_sha256": "2563c68862ba9a1dbfba2341f415ee0c7f80140db6af8c8151b68800c194aa56",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.827580960513721e-09,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          412,
+          413
+        ]
+      },
+      "fruit_pair_overlap_m": 3.4819676864028537e-09,
+      "fruit_pair_witness": [
+        6,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 11857,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.103771587491643e-09,
+      "local_node_witness": [
+        573,
+        669
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-100.obj",
+      "snapshot_sha256": "8d1dbd8758a03d3b4eb556082382d6d5151dfa32675971cb880ade30796b8b8a",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.2719951619777348e-09,
+      "fruit_yarn_witness": {
+        "fruit": 11,
+        "yarn_endpoints": [
+          1349,
+          1360
+        ]
+      },
+      "fruit_pair_overlap_m": 2.1394234717142524e-09,
+      "fruit_pair_witness": [
+        2,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12944,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.330005560019499e-09,
+      "local_node_witness": [
+        12,
+        108
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-110.obj",
+      "snapshot_sha256": "4245db783d1a859a109b9ff4b1d97daeffd0b87617900f5d55c32f718e94f3d5",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.827495529378332e-09,
+      "fruit_yarn_witness": {
+        "fruit": 9,
+        "yarn_endpoints": [
+          1117,
+          1118
+        ]
+      },
+      "fruit_pair_overlap_m": 2.079604738414176e-09,
+      "fruit_pair_witness": [
+        2,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12920,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.0356140170995083e-10,
+      "local_node_witness": [
+        736,
+        832
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-120.obj",
+      "snapshot_sha256": "1a959fc73bb1774bc7b7b4c83894ae5c63e1dac873c52e17b5927b7a2c71d3ac",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.10464641442676e-09,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1446,
+          1457
+        ]
+      },
+      "fruit_pair_overlap_m": 4.776754575219755e-09,
+      "fruit_pair_witness": [
+        4,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12255,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.1214266668058137e-10,
+      "local_node_witness": [
+        587,
+        683
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-130.obj",
+      "snapshot_sha256": "c405fd8bafa62f5db2efb419998eeb05c333c3aecc453d41832582165216d2a7",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.1033488844791606e-09,
+      "fruit_yarn_witness": {
+        "fruit": 6,
+        "yarn_endpoints": [
+          1381,
+          1382
+        ]
+      },
+      "fruit_pair_overlap_m": 3.943338350298475e-09,
+      "fruit_pair_witness": [
+        2,
+        3
+      ],
+      "nonlocal_yarn_overlap_m": 7.492310853327022e-09,
+      "nonlocal_yarn_witness": [
+        [
+          726,
+          727
+        ],
+        [
+          869,
+          870
+        ]
+      ],
+      "self_broadphase_candidates": 13666,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-140.obj",
+      "snapshot_sha256": "91b8ee0a0ce5e8b69c4a08c2c5bef70cadb6a52039ad27f2dc7826ea7e64626e",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.9715146032959225e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1427,
+          1428
+        ]
+      },
+      "fruit_pair_overlap_m": 3.1260410926492455e-11,
+      "fruit_pair_witness": [
+        5,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12648,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-150.obj",
+      "snapshot_sha256": "770ea34882ac41767e7f4c50178cd94b8d4b21cb9113f5155b94bd8aa0706515",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.185908425435869e-10,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          1172,
+          1173
+        ]
+      },
+      "fruit_pair_overlap_m": 4.0672742951386454e-11,
+      "fruit_pair_witness": [
+        5,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12681,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-160.obj",
+      "snapshot_sha256": "c5bae4c76699ebc62514b81f3f91b2088de8137ccb927807138df5ff9ce7814c",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.69132455105381e-10,
+      "fruit_yarn_witness": {
+        "fruit": 9,
+        "yarn_endpoints": [
+          1307,
+          1308
+        ]
+      },
+      "fruit_pair_overlap_m": 6.260761631349254e-10,
+      "fruit_pair_witness": [
+        1,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 3.042736206014529e-07,
+      "nonlocal_yarn_witness": [
+        [
+          813,
+          814
+        ],
+        [
+          957,
+          958
+        ]
+      ],
+      "self_broadphase_candidates": 16493,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-170.obj",
+      "snapshot_sha256": "6f8b759a7fd4ecc648b2f7e4bfa9c9bd8c5373a42c4662b52bdb65279d2edeea",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.0465284461822506e-10,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1419,
+          1430
+        ]
+      },
+      "fruit_pair_overlap_m": 3.3801544896405744e-10,
+      "fruit_pair_witness": [
+        5,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 2.1510307597616407e-10,
+      "nonlocal_yarn_witness": [
+        [
+          636,
+          637
+        ],
+        [
+          779,
+          780
+        ]
+      ],
+      "self_broadphase_candidates": 16650,
+      "ground_overlap_m": 1.3877787807814457e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.1464925635425172e-07,
+      "local_node_witness": [
+        65,
+        161
+      ],
+      "yarn_static_overlap_m": 3.469446951953614e-18,
+      "yarn_static_witness": {
+        "yarn_endpoints": [
+          22,
+          23
+        ],
+        "segment_parameter": 1.0
+      }
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-180.obj",
+      "snapshot_sha256": "a798324135a4274c7fbe68a9b602a5359a6d5fd5be359b9be10437037a842f75",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.4336466735986875e-10,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1394,
+          1395
+        ]
+      },
+      "fruit_pair_overlap_m": 3.811323479041562e-10,
+      "fruit_pair_witness": [
+        5,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 2.278110859676996e-10,
+      "nonlocal_yarn_witness": [
+        [
+          275,
+          276
+        ],
+        [
+          418,
+          419
+        ]
+      ],
+      "self_broadphase_candidates": 13756,
+      "ground_overlap_m": 1.3877787807814457e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-190.obj",
+      "snapshot_sha256": "ebb007887522e7c905d5f65ac5f8de0ee3ed79d39a4c0259cedc91137a9b96eb",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.553053572526778e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          591,
+          592
+        ]
+      },
+      "fruit_pair_overlap_m": 1.0332296129789142e-10,
+      "fruit_pair_witness": [
+        2,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 3.0334532813598714e-07,
+      "nonlocal_yarn_witness": [
+        [
+          176,
+          177
+        ],
+        [
+          320,
+          321
+        ]
+      ],
+      "self_broadphase_candidates": 16105,
+      "ground_overlap_m": 1.3877787807814457e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.5440412890903596e-08,
+      "local_node_witness": [
+        32,
+        128
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-200.obj",
+      "snapshot_sha256": "3114822321b601b935216453ba18c60f2ee0fb01a9e76aedfc99b3813be6462c",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.878017794724855e-10,
+      "fruit_yarn_witness": {
+        "fruit": 6,
+        "yarn_endpoints": [
+          29,
+          1344
+        ]
+      },
+      "fruit_pair_overlap_m": 5.575377659550185e-10,
+      "fruit_pair_witness": [
+        7,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13839,
+      "ground_overlap_m": 1.3877787807814457e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-210.obj",
+      "snapshot_sha256": "74ec8d45f1e05d39feeeabea0f8f05a5655c75a8ccd355646732993dfe0d520a",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.9910359472241623e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1074,
+          1122
+        ]
+      },
+      "fruit_pair_overlap_m": 2.6538762853967057e-10,
+      "fruit_pair_witness": [
+        7,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 3.020661741570674e-10,
+      "nonlocal_yarn_witness": [
+        [
+          730,
+          731
+        ],
+        [
+          490,
+          538
+        ]
+      ],
+      "self_broadphase_candidates": 14162,
+      "ground_overlap_m": 1.3877787807814457e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.7896086095556836e-10,
+      "local_node_witness": [
+        718,
+        814
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-220.obj",
+      "snapshot_sha256": "4a86eecd14b4ab5310979c918bf11227ee1cd7eb3bea864322ce3a1b98b300e2",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.2567357971812214e-10,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          694,
+          695
+        ]
+      },
+      "fruit_pair_overlap_m": 1.9518625604675321e-10,
+      "fruit_pair_witness": [
+        5,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 3.454568894833976e-09,
+      "nonlocal_yarn_witness": [
+        [
+          824,
+          825
+        ],
+        [
+          968,
+          969
+        ]
+      ],
+      "self_broadphase_candidates": 13490,
+      "ground_overlap_m": 1.3877787807814457e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-230.obj",
+      "snapshot_sha256": "cf3be5235d57d34dbd1e42391903b9306cc0c929f6e5abb9f92ce1dbd96c06c2",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 6.66680946559417e-10,
+      "fruit_yarn_witness": {
+        "fruit": 7,
+        "yarn_endpoints": [
+          1388,
+          1389
+        ]
+      },
+      "fruit_pair_overlap_m": 4.269219283647985e-09,
+      "fruit_pair_witness": [
+        2,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 4.32085076051969e-09,
+      "nonlocal_yarn_witness": [
+        [
+          776,
+          777
+        ],
+        [
+          920,
+          921
+        ]
+      ],
+      "self_broadphase_candidates": 13922,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 9.494613619626113e-10,
+      "local_node_witness": [
+        769,
+        865
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-240.obj",
+      "snapshot_sha256": "6ac5ea7bbd91475eb4783fe21ae68216ca6c68a6519b5784f4c358b59b1248a2",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 6.845525396537155e-10,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1394,
+          1395
+        ]
+      },
+      "fruit_pair_overlap_m": 3.5856144997570283e-09,
+      "fruit_pair_witness": [
+        2,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 7.821170815748568e-07,
+      "nonlocal_yarn_witness": [
+        [
+          562,
+          563
+        ],
+        [
+          706,
+          707
+        ]
+      ],
+      "self_broadphase_candidates": 13391,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.2697017569285318e-09,
+      "local_node_witness": [
+        658,
+        754
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-250.obj",
+      "snapshot_sha256": "0b840ee1285a298f1575bc45adf911bfb043e5ef0845b327d77b768095a25f8c",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 0.0,
+      "fruit_yarn_witness": null,
+      "fruit_pair_overlap_m": 0.0,
+      "fruit_pair_witness": null,
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13061,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-260.obj",
+      "snapshot_sha256": "34c6cac49c14fba685e314c652c4513c8f939b9dff50fa312971b9d0c8439d2b",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.6739656466535635e-09,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          732,
+          733
+        ]
+      },
+      "fruit_pair_overlap_m": 5.113204581963515e-10,
+      "fruit_pair_witness": [
+        0,
+        1
+      ],
+      "nonlocal_yarn_overlap_m": 1.3847349204787474e-09,
+      "nonlocal_yarn_witness": [
+        [
+          562,
+          563
+        ],
+        [
+          706,
+          707
+        ]
+      ],
+      "self_broadphase_candidates": 13287,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 4.198817878456329e-09,
+      "local_node_witness": [
+        573,
+        669
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-270.obj",
+      "snapshot_sha256": "8c5826b099e9ed548e2d86f0e4ac83e60b9d1676ea465ce425af37b81dcb737c",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.6696704563965454e-09,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          1028,
+          1076
+        ]
+      },
+      "fruit_pair_overlap_m": 8.504391080244034e-10,
+      "fruit_pair_witness": [
+        0,
+        1
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 14270,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-280.obj",
+      "snapshot_sha256": "beede605fd78fb0d80bba66bb789775df476178ee67a831258e8a1e77638431c",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 8.795957018303824e-11,
+      "fruit_yarn_witness": {
+        "fruit": 11,
+        "yarn_endpoints": [
+          1372,
+          1383
+        ]
+      },
+      "fruit_pair_overlap_m": 5.19103759977213e-10,
+      "fruit_pair_witness": [
+        2,
+        3
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 15059,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-290.obj",
+      "snapshot_sha256": "f5f919c2c8415c27972c83699b0e1fccf891f74b588740e7bd0d2cc322c90736",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.5251596652277044e-09,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1023,
+          1024
+        ]
+      },
+      "fruit_pair_overlap_m": 1.3510065288713236e-10,
+      "fruit_pair_witness": [
+        6,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 3.9451200466167347e-10,
+      "nonlocal_yarn_witness": [
+        [
+          824,
+          825
+        ],
+        [
+          968,
+          969
+        ]
+      ],
+      "self_broadphase_candidates": 15311,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-300.obj",
+      "snapshot_sha256": "e83697154da101fbe3001d8045132d6bb9754b355fd881d85d4f9859c58546bb",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 6.600613389196042e-10,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1393,
+          1394
+        ]
+      },
+      "fruit_pair_overlap_m": 5.945803849272124e-10,
+      "fruit_pair_witness": [
+        2,
+        3
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13909,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-310.obj",
+      "snapshot_sha256": "5d4a098f470fc343fb700aef4b201dcda372ed4af57ce1967dcfae83cb3df71b",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.545005123837484e-09,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          975,
+          976
+        ]
+      },
+      "fruit_pair_overlap_m": 7.795283030187505e-10,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13301,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-320.obj",
+      "snapshot_sha256": "f95dee977daf1cf3ba2c3d8ae9120faa43014a3974e92400c333042e7299f4d3",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.71832791051596e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1383,
+          1394
+        ]
+      },
+      "fruit_pair_overlap_m": 1.8334171125733434e-09,
+      "fruit_pair_witness": [
+        2,
+        3
+      ],
+      "nonlocal_yarn_overlap_m": 5.414236628475955e-10,
+      "nonlocal_yarn_witness": [
+        [
+          538,
+          539
+        ],
+        [
+          681,
+          682
+        ]
+      ],
+      "self_broadphase_candidates": 12532,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.516467851806925e-09,
+      "local_node_witness": [
+        323,
+        419
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-330.obj",
+      "snapshot_sha256": "ef1502dac2cfdcbb56b24d970dfecaed78a7136a0a7a8fccf730d7d5940773b6",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.425968800845446e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1383,
+          1394
+        ]
+      },
+      "fruit_pair_overlap_m": 4.688411991971009e-09,
+      "fruit_pair_witness": [
+        6,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 1.7802043259657063e-09,
+      "nonlocal_yarn_witness": [
+        [
+          824,
+          825
+        ],
+        [
+          968,
+          969
+        ]
+      ],
+      "self_broadphase_candidates": 13144,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 4.6470472435389265e-10,
+      "local_node_witness": [
+        323,
+        419
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-340.obj",
+      "snapshot_sha256": "6076f0c6ed4c223a16b612a935aa5c4ba03c56672cff5fecec5e632d61b0c436",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 9.840794845672463e-10,
+      "fruit_yarn_witness": {
+        "fruit": 9,
+        "yarn_endpoints": [
+          1444,
+          1455
+        ]
+      },
+      "fruit_pair_overlap_m": 2.8138481822370665e-09,
+      "fruit_pair_witness": [
+        7,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 3.9442033493430895e-10,
+      "nonlocal_yarn_witness": [
+        [
+          824,
+          825
+        ],
+        [
+          968,
+          969
+        ]
+      ],
+      "self_broadphase_candidates": 13569,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 5.51167776696726e-09,
+      "local_node_witness": [
+        573,
+        669
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-350.obj",
+      "snapshot_sha256": "0c35d497572f6f8608af970b4b21772dc434febf31009bb3ad78a4eab0f391be",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 8.233646126010186e-10,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1402,
+          1403
+        ]
+      },
+      "fruit_pair_overlap_m": 6.833391630323149e-10,
+      "fruit_pair_witness": [
+        2,
+        3
+      ],
+      "nonlocal_yarn_overlap_m": 1.3245670185679792e-11,
+      "nonlocal_yarn_witness": [
+        [
+          538,
+          539
+        ],
+        [
+          682,
+          683
+        ]
+      ],
+      "self_broadphase_candidates": 13698,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.1780847773007475e-09,
+      "local_node_witness": [
+        590,
+        686
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-360.obj",
+      "snapshot_sha256": "033574db4b62603726f087d3fe6df63916d0c0be34e6a9d3d6ef2b30df252890",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 9.80830403007893e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          975,
+          976
+        ]
+      },
+      "fruit_pair_overlap_m": 3.3563612999998327e-10,
+      "fruit_pair_witness": [
+        0,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 14337,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.6968376183312817e-09,
+      "local_node_witness": [
+        371,
+        467
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-370.obj",
+      "snapshot_sha256": "3ea15aaae39e9d71ddc0421b2e10db50cc59e498f941ae02f0a9e3d2fe4a270d",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 8.905407522519226e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          975,
+          976
+        ]
+      },
+      "fruit_pair_overlap_m": 4.859517510613642e-10,
+      "fruit_pair_witness": [
+        0,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 2.2677195329889877e-09,
+      "nonlocal_yarn_witness": [
+        [
+          776,
+          777
+        ],
+        [
+          920,
+          921
+        ]
+      ],
+      "self_broadphase_candidates": 15864,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.14764381158039e-09,
+      "local_node_witness": [
+        573,
+        669
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-380.obj",
+      "snapshot_sha256": "d50002c36af46de9cd41abeba56e5e0ac95364a2e802b1d9373efd09e30aa631",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.234229577544269e-10,
+      "fruit_yarn_witness": {
+        "fruit": 9,
+        "yarn_endpoints": [
+          19,
+          1454
+        ]
+      },
+      "fruit_pair_overlap_m": 4.037503664733322e-10,
+      "fruit_pair_witness": [
+        2,
+        3
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 15381,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.520310477677201e-09,
+      "local_node_witness": [
+        528,
+        624
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-390.obj",
+      "snapshot_sha256": "83021232e82a71cc7eda205af9b072a4b4b8a7c11f719ffd712d012d35d2325f",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.019209214918163e-10,
+      "fruit_yarn_witness": {
+        "fruit": 6,
+        "yarn_endpoints": [
+          28,
+          1355
+        ]
+      },
+      "fruit_pair_overlap_m": 1.0264349370459058e-09,
+      "fruit_pair_witness": [
+        2,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 15045,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.0625120835244806e-09,
+      "local_node_witness": [
+        872,
+        968
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-400.obj",
+      "snapshot_sha256": "b6e312c15862dddbbadc22909de5574470cbcb182ca1abb5d08f722a3755dae0",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.805275470252333e-09,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          975,
+          976
+        ]
+      },
+      "fruit_pair_overlap_m": 7.541041402436832e-10,
+      "fruit_pair_witness": [
+        2,
+        3
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13687,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.021791724830414e-09,
+      "local_node_witness": [
+        769,
+        865
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-410.obj",
+      "snapshot_sha256": "88ec6e7437ce0f9295c20ad62f154836bbe3dc551ca37d6e36335b0b2165da92",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.739531254098871e-09,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          975,
+          976
+        ]
+      },
+      "fruit_pair_overlap_m": 4.231542338750671e-10,
+      "fruit_pair_witness": [
+        2,
+        3
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12950,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.8208330445783636e-09,
+      "local_node_witness": [
+        872,
+        968
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-420.obj",
+      "snapshot_sha256": "3748bff743ef50999402a90b4d879c77b7f54ba842d730e6aa7b474dc6ea3c84",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 6.519838044449777e-09,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          1028,
+          1076
+        ]
+      },
+      "fruit_pair_overlap_m": 7.77443553978685e-10,
+      "fruit_pair_witness": [
+        0,
+        1
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13431,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.8842773239223796e-09,
+      "local_node_witness": [
+        872,
+        968
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-430.obj",
+      "snapshot_sha256": "00ba9a1887295578463fd05adfaa71e47d56f6f3b96fc288db4a393dac89bb2e",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.861417741113371e-09,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          975,
+          976
+        ]
+      },
+      "fruit_pair_overlap_m": 8.553444064141047e-11,
+      "fruit_pair_witness": [
+        6,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 14739,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.892401852223504e-11,
+      "local_node_witness": [
+        371,
+        467
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-440.obj",
+      "snapshot_sha256": "75c0086cacb844a58813bda7325963ed0781dc9ee83ff8b1606dc57a0193f8d2",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.9659093236933387e-09,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          975,
+          976
+        ]
+      },
+      "fruit_pair_overlap_m": 2.4279267485383116e-10,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 15388,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 4.386472296502575e-10,
+      "local_node_witness": [
+        225,
+        321
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-450.obj",
+      "snapshot_sha256": "9a9f07e6dbf43c61c9ce36d3556e064c532b7748b36451183f89e4119d2eef52",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 9.50580614222929e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          975,
+          976
+        ]
+      },
+      "fruit_pair_overlap_m": 5.33118854617598e-10,
+      "fruit_pair_witness": [
+        6,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 3.7602096783495575e-10,
+      "nonlocal_yarn_witness": [
+        [
+          824,
+          825
+        ],
+        [
+          968,
+          969
+        ]
+      ],
+      "self_broadphase_candidates": 15553,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 7.785914205027389e-10,
+      "local_node_witness": [
+        32,
+        128
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-460.obj",
+      "snapshot_sha256": "46d22b6e7f0bba7950c516a5a25240f1c6fe7f8f762be4e450ceeb4ca4614e62",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 6.119140194549288e-10,
+      "fruit_yarn_witness": {
+        "fruit": 6,
+        "yarn_endpoints": [
+          28,
+          1355
+        ]
+      },
+      "fruit_pair_overlap_m": 1.7134696439491393e-10,
+      "fruit_pair_witness": [
+        0,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 7.671732138447851e-10,
+      "nonlocal_yarn_witness": [
+        [
+          824,
+          825
+        ],
+        [
+          968,
+          969
+        ]
+      ],
+      "self_broadphase_candidates": 13596,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.609837342238853e-10,
+      "local_node_witness": [
+        32,
+        128
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-470.obj",
+      "snapshot_sha256": "514dafac0ad9df26b2cc451ce3ec077c9d57b75c6cdbdab0d97230998bdeffef",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 6.758379966775863e-10,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          889,
+          890
+        ]
+      },
+      "fruit_pair_overlap_m": 4.526242436408978e-10,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 14131,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.4480932772342747e-09,
+      "local_node_witness": [
+        371,
+        467
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-480.obj",
+      "snapshot_sha256": "67a900fccbd78fbf2df4f038d064dc1eecded2d2540ee5014256985745b3ff55",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.8429287262922145e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1402,
+          1403
+        ]
+      },
+      "fruit_pair_overlap_m": 2.85990167658845e-09,
+      "fruit_pair_witness": [
+        6,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 8.741979119764043e-10,
+      "nonlocal_yarn_witness": [
+        [
+          824,
+          825
+        ],
+        [
+          968,
+          969
+        ]
+      ],
+      "self_broadphase_candidates": 13253,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.84498775353459e-09,
+      "local_node_witness": [
+        573,
+        669
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-r1-peak.obj",
+      "snapshot_sha256": "62f878cc8e3eeeb7f6667ae364a5df9ee8bcd89c5cf9052d604fea09233e7f1e",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.654976599680836e-09,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          1321,
+          1322
+        ]
+      },
+      "fruit_pair_overlap_m": 4.558969035617366e-10,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 6.313521790802384e-07,
+      "nonlocal_yarn_witness": [
+        [
+          182,
+          183
+        ],
+        [
+          39,
+          1352
+        ]
+      ],
+      "self_broadphase_candidates": 16315,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "build/finite-bench-active-pickup-96-r2-peak.obj",
+      "snapshot_sha256": "62f878cc8e3eeeb7f6667ae364a5df9ee8bcd89c5cf9052d604fea09233e7f1e",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.654976599680836e-09,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          1321,
+          1322
+        ]
+      },
+      "fruit_pair_overlap_m": 4.558969035617366e-10,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 6.313521790802384e-07,
+      "nonlocal_yarn_witness": [
+        [
+          182,
+          183
+        ],
+        [
+          39,
+          1352
+        ]
+      ],
+      "self_broadphase_candidates": 16315,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    }
+  ]
+}

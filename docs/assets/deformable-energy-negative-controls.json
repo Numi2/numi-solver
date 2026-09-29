@@ -1,0 +1,6 @@
+{
+  "missing_frame": true,
+  "wrong_projection_work": true,
+  "omitted_kinetic_loss": true,
+  "nonfinite_ledger": true
+}

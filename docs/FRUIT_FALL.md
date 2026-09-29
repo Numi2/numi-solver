@@ -306,14 +306,29 @@ snapshots independently pass, including full yarn/static and local-node checks.
 Worst accepted fruit/yarn overlap drops from 173.4 um to 0.949 um, below 2 um.
 Peak dynamic speed is 14.33 m/s and knot error is 0.314 radians.
 [Complete support-geometry receipt](assets/finite-bench-active-pickup-48-evidence.json).
-The paired CPU96 result is pending. This source precedes the added blocked-load
-friction response: fresh full pickup and loaded-drop jobs from `6f1e450` are
-running, and their results remain required for that newer source.
+The paired CPU96 result also completes with actual exit 0 and PASS: fruits
+4, 8 and 10 finish on the lower floor, all 51 independent contact audits pass,
+and worst accepted fruit/yarn overlap is 2.411 nm. Its final hash is
+`0x533dcc53ca689c7d`, with ordered digest `0x373f4cfbd0d7484f`.
+[CPU96 receipt](assets/finite-bench-active-pickup-96-evidence.json).
+The [matched timestep comparison](assets/finite-bench-active-timestep-comparison.json)
+retains 325 mm maximum cloth-node and 8.00 m fruit-center discrepancies, with
+different released sets. Both scene gate checks passing is not convergence.
+This source precedes the added blocked-load friction response; that newer
+`6f1e450` source now independently passes the complete
+[six-second loaded drop](DEFORMABLE_STRESS.md).
+The newer blocked-load source also completes its own full four-second CPU48
+pickup: actual exit 0, four floor landings (4, 9, 10, 11), both full fruit
+sequences exact, and all 51 independent contact audits PASS. Peak accepted
+fruit/yarn overlap is 0.760 um under the unchanged 2 um limit.
+[Separate newer-source pickup receipt](assets/finite-bench-load-pickup-48-evidence.json).
+
 The original CPU96 job also completed both full replays with actual exit 1:
 [its receipt](assets/finite-bench-pickup-96-failure.json) retains 11.26 um
 worst fruit/yarn overlap, and only fruit 4 has a latched
 release. Exact replay does not close either failed gate. The original
-six-second loaded-cloth drop still awaits its actual terminal result.
+six-second loaded-cloth drop completed FAIL; its source-bound record and
+labeled video remain in [the stress record](DEFORMABLE_STRESS.md).
 
 This option is CPU-only; the native Metal bag still uses the plane. Point-node
 static support does not certify continuous contact of every yarn interior.

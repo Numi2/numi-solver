@@ -1,0 +1,51 @@
+{
+  "schema": "numi.finite-bench.active-support-pickup.v1",
+  "physics_source_commit": "0543999",
+  "actual_exit_code": 0,
+  "result": "PASS",
+  "source_binary_sha256": {
+    "cloth_bag.cpp": "221dfef3346e32c46ee59701f0bf128b66a3d7fe38f8fb003ee21cbecac6cc3f",
+    "cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd",
+    "finite_bench_geometry.h": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade",
+    "grip_trajectory.h": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+    "numi-solver-cloth-bag": "eede1b7050b2698fa45f6f3192a9bc739d62a188f9802dd08083e4eb4936877b"
+  },
+  "configuration": {
+    "scenario": "pickup",
+    "steps": 480,
+    "substeps": 96,
+    "iterations": 32,
+    "replays": 2,
+    "simulated_seconds": 4,
+    "finite_bench": true
+  },
+  "final_physical_hash": "0x533dcc53ca689c7d",
+  "ordered_481_frame_hash": "0x373f4cfbd0d7484f",
+  "both_complete_replays_match": true,
+  "released_fruits": [
+    4,
+    8,
+    10
+  ],
+  "serialized_both_full_fruit_replays_exact": true,
+  "all_49_regular_plus_two_worst_contact_obj_audits_pass": true,
+  "whole_yarn_static_contacts_enforced": true,
+  "maximum_published_fruit_yarn_overlap_m": 2.411024380144511e-09,
+  "unchanged_fruit_yarn_limit_m": 2e-06,
+  "maximum_knot_error_rad": 0.059667269,
+  "maximum_dynamic_speed_m_s": 27.458785646,
+  "boundary": "This completed support-geometry source passes its authored scene gates and independent exported geometry checks. It precedes the blocked-load friction change in 6f1e450, which requires fresh full pickup/drop runs. No temporal convergence, calibrated friction or whole-scene contact-work/reaction closure is claimed.",
+  "auditor_sha256": {
+    "tools/audit_cloth_snapshot.py": "465e30940458a80a42d47bcb4575b39940a037b0aa8b2e01aa80ff84235dbb3e",
+    "tools/audit_replayed_finite_fruit_trace.py": "b3ba916fd204ac4991921853ec1bef88ad895650dfeaab5384e523a117547107"
+  },
+  "artifacts_sha256": {
+    "finite-bench-active-pickup-96-r2-peak.obj": "62f878cc8e3eeeb7f6667ae364a5df9ee8bcd89c5cf9052d604fea09233e7f1e",
+    "finite-bench-active-pickup-96.log": "6a49a40846aadad0a27076b57b771a250acdc271741e0662f95021e03225bc23",
+    "finite-bench-active-pickup-96-contacts.json": "9e7a4f7a393bc9cc8d71fb28fa9e945b083a0cedb9de09d001b4d24e6c59ea25",
+    "finite-bench-active-pickup-96-peaks.csv": "5c4f51e4ba58279971e91ca68048434a47bc9c131e1f190fb5cfb8a386d3d255",
+    "finite-bench-active-pickup-96-fruit-audit.json": "dbd9a27280a166315afca41f9a4319c098354af6400079047b7c0bde458c54cd",
+    "finite-bench-active-pickup-96-r1-peak.obj": "62f878cc8e3eeeb7f6667ae364a5df9ee8bcd89c5cf9052d604fea09233e7f1e"
+  },
+  "all_released_observed_on_lower_floor_at_end": true
+}

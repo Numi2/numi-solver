@@ -1,0 +1,30 @@
+{
+  "source_commit": "0543999",
+  "substeps": [
+    48,
+    96
+  ],
+  "simulated_seconds": 4,
+  "captured_frames": 49,
+  "released_fruits": {
+    "48": [
+      0,
+      4,
+      9,
+      10,
+      11
+    ],
+    "96": [
+      4,
+      8,
+      10
+    ]
+  },
+  "maximum_matched_cloth_node_difference_m": 0.3246486982767498,
+  "maximum_matched_fruit_center_difference_m": 8.00103860220395,
+  "boundary": "Same finite bench, authored material and compliant grip. Both complete scene gate checks pass, with exact replays and all 51 contact witnesses per configuration. Matched trajectory differences and different release sets do not establish temporal convergence. This source precedes the blocked-load friction change in 6f1e450.",
+  "contact_reports_sha256": {
+    "48": "c2cb3595471dcdf4c6edfe2a928c93176c6293fb1a2ef263f86bfcb0f9c5f9b0",
+    "96": "9e7a4f7a393bc9cc8d71fb28fa9e945b083a0cedb9de09d001b4d24e6c59ea25"
+  }
+}

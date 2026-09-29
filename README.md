@@ -11,7 +11,26 @@ application scene.
 
 ## Pick up the bag and spill the fruit
 
-### Latest qualified replay · local thickness repair · September 29, 2026
+### Newest loaded release · finite tabletop and lower floor · September 29, 2026
+
+[![Watch the repaired loaded cloth release, impact the floor and spill two fruits](docs/assets/finite-bench-loaded-drop-repaired-floor-impact.png)](docs/assets/finite-bench-loaded-drop-repaired.mp4)
+
+The complete six-second CPU FP64 simulation carries the bag beyond the tabletop,
+turns its seam grip 180 degrees and releases it at 3.8 seconds. Both full
+replays pass with matching ordered 721-frame hashes. All 73 exported states
+pass independent contact audits. The released cloth descends **1.72 m**, with
+**28 cloth nodes** finishing against the lower floor; both spilled fruits
+**10 and 11** finish at their floor radii with zero vertical velocity.
+
+Only the compliant seam grip is prescribed. Cloth and fruit paths are simulated
+under gravity and contact. This authored cloth/sphere result does not qualify
+material calibration, temporal convergence, native finite-bench execution or
+whole-scene energy/reaction closure.
+[Watch the newest video](docs/assets/finite-bench-loaded-drop-repaired.mp4),
+[read the complete result and retained failure](docs/DEFORMABLE_STRESS.md), or
+[inspect the source-bound receipt](docs/assets/finite-bench-loaded-drop-repaired-evidence.json).
+
+### Earlier plane pickup · local thickness repair · September 29, 2026
 
 [![Four fruits leave the repaired deformable bag and land in the finer CPU96 replay](docs/assets/cloth-local-node-pickup.gif)](docs/assets/cloth-local-node-pickup.mp4)
 
@@ -31,7 +50,7 @@ convergence.** The video uses one fixed camera and the finer run's exact
 exported states. Its collider is still an unbounded plane; full native spill
 qualification and material calibration remain open.
 
-[Watch the newest video](docs/assets/cloth-local-node-pickup.mp4),
+[Watch the plane pickup video](docs/assets/cloth-local-node-pickup.mp4),
 [inspect both source-bound results](docs/assets/cloth-local-node-pickup-evidence.json),
 or [read the timestep comparison](docs/assets/cloth-local-node-timestep-comparison.json).
 
@@ -42,16 +61,18 @@ lands four released fruits but **fails** the unchanged fruit/yarn overlap
 gate (173.4 um versus 2 um). The support-aware repair completes both CPU48
 replays with five released fruits ending on the lower floor and 51 independent
 contact audits passing, including both worst-frame snapshots. Its peak
-fruit/yarn overlap is 0.949 um. The CPU96 comparison and the newer blocked-load
-friction source still require their own complete results. The original CPU96
+fruit/yarn overlap is 0.949 um. The CPU96 run also passes with three floor landings; matched cloth/fruit
+trajectories still differ substantially, so temporal convergence remains open.
+The newer blocked-load source independently passes its four-second pickup
+with four floor landings and all 51 contact witnesses, plus the harder drop below. The original CPU96
 failure (11.26 um overlap and one released fruit) remains recorded. [Finite-bench implementation and evidence](docs/FRUIT_FALL.md#finite-tabletop-and-room-floor)
 are separate from the plane video above. Deformable volume/cloth coupling
 and native finite-bench contact remain open.
-A [six-second loaded-bag drop](docs/DEFORMABLE_STRESS.md) now runs a harder
-carry, seam rotation, grip release and whole-cloth floor impact case; its
-original complete run shows 1.74 m of free cloth descent and final floor
-contact, but fails contact, strain and motion limits. Its repair requires a
-fresh complete run. [Watch the labeled stress-test video](docs/assets/finite-bench-loaded-drop-diagnostic.mp4).
+The harder [six-second loaded-bag drop](docs/DEFORMABLE_STRESS.md) now passes
+two complete repaired CPU FP64 replays. All 73 exported contact states pass;
+released cloth descends 1.72 m, 28 nodes finish against the floor, and both
+spilled fruits (10 and 11) finish on the floor. The earlier failed stress
+result is retained. [Watch the newest loaded-drop video](docs/assets/finite-bench-loaded-drop-repaired.mp4).
 
 ### Earlier ground-support CPU48 replay
 
@@ -160,6 +181,13 @@ Spatial refinement preserves the same initial surface and material. The
 1,280-to-10,240-element comparison differs by up to 15.00 mm at matched nodes,
 exceeding the unchanged 1 mm target. The previous pair differed by 36.39 mm.
 Individual timestep checks pass; mesh-resolution convergence remains open.
+
+A new [native energy audit](docs/DEFORMABLE_ENERGY.md) exposes a further gap:
+at 1,280 tetrahedra, integration loses 0.146 J while plane projection adds
+0.080 J of mechanical energy. The old energy-increase check partly hides this
+cancellation. Per-step accounting now separates kinetic loss, elastic/gravity
+position work and integration error. Smaller timesteps reduce the error, but
+the new 1 percent numerical budget still fails; finer studies are running.
 
 The [independent-element foundation](docs/DEFORMABLE_VOLUMES.md) separately
 qualifies the nonlinear elastic forces. Coupling these volumes to the woven
