@@ -1,0 +1,22 @@
+{
+  "created_at_utc": "2026-09-29T14:52:55.783624+00:00",
+  "scope": "CPU owned-state transactional driver plus analytic point-impact backend; no native GPU or full-scene qualification",
+  "base_commit": "3fee96092776aee66b859b5d0ff6677646f8207a",
+  "files_sha256": {
+    "include/numi/transactional_substep.h": "b7582d00133491b7c6638a1f33f290ec405b36c3e45b3268fcbf6cffbab9f3ae",
+    "tools/transactional_substep.cpp": "f4151c6d39bfa1cc6918b2fb2fa738b9ae3580a066e77040ae09c972bec982da",
+    "build/numi-solver-transactional-substep": "a47fbaa6039f187a9411d5be8daf0a92521d584b846cc8a6f8eaeaba34101bd0"
+  },
+  "ctest_exit_code": 0,
+  "host_probe_exit_code": 0,
+  "source_stable_during_checks": true,
+  "result": "transaction_cases=9 invalid_controls=4 odd_half_controls=4 analytic_impact_normal_impulse_Ns=6 committed_time_s=1 rejected_attempts=12 accepted_leaves=13 exact_replay=1 transaction_probe_passed=1",
+  "limits": {
+    "maximum_depth": 8,
+    "maximum_attempts": 512,
+    "retryable_backend_flags_only": true,
+    "exact_binary_duration_required": true,
+    "rollback_of_entire_interval_on_later_failure": true
+  },
+  "native_status": "host and Metal compile only; native whole-yarn adaptive execution pending exclusive GPU owner"
+}

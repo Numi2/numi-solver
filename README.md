@@ -37,6 +37,11 @@ sweeps still return explicit unresolved results in 129 of 518 cases; native
 execution and the complete scene remain pending. See the
 [measured geometry and energy limits](docs/WHOLE_YARN_STATIC_MATH.md).
 
+The host now also checks transactional contact subdivision against an analytic
+impact and rollback controls. Rejected child steps cannot commit partial time,
+warm state or controller generations. Native adaptive execution is pending.
+[Subdivision contract and measured boundary](docs/TRANSACTIONAL_STATIC_CONTACT.md).
+
 
 ### Newest loaded release · finite tabletop and lower floor · September 29, 2026
 

@@ -1,0 +1,1 @@
+transaction_cases=9 invalid_controls=4 odd_half_controls=4 analytic_impact_normal_impulse_Ns=6 committed_time_s=1 rejected_attempts=12 accepted_leaves=13 exact_replay=1 transaction_probe_passed=1

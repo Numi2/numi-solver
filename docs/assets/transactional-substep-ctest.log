@@ -1,0 +1,14 @@
+Test project /Users/home/numi-solver/build
+    Start 4: static_contact.transactional_substep_host
+1/1 Test #4: static_contact.transactional_substep_host ...   Passed    0.30 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Label Time Summary:
+contact         =   0.30 sec*proc (1 test)
+cpu             =   0.30 sec*proc (1 test)
+finite_bench    =   0.30 sec*proc (1 test)
+physics         =   0.30 sec*proc (1 test)
+rollback        =   0.30 sec*proc (1 test)
+
+Total Test time (real) =   0.31 sec
