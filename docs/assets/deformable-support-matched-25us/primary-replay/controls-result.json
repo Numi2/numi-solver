@@ -1,0 +1,23 @@
+{
+  "schema": "numi.deformable.matched-L3-L4-25us.replay-negative-controls.v1",
+  "replay_sha256": "2eefac0f1fffec116be0fbd32b10dc0d616f9308efd7cca2d80ce039ebab2776",
+  "compression_receipt_sha256": "b9612a69d9e6a4a885265ab6cf9379badaf764ddd5de6e51ea4d2572fdc43c63",
+  "all_three_rejected": true,
+  "controls": [
+    {
+      "case": "energy_byte_change",
+      "actual_exit_code": 1,
+      "failure": "ValueError: archive, decompressed hash, or byte count differs: l3-energy.csv"
+    },
+    {
+      "case": "truncated_trace_gzip",
+      "actual_exit_code": 1,
+      "failure": "EOFError: Compressed file ended before the end-of-stream marker was reached"
+    },
+    {
+      "case": "false_published_maximum",
+      "actual_exit_code": 1,
+      "failure": "ValueError: independent streaming result differs from published spatial report: {'maximum_matched_node_difference_m': {'measured': 0.009340864644828101, 'published': 0.0}}"
+    }
+  ]
+}

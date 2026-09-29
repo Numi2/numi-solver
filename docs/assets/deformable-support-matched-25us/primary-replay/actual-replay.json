@@ -1,0 +1,66 @@
+{
+  "schema": "numi.deformable.matched-L3-L4-25us.streaming-public-replay.v1",
+  "published_spatial_sha256": "5565f6cbb50004c05b9a834eb467a94da4a2f60bcb1998922f19a8dbaa7c4a43",
+  "published_l3_geometry_sha256": "0877eb187fbb299321ffdb9e53c35311338996742dbd2a26afb0b72efb6acf96",
+  "published_l4_geometry_sha256": "3c8cdf519d303bfa6189622626847a7a5680bb44d6d949067224310db12f1350",
+  "compression_receipt_sha256": "b9612a69d9e6a4a885265ab6cf9379badaf764ddd5de6e51ea4d2572fdc43c63",
+  "inputs_verified": {
+    "l3-primary.csv.gz": {
+      "archive_sha256": "6b1d6f2d49711cba3da3bc8349a2e856eb3362e462ac7013656aa9af8d5edce6",
+      "decompressed_sha256": "4c6189c28e7df1b0ea8b54e20b73b37675f70669d8015fdedb1f2dbebc6f0523",
+      "uncompressed_bytes": 26477327
+    },
+    "l4-primary.csv.gz": {
+      "archive_sha256": "3edc28cf98dd0f31561156e18d4fa04b5156977629ecf44049a8d48c9968e01d",
+      "decompressed_sha256": "18cb297d2cbe6bd3cd6305d3b0b3931718c75f01f20ebeeb32c565df04b2e25a",
+      "uncompressed_bytes": 194342726
+    },
+    "l3-topology.csv.gz": {
+      "archive_sha256": "d7a4c3948d146ded6ce80a5dd35facb21fbcfffbeed139101109d40e6cd99e5e",
+      "decompressed_sha256": "528bf55f329ad3b702c39047b16f39e08c6d1f13c58cec4afc2e4acc593aa3f1",
+      "uncompressed_bytes": 519154
+    },
+    "l4-topology.csv.gz": {
+      "archive_sha256": "820b19d1b7ec7be787100d35fdcd57c484f64a743e7addf62a4a070636eb9d06",
+      "decompressed_sha256": "76dc32845a503d41d389165fe0cc84ed6762afd2fd53c5b01c1810889075755c",
+      "uncompressed_bytes": 4494145
+    },
+    "l3-energy.csv": {
+      "archive_sha256": "5699c203f91dcbcd1fca779a6e6800610e4eda705c728698c0eab4d5b27ece07",
+      "decompressed_sha256": "5699c203f91dcbcd1fca779a6e6800610e4eda705c728698c0eab4d5b27ece07",
+      "uncompressed_bytes": 25330
+    },
+    "l4-energy.csv": {
+      "archive_sha256": "511cdf4844627ca8535eff392c468ad0af91fa5dcc549e3a6cdbdfd59537b384",
+      "decompressed_sha256": "511cdf4844627ca8535eff392c468ad0af91fa5dcc549e3a6cdbdfd59537b384",
+      "uncompressed_bytes": 27393
+    }
+  },
+  "comparison": {
+    "coarse_nodes": 2057,
+    "fine_nodes": 14993,
+    "coarse_tetrahedra": 10240,
+    "fine_tetrahedra": 81920,
+    "total_mass_difference_kg": 2.9194098249973877e-09,
+    "maximum_matched_node_difference_m": 0.009340864644828101,
+    "maximum_difference_frame": 98,
+    "maximum_difference_time_s": 0.49,
+    "maximum_difference_node": 11,
+    "maximum_pre_captured_impact_node_difference_m": 4.927289189884899e-07,
+    "coarse_first_captured_impact_frame": 33,
+    "fine_first_captured_impact_frame": 33,
+    "coarse_normal_kinetic_loss_J": 0.0337415039539,
+    "fine_normal_kinetic_loss_J": 0.0198202989995,
+    "integrator": "support-verlet",
+    "accepted_steps": 20000,
+    "maximum_COM_difference_m": 0.001965306710154164,
+    "maximum_height_difference_m": 0.004083927720400005,
+    "within_spatial_target": false,
+    "coarse_trace_sha256": "4c6189c28e7df1b0ea8b54e20b73b37675f70669d8015fdedb1f2dbebc6f0523",
+    "fine_trace_sha256": "18cb297d2cbe6bd3cd6305d3b0b3931718c75f01f20ebeeb32c565df04b2e25a",
+    "coarse_energy_ledger_sha256": "5699c203f91dcbcd1fca779a6e6800610e4eda705c728698c0eab4d5b27ece07",
+    "fine_energy_ledger_sha256": "511cdf4844627ca8535eff392c468ad0af91fa5dcc549e3a6cdbdfd59537b384"
+  },
+  "matches_published_spatial_result": true,
+  "evidence_boundary": "Exact lossless native primary CSV and topology inputs, owning sampled energy ledgers, and independently recomputed sampled spatial metrics. No native re-integration, OBJ surface re-audit, material calibration, fruit coupling, or continuous-time convergence proof."
+}

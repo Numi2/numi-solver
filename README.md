@@ -271,7 +271,8 @@ passed the 1% numerical budget at 100 µs, but its 1,280-to-10,240-element
 spatial comparison differed by 14.93 mm against the unchanged 1 mm target.
 The completed same-25-µs 10,240-to-81,920-element comparison differs by
 **9.34 mm** at matched owning nodes, so the unchanged 1 mm spatial target
-still **fails** ([source-bound report](docs/assets/deformable-support-matched-25us/spatial.json)).
+still **fails** ([source-bound report](docs/assets/deformable-support-matched-25us/spatial.json),
+[lossless primary-trace replay](docs/assets/deformable-support-matched-25us/primary-replay/README.md)).
 Its two native traces and captured-state audits pass; the difference develops
 after contact. Spatial convergence, measured material, reciprocal cloth/fruit
 coupling and complete physical work closure remain open.

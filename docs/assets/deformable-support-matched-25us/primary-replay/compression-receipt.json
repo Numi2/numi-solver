@@ -1,0 +1,59 @@
+{
+  "schema": "numi.deformable.matched-L3-L4-25us.lossless-primary-inputs.v1",
+  "inputs": {
+    "l3-primary.csv.gz": {
+      "owning_source": "build/mesh4-level3-dt25us-match.csv",
+      "source_sha256_before": "4c6189c28e7df1b0ea8b54e20b73b37675f70669d8015fdedb1f2dbebc6f0523",
+      "source_sha256_after": "4c6189c28e7df1b0ea8b54e20b73b37675f70669d8015fdedb1f2dbebc6f0523",
+      "decompressed_sha256": "4c6189c28e7df1b0ea8b54e20b73b37675f70669d8015fdedb1f2dbebc6f0523",
+      "uncompressed_bytes": 26477327,
+      "archive_sha256": "6b1d6f2d49711cba3da3bc8349a2e856eb3362e462ac7013656aa9af8d5edce6",
+      "archive_bytes": 9626792
+    },
+    "l4-primary.csv.gz": {
+      "owning_source": "build/mesh4-level4-dt25us.csv",
+      "source_sha256_before": "18cb297d2cbe6bd3cd6305d3b0b3931718c75f01f20ebeeb32c565df04b2e25a",
+      "source_sha256_after": "18cb297d2cbe6bd3cd6305d3b0b3931718c75f01f20ebeeb32c565df04b2e25a",
+      "decompressed_sha256": "18cb297d2cbe6bd3cd6305d3b0b3931718c75f01f20ebeeb32c565df04b2e25a",
+      "uncompressed_bytes": 194342726,
+      "archive_sha256": "3edc28cf98dd0f31561156e18d4fa04b5156977629ecf44049a8d48c9968e01d",
+      "archive_bytes": 72501087
+    },
+    "l3-topology.csv.gz": {
+      "owning_source": "build/mesh4-level3-dt25us-match-topology.csv",
+      "source_sha256_before": "528bf55f329ad3b702c39047b16f39e08c6d1f13c58cec4afc2e4acc593aa3f1",
+      "source_sha256_after": "528bf55f329ad3b702c39047b16f39e08c6d1f13c58cec4afc2e4acc593aa3f1",
+      "decompressed_sha256": "528bf55f329ad3b702c39047b16f39e08c6d1f13c58cec4afc2e4acc593aa3f1",
+      "uncompressed_bytes": 519154,
+      "archive_sha256": "d7a4c3948d146ded6ce80a5dd35facb21fbcfffbeed139101109d40e6cd99e5e",
+      "archive_bytes": 87099
+    },
+    "l4-topology.csv.gz": {
+      "owning_source": "build/mesh4-level4-dt25us-topology.csv",
+      "source_sha256_before": "76dc32845a503d41d389165fe0cc84ed6762afd2fd53c5b01c1810889075755c",
+      "source_sha256_after": "76dc32845a503d41d389165fe0cc84ed6762afd2fd53c5b01c1810889075755c",
+      "decompressed_sha256": "76dc32845a503d41d389165fe0cc84ed6762afd2fd53c5b01c1810889075755c",
+      "uncompressed_bytes": 4494145,
+      "archive_sha256": "820b19d1b7ec7be787100d35fdcd57c484f64a743e7addf62a4a070636eb9d06",
+      "archive_bytes": 730983
+    },
+    "l3-energy.csv": {
+      "owning_source": "build/mesh4-level3-dt25us-match-energy.csv",
+      "source_sha256_before": "5699c203f91dcbcd1fca779a6e6800610e4eda705c728698c0eab4d5b27ece07",
+      "source_sha256_after": "5699c203f91dcbcd1fca779a6e6800610e4eda705c728698c0eab4d5b27ece07",
+      "decompressed_sha256": "5699c203f91dcbcd1fca779a6e6800610e4eda705c728698c0eab4d5b27ece07",
+      "uncompressed_bytes": 25330,
+      "archive_sha256": "5699c203f91dcbcd1fca779a6e6800610e4eda705c728698c0eab4d5b27ece07",
+      "archive_bytes": 25330
+    },
+    "l4-energy.csv": {
+      "owning_source": "build/mesh4-level4-dt25us-energy.csv",
+      "source_sha256_before": "511cdf4844627ca8535eff392c468ad0af91fa5dcc549e3a6cdbdfd59537b384",
+      "source_sha256_after": "511cdf4844627ca8535eff392c468ad0af91fa5dcc549e3a6cdbdfd59537b384",
+      "decompressed_sha256": "511cdf4844627ca8535eff392c468ad0af91fa5dcc549e3a6cdbdfd59537b384",
+      "uncompressed_bytes": 27393,
+      "archive_sha256": "511cdf4844627ca8535eff392c468ad0af91fa5dcc549e3a6cdbdfd59537b384",
+      "archive_bytes": 27393
+    }
+  }
+}
