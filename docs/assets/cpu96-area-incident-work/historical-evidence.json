@@ -1,0 +1,151 @@
+{
+  "actual_exits": {
+    "common-event": 0,
+    "negative-fullscene": 1,
+    "topology": 0
+  },
+  "audit_artifacts": {
+    "README.md": {
+      "bytes": 4434,
+      "path": "build/loaded-drop-cpu96-area-integration-audit/README.md",
+      "sha256": "d4e02e31c454ffa13249089acb9529efc35823513a880bcb2346c78942b4c861"
+    },
+    "common-event.exit": {
+      "bytes": 2,
+      "path": "build/loaded-drop-cpu96-area-integration-audit/common-event.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "common-event.json": {
+      "bytes": 7666,
+      "path": "build/loaded-drop-cpu96-area-integration-audit/common-event.json",
+      "sha256": "7927f6b3f0267dacd8d78ee883c776865689eb008108d1a212427f9eec4547b5"
+    },
+    "common-event.log": {
+      "bytes": 418,
+      "path": "build/loaded-drop-cpu96-area-integration-audit/common-event.log",
+      "sha256": "19fe056252cd89abc29ee3329c3766ff3fc3d43f9f55a7032a22de27f1fc1fec"
+    },
+    "common_event.py": {
+      "bytes": 8339,
+      "path": "build/loaded-drop-cpu96-area-integration-audit/common_event.py",
+      "sha256": "123b584dc10780d90be2906489e857d9df219a7919ad7b9f7acd9fbd3aea7f94"
+    },
+    "negative-fullscene.exit": {
+      "bytes": 2,
+      "path": "build/loaded-drop-cpu96-area-integration-audit/negative-fullscene.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    "negative-fullscene.log": {
+      "bytes": 669,
+      "path": "build/loaded-drop-cpu96-area-integration-audit/negative-fullscene.log",
+      "sha256": "0039bab0135778dd1352ad94eafe5567591efc2c5aa47fde805a4028ef9152ec"
+    },
+    "topology": {
+      "bytes": 307176,
+      "path": "build/loaded-drop-cpu96-area-integration-audit/topology",
+      "sha256": "a8d7a25072df9f458a236c70425f86b6103239a8393f24b3fd6ea234dba6d9c1"
+    },
+    "topology.cpp": {
+      "bytes": 5287,
+      "path": "build/loaded-drop-cpu96-area-integration-audit/topology.cpp",
+      "sha256": "25742a4d0243eaea7bd55b52269afd646671d125252d6f1fdda445b863398dff"
+    },
+    "topology.exit": {
+      "bytes": 2,
+      "path": "build/loaded-drop-cpu96-area-integration-audit/topology.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "topology.json": {
+      "bytes": 2974,
+      "path": "build/loaded-drop-cpu96-area-integration-audit/topology.json",
+      "sha256": "1641702cf95a7b4871b422fb5e859bd1118e324f9c3c1cbd9f33b70399c9944f"
+    }
+  },
+  "input_bindings": {
+    "area_candidate": {
+      "bytes": 14000,
+      "path": "docs/assets/elastic-yarn-area-admission/area_admission.py",
+      "sha256": "bc83f8c623e57796cb1d3ecc92830d270fc3d121ae56206675188ba48d825fad"
+    },
+    "frame0": {
+      "bytes": 102064,
+      "path": "build/loaded-drop-area-constraint-study/frozen/frame0.obj",
+      "sha256": "21483357b0deb815b8cb071e40c171b46f05bd285425d0ed4661e2c0d68b3122"
+    },
+    "frame620": {
+      "bytes": 101939,
+      "path": "build/loaded-drop-area-constraint-study/frozen/frame620.obj",
+      "sha256": "e52a1c9cc7d56d0661cc013e2eaf9345da55539de3537536dd98be86a4b71fa3"
+    },
+    "frozen_bench": {
+      "bytes": 7412,
+      "path": "build/loaded-drop-investigation-corrected-launch/include/numi/finite_bench_geometry.h",
+      "sha256": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade"
+    },
+    "frozen_cpu_binary": {
+      "bytes": 335600,
+      "path": "build/loaded-drop-investigation-corrected-launch/numi-solver-cloth-bag",
+      "sha256": "1c6d90eb01d8ad49394c426433b2b19e7ade2dc5395fc4ab675336cdd3c19458"
+    },
+    "frozen_cpu_source": {
+      "bytes": 300788,
+      "path": "build/loaded-drop-investigation-corrected-launch/cloth_bag.cpp",
+      "sha256": "d575b0154af35b2a110b21fc091c9913955b0ee62637ef67ba3c09cb0b623f9b"
+    },
+    "frozen_grip": {
+      "bytes": 14412,
+      "path": "build/loaded-drop-investigation-corrected-launch/include/numi/grip_trajectory.h",
+      "sha256": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4"
+    },
+    "frozen_launch_manifest": {
+      "bytes": 1753,
+      "path": "build/loaded-drop-investigation-corrected-launch/manifest.json",
+      "sha256": "2bf2787ce59663de0d03178545d3c09a48f33cd2842efa5d06bcfb46ac8c0710"
+    },
+    "frozen_material": {
+      "bytes": 7725,
+      "path": "build/loaded-drop-investigation-corrected-launch/include/numi/cloth_material.h",
+      "sha256": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd"
+    },
+    "retained_cpu96_failure": {
+      "bytes": 18007,
+      "path": "docs/assets/loaded-drop-corrected-96-terminal-evidence.json",
+      "sha256": "70ba92fb63f7be57939ff15caa0b96ef23a1544437f6b36e9b723cc916c3c22b"
+    }
+  },
+  "no_full_run_launched": true,
+  "no_gpu_work": true,
+  "no_production_edit": true,
+  "qualification": "NO_REPAIR: absent actual saved owner velocities/history, full incident work/constraint/contact ledger, native substep event journal and rollback; retained full CPU96 remains FAIL",
+  "schema": "numi.cpu96.material-face-integration-blocker.v1",
+  "synthetic_chord_summary": {
+    "diagnostic_incident_bend_potential_change_J": 1.159038298856037e-10,
+    "diagnostic_incident_distance_potential_change_J": 7.433855268590417e-05,
+    "earliest_incident_face": 2813,
+    "incident_faces": 15,
+    "local_kinetic_change_J": -1.4347554651287223e-10,
+    "post_all_incident_affine_areas_clear": true
+  },
+  "topology_summary": {
+    "cloth_nodes": 1465,
+    "distance_graph_reachable_from_failed_owner": 1465,
+    "failed_face_index": 2813,
+    "failed_face_masses_kg": [
+      5e-05,
+      5e-05,
+      5e-05
+    ],
+    "failed_face_owners": [
+      1433,
+      1444,
+      1445
+    ],
+    "incident_bend_constraints": 14,
+    "incident_distance_constraints": 10,
+    "incident_grip_constraints": 0,
+    "incident_knot_constraints": 10,
+    "incident_local_node_pairs": 23,
+    "incident_yarn_segments": 10,
+    "render_faces": 2880
+  }
+}

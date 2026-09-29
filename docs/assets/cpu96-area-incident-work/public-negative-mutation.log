@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/Users/home/numi-solver/build/cpu96-area-mutation-ltyrnjfq/asset/reproduce.py", line 76, in <module>
+    if __name__=='__main__':raise SystemExit(main())
+                                             ~~~~^^
+  File "/Users/home/numi-solver/build/cpu96-area-mutation-ltyrnjfq/asset/reproduce.py", line 33, in main
+    if not path.is_file() or sha(path)!=digest:raise RuntimeError(f'input binding failed: {rel}')
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: input binding failed: frozen/frame0.obj

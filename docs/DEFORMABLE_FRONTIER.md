@@ -77,6 +77,12 @@ bounded 1 µs CPU interval, with exact replay, two half steps and a positive
 frictional full-bag contact or long-time qualification. The separate
 [area admission study](ELASTIC_YARN_AREA_ADMISSION.md) certifies represented
 CPU fixture paths while the actual finer-step bag run still fails area.
+The [CPU96 incident-work audit](assets/cpu96-area-incident-work/README.md)
+finds 15 faces, 10 yarn distances, 14 bends and 10 knots touching the failed
+face's owners. On a declared synthetic chord, a locally passive area response
+clears those face paths but raises an incident-distance spring proxy by
+74.34 µJ; this is not complete work closure or a repaired drop. A private
+substep checkpoint and common event journal must precede any coupled impulse.
 
 [Whole-yarn CPU geometry and velocity evidence](WHOLE_YARN_STATIC_MATH.md)
 records all 1,299 seeded sweeps resolved, four extreme-length unresolved

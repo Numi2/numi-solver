@@ -1,0 +1,41 @@
+{
+  "actual_exits": {
+    "common-event": 0,
+    "compile": 0,
+    "negative-fullscene": 1,
+    "topology": 0
+  },
+  "inputs_identical_before_after": true,
+  "schema": "numi.cpu96.area-incident-work.public-reproduction.v1",
+  "scope": "synthetic CPU geometry/work proxy; no actual CPU96 repair, complete physical energy closure, production integration or GPU run",
+  "sealed_common_event_sha256": "7927f6b3f0267dacd8d78ee883c776865689eb008108d1a212427f9eec4547b5",
+  "sealed_topology_sha256": "1641702cf95a7b4871b422fb5e859bd1118e324f9c3c1cbd9f33b70399c9944f",
+  "source_manifest_sha256": "f6f9930babfc5adba5efaddc6cec4c89c551e2a27200ae3e2108a4fd3c99d16b",
+  "synthetic_chord": {
+    "all_incident_post_paths_clear": true,
+    "earliest_face": 2813,
+    "incident_distance_spring_proxy_change_J": 7.433855268590417e-05,
+    "incident_faces": 15,
+    "local_kinetic_change_J": -1.4347554651287223e-10
+  },
+  "topology": {
+    "cloth_nodes": 1465,
+    "distance_graph_reachable_from_failed_owner": 1465,
+    "failed_face_masses_kg": [
+      5e-05,
+      5e-05,
+      5e-05
+    ],
+    "failed_face_owners": [
+      1433,
+      1444,
+      1445
+    ],
+    "incident_bend_constraints": 14,
+    "incident_distance_constraints": 10,
+    "incident_knot_constraints": 10,
+    "incident_local_node_pairs": 23,
+    "incident_yarn_segments": 10,
+    "render_faces": 2880
+  }
+}

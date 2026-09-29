@@ -1,0 +1,338 @@
+{
+  "diagnostic_incident_bend_potential_change_J": 1.159038298856037e-10,
+  "diagnostic_incident_distance_potential_change_J": 7.433855268590417e-05,
+  "diagnostic_potential_scope": "spring proxy from authored rest lengths/chords and compliances only; no total XPBD/contact/grip work authority",
+  "earliest_incident_face": {
+    "accepted": false,
+    "end_area_m2": 5.8289935398001674e-09,
+    "face": 2813,
+    "lower_time_exact": "8795648322691/8796093022208",
+    "nodes": 45,
+    "owners": [
+      1433,
+      1444,
+      1445
+    ],
+    "rest_area_m2": 0.0001518076671989042,
+    "root_count": 1,
+    "status": "first_boundary",
+    "upper_time_exact": "17591296645383/17592186044416"
+  },
+  "earliest_is_selected_face": true,
+  "failed_face_2813": {
+    "accepted": false,
+    "end_area_m2": 5.8289935398001674e-09,
+    "face": 2813,
+    "lower_time_exact": "8795648322691/8796093022208",
+    "nodes": 45,
+    "owners": [
+      1433,
+      1444,
+      1445
+    ],
+    "rest_area_m2": 0.0001518076671989042,
+    "root_count": 1,
+    "status": "first_boundary",
+    "upper_time_exact": "17591296645383/17592186044416"
+  },
+  "incident_faces": [
+    {
+      "accepted": true,
+      "end_area_m2": 0.0010075998784999415,
+      "face": 2786,
+      "nodes": 1,
+      "owners": [
+        1421,
+        1433,
+        1422
+      ],
+      "rest_area_m2": 0.0009778065943065299,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.001499709141318705,
+      "face": 2787,
+      "nodes": 1,
+      "owners": [
+        1421,
+        1432,
+        1433
+      ],
+      "rest_area_m2": 0.0014843880170604838,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0012008161820320042,
+      "face": 2788,
+      "nodes": 1,
+      "owners": [
+        1422,
+        1433,
+        1423
+      ],
+      "rest_area_m2": 0.001183271360284653,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0011278056765761174,
+      "face": 2789,
+      "nodes": 1,
+      "owners": [
+        1423,
+        1433,
+        1434
+      ],
+      "rest_area_m2": 0.00110885563055807,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.001155161311206148,
+      "face": 2810,
+      "nodes": 1,
+      "owners": [
+        1432,
+        1443,
+        1433
+      ],
+      "rest_area_m2": 0.0011656767405236177,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0010830546560811642,
+      "face": 2811,
+      "nodes": 1,
+      "owners": [
+        1433,
+        1443,
+        1444
+      ],
+      "rest_area_m2": 0.0010939602621406472,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0020780267151666613,
+      "face": 2812,
+      "nodes": 1,
+      "owners": [
+        1433,
+        1445,
+        1434
+      ],
+      "rest_area_m2": 0.0020761005087354795,
+      "status": "clear"
+    },
+    {
+      "accepted": false,
+      "end_area_m2": 5.8289935398001674e-09,
+      "face": 2813,
+      "lower_time_exact": "8795648322691/8796093022208",
+      "nodes": 45,
+      "owners": [
+        1433,
+        1444,
+        1445
+      ],
+      "rest_area_m2": 0.0001518076671989042,
+      "root_count": 1,
+      "status": "first_boundary",
+      "upper_time_exact": "17591296645383/17592186044416"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.000974822699968149,
+      "face": 2814,
+      "nodes": 1,
+      "owners": [
+        1434,
+        1445,
+        1435
+      ],
+      "rest_area_m2": 0.0009806178540815857,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0009495423890394597,
+      "face": 2815,
+      "nodes": 1,
+      "owners": [
+        1435,
+        1445,
+        1446
+      ],
+      "rest_area_m2": 0.0009546777689757168,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0020744339445492167,
+      "face": 2834,
+      "nodes": 1,
+      "owners": [
+        1443,
+        1455,
+        1444
+      ],
+      "rest_area_m2": 0.002072298446670501,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0009978332152207673,
+      "face": 2836,
+      "nodes": 1,
+      "owners": [
+        1444,
+        1455,
+        1445
+      ],
+      "rest_area_m2": 0.0009856633977746263,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0009743704094212951,
+      "face": 2837,
+      "nodes": 1,
+      "owners": [
+        1445,
+        1455,
+        1456
+      ],
+      "rest_area_m2": 0.0009617404508254826,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0009335584727418611,
+      "face": 2838,
+      "nodes": 1,
+      "owners": [
+        1445,
+        1457,
+        1446
+      ],
+      "rest_area_m2": 0.0009194199057024845,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0010255621283142213,
+      "face": 2839,
+      "nodes": 1,
+      "owners": [
+        1445,
+        1456,
+        1457
+      ],
+      "rest_area_m2": 0.0010143609226326666,
+      "status": "clear"
+    }
+  ],
+  "independent_decimal80_incident_bend_potential_change_J": "1.159038298624893047134591004E-10",
+  "independent_decimal80_incident_distance_potential_change_J": "0.00007433855271125403864309808312",
+  "post_selected_response_all_incident_faces_clear": true,
+  "post_selected_response_incident_faces": [
+    {
+      "accepted": true,
+      "end_area_m2": 0.0010076002735110478,
+      "face": 2786,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0014997084936751181,
+      "face": 2787,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0012008171799699617,
+      "face": 2788,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0011278064708607365,
+      "face": 2789,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0011551605974485886,
+      "face": 2810,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0010830535738246803,
+      "face": 2811,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0020780282708317064,
+      "face": 2812,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 1.0934751940399404e-08,
+      "face": 2813,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.000974823435668804,
+      "face": 2814,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0009495429337754034,
+      "face": 2815,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0020744362036580954,
+      "face": 2834,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0009978330857990916,
+      "face": 2836,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0009743699242512316,
+      "face": 2837,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0009335587114836815,
+      "face": 2838,
+      "status": "clear"
+    },
+    {
+      "accepted": true,
+      "end_area_m2": 0.0010255616172920824,
+      "face": 2839,
+      "status": "clear"
+    }
+  ],
+  "scope": "synthetic full-frame linear chord only; not actual CPU96 substep/history",
+  "selected_only_response_accepted": true,
+  "selected_only_response_status": "admitted_response",
+  "selected_response_local_kinetic_change_J": -1.4347554651287223e-10,
+  "source_sha256": "bc83f8c623e57796cb1d3ecc92830d270fc3d121ae56206675188ba48d825fad"
+}

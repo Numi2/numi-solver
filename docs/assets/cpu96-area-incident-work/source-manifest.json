@@ -1,0 +1,18 @@
+{
+  "schema": "numi.cpu96.area-incident-work.portable-inputs.v1",
+  "sha256": {
+    "README.md": "7a3d98f7776a23fecee2fd0fe8b9f6c622b87b1a670433d28d18ae08877729d1",
+    "area_admission.py": "bc83f8c623e57796cb1d3ecc92830d270fc3d121ae56206675188ba48d825fad",
+    "common_event.py": "4ae881d9d6df0bfebe48de7206731d08a403fd22db5739ea0fd96f5d368d329a",
+    "frozen/cloth_bag.cpp": "d575b0154af35b2a110b21fc091c9913955b0ee62637ef67ba3c09cb0b623f9b",
+    "frozen/frame0.obj": "21483357b0deb815b8cb071e40c171b46f05bd285425d0ed4661e2c0d68b3122",
+    "frozen/frame620.obj": "e52a1c9cc7d56d0661cc013e2eaf9345da55539de3537536dd98be86a4b71fa3",
+    "frozen/include/numi/cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd",
+    "frozen/include/numi/finite_bench_geometry.h": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade",
+    "frozen/include/numi/grip_trajectory.h": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+    "frozen/manifest.json": "2bf2787ce59663de0d03178545d3c09a48f33cd2842efa5d06bcfb46ac8c0710",
+    "historical-evidence.json": "e7b296351c0e2d8c74ba00f0c8c6fe6e7428e01f146022ae344c13c2eca049b2",
+    "reproduce.py": "8eda45e17027e4bdac8053930c58e6a22009644063db66bb057e50613c4a3d44",
+    "topology.cpp": "c8c8180ac5b295a850378fed8a51d30812855aeb9e9b6c939843649f8f8ff417"
+  }
+}

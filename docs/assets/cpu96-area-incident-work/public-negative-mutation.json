@@ -1,0 +1,11 @@
+{
+  "actual_exit": 1,
+  "after_ascii": "4",
+  "before_ascii": "3",
+  "byte_offset": 153,
+  "detected_before_compile": true,
+  "input": "frozen/frame0.obj",
+  "mutated_sha256": "b4c4802af7ee2d8488d5cd5024d1a5779cb6a853737e4b28585330f56267b72b",
+  "original_sha256": "21483357b0deb815b8cb071e40c171b46f05bd285425d0ed4661e2c0d68b3122",
+  "schema": "numi.cpu96.area-incident-work.one-byte-mutation-control.v1"
+}
