@@ -122,7 +122,8 @@ def self_overlap(vertices, edges, local, radius):
     return maximum, witness, eligible
 
 
-def audit(path, radius, edges, expected_faces, local):
+def read_snapshot(path, expected_faces):
+    """Read an exact authored render topology without interpreting its physics."""
     payload = path.read_bytes()
     vertices, faces, fruits = [], [], {}
     for line in payload.decode('utf-8').splitlines():
@@ -146,6 +147,11 @@ def audit(path, radius, edges, expected_faces, local):
         raise ValueError('nonfinite fruit geometry')
     if any(r <= 0 for _, r in fruits.values()):
         raise ValueError('nonpositive fruit radius')
+    return payload, vertices, fruits
+
+
+def audit(path, radius, edges, expected_faces, local):
+    payload, vertices, fruits = read_snapshot(path, expected_faces)
     fruit_overlap, fruit_witness = 0.0, None
     for fruit, (center, r) in fruits.items():
         for edge in edges:

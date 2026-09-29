@@ -83,6 +83,23 @@ downward speed, and final clearance and velocity. A partial trace returns
 status 2, including when a concurrent copy ends inside a frame. A complete
 trace report does not replace collision, force-balance, or replay qualification.
 
+A latched mouth event does not establish that a fruit stays outside the moving
+bag. Inspect the exported bag and fruit geometry separately:
+
+```sh
+python3 tools/audit_fruit_containment.py build/fruit-pickup-*.obj \
+  --output build/fruit-pickup-containment.json
+```
+
+This report validates the exact authored render topology and closes its open
+mouth with a virtual, oriented triangle fan. The solid-angle winding number
+then reports each fruit center as inside, outside, or ambiguous. The virtual
+cap is diagnostic geometry, not an added collision surface. It does not prove
+full-sphere clearance, an exit or re-entry between snapshots, or physical
+material calibration. Interpret it alongside the release history and contact
+audit; a center inside the mesh and touching yarn must not be described as
+unimpeded free flight merely because its release bit is latched.
+
 For a fixed camera that includes every exported fruit throughout the replay,
 write the complete ordered set of OBJ paths to a text file (relative paths are
 resolved beside that file), then use the same framing list for every image:

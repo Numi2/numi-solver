@@ -264,6 +264,8 @@ python3 tools/audit_fruit_trace.py build/metal-pickup-fruits.csv \
   --expected-frames 480 --output build/metal-pickup-fruits.json
 python3 tools/audit_cloth_snapshot.py build/metal-pickup-*.obj \
   --output build/metal-pickup-contacts.json
+python3 tools/audit_fruit_containment.py build/metal-pickup-*.obj \
+  --output build/metal-pickup-containment.json
 
 for step in $(seq 0 10 480); do
   printf '%s\n' "metal-pickup-${step}.obj"
