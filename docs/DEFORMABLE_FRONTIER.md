@@ -35,8 +35,8 @@ references, not implementation claims for Numi.
 | --- | --- | --- |
 | Loaded woven bag and finite tabletop | New source `bbf111a`: full CPU96 pickup passes, five released fruit settle on the lower floor, both complete fruit traces match, all 51 saved states pass contacts | Same-source timestep comparison, full native spill, whole-yarn/static contacts throughout the trajectory |
 | Native finite contact | Source `a427ef0`: 104 focused response cases pass; a ghost-impulse fix passes the former frame-4 failure and a new full candidate is live | Complete both 480-frame trajectories and audit all retained evidence; qualify continuous whole-yarn collision separately |
-| Elastic fruit | Isolated 10,240-tet native body passes authored energy/timestep checks; 81,920-tet study is live. CPU five-owner normal response passes mechanics; reviewed moving geometry passes 22 fixtures. A separate exact fixed-plane certificate resolves grazing and passes 150 cases | General rotating/incoming CCD/contact policy, a common transactional FEM/yarn step, finite-bench contact and complete force/work receipts |
-| Mesh and time convergence | Volume spatial comparison fails the 1 mm target. Complete repaired six-second CPU48 passes; CPU96 fails its triangle-area gate despite passing saved contacts. Release sets differ; corresponding fruit positions differ by1.6745m and saved cloth nodes by315.9mm | Repair near-collinear cloth geometry, then match the same physical body, material, load, trajectory and captured times across refinements; report shape, force and work errors |
+| Elastic fruit | Standalone 81,920-tet native volume completes exact replay and half-timestep checks with 0.254%/0.122% independent numerical energy bounds. A reviewed two-row, five-owner CPU normal block advances all 10,240 elements for 1 µs and removes the prior endpoint closing mode; exact fixed-plane grazing passes 150 cases | Sustained common FEM/yarn advancement, general rotating/incoming CCD, finite-bench contact, native reciprocal coupling and complete force/work receipts |
+| Mesh and time convergence | Matched 25 µs 10,240-to-81,920 volume comparison still fails the 1 mm target at 9.34 mm. Complete repaired six-second CPU48 passes; CPU96 fails its triangle-area gate despite passing saved contacts. Release sets differ; corresponding fruit positions differ by 1.6745 m and saved cloth nodes by 315.9 mm | Complete the running shortest-diagonal native pair and audit its spatial error; repair incident cloth area/work ownership, then rerun same-source bag timestep qualification |
 | Contact/friction consistency | CPU shared-yarn contact block and passive velocity helper pass tested mechanics; two retained energy-injection regressions now dissipate energy | Joint contact, static support, strain and friction residuals; friction-free slide, oblique impact, sliding-to-rolling and separation tests |
 | Throughput and closure | Individual native GPU timings and a volume energy ledger exist | Same-workload wall time and simulated time, CPU/GPU ownership, high-percentile frame cost, full grip/contact work and impulse history |
 
@@ -70,7 +70,13 @@ The [complete captured FEM body](ELASTIC_YARN_FEM_BODY.md) now supplies all
 Independent exact-rational checks pass every element and rest matrix; all
 retained nodal fields and regenerated authoring buffers match. Historical
 uploaded inverse-buffer identity and cumulative native status/work checkpoint
-remain unavailable. Preparing this input does not claim a new coupled advance.
+remain unavailable. The [reviewed normal-block step](assets/elastic-yarn-fem-normal-block/README.md)
+now advances that full body and two authored yarn endpoints together for a
+bounded 1 µs CPU interval, with exact replay, two half steps and a positive
+5.315 nJ physical energy-balance residual. It is not native continuation,
+frictional full-bag contact or long-time qualification. The separate
+[area admission study](ELASTIC_YARN_AREA_ADMISSION.md) certifies represented
+CPU fixture paths while the actual finer-step bag run still fails area.
 
 [Whole-yarn CPU geometry and velocity evidence](WHOLE_YARN_STATIC_MATH.md)
 records all 1,299 seeded sweeps resolved, four extreme-length unresolved

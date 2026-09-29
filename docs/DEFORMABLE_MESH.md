@@ -72,7 +72,7 @@ exactly two opposing owners for every internal element face.
 | Original | 13 / 20 / 20 | 50.89 mm | 77.63 mm | 59.70 µm |
 | One refinement | 55 / 160 / 80 | 49.14 mm | 102.66 mm | 105.98 µm |
 | Two refinements | 309 / 1,280 / 320 | 47.85 mm | 79.60 mm | 135.85 µm |
-| Three refinements, newest video | 2,057 / 10,240 / 1,280 | 47.80 mm | 70.62 mm | 335.37 µm |
+| Three refinements, historical Euler video | 2,057 / 10,240 / 1,280 | 47.80 mm | 70.62 mm | 335.37 µm |
 
 All four actual 0.5-second native simulations pass two exact replays, the
 5,000-versus-10,000-step comparison, five whole-mesh rejection checks, zero
@@ -136,9 +136,10 @@ construction by at most 0.582 micrograms across all five levels.
 
 The [CPU construction receipt](assets/deformable-shortest-refinement-evidence.json)
 checks deterministic incidence, opposing internal face owners, the exact
-boundary, original nodes and the stated shape bounds. The legacy default
-and its frozen running study remain unchanged. No native dynamics or
-spatial convergence is qualified for the shortest-diagonal candidate yet.
+boundary, original nodes and the stated shape bounds. The completed legacy
+default run and its evidence remain unchanged. A source-frozen shortest-diagonal
+L3-to-L4 native study is running separately; its CPU topology result does not
+yet qualify complete native dynamics or spatial convergence.
 
 The spatial comparator now requires an owning energy ledger, the same
 integration method, the same accepted step grid and the authored initially
