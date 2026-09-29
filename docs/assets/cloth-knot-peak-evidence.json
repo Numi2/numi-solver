@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "observer_source_commit": "083c1fe",
+  "diagnostic_replays": 1,
+  "qualification_result": "FAIL",
+  "qualification_exit_code": 1,
+  "final_physical_state_hash": "0xdf5b1f22c35cf526",
+  "final_OBJ_matches_prior_failed_two_replay_run": true,
+  "native_peak_trace": {
+    "frame": "162",
+    "time_s": "1.3500000000000001",
+    "knot_index": "861",
+    "error_rad": "0.81817368155048542",
+    "current_angle_rad": "2.2311003156338876",
+    "rest_angle_rad": "1.4129266340834021",
+    "warp_first": "861",
+    "warp_second": "957",
+    "weft_first": "908",
+    "weft_second": "910"
+  },
+  "node_center": 909,
+  "authored_yarn_radius_m": 0.004,
+  "rest_warp_chord_m": 0.020236089244144755,
+  "peak_warp_chord_m": 0.0008870366326773456,
+  "peak_weft_chord_m": 0.05699519260686283,
+  "peak_arm_lengths_m": {
+    "861": 0.010290606455051955,
+    "957": 0.009576639134068523,
+    "908": 0.04091824054574526,
+    "910": 0.04037997980336639
+  },
+  "peak_warp_endpoint_separation_minus_yarn_diameter_m": -0.007112963367322655,
+  "endpoint_pair_excluded_by_existing_two_hop_self_contact": true,
+  "peak_exported_contact_audit": {
+    "yarn_radius_m": 0.004,
+    "yarn_count": 2904,
+    "all_snapshots_within_contact_tolerance": true,
+    "evidence_boundary": "Contacts of supplied exported states only. Exact authored axial graph and two-hop exclusions are reconstructed after validating every render triangle. Does not certify intervening substeps, dynamics, material calibration, strain or replay.",
+    "snapshots": [
+      {
+        "snapshot": "build/knot-full-peak.obj",
+        "snapshot_sha256": "ba8bf5c37a2c9f3c1414f75c58499336b30df1c36fc339f60943ce52e03ebc45",
+        "fruit_yarn_overlap_m": 4.289493898967933e-10,
+        "fruit_yarn_witness": {
+          "fruit": 5,
+          "yarn_endpoints": [
+            989,
+            990
+          ]
+        },
+        "fruit_pair_overlap_m": 2.55598181508887e-10,
+        "fruit_pair_witness": [
+          1,
+          2
+        ],
+        "nonlocal_yarn_overlap_m": 1.7071396553325346e-10,
+        "nonlocal_yarn_witness": [
+          [
+            477,
+            478
+          ],
+          [
+            621,
+            622
+          ]
+        ],
+        "self_broadphase_candidates": 20729,
+        "ground_overlap_m": 0.0,
+        "within_contact_tolerance": true
+      }
+    ]
+  },
+  "interpretation": "The sampled nonlocal-contact certificate passes while a two-hop warp endpoint pair nearly coincides and the knot angle exceeds its unchanged 0.80 rad gate. This identifies a local thickness/tangent-conditioning defect to reproduce and repair; it does not establish a completed repair or a calibrated curvature law.",
+  "sha256": {
+    "build/knot-full-launch.cpp": "f2f3feb243ea23ba04588cce82ab63542cc3ea96ddce3763a6c54e97c21d2753",
+    "build-knot-diagnostic/numi-solver-cloth-bag": "c39cfb95e4cfa193abf3eb2cdf16717c09f3a38571d4d83d30a44515d9eefa8e",
+    "build/knot-full.log": "c73d37a43cecf99379026d5419fab330de06aec00e94c28fac7bcbde74b6aaa4",
+    "build/knot-full.csv": "095039a02c85d0172c77cd9ac25459ca6878f29152b162253e9beb692333e17a",
+    "build/knot-full-peak.obj": "ba8bf5c37a2c9f3c1414f75c58499336b30df1c36fc339f60943ce52e03ebc45",
+    "build/knot-full-final.obj": "39de37c4e16819c79309dbdfcb0032d75e68728de9b940d8b021794b3d3d02a3"
+  }
+}

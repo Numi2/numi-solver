@@ -246,3 +246,20 @@ between the regular sparse snapshots. These are observation controls; the
 20-frame observer run reproduces the earlier final and peak-frame OBJ bytes
 and final state hash `0xfbe152b73f646f19` exactly. That short diagnostic does
 not qualify a spill or replace the failed full run.
+
+The full observer run reproduces the earlier failed run's final OBJ byte for
+byte and retains `state_hash=0xdf5b1f22c35cf526`. Its exact peak is frame 162
+(`1.35 s`), knot 861, with warp endpoints 861/957 and weft endpoints 908/910.
+The native current/rest angles are `2.231100316 / 1.412926634 rad`.
+[Trace](assets/cloth-knot-peak-trace.csv),
+[complete peak geometry](assets/cloth-knot-peak.obj), and
+[source-bound diagnostic receipt](assets/cloth-knot-peak-evidence.json) retain
+the actual failing state.
+
+The warp outer-endpoint chord shrinks from `20.236 mm` at rest to `0.887 mm`,
+while its two arms remain `10.291 / 9.577 mm`. The outer endpoints are closer
+than the authored `8 mm` yarn diameter. Their two-hop adjacency excludes them
+from the current self-contact checks, so the existing nonlocal contact audit
+still passes at this peak. This exposes a local thickness and tangent-conditioning
+defect for the next mechanics repair. It is not evidence that the failed
+knot gate has been repaired or that a physical yarn-curvature law is calibrated.
