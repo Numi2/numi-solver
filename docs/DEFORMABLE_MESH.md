@@ -1,19 +1,19 @@
 # Native shared-node elastic mesh drop
 
-[![Newest support-aware native volume compression](assets/deformable-support-10240-38.png)](assets/deformable-support-10240.mp4)
+[![81,920-tetrahedron native elastic volume compresses and recovers](assets/deformable-support-81920-38.png)](assets/deformable-support-81920.mp4)
 
-The newest source-bound Apple Metal trajectory uses support-aware velocity Verlet on **2,057 shared nodes and 10,240 tetrahedra**. Its independent numerical energy bound is **0.846 percent** at 100 us, versus **144.949 percent** for the earlier Euler method at the same mesh and timestep. The half-timestep bound is 0.330 percent. These pass the authored 1 percent budget; physical material and whole-scene energy closure remain open.
+The newest source-bound Apple Metal trajectory advances **14,993 shared nodes, 81,920 tetrahedra and their exact 5,120-triangle boundary** for 0.5 simulated seconds. Support-aware velocity Verlet completed 20,000 primary steps, an exact complete replay and 40,000 half-timestep steps with actual native exit 0. The native run reports no rejected accepted steps, a minimum all-step primary volume ratio of 0.09148 and six whole-state/ledger rejection controls. Its maximum nodal difference under timestep refinement is 93.11 micrometres.
 
-The volume compresses from 85.065 to 47.809 mm and recovers to 70.599 mm through its own elastic stress. Two complete native replays match exactly, the half-timestep maximum nodal difference is 307.00 micrometres, and all six rejected candidates preserve accepted state and every ledger. The resting-support probe produces positive reaction impulse with exactly zero kinetic removal and position work. All 101 exported states pass independent geometry and mass checks.
+The volume's center of mass descends from 85.065 to 47.455 mm and recovers to 74.680 mm through its own elastic stress. Independent CPU audits of all 101 exported states in each run verify the oriented boundary, nodal positions and volume-derived masses. They independently reconstruct captured-state energy and check the native work ledger. The authored 1 percent numerical energy budget passes at **0.254 percent** for the primary step and **0.122 percent** for the half step. The maximum independent energy-accounting residuals are 3.281 and 3.111 microjoules respectively. These are numerical-accounting results, not calibrated material or whole-scene physical work closure.
 
-The video retains the exact 1,280-triangle native boundary at 6.7x slow playback. [Full source, binary, states, video and energy receipt](assets/deformable-support-evidence.json), [owning nodal trace](assets/deformable-support-10240-trajectory.csv), [topology](assets/deformable-support-10240-topology.csv), and [independent geometry audit](assets/deformable-support-10240-geometry.json) bind this result to physics source `6973631`.
+The [new video](assets/deformable-support-81920.mp4) renders the exact exported native boundary at 6.7× slow playback. The [source, binary, audited-input and media receipt](assets/deformable-support-81920-evidence.json), [native terminal log](assets/deformable-support-81920-native.log), [independent geometry audit](assets/deformable-support-81920-geometry.json) and [energy audit](assets/deformable-support-81920-energy.json) bind the shown result. The full 101-state OBJ/CSV inputs remain retained with their hashes in the [audit input manifest](assets/deformable-support-81920-audit-input-hashes.json); the large raw traces are not bundled with this page.
 
-Spatial convergence remains **FAIL**: the new 1,280-to-10,240-element pair differs by up to 14.927 mm against the unchanged 1 mm target ([report](assets/deformable-support-10240-spatial.json)). The next level constructs 14,993 nodes, 81,920 tetrahedra and 5,120 surface triangles with independent topology checks. Its complete native replay, half-timestep and energy study is running; construction alone does not qualify runtime physics.
+The earlier [10,240-tetrahedron support-aware video](assets/deformable-support-10240.mp4) and its [qualification receipt](assets/deformable-support-evidence.json) remain available. That resolution passes the authored 1 percent numerical budget at 0.846 percent for 100 us and 0.330 percent at half timestep, while the historical Euler result at the same resolution/timestep reaches 144.949 percent. The earlier 1,280-to-10,240 spatial comparison remains **FAIL** at a 14.927 mm maximum matched-node difference against the unchanged 1 mm target ([report](assets/deformable-support-10240-spatial.json)). The matched 10,240-to-81,920 comparison at the new 25 us step is still running; the new video alone does not establish spatial convergence.
 
 ```sh
-./build/numi-solver-deformable-mesh --mesh-refinement 3 --integrator support-verlet \
-  --trajectory build/support-verlet-level3
-python3 tools/audit_deformable_mesh_energy.py build/support-verlet-level3
+./build/numi-solver-deformable-mesh --mesh-refinement 4 --timestep 0.000025 \
+  --integrator support-verlet --trajectory build/mesh4-level4-dt25us
+python3 tools/audit_deformable_mesh_energy.py build/mesh4-level4-dt25us --steps 20000
 ```
 
 ## Historical Euler trajectory
