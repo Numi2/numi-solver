@@ -48,9 +48,10 @@ velocity does not remove finite-precision absolute position storage.
 
 Full-topology pickup is a separate qualification. The previously committed
 GIF and trajectory numbers predate this correction. They do not qualify the
-changed source. A new 480-frame, two-replay run with valid initial packing is in progress;
-it must be inspected before replacing historical evidence or claiming the
-complete spill is fixed.
+changed source. A new 480-frame, two-replay Metal run with valid initial
+packing is in progress; it must be inspected before replacing historical
+Metal evidence or claiming the complete native spill is fixed. The corrected
+four-second CPU FP64 reference has separately passed, as recorded below.
 
 The corrected two-second CPU FP64 pickup has completed two exact replays at
 48 substeps and 32 iterations (`state_hash=0x513295fd7b0ff042`). Its release
@@ -153,9 +154,11 @@ slip reduction, and the existing geometric error bounds. Geometry, native
 free flight/drop, internal contact, and default material parity checks pass.
 
 The earlier full Metal run was deliberately stopped and retained as an
-invalid-initialization diagnostic baseline. Fresh four-second CPU and Metal
-pickup/settling runs use the corrected geometry and bind source and binary
-hashes; their completed outcomes remain required.
+invalid-initialization diagnostic baseline. The corrected four-second CPU
+pickup/settling reference has completed two exact final-state replays and
+passed its physical gates. The full Metal outcome remains required. Both
+runs retain source and binary hashes; the CPU qualification log and frame
+fingerprints are linked below.
 
 ## Independent exported-state contact audit
 
