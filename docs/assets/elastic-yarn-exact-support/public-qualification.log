@@ -1,0 +1,151 @@
+{"case": "retained_perm(0, 1, 2)_sign(1, 1, 1)_w0_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(0, 1, 2)_sign(1, 1, 1)_w0_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(0, 1, 2)_sign(1, 1, 1)_w1_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(0, 1, 2)_sign(1, 1, 1)_w1_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(0, 1, 2)_sign(-1, 1, -1)_w0_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(0, 1, 2)_sign(-1, 1, -1)_w0_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(0, 1, 2)_sign(-1, 1, -1)_w1_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(0, 1, 2)_sign(-1, 1, -1)_w1_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(0, 1, 2)_sign(1, -1, 1)_w0_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(0, 1, 2)_sign(1, -1, 1)_w0_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(0, 1, 2)_sign(1, -1, 1)_w1_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(0, 1, 2)_sign(1, -1, 1)_w1_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(1, 2, 0)_sign(1, 1, 1)_w0_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(1, 2, 0)_sign(1, 1, 1)_w0_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(1, 2, 0)_sign(1, 1, 1)_w1_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(1, 2, 0)_sign(1, 1, 1)_w1_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(1, 2, 0)_sign(-1, 1, -1)_w0_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(1, 2, 0)_sign(-1, 1, -1)_w0_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(1, 2, 0)_sign(-1, 1, -1)_w1_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(1, 2, 0)_sign(-1, 1, -1)_w1_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(1, 2, 0)_sign(1, -1, 1)_w0_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(1, 2, 0)_sign(1, -1, 1)_w0_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(1, 2, 0)_sign(1, -1, 1)_w1_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(1, 2, 0)_sign(1, -1, 1)_w1_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(2, 0, 1)_sign(1, 1, 1)_w0_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(2, 0, 1)_sign(1, 1, 1)_w0_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(2, 0, 1)_sign(1, 1, 1)_w1_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(2, 0, 1)_sign(1, 1, 1)_w1_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(2, 0, 1)_sign(-1, 1, -1)_w0_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(2, 0, 1)_sign(-1, 1, -1)_w0_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(2, 0, 1)_sign(-1, 1, -1)_w1_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(2, 0, 1)_sign(-1, 1, -1)_w1_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(2, 0, 1)_sign(1, -1, 1)_w0_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(2, 0, 1)_sign(1, -1, 1)_w0_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(2, 0, 1)_sign(1, -1, 1)_w1_y0", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_perm(2, 0, 1)_sign(1, -1, 1)_w1_y1", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "retained_reverse_time", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "isolated_double_root", "lower_time": 0.5, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.5}
+{"case": "isolated_double_root_reversed", "lower_time": 0.5, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.5}
+{"case": "irrational_quadratic", "lower_time": 0.35355339059327373, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.35355339059327384}
+{"case": "irrational_quadratic_reversed_winding", "lower_time": 0.3535533905932737, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.3535533905932738}
+{"case": "oblique_projection", "lower_time": 0.24941406249999998, "oracle_gap_at_midpoint_m": -1.7780915628762273e-16, "outer_nodes": 10, "status": "grazing", "upper_time": 0.2494140625}
+{"case": "oblique_projection_reversed_winding", "lower_time": 0.24941406249999998, "oracle_gap_at_midpoint_m": -1.7780915628762273e-16, "outer_nodes": 10, "status": "grazing", "upper_time": 0.2494140625}
+{"case": "one_ulp_above_support", "lower_time": 1.0, "oracle_gap_at_midpoint_m": 0.2960266772202077, "outer_nodes": 1, "status": "clear", "upper_time": 1.0}
+{"case": "one_ulp_below_support", "lower_time": 0.0, "oracle_gap_at_midpoint_m": -4.656612873077393e-10, "outer_nodes": 1, "status": "unsupported_closed_plane", "upper_time": 1.0}
+{"case": "fresh_translated_fp32_rounding_overlap", "lower_time": 0.0, "oracle_gap_at_midpoint_m": -9.375018998980522e-05, "outer_nodes": 1, "status": "unsupported_closed_plane", "upper_time": 1.0}
+{"case": "collinear_edge_entry", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "degenerate_yarn_point_entry", "lower_time": 0.25, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.25}
+{"case": "vertex_extension_outside_yarn", "lower_time": 1.0, "oracle_gap_at_midpoint_m": 2.7126184755590548, "outer_nodes": 10, "status": "clear", "upper_time": 1.0}
+{"case": "projected_clear_never_reaches", "lower_time": 1.0, "oracle_gap_at_midpoint_m": 0.19603998389606356, "outer_nodes": 10, "status": "clear", "upper_time": 1.0}
+{"case": "initial_supported_tangent", "lower_time": 0.0, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 1, "status": "support", "upper_time": 0.0}
+{"case": "parallel_translating_deforming_support", "lower_time": 0.30769230769230765, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3076923076923077}
+{"case": "rotating_endpoint_support_trap", "lower_time": 0.0, "oracle_gap_at_midpoint_m": -0.0011715729309005355, "outer_nodes": 3, "status": "unsupported_closed_plane", "upper_time": 1.0}
+{"case": "interior_triangle_collapse", "lower_time": 0.0, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 1, "status": "degenerate", "upper_time": 1.0}
+{"case": "seeded_deforming_linear_00", "lower_time": 0.34183673469387754, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3418367346938776}
+{"case": "seeded_deforming_linear_01", "lower_time": 0.35638297872340424, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3563829787234043}
+{"case": "seeded_deforming_linear_02", "lower_time": 0.33163265306122447, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3316326530612245}
+{"case": "seeded_deforming_linear_03", "lower_time": 0.34375, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.34375}
+{"case": "seeded_deforming_linear_04", "lower_time": 0.31746031746031744, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3174603174603175}
+{"case": "seeded_deforming_linear_05", "lower_time": 0.31606217616580307, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3160621761658031}
+{"case": "seeded_deforming_linear_06", "lower_time": 0.35638297872340424, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3563829787234043}
+{"case": "seeded_deforming_linear_07", "lower_time": 0.3457446808510638, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.34574468085106386}
+{"case": "seeded_deforming_linear_08", "lower_time": 0.32124352331606215, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3212435233160622}
+{"case": "seeded_deforming_linear_09", "lower_time": 0.32307692307692304, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3230769230769231}
+{"case": "seeded_deforming_linear_10", "lower_time": 0.3469387755102041, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.34693877551020413}
+{"case": "seeded_deforming_linear_11", "lower_time": 0.34196891191709844, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.3419689119170985}
+{"case": "seeded_deforming_linear_12", "lower_time": 0.3092783505154639, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.30927835051546393}
+{"case": "seeded_deforming_linear_13", "lower_time": 0.3157894736842105, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.31578947368421056}
+{"case": "seeded_deforming_linear_14", "lower_time": 0.34736842105263155, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3473684210526316}
+{"case": "seeded_deforming_linear_15", "lower_time": 0.336734693877551, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.33673469387755106}
+{"case": "seeded_deforming_linear_16", "lower_time": 0.336734693877551, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.33673469387755106}
+{"case": "seeded_deforming_linear_17", "lower_time": 0.328042328042328, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 13, "status": "grazing", "upper_time": 0.3280423280423281}
+{"case": "seeded_deforming_linear_18", "lower_time": 0.3092783505154639, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 13, "status": "grazing", "upper_time": 0.30927835051546393}
+{"case": "seeded_deforming_linear_19", "lower_time": 0.30769230769230765, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3076923076923077}
+{"case": "seeded_deforming_linear_20", "lower_time": 0.3125, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3125}
+{"case": "seeded_deforming_linear_21", "lower_time": 0.33510638297872336, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 13, "status": "grazing", "upper_time": 0.3351063829787234}
+{"case": "seeded_deforming_linear_22", "lower_time": 0.33678756476683935, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 13, "status": "grazing", "upper_time": 0.3367875647668394}
+{"case": "seeded_deforming_linear_23", "lower_time": 0.3578947368421052, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.35789473684210527}
+{"case": "seeded_deforming_linear_24", "lower_time": 0.3507853403141361, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.35078534031413616}
+{"case": "seeded_deforming_linear_25", "lower_time": 0.34183673469387754, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.3418367346938776}
+{"case": "seeded_deforming_linear_26", "lower_time": 0.32642487046632124, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3264248704663213}
+{"case": "seeded_deforming_linear_27", "lower_time": 0.32291666666666663, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.3229166666666667}
+{"case": "seeded_deforming_linear_28", "lower_time": 0.32474226804123707, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3247422680412371}
+{"case": "seeded_deforming_linear_29", "lower_time": 0.32105263157894737, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3210526315789474}
+{"case": "seeded_deforming_linear_30", "lower_time": 0.32307692307692304, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3230769230769231}
+{"case": "seeded_deforming_linear_31", "lower_time": 0.33505154639175255, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3350515463917526}
+{"case": "seeded_deforming_linear_32", "lower_time": 0.35233160621761656, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3523316062176166}
+{"case": "seeded_deforming_linear_33", "lower_time": 0.3333333333333333, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.33333333333333337}
+{"case": "seeded_deforming_linear_34", "lower_time": 0.3333333333333333, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.33333333333333337}
+{"case": "seeded_deforming_linear_35", "lower_time": 0.3282051282051282, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.32820512820512826}
+{"case": "seeded_deforming_linear_36", "lower_time": 0.33505154639175255, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3350515463917526}
+{"case": "seeded_deforming_linear_37", "lower_time": 0.35051546391752575, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3505154639175258}
+{"case": "seeded_deforming_linear_38", "lower_time": 0.34020618556701027, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3402061855670103}
+{"case": "seeded_deforming_linear_39", "lower_time": 0.3282051282051282, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.32820512820512826}
+{"case": "seeded_deforming_linear_40", "lower_time": 0.328042328042328, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.3280423280423281}
+{"case": "seeded_deforming_linear_41", "lower_time": 0.34375, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 10, "status": "grazing", "upper_time": 0.34375}
+{"case": "seeded_deforming_linear_42", "lower_time": 0.3403141361256544, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3403141361256545}
+{"case": "seeded_deforming_linear_43", "lower_time": 0.35416666666666663, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 13, "status": "grazing", "upper_time": 0.3541666666666667}
+{"case": "seeded_deforming_linear_44", "lower_time": 0.33854166666666663, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3385416666666667}
+{"case": "seeded_deforming_linear_45", "lower_time": 0.3487179487179487, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.34871794871794876}
+{"case": "seeded_deforming_linear_46", "lower_time": 0.33157894736842103, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3315789473684211}
+{"case": "seeded_deforming_linear_47", "lower_time": 0.33854166666666663, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3385416666666667}
+{"case": "seeded_deforming_linear_48", "lower_time": 0.31443298969072164, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3144329896907217}
+{"case": "seeded_deforming_linear_49", "lower_time": 0.3386243386243386, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.33862433862433866}
+{"case": "seeded_deforming_linear_50", "lower_time": 0.34196891191709844, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3419689119170985}
+{"case": "seeded_deforming_linear_51", "lower_time": 0.324468085106383, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.32446808510638303}
+{"case": "seeded_deforming_linear_52", "lower_time": 0.3526315789473684, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.35263157894736846}
+{"case": "seeded_deforming_linear_53", "lower_time": 0.31794871794871793, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.317948717948718}
+{"case": "seeded_deforming_linear_54", "lower_time": 0.30769230769230765, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3076923076923077}
+{"case": "seeded_deforming_linear_55", "lower_time": 0.33163265306122447, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3316326530612245}
+{"case": "seeded_deforming_linear_56", "lower_time": 0.3177083333333333, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.31770833333333337}
+{"case": "seeded_deforming_linear_57", "lower_time": 0.35233160621761656, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 13, "status": "grazing", "upper_time": 0.3523316062176166}
+{"case": "seeded_deforming_linear_58", "lower_time": 0.33157894736842103, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3315789473684211}
+{"case": "seeded_deforming_linear_59", "lower_time": 0.3061224489795918, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.30612244897959184}
+{"case": "seeded_deforming_linear_60", "lower_time": 0.33157894736842103, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3315789473684211}
+{"case": "seeded_deforming_linear_61", "lower_time": 0.31794871794871793, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.317948717948718}
+{"case": "seeded_deforming_linear_62", "lower_time": 0.35051546391752575, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 12, "status": "grazing", "upper_time": 0.3505154639175258}
+{"case": "seeded_deforming_linear_63", "lower_time": 0.32989690721649484, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 13, "status": "grazing", "upper_time": 0.3298969072164949}
+{"case": "seeded_quadratic_00", "lower_time": 0.11267347735824965, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.11267347735824967}
+{"case": "seeded_quadratic_01", "lower_time": 0.1530931089239486, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.15309310892394865}
+{"case": "seeded_quadratic_02", "lower_time": 0.18487749322186298, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.18487749322186303}
+{"case": "seeded_quadratic_03", "lower_time": 0.2119478119726646, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.21194781197266466}
+{"case": "seeded_quadratic_04", "lower_time": 0.2359323261022109, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.23593232610221096}
+{"case": "seeded_quadratic_05", "lower_time": 0.25769410160110373, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.25769410160110384}
+{"case": "seeded_quadratic_06", "lower_time": 0.2777560755411121, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.2777560755411122}
+{"case": "seeded_quadratic_07", "lower_time": 0.2964635306407855, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.2964635306407856}
+{"case": "seeded_quadratic_08", "lower_time": 0.31405861316002776, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.31405861316002787}
+{"case": "seeded_quadratic_09", "lower_time": 0.3307189138830738, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.3307189138830739}
+{"case": "seeded_quadratic_10", "lower_time": 0.34657926582529425, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.34657926582529436}
+{"case": "seeded_quadratic_11", "lower_time": 0.3617449032121945, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.3617449032121946}
+{"case": "seeded_quadratic_12", "lower_time": 0.3762998305872592, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.3762998305872593}
+{"case": "seeded_quadratic_13", "lower_time": 0.39031237489989984, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.39031237489989995}
+{"case": "seeded_quadratic_14", "lower_time": 0.4038389994787526, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.40383899947875274}
+{"case": "seeded_quadratic_15", "lower_time": 0.4169270020039479, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.416927002003948}
+{"case": "seeded_quadratic_16", "lower_time": 0.42961647140210996, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.42961647140211007}
+{"case": "seeded_quadratic_17", "lower_time": 0.44194173824159216, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.4419417382415923}
+{"case": "seeded_quadratic_18", "lower_time": 0.45393247019793587, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.453932470197936}
+{"case": "seeded_quadratic_19", "lower_time": 0.4656145133047293, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.4656145133047294}
+{"case": "seeded_quadratic_20", "lower_time": 0.47701054757730454, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.47701054757730466}
+{"case": "seeded_quadratic_21", "lower_time": 0.4881406047441658, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.48814060474416593}
+{"case": "seeded_quadratic_22", "lower_time": 0.4990224819584784, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.49902248195847854}
+{"case": "seeded_quadratic_23", "lower_time": 0.5096720759468777, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.5096720759468779}
+{"case": "seeded_quadratic_24", "lower_time": 0.5201036555341636, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.5201036555341638}
+{"case": "seeded_quadratic_25", "lower_time": 0.5303300858899105, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.5303300858899107}
+{"case": "seeded_quadratic_26", "lower_time": 0.5403630145559556, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.5403630145559558}
+{"case": "seeded_quadratic_27", "lower_time": 0.5502130269268439, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.5502130269268442}
+{"case": "seeded_quadratic_28", "lower_time": 0.5598897770990285, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.5598897770990288}
+{"case": "seeded_quadratic_29", "lower_time": 0.5694020986965186, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.5694020986965188}
+{"case": "seeded_quadratic_30", "lower_time": 0.5787580992953791, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.5787580992953794}
+{"case": "seeded_quadratic_31", "lower_time": 0.5879652413195867, "oracle_gap_at_midpoint_m": 0.0, "outer_nodes": 11, "status": "grazing", "upper_time": 0.5879652413195869}
+SUMMARY {"actual_exit_expected": 0, "analytic_root_controls": 142, "budget_failure_controls": 6, "cases": 150, "constructor_invalid_controls": 7, "exact_replays_per_case": 2, "helper_controls": {"checks": 24, "legacy_nan_false_separation_m": 1.7976931348623157e+308, "safe_nan_separation": "-Infinity", "valid_closed_plane_lower_m": -6.071532165918828e-18}, "immutable_original_and_frozen_files_verified": 0, "maximum_abs_independent_oracle_gap_at_analytic_root_m": 1.7694179454963432e-16, "maximum_outer_nodes": 13, "maximum_temporal_spatial_width_upper_m": 3.140184917367554e-16, "mutable_motion_binding_controls": {"checks": 12, "former_narrowed_gap_m": -9.375018998980522e-05, "private_snapshot_callers_mutation_control": true, "unrepresented_motion_status": "invalid"}, "no_gpu": true, "no_trajectories": true, "outer_cap": 128, "represented_penetration_admissions": 0, "response_impulses_claimed": 0, "statuses": {"clear": 3, "degenerate": 1, "grazing": 142, "support": 1, "unsupported_closed_plane": 3}, "tolerance_m": 2e-06}

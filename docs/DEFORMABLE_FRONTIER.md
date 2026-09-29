@@ -35,7 +35,7 @@ references, not implementation claims for Numi.
 | --- | --- | --- |
 | Loaded woven bag and finite tabletop | New source `bbf111a`: full CPU96 pickup passes, five released fruit settle on the lower floor, both complete fruit traces match, all 51 saved states pass contacts | Same-source timestep comparison, full native spill, whole-yarn/static contacts throughout the trajectory |
 | Native finite contact | Source `a427ef0`: 104 focused response cases pass; a ghost-impulse fix passes the former frame-4 failure and a new full candidate is live | Complete both 480-frame trajectories and audit all retained evidence; qualify continuous whole-yarn collision separately |
-| Elastic fruit | Isolated 10,240-tet native body passes authored energy/timestep checks; 81,920-tet study is live. CPU five-owner normal response passes mechanics; reviewed moving geometry passes22fixtures, with incoming initial touch and grazing still rejected | Close remaining CCD/contact policy, a common transactional FEM/yarn step, finite-bench contact and complete force/work receipts |
+| Elastic fruit | Isolated 10,240-tet native body passes authored energy/timestep checks; 81,920-tet study is live. CPU five-owner normal response passes mechanics; reviewed moving geometry passes 22 fixtures. A separate exact fixed-plane certificate resolves grazing and passes 150 cases | General rotating/incoming CCD/contact policy, a common transactional FEM/yarn step, finite-bench contact and complete force/work receipts |
 | Mesh and time convergence | Volume spatial comparison fails the 1 mm target. Complete repaired six-second CPU48 passes; CPU96 fails its triangle-area gate despite passing saved contacts. Release sets differ; corresponding fruit positions differ by1.6745m and saved cloth nodes by315.9mm | Repair near-collinear cloth geometry, then match the same physical body, material, load, trajectory and captured times across refinements; report shape, force and work errors |
 | Contact/friction consistency | CPU shared-yarn contact block and passive velocity helper pass tested mechanics; two retained energy-injection regressions now dissipate energy | Joint contact, static support, strain and friction residuals; friction-free slide, oblique impact, sliding-to-rolling and separation tests |
 | Throughput and closure | Individual native GPU timings and a volume energy ledger exist | Same-workload wall time and simulated time, CPU/GPU ownership, high-percentile frame cost, full grip/contact work and impulse history |
@@ -58,8 +58,11 @@ on CPU. The native adaptive candidate remains unexecuted. The
 [reciprocal normal-contact module](ELASTIC_YARN_CONTACT.md) uses both actual yarn
 endpoint masses and three owning elastic node masses, including a captured FEM
 boundary fixture. The separate [moving geometry candidate](ELASTIC_YARN_MOVING_CCD.md)
-now has reviewed interval clearance and contact brackets. Its remaining initial
-touch and grazing rejections are explicit. Stress advancement and
+now has reviewed interval clearance and contact brackets. A separate
+[exact support certificate](ELASTIC_YARN_EXACT_SUPPORT.md) closes the retained
+fixed-plane grazing fixture, with independently checked rational/algebraic
+material coordinates. General rotation and incoming normal support remain open.
+Stress advancement and
 thickness-offset frictional torque remain coupled simulation gates.
 
 [Whole-yarn CPU geometry and velocity evidence](WHOLE_YARN_STATIC_MATH.md)

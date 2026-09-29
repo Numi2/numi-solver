@@ -46,11 +46,13 @@ Reciprocal yarn/elastic-boundary normal contact now passes CPU geometry,
 momentum, angular momentum and energy checks using five independently moving
 owning nodes. A captured FEM boundary fixture exercises all five responses.
 The reviewed moving-contact CPU candidate now passes 22 fixtures, including
-five independently moving owners, within the unchanged 2 µm budget. Initial
-incoming touch and grazing still retain explicit rejection. FEM advancement
-and full native bag coupling remain open.
+five independently moving owners, within the unchanged 2 µm budget. A separate
+reviewed exact-support certificate now resolves the retained graze at t = 1/4
+and passes **150 CPU cases**. Its fixed-plane scope excludes rotation and
+incoming normal motion. FEM advancement and full native bag coupling remain open.
 [Elastic contact mechanics and qualification boundary](docs/ELASTIC_YARN_CONTACT.md).
 [Moving geometry and retained counterexamples](docs/ELASTIC_YARN_MOVING_CCD.md).
+[Exact grazing support, independent proof checks and public reproducer](docs/ELASTIC_YARN_EXACT_SUPPORT.md).
 
 
 ### Newest loaded release · finite tabletop and lower floor · September 29, 2026

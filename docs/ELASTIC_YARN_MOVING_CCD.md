@@ -61,9 +61,11 @@ those are rejected cases, not accepted collisions.
 
 The later grazing frontier reaches a certified clear prefix of
 0.24999999981810106, before exact first touch at 0.25, then returns unresolved.
-A separate exact closed-support/root certificate is being qualified. It must
-preserve feasible material membership and distinguish grazing from a closing
-impact before it can support a runtime contact policy.
+A separate [exact closed-support/root certificate](ELASTIC_YARN_EXACT_SUPPORT.md)
+now resolves this fixed-plane graze at exact t = 1/4 and passes 150 reviewed
+CPU cases. Exact material membership and zero normal closing speed distinguish
+that event from an impact. Rotating planes, incoming normal support and coupled
+runtime response remain outside that restricted certificate.
 
 ## Reproduce the published CPU candidate
 

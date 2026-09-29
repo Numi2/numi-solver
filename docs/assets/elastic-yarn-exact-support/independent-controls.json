@@ -1,0 +1,810 @@
+{
+  "exact_five_owner_closed_plane_identity_checks": 146,
+  "independent_rational_owner_contact_checks": 109,
+  "independent_algebraic_owner_contact_checks": 34,
+  "exact_root_predicate_checks": 91,
+  "maximum_close_root_order_nodes": 96,
+  "hard_ordering_cap_control_exhausted": true,
+  "cap_used": 128,
+  "extra_status_controls": [
+    {
+      "case": "initial_incoming",
+      "result": {
+        "status": "unsupported_closed_plane",
+        "lower_time": 0.0,
+        "upper_time": 1.0,
+        "outer_nodes": 1,
+        "accepted": false,
+        "tolerance_m": 2e-06
+      }
+    },
+    {
+      "case": "initial_outgoing",
+      "result": {
+        "status": "unsupported_closed_plane",
+        "lower_time": 0.0,
+        "upper_time": 1.0,
+        "outer_nodes": 1,
+        "accepted": false,
+        "tolerance_m": 2e-06
+      }
+    },
+    {
+      "case": "one_ULP_-1",
+      "result": {
+        "status": "unsupported_closed_plane",
+        "lower_time": 0.0,
+        "upper_time": 1.0,
+        "outer_nodes": 1,
+        "accepted": false,
+        "tolerance_m": 2e-06
+      }
+    },
+    {
+      "case": "one_ULP_1",
+      "result": {
+        "status": "clear",
+        "lower_time": 1.0,
+        "upper_time": 1.0,
+        "outer_nodes": 1,
+        "accepted": true,
+        "tolerance_m": 2e-06,
+        "normal_exact": [
+          "0",
+          "0",
+          "25332749917225/70368744177664"
+        ],
+        "global_nonpenetration_exact": true,
+        "normal_closing_exact": "0"
+      }
+    },
+    {
+      "case": "endpoint_t1",
+      "result": {
+        "status": "grazing",
+        "lower_time": 1.0,
+        "upper_time": 1.0,
+        "outer_nodes": 10,
+        "accepted": true,
+        "tolerance_m": 2e-06,
+        "normal_exact": [
+          "0",
+          "0",
+          "25332749917225/70368744177664"
+        ],
+        "global_nonpenetration_exact": true,
+        "normal_closing_exact": "0",
+        "temporal_spatial_width_upper_m": 0.0,
+        "gap_at_lower_upper_m": 0.0,
+        "root_polynomial_exact": [
+          "-67553998101545/140737488355328",
+          "67553998101545/140737488355328",
+          "0"
+        ],
+        "root_isolation_exact": [
+          "1",
+          "1"
+        ],
+        "root_exact": "1",
+        "material": {
+          "yarn_u_exact": "1/2",
+          "triangle_weights_exact": [
+            "0",
+            "0",
+            "1"
+          ]
+        },
+        "feature": "vertex",
+        "feature_index": 2,
+        "clear_prefix_exact": true,
+        "contact_at_algebraic_root_exact": true,
+        "represented_penetration_used": false,
+        "response_impulse_claimed": false
+      }
+    },
+    {
+      "case": "endpoint_t0",
+      "result": {
+        "status": "support",
+        "lower_time": 0.0,
+        "upper_time": 0.0,
+        "outer_nodes": 1,
+        "accepted": true,
+        "tolerance_m": 2e-06,
+        "normal_exact": [
+          "0",
+          "0",
+          "25332749917225/70368744177664"
+        ],
+        "global_nonpenetration_exact": true,
+        "normal_closing_exact": "0",
+        "material": {
+          "yarn_u_exact": "1/2",
+          "triangle_weights_exact": [
+            "0",
+            "0",
+            "1"
+          ]
+        }
+      }
+    }
+  ],
+  "contact_checks": [
+    {
+      "case": "retained_perm(0, 1, 2)_sign(1, 1, 1)_w0_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(0, 1, 2)_sign(1, 1, 1)_w0_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(0, 1, 2)_sign(1, 1, 1)_w1_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(0, 1, 2)_sign(1, 1, 1)_w1_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(0, 1, 2)_sign(-1, 1, -1)_w0_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(0, 1, 2)_sign(-1, 1, -1)_w0_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(0, 1, 2)_sign(-1, 1, -1)_w1_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(0, 1, 2)_sign(-1, 1, -1)_w1_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(0, 1, 2)_sign(1, -1, 1)_w0_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(0, 1, 2)_sign(1, -1, 1)_w0_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(0, 1, 2)_sign(1, -1, 1)_w1_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(0, 1, 2)_sign(1, -1, 1)_w1_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(1, 2, 0)_sign(1, 1, 1)_w0_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(1, 2, 0)_sign(1, 1, 1)_w0_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(1, 2, 0)_sign(1, 1, 1)_w1_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(1, 2, 0)_sign(1, 1, 1)_w1_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(1, 2, 0)_sign(-1, 1, -1)_w0_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(1, 2, 0)_sign(-1, 1, -1)_w0_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(1, 2, 0)_sign(-1, 1, -1)_w1_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(1, 2, 0)_sign(-1, 1, -1)_w1_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(1, 2, 0)_sign(1, -1, 1)_w0_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(1, 2, 0)_sign(1, -1, 1)_w0_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(1, 2, 0)_sign(1, -1, 1)_w1_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(1, 2, 0)_sign(1, -1, 1)_w1_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(2, 0, 1)_sign(1, 1, 1)_w0_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(2, 0, 1)_sign(1, 1, 1)_w0_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(2, 0, 1)_sign(1, 1, 1)_w1_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(2, 0, 1)_sign(1, 1, 1)_w1_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(2, 0, 1)_sign(-1, 1, -1)_w0_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(2, 0, 1)_sign(-1, 1, -1)_w0_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(2, 0, 1)_sign(-1, 1, -1)_w1_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(2, 0, 1)_sign(-1, 1, -1)_w1_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(2, 0, 1)_sign(1, -1, 1)_w0_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(2, 0, 1)_sign(1, -1, 1)_w0_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(2, 0, 1)_sign(1, -1, 1)_w1_y0",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_perm(2, 0, 1)_sign(1, -1, 1)_w1_y1",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "retained_reverse_time",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "isolated_double_root",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "isolated_double_root_reversed",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "irrational_quadratic",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "irrational_quadratic_reversed_winding",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "oblique_projection",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "oblique_projection_reversed_winding",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "collinear_edge_entry",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "degenerate_yarn_point_entry",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "initial_supported_tangent",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "parallel_translating_deforming_support",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_00",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_01",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_02",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_03",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_04",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_05",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_06",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_07",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_08",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_09",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_10",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_11",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_12",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_13",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_14",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_15",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_16",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_17",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_18",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_19",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_20",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_21",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_22",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_23",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_24",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_25",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_26",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_27",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_28",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_29",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_30",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_31",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_32",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_33",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_34",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_35",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_36",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_37",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_38",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_39",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_40",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_41",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_42",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_43",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_44",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_45",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_46",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_47",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_48",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_49",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_50",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_51",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_52",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_53",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_54",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_55",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_56",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_57",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_58",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_59",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_60",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_61",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_62",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_deforming_linear_63",
+      "exact_rational_owner_distance": true
+    },
+    {
+      "case": "seeded_quadratic_00",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_01",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_02",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_03",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_04",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_05",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_06",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_07",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_08",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_09",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_10",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_11",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_12",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_13",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_14",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_15",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_16",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_17",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_18",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_19",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_20",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_21",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_22",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_23",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_24",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_25",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_26",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_27",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_28",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_29",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_30",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    },
+    {
+      "case": "seeded_quadratic_31",
+      "exact_algebraic_owner_distance_remainder": [
+        "0"
+      ],
+      "exact_membership_interval_bounds": true
+    }
+  ],
+  "failures": 0,
+  "no_gpu": true
+}

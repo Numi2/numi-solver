@@ -1,0 +1,353 @@
+{
+  "source_binding_controls": 15,
+  "failures": 0,
+  "cases": [
+    {
+      "case": "unrepresented_owner_translation_4096",
+      "result": {
+        "status": "invalid",
+        "lower_time": 0.0,
+        "upper_time": 1.0,
+        "outer_nodes": 0,
+        "accepted": false,
+        "tolerance_m": 2e-06,
+        "frontier": "mutated unrepresented owner"
+      }
+    },
+    {
+      "case": "unrepresented_owner_translation_1",
+      "result": {
+        "status": "invalid",
+        "lower_time": 0.0,
+        "upper_time": 1.0,
+        "outer_nodes": 0,
+        "accepted": false,
+        "tolerance_m": 2e-06,
+        "frontier": "mutated unrepresented owner"
+      }
+    },
+    {
+      "case": "unrepresented_owner_double_ULP",
+      "result": {
+        "status": "invalid",
+        "lower_time": 0.0,
+        "upper_time": 1.0,
+        "outer_nodes": 0,
+        "accepted": false,
+        "tolerance_m": 2e-06,
+        "frontier": "mutated unrepresented owner"
+      }
+    },
+    {
+      "case": "unrepresented_radius_double_ULP",
+      "result": {
+        "status": "invalid",
+        "lower_time": 0.0,
+        "upper_time": 1.0,
+        "outer_nodes": 0,
+        "accepted": false,
+        "tolerance_m": 2e-06,
+        "frontier": "mutated unrepresented radius"
+      }
+    },
+    {
+      "case": "bad_owner_count",
+      "result": {
+        "status": "invalid",
+        "lower_time": 0.0,
+        "upper_time": 1.0,
+        "outer_nodes": 0,
+        "accepted": false,
+        "tolerance_m": 2e-06,
+        "frontier": "mutated owner shape"
+      }
+    },
+    {
+      "case": "bad_component_count",
+      "result": {
+        "status": "invalid",
+        "lower_time": 0.0,
+        "upper_time": 1.0,
+        "outer_nodes": 0,
+        "accepted": false,
+        "tolerance_m": 2e-06,
+        "frontier": "mutated owner shape"
+      }
+    },
+    {
+      "case": "nonfinite_radius",
+      "result": {
+        "status": "invalid",
+        "lower_time": 0.0,
+        "upper_time": 1.0,
+        "outer_nodes": 0,
+        "accepted": false,
+        "tolerance_m": 2e-06,
+        "frontier": "nonfinite owner"
+      }
+    },
+    {
+      "case": "nonfinite_owner",
+      "result": {
+        "status": "invalid",
+        "lower_time": 0.0,
+        "upper_time": 1.0,
+        "outer_nodes": 0,
+        "accepted": false,
+        "tolerance_m": 2e-06,
+        "frontier": "nonfinite owner"
+      }
+    },
+    {
+      "case": "wrong_motion_type",
+      "result": {
+        "status": "invalid",
+        "lower_time": 0.0,
+        "upper_time": 1.0,
+        "outer_nodes": 0,
+        "accepted": false,
+        "tolerance_m": 2e-06,
+        "frontier": "motion type"
+      }
+    },
+    {
+      "case": "valid_represented_owner_mutation",
+      "result": {
+        "status": "grazing",
+        "lower_time": 0.25,
+        "upper_time": 0.25,
+        "outer_nodes": 10,
+        "accepted": true,
+        "tolerance_m": 2e-06,
+        "normal_exact": [
+          "0",
+          "0",
+          "25332749917225/70368744177664"
+        ],
+        "global_nonpenetration_exact": true,
+        "normal_closing_exact": "0",
+        "temporal_spatial_width_upper_m": 0.0,
+        "gap_at_lower_upper_m": 0.0,
+        "root_polynomial_exact": [
+          "-67553998101545/140737488355328",
+          "67553998101545/35184372088832",
+          "0"
+        ],
+        "root_isolation_exact": [
+          "1/4",
+          "1/4"
+        ],
+        "root_exact": "1/4",
+        "material": {
+          "yarn_u_exact": "12373197/26843546",
+          "triangle_weights_exact": [
+            "0",
+            "0",
+            "1"
+          ]
+        },
+        "feature": "vertex",
+        "feature_index": 2,
+        "clear_prefix_exact": true,
+        "contact_at_algebraic_root_exact": true,
+        "represented_penetration_used": false,
+        "response_impulse_claimed": false
+      }
+    },
+    {
+      "case": "valid_represented_radius_mutation",
+      "result": {
+        "status": "clear",
+        "lower_time": 1.0,
+        "upper_time": 1.0,
+        "outer_nodes": 1,
+        "accepted": true,
+        "tolerance_m": 2e-06,
+        "normal_exact": [
+          "0",
+          "0",
+          "25332749917225/70368744177664"
+        ],
+        "global_nonpenetration_exact": true,
+        "normal_closing_exact": "0"
+      }
+    },
+    {
+      "case": "exact_closed_plane_radius_0.004000000189989805",
+      "result": {
+        "status": "grazing",
+        "lower_time": 0.25,
+        "upper_time": 0.25,
+        "outer_nodes": 10,
+        "accepted": true,
+        "tolerance_m": 2e-06,
+        "normal_exact": [
+          "0",
+          "0",
+          "25332749917225/70368744177664"
+        ],
+        "global_nonpenetration_exact": true,
+        "normal_closing_exact": "0",
+        "temporal_spatial_width_upper_m": 0.0,
+        "gap_at_lower_upper_m": 0.0,
+        "root_polynomial_exact": [
+          "-67553998101545/140737488355328",
+          "67553998101545/35184372088832",
+          "0"
+        ],
+        "root_isolation_exact": [
+          "1/4",
+          "1/4"
+        ],
+        "root_exact": "1/4",
+        "material": {
+          "yarn_u_exact": "1/2",
+          "triangle_weights_exact": [
+            "0",
+            "0",
+            "1"
+          ]
+        },
+        "feature": "vertex",
+        "feature_index": 2,
+        "clear_prefix_exact": true,
+        "contact_at_algebraic_root_exact": true,
+        "represented_penetration_used": false,
+        "response_impulse_claimed": false
+      }
+    },
+    {
+      "case": "exact_closed_plane_radius_5.000000058430487e-08",
+      "result": {
+        "status": "grazing",
+        "lower_time": 0.25,
+        "upper_time": 0.25,
+        "outer_nodes": 10,
+        "accepted": true,
+        "tolerance_m": 2e-06,
+        "normal_exact": [
+          "0",
+          "0",
+          "25332749917225/70368744177664"
+        ],
+        "global_nonpenetration_exact": true,
+        "normal_closing_exact": "0",
+        "temporal_spatial_width_upper_m": 0.0,
+        "gap_at_lower_upper_m": 0.0,
+        "root_polynomial_exact": [
+          "-67553998101545/140737488355328",
+          "67553998101545/35184372088832",
+          "0"
+        ],
+        "root_isolation_exact": [
+          "1/4",
+          "1/4"
+        ],
+        "root_exact": "1/4",
+        "material": {
+          "yarn_u_exact": "1/2",
+          "triangle_weights_exact": [
+            "0",
+            "0",
+            "1"
+          ]
+        },
+        "feature": "vertex",
+        "feature_index": 2,
+        "clear_prefix_exact": true,
+        "contact_at_algebraic_root_exact": true,
+        "represented_penetration_used": false,
+        "response_impulse_claimed": false
+      }
+    },
+    {
+      "case": "exact_closed_plane_radius_1.0000000036274937e-15",
+      "result": {
+        "status": "grazing",
+        "lower_time": 0.25,
+        "upper_time": 0.25,
+        "outer_nodes": 10,
+        "accepted": true,
+        "tolerance_m": 2e-06,
+        "normal_exact": [
+          "0",
+          "0",
+          "25332749917225/70368744177664"
+        ],
+        "global_nonpenetration_exact": true,
+        "normal_closing_exact": "0",
+        "temporal_spatial_width_upper_m": 0.0,
+        "gap_at_lower_upper_m": 0.0,
+        "root_polynomial_exact": [
+          "-67553998101545/140737488355328",
+          "67553998101545/35184372088832",
+          "0"
+        ],
+        "root_isolation_exact": [
+          "1/4",
+          "1/4"
+        ],
+        "root_exact": "1/4",
+        "material": {
+          "yarn_u_exact": "1/2",
+          "triangle_weights_exact": [
+            "0",
+            "0",
+            "1"
+          ]
+        },
+        "feature": "vertex",
+        "feature_index": 2,
+        "clear_prefix_exact": true,
+        "contact_at_algebraic_root_exact": true,
+        "represented_penetration_used": false,
+        "response_impulse_claimed": false
+      }
+    },
+    {
+      "case": "exact_closed_plane_radius_1.401298464324817e-45",
+      "result": {
+        "status": "grazing",
+        "lower_time": 0.25,
+        "upper_time": 0.25,
+        "outer_nodes": 10,
+        "accepted": true,
+        "tolerance_m": 2e-06,
+        "normal_exact": [
+          "0",
+          "0",
+          "25332749917225/70368744177664"
+        ],
+        "global_nonpenetration_exact": true,
+        "normal_closing_exact": "0",
+        "temporal_spatial_width_upper_m": 0.0,
+        "gap_at_lower_upper_m": 0.0,
+        "root_polynomial_exact": [
+          "-67553998101545/140737488355328",
+          "67553998101545/35184372088832",
+          "0"
+        ],
+        "root_isolation_exact": [
+          "1/4",
+          "1/4"
+        ],
+        "root_exact": "1/4",
+        "material": {
+          "yarn_u_exact": "1/2",
+          "triangle_weights_exact": [
+            "0",
+            "0",
+            "1"
+          ]
+        },
+        "feature": "vertex",
+        "feature_index": 2,
+        "clear_prefix_exact": true,
+        "contact_at_algebraic_root_exact": true,
+        "represented_penetration_used": false,
+        "response_impulse_claimed": false
+      }
+    }
+  ],
+  "no_gpu": true
+}

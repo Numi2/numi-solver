@@ -1,0 +1,1 @@
+{"frontier": "rotating_plane_midpoint_penetration", "result": {"status": "unsupported_closed_plane", "lower_time": 0.0, "upper_time": 1.0, "outer_nodes": 3, "accepted": false, "tolerance_m": 2e-06}, "midpoint_gap_m": -0.0011715729309005355}

@@ -1,0 +1,1 @@
+{"cap_used": 128, "exact_five_owner_closed_plane_identity_checks": 146, "exact_root_predicate_checks": 91, "failures": 0, "hard_ordering_cap_control_exhausted": true, "independent_algebraic_owner_contact_checks": 34, "independent_rational_owner_contact_checks": 109, "maximum_close_root_order_nodes": 96, "no_gpu": true}
