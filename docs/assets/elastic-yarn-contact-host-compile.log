@@ -1,0 +1,5 @@
+command: xcrun clang++ -std=c++20 -O3 -fno-fast-math -ffp-contract=off -Wall -Wextra -Iinclude tools/elastic_yarn_contact_probe.cpp -o /var/folders/t9/k15zzp692dl6xfhzqr26qvkr0000gn/T/numi-elastic-yarn-cpu-1vakcscw/numi-solver-elastic-yarn-contact
+actual_exit_code: 0
+stdout:
+
+stderr:

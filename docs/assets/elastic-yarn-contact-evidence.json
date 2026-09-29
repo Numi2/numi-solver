@@ -1,0 +1,361 @@
+{
+  "schema": "numi.elastic-yarn.cpu-normal-contact.v1",
+  "qualification_scope": "CPU fixed-position reciprocal normal contact among five independently dynamic owning nodes",
+  "native_GPU_execution": false,
+  "native_Metal_or_ABI_qualified": false,
+  "moving_CCD_qualified": false,
+  "FEM_advancement_qualified": false,
+  "full_scene_qualified": false,
+  "observed_utc": "2026-09-29T15:01:35.388878+00:00",
+  "repository_revision_when_built": "b2c05b8eaf267ae2420fc8065d1fd5381787f541",
+  "executed_source_sha256": {
+    "include/numi/elastic_yarn_contact.h": "3fad55a3fb387d4a647f82c4c620901c2db325f39c06bba0e48c2b5ce8a2314c",
+    "include/numi/static_contact_geometry.h": "7d288795b0e382ee50baf9ae407e3ef97803a8c40152a09606afb7f2133908a4",
+    "tools/elastic_yarn_contact_probe.cpp": "375613f2db10e37374da8cc9973beac096e6f26df6b7b1fd7e0e8d5ea71c970e"
+  },
+  "binary": {
+    "path": "/var/folders/t9/k15zzp692dl6xfhzqr26qvkr0000gn/T/numi-elastic-yarn-cpu-1vakcscw/numi-solver-elastic-yarn-contact",
+    "sha256": "a6e478ec231f83605d57339ef3eb99777b7d00adfc878ac52ca057fa354a4cb3",
+    "ownership": "Unique temporary CPU binary; no shared native build product overwritten"
+  },
+  "compiler": "Apple clang version 21.0.0 (clang-2100.0.123.102)",
+  "compilation": {
+    "argv": [
+      "xcrun",
+      "clang++",
+      "-std=c++20",
+      "-O3",
+      "-fno-fast-math",
+      "-ffp-contract=off",
+      "-Wall",
+      "-Wextra",
+      "-Iinclude",
+      "tools/elastic_yarn_contact_probe.cpp",
+      "-o",
+      "/var/folders/t9/k15zzp692dl6xfhzqr26qvkr0000gn/T/numi-elastic-yarn-cpu-1vakcscw/numi-solver-elastic-yarn-contact"
+    ],
+    "actual_exit_code": 0,
+    "log": "docs/assets/elastic-yarn-contact-host-compile.log",
+    "log_sha256": "deccf0788d6038003b57a21f011f5863afd4adb1f786a35aadd45640c42215fa"
+  },
+  "executions": [
+    {
+      "argv": [
+        "/var/folders/t9/k15zzp692dl6xfhzqr26qvkr0000gn/T/numi-elastic-yarn-cpu-1vakcscw/numi-solver-elastic-yarn-contact"
+      ],
+      "actual_exit_code": 0,
+      "stdout_path": "docs/assets/elastic-yarn-contact-host-random.log",
+      "stdout_sha256": "80ffa2337f085dbb2815691ec6517d5fe9476fcb66c99b05e75212e2b179e7fb",
+      "stderr": "",
+      "metrics": {
+        "backend": "CPU_FP32_five_dynamic_nodes",
+        "result": "PASS",
+        "geometry_cases": 12008,
+        "geometry_failures": 0,
+        "geometry_ambiguous_normal_cases": 1160,
+        "maximum_FP64_distance_error_m": 1.7329608656259694e-07,
+        "maximum_witness_distance_error_m": 3.055394770523634e-08,
+        "impulse_cases": 4001,
+        "impulse_failures": 0,
+        "normal_row_status_counts": [
+          0,
+          4001,
+          0,
+          0,
+          0,
+          0
+        ],
+        "energy_rejected_candidates": 0,
+        "triangle_vertex_motion_events": 12003,
+        "all_five_node_motion_events": 2000,
+        "explicit_parallel_rows": 2000,
+        "maximum_FP64_velocity_error_m_s": 1.89479544410176e-06,
+        "maximum_FP64_impulse_error_Ns": 4.862265973182289e-08,
+        "maximum_actual_mass_linear_momentum_error_Ns": 5.250321257920999e-08,
+        "maximum_actual_mass_angular_momentum_error_Nms": 1.094541300684858e-09,
+        "maximum_remaining_closing_m_s": 8.190182665401835e-07,
+        "maximum_actual_kinetic_gain_J": 0,
+        "maximum_energy_interval_bound_excess_J": 0,
+        "negative_controls": 4,
+        "invalid_controls": 10,
+        "status_controls": 3,
+        "rejected_FP32_candidate_actual_kinetic_gain_J": 2606.668930967475,
+        "rejected_FP32_candidate_energy_upper_J": 2606.671142578125,
+        "wrong_omit_triangle_inverse_mass_gain_J": 202.62498962085675,
+        "wrong_frozen_triangle_momentum_error_Ns": 1.0000000000002305,
+        "energy_rejection_returns_original_velocities": true,
+        "owning_node_fixture": null,
+        "native_GPU_execution": false,
+        "full_scene_qualified": false
+      }
+    },
+    {
+      "argv": [
+        "/var/folders/t9/k15zzp692dl6xfhzqr26qvkr0000gn/T/numi-elastic-yarn-cpu-1vakcscw/numi-solver-elastic-yarn-contact",
+        "--fixture",
+        "docs/assets/elastic-yarn-fem-frame38-five-nodes.txt",
+        "--fixture-output",
+        "docs/assets/elastic-yarn-fem-frame38-contact-result.json"
+      ],
+      "actual_exit_code": 0,
+      "stdout_path": "docs/assets/elastic-yarn-contact-host-fem.log",
+      "stdout_sha256": "45813872d54538d6a05894a9435400cb1972e1859b9f669c9ccba53e37fce667",
+      "stderr": "",
+      "metrics": {
+        "backend": "CPU_FP32_five_dynamic_nodes",
+        "result": "PASS",
+        "geometry_cases": 12009,
+        "geometry_failures": 0,
+        "geometry_ambiguous_normal_cases": 1160,
+        "maximum_FP64_distance_error_m": 1.7329608656259694e-07,
+        "maximum_witness_distance_error_m": 3.055394770523634e-08,
+        "impulse_cases": 4003,
+        "impulse_failures": 0,
+        "normal_row_status_counts": [
+          0,
+          4003,
+          0,
+          0,
+          0,
+          0
+        ],
+        "energy_rejected_candidates": 0,
+        "triangle_vertex_motion_events": 12009,
+        "all_five_node_motion_events": 2001,
+        "explicit_parallel_rows": 2001,
+        "maximum_FP64_velocity_error_m_s": 1.89479544410176e-06,
+        "maximum_FP64_impulse_error_Ns": 4.862265973182289e-08,
+        "maximum_actual_mass_linear_momentum_error_Ns": 5.250321257920999e-08,
+        "maximum_actual_mass_angular_momentum_error_Nms": 1.094541300684858e-09,
+        "maximum_remaining_closing_m_s": 8.190182665401835e-07,
+        "maximum_actual_kinetic_gain_J": 0,
+        "maximum_energy_interval_bound_excess_J": 0,
+        "negative_controls": 4,
+        "invalid_controls": 10,
+        "status_controls": 3,
+        "rejected_FP32_candidate_actual_kinetic_gain_J": 2606.668930967475,
+        "rejected_FP32_candidate_energy_upper_J": 2606.671142578125,
+        "wrong_omit_triangle_inverse_mass_gain_J": 202.62498962085675,
+        "wrong_frozen_triangle_momentum_error_Ns": 1.0000000000002305,
+        "energy_rejection_returns_original_velocities": true,
+        "owning_node_fixture": {
+          "valid": true,
+          "status": 1,
+          "explicit_parallel_interior_row": true,
+          "five_nodes_moving": 5,
+          "yarn_parameter": 0.5,
+          "triangle_weights": [
+            0.3333333134651184,
+            0.3333333432674408,
+            0.3333333432674408
+          ],
+          "distance_m": 0.003999001812189817,
+          "FP64_global_minimum_distance_m": 0.003999000418953998,
+          "impulse_Ns": 6.210686842678115e-05,
+          "kinetic_delta_J": -3.105342875737581e-05,
+          "energy_interval_upper_J": -3.105339055764489e-05,
+          "five_final_velocities": [
+            [
+              0.032859064638614655,
+              0.00397640373557806,
+              0.04651346430182457
+            ],
+            [
+              0.032859064638614655,
+              0.00397640373557806,
+              0.04651346430182457
+            ],
+            [
+              0.06057893857359886,
+              -0.17767569422721863,
+              -0.402990460395813
+            ],
+            [
+              0.12351646274328232,
+              0.13206402957439423,
+              0.27551987767219543
+            ],
+            [
+              -0.08551843464374542,
+              0.057541623711586,
+              0.2670101523399353
+            ]
+          ]
+        },
+        "native_GPU_execution": false,
+        "full_scene_qualified": false
+      }
+    }
+  ],
+  "CLI_negative_controls": [
+    {
+      "argv": [
+        "--fixture"
+      ],
+      "actual_exit_code": 2,
+      "stderr": "Unknown or incomplete argument: --fixture"
+    },
+    {
+      "argv": [
+        "--fixture-output",
+        "unused.json"
+      ],
+      "actual_exit_code": 2,
+      "stderr": "--fixture-output requires --fixture"
+    },
+    {
+      "argv": [
+        "--unknown"
+      ],
+      "actual_exit_code": 2,
+      "stderr": "Unknown or incomplete argument: --unknown"
+    }
+  ],
+  "targets": {
+    "geometry_distance_error_m": 2e-06,
+    "witness_distance_error_m": 2e-06,
+    "barycentric_sum_error": 2e-06,
+    "FP64_velocity_error_m_s": 1e-05,
+    "FP64_impulse_error_Ns": 1e-07,
+    "actual_linear_momentum_error_Ns": 1e-07,
+    "actual_angular_momentum_error_Nms": 1e-08,
+    "remaining_closing_m_s": 1e-05,
+    "accepted_actual_kinetic_gain_J": 0,
+    "actual_kinetic_excess_over_outward_bound_check_tolerance_J": 1e-12
+  },
+  "public_outputs_sha256": {
+    "docs/ELASTIC_YARN_CONTACT.md": "4485917d3889febf2dd0f93a55bc99e6add65298632b0f5dfeb2d00ce0c0a1d6",
+    "docs/assets/elastic-yarn-fem-frame38-five-nodes.txt": "32038aadbb5d786a52ef5ff2da2a88cf788cac332ddd070496f42590cb09c69d",
+    "docs/assets/elastic-yarn-fem-frame38-provenance.json": "1c7da0b0410abdbf3b1f8c614c8803830fe272a4c355057ce4b035cebdb0b26d",
+    "docs/assets/elastic-yarn-fem-frame38-contact-result.json": "ed91f93b3ebcf1e3e96015d97568e3ce225eef1a89bbdb28485305da9fa0a183",
+    "docs/assets/elastic-yarn-contact-host-compile.log": "deccf0788d6038003b57a21f011f5863afd4adb1f786a35aadd45640c42215fa",
+    "docs/assets/elastic-yarn-contact-host-random.log": "80ffa2337f085dbb2815691ec6517d5fe9476fcb66c99b05e75212e2b179e7fb",
+    "docs/assets/elastic-yarn-contact-host-fem.log": "45813872d54538d6a05894a9435400cb1972e1859b9f669c9ccba53e37fce667",
+    "docs/assets/elastic-yarn-contact-isolated-initial-failed.log": "8b6e24057d02dd683d0755c21263870ff30718b847cd89e34fff5621adc90cb3"
+  },
+  "source_fixture_provenance": {
+    "kind": "Real compressed FEM boundary state with an authored local yarn contact fixture",
+    "source_physics_revision": "69736313414d3afd81f3b181116870143c13966e",
+    "elastic_mesh_nodes": 2057,
+    "elastic_mesh_tetrahedra": 10240,
+    "captured_frame": 38,
+    "time_s": 0.19,
+    "triangle_owning_nodes": [
+      5,
+      1814,
+      1347
+    ],
+    "triangle_states_preserved": true,
+    "triangle_tetrahedral_incidence": 1,
+    "triangle_velocity_and_mass_from_owning_nodal_trace": true,
+    "yarn_positions": "Constructed short axial segment over selected real boundary face; not captured full-bag yarn.",
+    "yarn_mass_kg": 4.999999873689376e-05,
+    "yarn_radius_m": 0.004000000189989805,
+    "yarn_approach_relative_triangle_centroid_m_s": 1.0,
+    "states": [
+      {
+        "position": [
+          -0.002672188449651003,
+          -0.02336556650698185,
+          0.05023100599646568
+        ],
+        "velocity": [
+          0.2276500016450882,
+          -0.14530327916145325,
+          -0.5240111947059631
+        ],
+        "mass": 4.999999873689376e-05
+      },
+      {
+        "position": [
+          -0.0026759947650134563,
+          -0.022154364734888077,
+          0.049912791699171066
+        ],
+        "velocity": [
+          0.2276500016450882,
+          -0.14530327916145325,
+          -0.5240111947059631
+        ],
+        "mass": 4.999999873689376e-05
+      },
+      {
+        "position": [
+          0.0003836003306787461,
+          -0.02660437673330307,
+          0.0477684922516346
+        ],
+        "velocity": [
+          -0.10720565170049667,
+          -0.049092549830675125,
+          0.0884351059794426
+        ],
+        "mass": 3.869861029670574e-05
+      },
+      {
+        "position": [
+          0.00036456913221627474,
+          -0.020548366010189056,
+          0.046177417039871216
+        ],
+        "velocity": [
+          0.0396241657435894,
+          0.19635559618473053,
+          0.5212326645851135
+        ],
+        "mass": 7.739722786936909e-05
+      },
+      {
+        "position": [
+          -0.0050077238120138645,
+          -0.02401074953377247,
+          0.045249130576848984
+        ],
+        "velocity": [
+          -0.19038380682468414,
+          0.13790608942508698,
+          0.5741511583328247
+        ],
+        "mass": 6.191778084030375e-05
+      }
+    ],
+    "source_sha256": {
+      "docs/assets/deformable-support-10240-trajectory.csv": "2c0c0c5f45c821acdd026e88d6a9d259fd78f9d245c8617f98a742aa2075c434",
+      "build/support-verlet-terminal/build/support-verlet-level3-38.obj": "a7e4ec9f71f287c9eeee8c82952d14315064def6ae3b7f5411e1410f1e4c804e",
+      "docs/assets/deformable-support-10240-topology.csv": "528bf55f329ad3b702c39047b16f39e08c6d1f13c58cec4afc2e4acc593aa3f1",
+      "include/numi/cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd"
+    },
+    "fixture_sha256": "32038aadbb5d786a52ef5ff2da2a88cf788cac332ddd070496f42590cb09c69d",
+    "boundary": "A single reciprocal contact row at an existing elastic FEM state. This does not advance element stresses, certify full contact manifold/CCD or qualify elastic-fruit/cloth scene execution.",
+    "published_fixture_path": "docs/assets/elastic-yarn-fem-frame38-five-nodes.txt",
+    "construction": "Use exact represented nodal states from source trace frame 38. Select highest outward boundary face with unit normal z > 0.8; independently verify exactly one owning tet. Put yarn center at barycentric centroid plus normal*(radius - 1e-6 m), orient along first triangle edge, half length 0.1 times shortest edge. Set both endpoint velocities to triangle centroid velocity minus unit normal*1 m/s.",
+    "origin_isolated_receipt_path": "build/elastic-yarn-coupling/fem-frame38-fixture-evidence.json",
+    "coordinate_manifold_validation": "The published probe independently checks the explicit interior u=0.5, barycentric thirds row against the global FP64 constrained minimum within the unchanged 2e-6 m target."
+  },
+  "response_publication_contract": {
+    "must_check": "numiElasticYarnCanPublish(result)",
+    "rejected_velocities": "All five original velocities; candidate arrays remain local",
+    "rejected_accepted_impulse_Ns": 0,
+    "energyUpper_when_rejected": "Attempted candidate diagnostic, not an accepted work ledger",
+    "arbitrary_coordinate_API": "Caller must establish physical manifold membership; coordinate checks do not prove closest/manifold validity"
+  },
+  "retained_isolated_history": {
+    "source_path": "build/elastic-yarn-coupling/elastic_yarn_contact.h",
+    "receipt_path": "build/elastic-yarn-coupling/evidence.json",
+    "original_source_sha256": "f6b4b356616931bedc662fee1467cf81f647bcc95d432adb7190d7b9b9216e81",
+    "original_receipt_sha256": "f77ce4f1314eaa2c1417adb8455aa77db049aedf4b3c97d50d717821827538f6",
+    "initial_failure_source_sha256": "f9ccf40034c3c0cf3579ea6a8e625a9be585f008e9673730c049744650aebcc7",
+    "initial_failure_geometry_count": 438,
+    "all_original_receipt_hashes_verified_unchanged": true
+  },
+  "limits": [
+    "No complete/adjacent-face manifold",
+    "No moving segment/triangle CCD",
+    "No positional repair or full elastic/gravity/force-response work closure",
+    "No FEM stress advancement",
+    "No thickness-offset friction torques/couples",
+    "No Metal address-space or native ABI execution",
+    "Authored local yarn geometry/masses are not captured/calibrated full-bag material evidence",
+    "No full elastic-fruit/bag scene or new spatial convergence qualification"
+  ]
+}

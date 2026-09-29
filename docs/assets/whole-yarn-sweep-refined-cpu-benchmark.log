@@ -1,0 +1,6 @@
+repeat=0 old_seconds=0.013630333 new_seconds=0.076626833000000005 old_checksum=2600475806056 new_checksum=2531238605341
+repeat=1 old_seconds=0.0138055 new_seconds=0.077301124999999998 old_checksum=2600475806056 new_checksum=2531238605341
+repeat=2 old_seconds=0.014696875 new_seconds=0.075374374999999993 old_checksum=2600475806056 new_checksum=2531238605341
+repeat=3 old_seconds=0.014445833 new_seconds=0.076756667000000001 old_checksum=2600475806056 new_checksum=2531238605341
+repeat=4 old_seconds=0.015039416 new_seconds=0.084842625000000005 old_checksum=2600475806056 new_checksum=2531238605341
+seeded_queries=1299 sequential_repeats=5 median_old_seconds=0.014445833 median_new_seconds=0.076756667000000001 new_to_old_walltime_ratio=5.3134123175866703 checksum_old=13002379030280 checksum_new=12656193026705 FP64_oracle_and_capture_in_timing=0 native_throughput_qualified=0

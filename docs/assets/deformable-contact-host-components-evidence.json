@@ -1,0 +1,32 @@
+{
+  "scope": "Five CPU component tests; no native GPU or whole scene qualification",
+  "created_at_utc": "2026-09-29T15:20:51.112058+00:00",
+  "command": [
+    "ctest",
+    "--test-dir",
+    "build",
+    "-R",
+    "^(static_contact\\.(whole_yarn_host|velocity_slack_host|transactional_substep_host)|elastic_yarn\\.(normal_host|fem_boundary_host))$",
+    "--output-on-failure"
+  ],
+  "actual_exit_code": 0,
+  "executed_files_sha256": {
+    "include/numi/elastic_yarn_contact.h": "3fad55a3fb387d4a647f82c4c620901c2db325f39c06bba0e48c2b5ce8a2314c",
+    "tools/elastic_yarn_contact_probe.cpp": "375613f2db10e37374da8cc9973beac096e6f26df6b7b1fd7e0e8d5ea71c970e",
+    "include/numi/static_contact_geometry.h": "7d288795b0e382ee50baf9ae407e3ef97803a8c40152a09606afb7f2133908a4",
+    "include/numi/static_segment_geometry.h": "714281e8c86b7afcf6b8ce22d78981ecd13a89aefae3d2639e4e11d29a1f09f6",
+    "tools/static_segment_geometry.cpp": "6c979c0e0441538a5ce2ec366f6e77844e05958832ff8685f57352246e6bce38",
+    "include/numi/static_velocity_contact.h": "54cfb932e12df1b9e3153c6dbc16d2f8948ab862cf1ffe4ac38130f548dde65c",
+    "tools/static_velocity_contact.cpp": "6eb1c5c678fa2cdad2732e899d4640c26e63ae145ab1cb943d099bc83d9289c8",
+    "include/numi/transactional_substep.h": "b7582d00133491b7c6638a1f33f290ec405b36c3e45b3268fcbf6cffbab9f3ae",
+    "tools/transactional_substep.cpp": "f4151c6d39bfa1cc6918b2fb2fa738b9ae3580a066e77040ae09c972bec982da",
+    "build/numi-solver-elastic-yarn": "08c4e9a8046f7fb7a8d7c070192e64bfab76589abf66267d5c6b046f86da2b1d",
+    "build/numi-solver-static-segment": "84028da39f364e615d891a1e7c911136d8091236161de063030fbfe9b5f24f29",
+    "build/numi-solver-static-velocity": "c4a552e269694efcc11884f49ea06c1452118e6e6084862a52da7747e6ed87b6",
+    "build/numi-solver-transactional-substep": "a47fbaa6039f187a9411d5be8daf0a92521d584b846cc8a6f8eaeaba34101bd0"
+  },
+  "all_sources_stable": true,
+  "elastic_cmake_output_byte_identical_to_direct_qualification": true,
+  "log": "docs/assets/deformable-contact-host-components-ctest.log",
+  "log_sha256": "5228a5ec5e9a7500e630c3fbb21367c7d8ce279e39694898d9bf5c038d4ee29e"
+}

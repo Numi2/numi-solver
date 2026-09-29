@@ -1,0 +1,855 @@
+{
+  "schema": "numi.whole-yarn-ccd-refinement.cpu-only.v1",
+  "timestamp_utc": "2026-09-29T15:18:49.178164+00:00",
+  "baseline_commit": "3fee96092776aee66b859b5d0ff6677646f8207a",
+  "working_tree_head_at_receipt": "b2c05b8eaf267ae2420fc8065d1fd5381787f541",
+  "scope": [
+    "include/numi/static_segment_geometry.h",
+    "tools/static_segment_geometry.cpp"
+  ],
+  "backend": "CPU FP32 shared host/Metal geometry",
+  "gpu_execution_performed": false,
+  "native_physical_solver_qualified": false,
+  "full_cpu_trajectories_executed": false,
+  "exact_compile_flags": [
+    "-O3",
+    "-DNDEBUG",
+    "-std=gnu++2b",
+    "-arch",
+    "arm64",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-fno-fast-math",
+    "-ffp-contract=off"
+  ],
+  "metal_compile_only_flags": [
+    "-std=metal3.1",
+    "-fno-fast-math",
+    "-ffp-contract=off"
+  ],
+  "actual_exit_codes": {
+    "prototype_qualification": 0,
+    "production_build": 0,
+    "production_segment_binary": 0,
+    "production_velocity_binary": 0,
+    "ctest_two_math_tests": 0,
+    "production_metal_compile_only": 0,
+    "benchmark": 0
+  },
+  "seeded_corpus": {
+    "primary": 781,
+    "general_deforming": 518,
+    "total": 1299,
+    "generator_seed": 730491,
+    "instrumented_test_matches_frozen_source_after_only_group_label_removal": true,
+    "baseline_status_matches_frozen_capture": true,
+    "inputs_sha256": "beed3ec5fd15de28f42f554c05bb44fa057f409ff7b3456d86c49328f208d5ee"
+  },
+  "before_after": {
+    "primary": {
+      "old_clear": 404,
+      "old_contact": 352,
+      "old_unresolved": 25,
+      "new_clear": 404,
+      "new_contact": 377,
+      "new_unresolved": 0,
+      "regressions": 0,
+      "false_clear": 0,
+      "false_contact": 0,
+      "maximum_contact_gap_m": 2.8526957342178694e-07,
+      "maximum_geometry_queries": 6
+    },
+    "general": {
+      "old_clear": 99,
+      "old_contact": 290,
+      "old_unresolved": 129,
+      "new_clear": 99,
+      "new_contact": 419,
+      "new_unresolved": 0,
+      "regressions": 0,
+      "false_clear": 0,
+      "maximum_contact_gap_m": 5.244120177549938e-07,
+      "maximum_geometry_queries": 80
+    }
+  },
+  "baseline_stop_diagnosis": {
+    "primary": {
+      "poor_plane_witness_disagreement": 20,
+      "rounded_time_stagnation": 1,
+      "outer_iteration_exhaustion": 4
+    },
+    "general": {
+      "poor_plane_witness_disagreement": 32,
+      "rounded_time_stagnation": 77,
+      "outer_iteration_exhaustion": 20
+    },
+    "maximum_unresolved_gap_m": 0.0017475485801696777,
+    "maximum_same_time_local_plane_bound_improvement_m": 4.425691440701485e-05
+  },
+  "algorithm": [
+    "FP32 outward-rounded support-plane bounds over four moving-endpoint time/u hull vertices; any finite represented normal remains conservative.",
+    "Plane values interpolate scalar endpoint projections with sign-directed rounding, avoiding repeatedly widened world-point intervals.",
+    "Local two-axis perpendicular or three-axis double-cross plane candidate improves thin rounded-feature separation; closest normal remains the returned contact normal.",
+    "Try an analytic plane time root, certify its complete interval, otherwise use a bounded scalar split search. Only a certified interval can advance or return clear.",
+    "Contact tolerance remains 1e-7 m. Conservative contact separately requires an outward-rounded exact-input witness gap upper bound <=2e-6 m. Uncertain or exhausted cases remain explicit failures.",
+    "Shared signed plane normalization uses upper ||n|| for P >= 0 and lower ||n|| for P < 0, all operations outward. Zero or nonfinite normal, or zero lower norm for negative projection, is explicit failure.",
+    "The complete scene signed lower bound, including colliders globally certified at caller tolerance, must be >=-2e-6 m at contact. This prevents deeply overlapped caller-tolerated portions being admitted through an unrelated collider contact."
+  ],
+  "limits": {
+    "contact_tolerance_m": 1e-07,
+    "contact_acceptance_m": 2e-06,
+    "outer_geometry_iteration_cap": 128,
+    "scalar_splits_per_plane_per_outer_iteration": 32,
+    "maximum_candidate_planes": 3,
+    "maximum_additional_scalar_splits_per_outer_iteration": 96,
+    "not_constant_cost_128_operations": true,
+    "extra_controls_expected_unresolved": 10,
+    "extreme_unresolved_segment_half_span_m": 1024,
+    "extra_control_resolved_half_span_up_to_m": 32,
+    "endpoint_displacement_control_up_to_m": 1000,
+    "general_arbitrary_length_speed_and_grazing_sweeps_qualified": false,
+    "starting_support_global_hull_clearance_allowance_m": 1e-07,
+    "extreme_length_unresolved": 4,
+    "signed_custom_tolerance_expected_rejections": 6,
+    "additional_custom_tolerances_m": [
+      1e-07,
+      0.015,
+      0.05
+    ],
+    "small_radius_regression_m": 5e-08,
+    "zero_nonfinite_or_zero_lower_norm_controls": 4,
+    "no_radius_greater_than_tolerance_api_restriction_added": true,
+    "caller_tolerated_outward_overlap_can_be_certified_clear": true
+  },
+  "oracle_semantics": {
+    "primary": "Frozen independent FP64 translation minimization/bisection, original corpus unchanged.",
+    "general": "Frozen independent FP64 physical edge/face/interior-LP and temporal Lipschitz oracle; detects penetration beyond 1e-7 m, all 518 known.",
+    "new_controls": "FP64 temporal signed scene oracle and independent feature/half-space closures use each call contact tolerance; separate contact arrival remains +/-2e-6 m. Sixty tangent/miss interval-oracle uncertainties closed analytically.",
+    "false_clear": "Certified clear despite independent known crossing criterion.",
+    "contact_acceptance_failure": "Independent exact-input FP64 signed scene gap at reported time outside +/-2e-6 m; upper-witness arithmetic also separately certified.",
+    "static_signed_certificate": "12,108 production samples now verify clearanceLowerBound against the independent signed gap. The previous baseline certificate was unsigned.",
+    "hull_proof": "40,000 box/floor comparisons against independent exact-input FP64 signed supporting-plane values. 40,000 witness upper bounds checked independently."
+  },
+  "prototype_metrics": [
+    {
+      "backend": "CPU_shared_FP32_segment_geometry",
+      "native_Metal_execution": "NOT_RUN",
+      "full_scene": "NOT_QUALIFIED"
+    },
+    {
+      "samples": "12108",
+      "sample_failures": "0",
+      "signed_gap_max_error_m": "1.6158793694764917e-07",
+      "witness_max_suboptimality_m": "1.4420676400228594e-07"
+    },
+    {
+      "clearance_certificates": "12108",
+      "certificate_failures": "0",
+      "maximum_lower_bound_excess_m": "0"
+    },
+    {
+      "sweeps": "781",
+      "sweep_failures": "0",
+      "certified_clear": "404",
+      "conservative_contacts": "352",
+      "explicit_unresolved": "25",
+      "maximum_iterations": "128",
+      "maximum_impact_gap_m": "2.976470318386687e-06",
+      "analytic_impact_position_max_error_m": "1.6048550843139609e-07"
+    },
+    {
+      "adversarial_cases": "22",
+      "endpoint_only_negative_controls": "21",
+      "tangent_outward_departures": "12",
+      "rejected_invalid_or_exhausted": "7"
+    },
+    {
+      "velocity_queries": "1008",
+      "velocity_failures": "0",
+      "solid_interior_velocity_rejected": "26",
+      "velocity_max_suboptimality_m_per_s": "2.0925863039700232e-05"
+    },
+    {
+      "floor_velocity_regressions": "4",
+      "floor_nominal_root_negative_controls": "4"
+    },
+    {
+      "deforming_sweeps": "518",
+      "deforming_misses": "0",
+      "deforming_FP64_oracle_unresolved": "0",
+      "deforming_FP32_sweep_unresolved": "129"
+    },
+    {
+      "static_segment_host_probe_pass": "1"
+    },
+    {
+      "refinement_group": "1",
+      "cases": "781",
+      "baseline_unresolved": "25",
+      "new_unresolved": "0",
+      "newly_resolved": "25",
+      "regressions": "0",
+      "new_clear": "404",
+      "new_contact": "377",
+      "false_clear": "0",
+      "false_contact": "0",
+      "oracle_unresolved": "0",
+      "acceptance_failures": "0",
+      "maximum_positive_gap_m": "2.8526957342178694e-07",
+      "minimum_gap_m": "0",
+      "maximum_geometry_queries": "6"
+    },
+    {
+      "refinement_group": "2",
+      "cases": "518",
+      "baseline_unresolved": "129",
+      "new_unresolved": "0",
+      "newly_resolved": "129",
+      "regressions": "0",
+      "new_clear": "99",
+      "new_contact": "419",
+      "false_clear": "0",
+      "false_contact": "0",
+      "oracle_unresolved": "0",
+      "acceptance_failures": "0",
+      "maximum_positive_gap_m": "5.244120177549938e-07",
+      "minimum_gap_m": "0",
+      "maximum_geometry_queries": "80"
+    },
+    {
+      "baseline_stop_group": "1",
+      "other": "0",
+      "poor_plane_witness_disagreement": "20",
+      "rounded_time_stagnation": "1",
+      "outer_iteration_exhaustion": "4"
+    },
+    {
+      "baseline_stop_group": "2",
+      "other": "0",
+      "poor_plane_witness_disagreement": "32",
+      "rounded_time_stagnation": "77",
+      "outer_iteration_exhaustion": "20"
+    },
+    {
+      "maximum_baseline_unresolved_gap_m": "0.0017475485801696777",
+      "maximum_local_plane_certificate_improvement_m": "4.4256914407014847e-05"
+    },
+    {
+      "controls": "328",
+      "control_failures": "0",
+      "clear": "152",
+      "contact": "166",
+      "explicit_unresolved": "10",
+      "oracle_unresolved": "0",
+      "interval_oracle_unresolved": "60",
+      "analytic_oracle_closures": "60",
+      "false_clear": "0",
+      "false_contact": "0",
+      "contact_acceptance_failures": "0",
+      "maximum_contact_gap_m": "2.0116567611694336e-07",
+      "minimum_contact_gap_m": "0",
+      "maximum_geometry_queries": "11",
+      "inherited_special_controls": "20",
+      "inherited_failures": "0",
+      "endpoint_negative_controls": "20",
+      "tangent_outward_controls": "40",
+      "near_zero_closing_controls": "40",
+      "cancellation_grazing_controls": "116",
+      "signed_tolerance_controls": "12",
+      "signed_tolerance_expected_rejections": "6",
+      "signed_tolerance_negative_controls": "6"
+    },
+    {
+      "outward_certificate_checks": "40000",
+      "certificate_failures": "0",
+      "maximum_bound_excess_m": "0",
+      "witness_upper_bound_checks": "40000",
+      "witness_upper_bound_failures": "0",
+      "maximum_witness_deficit_m": "0"
+    },
+    {
+      "qualification_pass": "1"
+    }
+  ],
+  "production_geometry_metrics": [
+    {
+      "sweep_refinement_controls": "328",
+      "control_failures": "0",
+      "clear": "152",
+      "contact": "166",
+      "explicit_unresolved": "10",
+      "oracle_unresolved": "0",
+      "interval_oracle_unresolved": "60",
+      "analytic_oracle_closures": "60",
+      "false_clear": "0",
+      "false_contact": "0",
+      "contact_acceptance_failures": "0",
+      "maximum_contact_gap_m": "2.0116567611694336e-07",
+      "minimum_contact_gap_m": "0",
+      "maximum_geometry_queries": "11",
+      "endpoint_negative_controls": "20",
+      "tangent_outward_controls": "40",
+      "near_zero_closing_controls": "40",
+      "cancellation_grazing_controls": "116",
+      "signed_tolerance_controls": "12",
+      "signed_tolerance_expected_rejections": "6",
+      "signed_tolerance_negative_controls": "6"
+    },
+    {
+      "sweep_refinement_outward_certificate_checks": "40000",
+      "certificate_failures": "0",
+      "maximum_bound_excess_m": "0",
+      "witness_upper_bound_checks": "40000",
+      "witness_upper_bound_failures": "0",
+      "maximum_witness_deficit_m": "0"
+    },
+    {
+      "backend": "CPU_shared_FP32_segment_geometry",
+      "native_Metal_execution": "NOT_RUN",
+      "full_scene": "NOT_QUALIFIED"
+    },
+    {
+      "samples": "12108",
+      "sample_failures": "0",
+      "signed_gap_max_error_m": "1.6158793694764917e-07",
+      "witness_max_suboptimality_m": "1.4420676400228594e-07"
+    },
+    {
+      "clearance_certificates": "12108",
+      "certificate_failures": "0",
+      "maximum_lower_bound_excess_m": "0"
+    },
+    {
+      "sweeps": "781",
+      "sweep_failures": "0",
+      "certified_clear": "404",
+      "conservative_contacts": "377",
+      "explicit_unresolved": "0",
+      "maximum_iterations": "6",
+      "maximum_impact_gap_m": "2.8526957342178694e-07",
+      "analytic_impact_position_max_error_m": "1.1280179190054086e-07"
+    },
+    {
+      "adversarial_cases": "22",
+      "endpoint_only_negative_controls": "21",
+      "tangent_outward_departures": "12",
+      "rejected_invalid_or_exhausted": "7"
+    },
+    {
+      "velocity_queries": "1008",
+      "velocity_failures": "0",
+      "solid_interior_velocity_rejected": "26",
+      "velocity_max_suboptimality_m_per_s": "2.0925863039700232e-05"
+    },
+    {
+      "floor_velocity_regressions": "4",
+      "floor_nominal_root_negative_controls": "4"
+    },
+    {
+      "deforming_sweeps": "518",
+      "deforming_misses": "0",
+      "deforming_FP64_oracle_unresolved": "0",
+      "deforming_FP32_sweep_unresolved": "0"
+    },
+    {
+      "static_segment_host_probe_pass": "1"
+    }
+  ],
+  "production_velocity_metrics": [
+    {
+      "case": "free_equal",
+      "valid": "1",
+      "status": "1",
+      "impulse_Ns": "0.5",
+      "velocity_error_m_s": "0",
+      "support_error_Ns": "0",
+      "kinetic_delta_J": "-0.5",
+      "passed": "1"
+    },
+    {
+      "case": "free_unequal",
+      "valid": "1",
+      "status": "1",
+      "impulse_Ns": "0.66666668653488159",
+      "velocity_error_m_s": "3.973642970223068e-08",
+      "support_error_Ns": "0",
+      "kinetic_delta_J": "-0.66666666666666607",
+      "passed": "1"
+    },
+    {
+      "case": "inactive",
+      "valid": "1",
+      "status": "0",
+      "impulse_Ns": "0",
+      "velocity_error_m_s": "0",
+      "support_error_Ns": "0",
+      "kinetic_delta_J": "0",
+      "passed": "1"
+    },
+    {
+      "case": "zero",
+      "valid": "1",
+      "status": "0",
+      "impulse_Ns": "0",
+      "velocity_error_m_s": "0",
+      "support_error_Ns": "0",
+      "kinetic_delta_J": "0",
+      "passed": "1"
+    },
+    {
+      "case": "pinned_first",
+      "valid": "1",
+      "status": "1",
+      "impulse_Ns": "0.5",
+      "velocity_error_m_s": "0",
+      "support_error_Ns": "0",
+      "kinetic_delta_J": "-0.25",
+      "passed": "1"
+    },
+    {
+      "case": "pinned_both",
+      "valid": "1",
+      "status": "0",
+      "impulse_Ns": "0",
+      "velocity_error_m_s": "0",
+      "support_error_Ns": "0",
+      "kinetic_delta_J": "0",
+      "passed": "1"
+    },
+    {
+      "case": "friction_limited",
+      "valid": "1",
+      "status": "2",
+      "impulse_Ns": "9.9999999747524271e-07",
+      "velocity_error_m_s": "5.0926303174492205e-09",
+      "support_error_Ns": "0",
+      "kinetic_delta_J": "-1.2503916384527968e-06",
+      "passed": "1"
+    },
+    {
+      "case": "friction_zero_cap",
+      "valid": "1",
+      "status": "2",
+      "impulse_Ns": "0",
+      "velocity_error_m_s": "0",
+      "support_error_Ns": "0",
+      "kinetic_delta_J": "0",
+      "passed": "1"
+    },
+    {
+      "case": "friction_stop",
+      "valid": "1",
+      "status": "1",
+      "impulse_Ns": "0.30769231915473938",
+      "velocity_error_m_s": "5.731215835247383e-08",
+      "support_error_Ns": "0",
+      "kinetic_delta_J": "-0.19230769207844334",
+      "passed": "1"
+    },
+    {
+      "case": "floor_slack",
+      "valid": "1",
+      "status": "1",
+      "impulse_Ns": "0.0020000000949949026",
+      "velocity_error_m_s": "1.9073486328125e-06",
+      "support_error_Ns": "0",
+      "kinetic_delta_J": "-0.024999997138976961",
+      "passed": "1"
+    },
+    {
+      "case": "floor_slack_exhausted",
+      "valid": "1",
+      "status": "1",
+      "impulse_Ns": "2",
+      "velocity_error_m_s": "0",
+      "support_error_Ns": "1.6593933116482162e-08",
+      "kinetic_delta_J": "-5.0000999999999998",
+      "passed": "1"
+    },
+    {
+      "case": "floor_initial_projection",
+      "valid": "1",
+      "status": "1",
+      "impulse_Ns": "0.30769231915473938",
+      "velocity_error_m_s": "5.731215835247383e-08",
+      "support_error_Ns": "2.384185793236071e-08",
+      "kinetic_delta_J": "-1.1923076920784434",
+      "passed": "1"
+    },
+    {
+      "case": "floor_tangent",
+      "valid": "1",
+      "status": "1",
+      "impulse_Ns": "0.30769231915473938",
+      "velocity_error_m_s": "5.731215835247383e-08",
+      "support_error_Ns": "0",
+      "kinetic_delta_J": "-0.19230769207844334",
+      "passed": "1"
+    },
+    {
+      "case": "zero_gradient_support",
+      "valid": "1",
+      "status": "0",
+      "impulse_Ns": "0",
+      "velocity_error_m_s": "0",
+      "support_error_Ns": "1.4901161138336505e-09",
+      "kinetic_delta_J": "-0.10000000000000001",
+      "passed": "1"
+    },
+    {
+      "case": "normal_energy_regression",
+      "valid": "1",
+      "status": "1",
+      "impulse_Ns": "0.0015882781008258462",
+      "velocity_error_m_s": "1.8914678080790806e-06",
+      "support_error_Ns": "0",
+      "kinetic_delta_J": "-0.015247042758687053",
+      "passed": "1"
+    },
+    {
+      "case": "friction_energy_regression",
+      "valid": "1",
+      "status": "1",
+      "impulse_Ns": "0.0015405381564050913",
+      "velocity_error_m_s": "1.5105617450217323e-06",
+      "support_error_Ns": "0",
+      "kinetic_delta_J": "-0.015782317903335209",
+      "passed": "1"
+    },
+    {
+      "negative_control": "normal_energy_regression",
+      "old_kinetic_gain_J": "0.016237319852789915",
+      "rejected_by_energy_oracle": "1"
+    },
+    {
+      "negative_control": "friction_energy_regression",
+      "old_kinetic_gain_J": "0.018236515197309563",
+      "rejected_by_energy_oracle": "1"
+    },
+    {
+      "cases": "16",
+      "invalid_controls": "10",
+      "old_algebra_controls": "2",
+      "exact_replays": "2",
+      "maximum_velocity_error_m_s": "1.9073486328125e-06",
+      "maximum_impulse_error_Ns": "1.986821485111534e-08",
+      "maximum_support_error_Ns": "2.384185793236071e-08",
+      "maximum_momentum_error_Ns": "2.3888378565493727e-08",
+      "maximum_kinetic_gain_J": "0",
+      "backend": "CPU_FP32",
+      "result": "PASS"
+    }
+  ],
+  "benchmark_metrics": [
+    {
+      "repeat": "0",
+      "old_seconds": "0.013630333",
+      "new_seconds": "0.076626833000000005",
+      "old_checksum": "2600475806056",
+      "new_checksum": "2531238605341"
+    },
+    {
+      "repeat": "1",
+      "old_seconds": "0.0138055",
+      "new_seconds": "0.077301124999999998",
+      "old_checksum": "2600475806056",
+      "new_checksum": "2531238605341"
+    },
+    {
+      "repeat": "2",
+      "old_seconds": "0.014696875",
+      "new_seconds": "0.075374374999999993",
+      "old_checksum": "2600475806056",
+      "new_checksum": "2531238605341"
+    },
+    {
+      "repeat": "3",
+      "old_seconds": "0.014445833",
+      "new_seconds": "0.076756667000000001",
+      "old_checksum": "2600475806056",
+      "new_checksum": "2531238605341"
+    },
+    {
+      "repeat": "4",
+      "old_seconds": "0.015039416",
+      "new_seconds": "0.084842625000000005",
+      "old_checksum": "2600475806056",
+      "new_checksum": "2531238605341"
+    },
+    {
+      "seeded_queries": "1299",
+      "sequential_repeats": "5",
+      "median_old_seconds": "0.014445833",
+      "median_new_seconds": "0.076756667000000001",
+      "new_to_old_walltime_ratio": "5.3134123175866703",
+      "checksum_old": "13002379030280",
+      "checksum_new": "12656193026705",
+      "FP64_oracle_and_capture_in_timing": "0",
+      "native_throughput_qualified": "0"
+    }
+  ],
+  "benchmark_limit": "Five sequential repeats of exactly 1299 independent primitives, checksum consumed; excludes oracle/capture. CPU walltime under concurrent host work, not native solver throughput.",
+  "files": [
+    {
+      "path": "include/numi/static_contact_geometry.h",
+      "sha256": "7d288795b0e382ee50baf9ae407e3ef97803a8c40152a09606afb7f2133908a4",
+      "bytes": 11444
+    },
+    {
+      "path": "include/numi/static_segment_geometry.h",
+      "sha256": "714281e8c86b7afcf6b8ce22d78981ecd13a89aefae3d2639e4e11d29a1f09f6",
+      "bytes": 38132
+    },
+    {
+      "path": "include/numi/static_velocity_contact.h",
+      "sha256": "54cfb932e12df1b9e3153c6dbc16d2f8948ab862cf1ffe4ac38130f548dde65c",
+      "bytes": 10259
+    },
+    {
+      "path": "tools/static_segment_geometry.cpp",
+      "sha256": "6c979c0e0441538a5ce2ec366f6e77844e05958832ff8685f57352246e6bce38",
+      "bytes": 43623
+    },
+    {
+      "path": "tools/static_velocity_contact.cpp",
+      "sha256": "6eb1c5c678fa2cdad2732e899d4640c26e63ae145ab1cb943d099bc83d9289c8",
+      "bytes": 12075
+    },
+    {
+      "path": "build/numi-solver-static-segment",
+      "sha256": "84028da39f364e615d891a1e7c911136d8091236161de063030fbfe9b5f24f29",
+      "bytes": 122344
+    },
+    {
+      "path": "build/numi-solver-static-velocity",
+      "sha256": "c4a552e269694efcc11884f49ea06c1452118e6e6084862a52da7747e6ed87b6",
+      "bytes": 56024
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/baseline-source.json",
+      "sha256": "19c7c6ea1c6fc8494f05801312c06788f64e43a0a0bf7616d73250c8071578d0",
+      "bytes": 420
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/baseline/include/numi/static_contact_geometry.h",
+      "sha256": "7d288795b0e382ee50baf9ae407e3ef97803a8c40152a09606afb7f2133908a4",
+      "bytes": 11444
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/baseline/include/numi/static_segment_geometry.h",
+      "sha256": "fabde362d99c3cf98d545eaa387a64d3b2d2203c1018229e934701bde6786a0f",
+      "bytes": 29297
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/baseline/tools/static_segment_geometry.cpp",
+      "sha256": "3897e555210f2c1e0b1e7c732763cf306e693eecddd9eb2462274408b2ffaac3",
+      "bytes": 27925
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/instrumented/include/numi/static_contact_geometry.h",
+      "sha256": "7d288795b0e382ee50baf9ae407e3ef97803a8c40152a09606afb7f2133908a4",
+      "bytes": 11444
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/instrumented/include/numi/static_segment_geometry.h",
+      "sha256": "d80c61531e3e39096c5e12c47f680903cd25b24799eece528223f46b829cd7be",
+      "bytes": 30189
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/instrumented_tool.cpp",
+      "sha256": "b3aeb4b9636f85ac063bb05374dc6dd3800a724a727dcb6d7141aa37f033431f",
+      "bytes": 27993
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/refined_cast.h",
+      "sha256": "4b05675fb96ed1f92f038301ec80e63320c41edfc92a42a14ca1707746aea097",
+      "bytes": 12446
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/compare.cpp",
+      "sha256": "64c42cda31e988d9dd07cb1d8db648bc1a7d504df939f957ce3456978f34b197",
+      "bytes": 4349
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/qualification.cpp",
+      "sha256": "2f1ede3a9a9c40b74fd846c22f3e93185441f7aade4ef57a6ad2e8e785bdb2fd",
+      "bytes": 16711
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/qualification",
+      "sha256": "5651336b50277178972709215f7a797e8c6d2f4a1b1e665a27552d5550b5834e",
+      "bytes": 158576
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/qualification.log",
+      "sha256": "1efd16fdeac5a0b9218f2e6b11c7bb108423d0d3b31c429f03249b2055d004da",
+      "bytes": 2734
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/comparison.csv",
+      "sha256": "5ecdd88e9b82aa5473c070a3c1f917e4a50d278c78555f3af06afff82d4f49cd",
+      "bytes": 82812
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/controls.csv",
+      "sha256": "c641355246010e8418101fabadb75f7977066f865cfccc11fbbdcd9ff829af81",
+      "bytes": 18749
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/seeded-inputs.json",
+      "sha256": "beed3ec5fd15de28f42f554c05bb44fa057f409ff7b3456d86c49328f208d5ee",
+      "bytes": 779691
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/baseline_cast_only.h",
+      "sha256": "76f210cf49c36a8856169ed53999e61384a28e43ec3115d16dfe1e0d671900cb",
+      "bytes": 4839
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/benchmark_corpus.h",
+      "sha256": "b6b7cbbcd839da660ddd539cd96e48c2a27aad2ac63603cab12b81da6e561ecf",
+      "bytes": 428875
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/benchmark.cpp",
+      "sha256": "0d2450dbc5e4a2fa64f245a5d1abe7306810ef1b01813f2876b2718dbaeafe65",
+      "bytes": 1739
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/benchmark",
+      "sha256": "46237343154c738de22da1a58635ef74aca1790cea77cfa42609aa464b0aca69",
+      "bytes": 137496
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/benchmark.log",
+      "sha256": "16c9b21469aa065fe753bb363cd13b1b4d0122daf9625b3f773f6c48c743bb58",
+      "bytes": 877
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/production-build.log",
+      "sha256": "9d264490dc3f4e8783bca21f7d0fccc84efe06530a9e455a2c59bb7306506c5f",
+      "bytes": 160
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/production-static-segment.log",
+      "sha256": "7b4a827e7dc8599732aaae22c59e402f5b1c737cee6238bf2e4dfb025b7e74cb",
+      "bytes": 1740
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/production-static-velocity.log",
+      "sha256": "89eb6d8833fb459bbbe40478856221da9d36561b14b4a4c734da23e40e70cb01",
+      "bytes": 3030
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/production-ctest.log",
+      "sha256": "a056d014036247f5e58cc7d2096a171812b7c2079f7c58c7b3645c355bf24c84",
+      "bytes": 688
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/ProductionSmoke.metal",
+      "sha256": "87d4693c5dcab388c3f1f9546daf8903599fb563f788478aef39417f2b32a468",
+      "bytes": 590
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/ProductionSmoke.air",
+      "sha256": "f1d256017067d4834c29e0fb45abab4dc05ebc4675174c3f9a0a6a2ae8576285",
+      "bytes": 23392
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/production-metal-compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/ccd-refinement.patch",
+      "sha256": "0b6dc6943e6ca1e2a8dae83746d06fde9754dd8dbdc6a4800d3d9eb50738f3e0",
+      "bytes": 38914
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/final/include/numi/static_contact_geometry.h",
+      "sha256": "7d288795b0e382ee50baf9ae407e3ef97803a8c40152a09606afb7f2133908a4",
+      "bytes": 11444
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/final/include/numi/static_segment_geometry.h",
+      "sha256": "714281e8c86b7afcf6b8ce22d78981ecd13a89aefae3d2639e4e11d29a1f09f6",
+      "bytes": 38132
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/final/include/numi/static_velocity_contact.h",
+      "sha256": "54cfb932e12df1b9e3153c6dbc16d2f8948ab862cf1ffe4ac38130f548dde65c",
+      "bytes": 10259
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/final/tools/static_segment_geometry.cpp",
+      "sha256": "6c979c0e0441538a5ce2ec366f6e77844e05958832ff8685f57352246e6bce38",
+      "bytes": 43623
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/final/tools/static_velocity_contact.cpp",
+      "sha256": "6eb1c5c678fa2cdad2732e899d4640c26e63ae145ab1cb943d099bc83d9289c8",
+      "bytes": 12075
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/final/numi-solver-static-segment",
+      "sha256": "84028da39f364e615d891a1e7c911136d8091236161de063030fbfe9b5f24f29",
+      "bytes": 122344
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/final/numi-solver-static-velocity",
+      "sha256": "c4a552e269694efcc11884f49ea06c1452118e6e6084862a52da7747e6ed87b6",
+      "bytes": 56024
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/failed-oracle-default.cpp",
+      "sha256": "9b61aeae36503ce19c652a28a476652fa5a024dd4f669c3d20435d74fbf12cd5",
+      "bytes": 43566
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/failed-oracle-default",
+      "sha256": "fd4feeb603f21a6d2dad0475c8eb9e4fb7160a6480172864e7e0d2f003e64004",
+      "bytes": 122344
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/failed-oracle-default.log",
+      "sha256": "bbb98213f33066c87acf0b9349e56d90b21f37eb1ea3e568bbc9ab14bca9e64f",
+      "bytes": 1800
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/failed-oracle-default.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "bytes": 2
+    },
+    {
+      "path": "build/whole-yarn-ccd-refinement/ccd-refinement-receipt-superseded-007f.json",
+      "sha256": "839adccd8e45fbb7b3fe52523f5396ca1983e3290ccbba5a551e424c49042532",
+      "bytes": 24577
+    }
+  ],
+  "supersedes": {
+    "receipt_path": "build/whole-yarn-ccd-refinement/ccd-refinement-receipt-superseded-007f.json",
+    "receipt_sha256": "839adccd8e45fbb7b3fe52523f5396ca1983e3290ccbba5a551e424c49042532",
+    "reason": "Independent review exposed unsigned-to-signed support admission when radius <= custom contact tolerance, plus the missing complete-scene lower arrival gate. Final receipt binds the signed repair."
+  },
+  "oracle_test_failure_archive": {
+    "nature": "Source-bound replay of the failed custom-tolerance control oracle that incorrectly used fixed 1e-7; production cast already used its caller tolerance. Corrected oracle uses per-call tolerance; physical +/-2e-6 arrival was not relaxed.",
+    "source": "build/whole-yarn-ccd-refinement/failed-oracle-default.cpp",
+    "binary": "build/whole-yarn-ccd-refinement/failed-oracle-default",
+    "log": "build/whole-yarn-ccd-refinement/failed-oracle-default.log",
+    "actual_exit_code": 1,
+    "false_clear_counter_from_wrong_oracle": 2,
+    "replay_not_original_overwritten_log": true
+  },
+  "retained_production_binaries": [
+    "build/whole-yarn-ccd-refinement/final/numi-solver-static-segment",
+    "build/whole-yarn-ccd-refinement/final/numi-solver-static-velocity"
+  ],
+  "production_source_sha256": {
+    "include/numi/static_contact_geometry.h": "7d288795b0e382ee50baf9ae407e3ef97803a8c40152a09606afb7f2133908a4",
+    "include/numi/static_segment_geometry.h": "714281e8c86b7afcf6b8ce22d78981ecd13a89aefae3d2639e4e11d29a1f09f6",
+    "include/numi/static_velocity_contact.h": "54cfb932e12df1b9e3153c6dbc16d2f8948ab862cf1ffe4ac38130f548dde65c",
+    "tools/static_segment_geometry.cpp": "6c979c0e0441538a5ce2ec366f6e77844e05958832ff8685f57352246e6bce38",
+    "tools/static_velocity_contact.cpp": "6eb1c5c678fa2cdad2732e899d4640c26e63ae145ab1cb943d099bc83d9289c8"
+  }
+}

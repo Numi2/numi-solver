@@ -36,6 +36,8 @@ inline float numiSegmentUp(float x) {
 }
 #endif
 
+// clearanceLowerBound is a signed supporting-plane certificate; gap remains
+// the closest signed geometric sample and may be tighter than the certificate.
 struct NumiStaticSegmentSample {
     float gap, parameter, clearanceLowerBound;
     NumiStaticVec3 normal;
@@ -112,15 +114,32 @@ inline float numiStaticSegmentUpperLength(NumiStaticVec3 n) {
     }
     return numiSegmentUp(numiStaticSqrt(sum));
 }
+// A signed supporting-plane bound needs the denominator rounded in opposite
+// directions on either side of the plane. Using an upper norm with negative
+// projection would make the lower bound unsafe.
+inline float numiStaticSegmentLowerLength(NumiStaticVec3 n) {
+    float sum=0;
+    for(unsigned axis=0;axis<3;++axis) {
+        float component=numiStaticComponent(n,axis);
+        if(component!=0){
+            float square=numiStaticMax(0,numiSegmentDown(component*component));
+            sum=numiStaticMax(0,numiSegmentDown(sum+square));
+        }
+    }
+    return numiStaticMax(0,numiSegmentDown(numiStaticSqrt(sum)));
+}
+inline float numiStaticSegmentPlaneClearanceBound(float projection,NumiStaticVec3 normal,float radius) {
+    if(!numiStaticFinite3(normal)||(normal.x==0&&normal.y==0&&normal.z==0))return -INFINITY;
+    float magnitude=projection<0?numiStaticSegmentLowerLength(normal):numiStaticSegmentUpperLength(normal);
+    if(!numiStaticFinite(projection)||!numiStaticFinite(magnitude)||!(magnitude>0))return -INFINITY;
+    return numiSegmentDown(numiSegmentDown(projection/magnitude)-radius);
+}
 inline float numiStaticSegmentBoxClearanceBound(NumiStaticBox box,
     NumiStaticVec3 lowerA,NumiStaticVec3 upperA,NumiStaticVec3 lowerB,NumiStaticVec3 upperB,
     NumiStaticVec3 normal,float radius) {
-    float magnitude=numiStaticSegmentUpperLength(normal);
     float projection=numiStaticMin(numiStaticSegmentLowerPlane(box,lowerA,upperA,normal),
                                   numiStaticSegmentLowerPlane(box,lowerB,upperB,normal));
-    if(!numiStaticFinite(magnitude)||!(magnitude>0)||!numiStaticFinite(projection))return -INFINITY;
-    float distance=projection>0?numiSegmentDown(projection/magnitude):0;
-    return numiSegmentDown(distance-radius);
+    return numiStaticSegmentPlaneClearanceBound(projection,normal,radius);
 }
 inline float numiStaticSegmentFloorClearanceBound(NumiStaticVec3 lowerA,NumiStaticVec3 lowerB,
                                                  float radius) {
@@ -225,66 +244,183 @@ inline float numiStaticSegmentUpperMotion(NumiStaticVec3 start,NumiStaticVec3 en
     }
     return numiStaticSegmentUpperLength(bound);
 }
-inline NumiStaticSegmentHit numiStaticSegmentSceneCast(NumiStaticVec3 a0,NumiStaticVec3 b0,
-    NumiStaticVec3 a1,NumiStaticVec3 b1,float radius,float contactTolerance=1e-7f,unsigned maximumIterations=128) {
+// Sweep certificates use a single supporting plane over the complete four-
+// endpoint time/u hull. Any finite normal is conservative; a feature-local
+// candidate avoids world-space closest-point cancellation on thin rounded edges.
+// Contact requires a complete signed scene lower bound and a witness upper
+// bound within +/-2 um, separate from the caller contactTolerance.
+struct NumiStaticSegmentSweepTimeSample {float time;NumiStaticVec3 a,b;NumiStaticSegmentSample box;float floor;};
+inline float numiStaticSegmentSweepBlendLower(float first,float second,float time) {
+    if(time==0)return first;if(time==1)return second;
+    float weight=first<0?numiSegmentUp(1-time):numiSegmentDown(1-time);
+    return numiSegmentDown(numiSegmentDown(first*weight)+numiSegmentDown(second*time));
+}
+inline float numiStaticSegmentSweepPlaneAt(NumiStaticBox box,NumiStaticVec3 start,NumiStaticVec3 end,
+                               NumiStaticVec3 normal,float time) {
+    return numiStaticSegmentSweepBlendLower(numiStaticSegmentLowerPlane(box,start,start,normal),
+                                numiStaticSegmentLowerPlane(box,end,end,normal),time);
+}
+inline float numiStaticSegmentSweepHullBound(NumiStaticVec3 a0,NumiStaticVec3 b0,NumiStaticVec3 a1,NumiStaticVec3 b1,
+                                  NumiStaticVec3 normal,float radius,float left,float right) {
+    auto box=numiStaticBench();
+    float projection=numiStaticMin(numiStaticMin(numiStaticSegmentSweepPlaneAt(box,a0,a1,normal,left),numiStaticSegmentSweepPlaneAt(box,b0,b1,normal,left)),
+        numiStaticMin(numiStaticSegmentSweepPlaneAt(box,a0,a1,normal,right),numiStaticSegmentSweepPlaneAt(box,b0,b1,normal,right)));
+    return numiStaticSegmentPlaneClearanceBound(projection,normal,radius);
+}
+inline float numiStaticSegmentSweepFloorAt(NumiStaticVec3 start,NumiStaticVec3 end,float radius,float time) {
+    float first=numiSegmentDown(numiSegmentDown(start.z-numiStaticFloorHeight())-radius);
+    float second=numiSegmentDown(numiSegmentDown(end.z-numiStaticFloorHeight())-radius);
+    return numiStaticSegmentSweepBlendLower(first,second,time);
+}
+inline float numiStaticSegmentSweepFloorHull(NumiStaticVec3 a0,NumiStaticVec3 b0,NumiStaticVec3 a1,NumiStaticVec3 b1,
+                                  float radius,float left,float right) {
+    return numiStaticMin(numiStaticMin(numiStaticSegmentSweepFloorAt(a0,a1,radius,left),numiStaticSegmentSweepFloorAt(b0,b1,radius,left)),
+        numiStaticMin(numiStaticSegmentSweepFloorAt(a0,a1,radius,right),numiStaticSegmentSweepFloorAt(b0,b1,radius,right)));
+}
+inline NumiStaticVec3 numiStaticSegmentSweepCross(NumiStaticVec3 a,NumiStaticVec3 b) {
+    return {numiStaticFma(a.y,b.z,-a.z*b.y),numiStaticFma(a.z,b.x,-a.x*b.z),numiStaticFma(a.x,b.y,-a.y*b.x)};
+}
+inline NumiStaticVec3 numiStaticSegmentSweepFeaturePlane(NUMI_SEGMENT_THREAD const NumiStaticSegmentSweepTimeSample& sample) {
+    auto box=numiStaticBench();auto delta=numiStaticSub(sample.b,sample.a);
+    auto point=numiStaticSegmentPoint(sample.a,delta,sample.box.parameter);
+    NumiStaticVec3 offset{},slope{};unsigned axes[3]={0,0,0},count=0;
+    for(unsigned axis=0;axis<3;++axis){float p=numiStaticComponent(point,axis);
+        if(p<numiStaticComponent(box.minimum,axis)||p>numiStaticComponent(box.maximum,axis)) {
+            float boundary=numiStaticComponent(p<numiStaticComponent(box.minimum,axis)?box.minimum:box.maximum,axis);
+            float o=numiStaticComponent(sample.a,axis)-boundary,d=numiStaticComponent(delta,axis);
+            if(axis==0){offset.x=o;slope.x=d;}if(axis==1){offset.y=o;slope.y=d;}if(axis==2){offset.z=o;slope.z=d;}
+            axes[count++]=axis;
+        }
+    }
+    if(count==2) {
+        unsigned i=axes[0],j=axes[1];NumiStaticVec3 n{};
+        float ni=numiStaticComponent(slope,j),nj=-numiStaticComponent(slope,i);
+        if(i==0)n.x=ni;if(i==1)n.y=ni;if(i==2)n.z=ni;
+        if(j==0)n.x=nj;if(j==1)n.y=nj;if(j==2)n.z=nj;
+        if(numiStaticDot(n,offset)<0)n=numiStaticScale(n,-1);
+        if(numiStaticDot(n,n)>0&&numiStaticFinite3(n))return n;
+    }
+    if(count==3) {
+        auto n=numiStaticSegmentSweepCross(slope,numiStaticSegmentSweepCross(offset,slope));
+        if(numiStaticDot(n,n)>0&&numiStaticFinite3(n))return n;
+    }
+    return sample.box.normal;
+}
+inline NumiStaticSegmentSweepTimeSample numiStaticSegmentSweepSample(NumiStaticVec3 a0,NumiStaticVec3 b0,NumiStaticVec3 a1,NumiStaticVec3 b1,float r,float t) {
+    auto a=numiStaticSegmentInterpolate(a0,a1,t).point,b=numiStaticSegmentInterpolate(b0,b1,t).point;
+    return {t,a,b,numiStaticSegmentBoxSample(numiStaticBench(),a,b,r),numiStaticMin(a.z,b.z)-(numiStaticFloorHeight()+r)};
+}
+
+inline float numiStaticSegmentSweepBlendUpper(float first,float second,float time) {
+    return -numiStaticSegmentSweepBlendLower(-first,-second,time);
+}
+inline float numiStaticSegmentSweepWitnessGapUpper(NumiStaticVec3 a0,NumiStaticVec3 b0,NumiStaticVec3 a1,NumiStaticVec3 b1,
+                                       float radius,float time,float parameter,bool floor) {
+    float sum=0,floorGap=0;
+    for(unsigned axis=0;axis<3;++axis){
+        float al=numiStaticSegmentSweepBlendLower(numiStaticComponent(a0,axis),numiStaticComponent(a1,axis),time);
+        float au=numiStaticSegmentSweepBlendUpper(numiStaticComponent(a0,axis),numiStaticComponent(a1,axis),time);
+        float bl=numiStaticSegmentSweepBlendLower(numiStaticComponent(b0,axis),numiStaticComponent(b1,axis),time);
+        float bu=numiStaticSegmentSweepBlendUpper(numiStaticComponent(b0,axis),numiStaticComponent(b1,axis),time);
+        float lower=numiStaticSegmentSweepBlendLower(al,bl,parameter),upper=numiStaticSegmentSweepBlendUpper(au,bu,parameter);
+        if(axis==2)floorGap=numiSegmentUp(numiSegmentUp(upper-numiStaticFloorHeight())-radius);
+        if(floor)continue;
+        auto box=numiStaticBench();
+        float d=numiStaticMax(numiSegmentUp(numiStaticComponent(box.minimum,axis)-lower),
+                             numiSegmentUp(upper-numiStaticComponent(box.maximum,axis)));
+        d=numiStaticMax(0,d);
+        sum=numiSegmentUp(sum+numiSegmentUp(d*d));
+    }
+    return floor?floorGap:numiSegmentUp(numiSegmentUp(numiStaticSqrt(sum))-radius);
+}
+inline NumiStaticSegmentHit numiStaticSegmentSceneCast(NumiStaticVec3 a0,NumiStaticVec3 b0,NumiStaticVec3 a1,NumiStaticVec3 b1,
+    float radius,float contactTolerance=1e-7f,unsigned maximumIterations=128) {
     NumiStaticSegmentHit hit{1,0,{0,0,0},0,0,0,false,false,NumiStaticSegmentInvalid};
     if(!numiStaticFinite(contactTolerance)||contactTolerance<0||maximumIterations==0||
        !numiStaticValid(numiStaticBench(),a1,radius)||!numiStaticValid(numiStaticBench(),b1,radius))return hit;
-    auto initialBox=numiStaticSegmentBoxSample(numiStaticBench(),a0,b0,radius);
-    auto initial=numiStaticSegmentSceneSample(a0,b0,radius);
-    if(!initial.valid||!initialBox.valid)return hit;
-    hit.parameter=initial.parameter;hit.normal=initial.normal;hit.gap=initial.gap;hit.feature=initial.feature;
-    if(initial.gap< -contactTolerance){hit.time=0;hit.status=NumiStaticSegmentInitialPenetration;return hit;}
-    // Every point of a moving segment lies in the convex hull of these four
-    // endpoints. A single certified separating plane therefore proves this
-    // collider cannot be crossed, including tangent/outward existing support.
-    float boxHullBound=numiStaticMin(
-        numiStaticSegmentBoxClearanceBound(numiStaticBench(),a0,a0,b0,b0,initialBox.normal,radius),
-        numiStaticSegmentBoxClearanceBound(numiStaticBench(),a1,a1,b1,b1,initialBox.normal,radius));
-    float floorHullBound=numiStaticMin(numiStaticSegmentFloorClearanceBound(a0,b0,radius),
-                                      numiStaticSegmentFloorClearanceBound(a1,b1,radius));
-    if(!numiStaticFinite(boxHullBound)||!numiStaticFinite(floorHullBound))return hit;
+    auto first=numiStaticSegmentSweepSample(a0,b0,a1,b1,radius,0);
+    if(!first.box.valid||!numiStaticFinite(first.floor))return hit;
+    float initialGap=numiStaticMin(first.box.gap,first.floor);
+    bool initialFloor=first.floor<first.box.gap;
+    hit.gap=initialGap;hit.parameter=initialFloor?(first.b.z<first.a.z?1:0):first.box.parameter;
+    hit.normal=initialFloor?NumiStaticVec3{0,0,1}:first.box.normal;hit.feature=initialFloor?5:first.box.feature;
+    if(initialGap< -contactTolerance){hit.time=0;hit.gap=initialGap;hit.status=NumiStaticSegmentInitialPenetration;return hit;}
+    float boxHullBound=numiStaticSegmentSweepHullBound(a0,b0,a1,b1,first.box.normal,radius,0,1);
+    float floorHullBound=numiStaticMin(numiStaticSegmentFloorClearanceBound(a0,b0,radius),numiStaticSegmentFloorClearanceBound(a1,b1,radius));
     bool boxClear=boxHullBound>=-contactTolerance,floorClear=floorHullBound>=-contactTolerance;
     if(boxClear&&floorClear){hit.valid=true;hit.status=NumiStaticSegmentClear;return hit;}
-    float speed=numiStaticMax(numiStaticSegmentUpperMotion(a0,a1),numiStaticSegmentUpperMotion(b0,b1));
-    if(!numiStaticFinite(speed))return hit;
-    if(!(speed>0)){hit.status=NumiStaticSegmentUnresolved;return hit;}
     float time=0;
-    for(unsigned iteration=0;iteration<maximumIterations;++iteration) {
+    for(unsigned iteration=0;iteration<maximumIterations;++iteration){
         hit.iterations=iteration+1;
-        auto a=numiStaticSegmentInterpolate(a0,a1,time),b=numiStaticSegmentInterpolate(b0,b1,time);
-        if(!numiStaticFinite3(a.lower)||!numiStaticFinite3(a.upper)||!numiStaticFinite3(b.lower)||!numiStaticFinite3(b.upper))return hit;
-        auto box=numiStaticSegmentBoxSample(numiStaticBench(),a.point,b.point,radius);
-        if(!box.valid)return hit;
-        float boxBound=numiStaticSegmentBoxClearanceBound(numiStaticBench(),a.lower,a.upper,b.lower,b.upper,box.normal,radius);
-        float floorBound=numiStaticSegmentFloorClearanceBound(a.lower,b.lower,radius);
-        if(!numiStaticFinite(boxBound)||!numiStaticFinite(floorBound))return hit;
+        auto current=time==0?first:numiStaticSegmentSweepSample(a0,b0,a1,b1,radius,time);
+        if(!current.box.valid||!numiStaticFinite(current.floor))return hit;
+        NumiStaticVec3 normals[2]={current.box.normal,numiStaticSegmentSweepFeaturePlane(current)};
+        float boxBound=-INFINITY;
+        for(auto n:normals)boxBound=numiStaticMax(boxBound,numiStaticSegmentSweepHullBound(a0,b0,a1,b1,n,radius,time,time));
+        if(boxClear)boxBound=numiStaticMax(boxBound,boxHullBound);
+        float floorBound=numiStaticSegmentSweepFloorHull(a0,b0,a1,b1,radius,time,time);
         float bound=boxClear?floorBound:floorClear?boxBound:numiStaticMin(boxBound,floorBound);
-        bool floor=!floorClear&&(boxClear||floorBound<boxBound);
-        auto witness=floor?numiStaticSegmentSceneSample(a.point,b.point,radius):box;
-        // For a floor witness, do not accidentally replace it with a box which
-        // is globally certified clear at the caller's explicit tolerance.
-        if(floor){witness.gap=numiStaticMin(a.point.z,b.point.z)-(numiStaticFloorHeight()+radius);
-            witness.parameter=b.point.z<a.point.z?1:0;witness.normal={0,0,1};witness.feature=5;}
-        hit.time=time;hit.parameter=witness.parameter;hit.normal=witness.normal;hit.gap=witness.gap;hit.feature=witness.feature;
-        if(bound<=contactTolerance) {
-            // A poor separating plane may be inconclusive despite distant
-            // geometry. Publish failure, never a false collision-free result.
-            if(witness.gap>contactTolerance+16*1.1920928955078125e-7f*
-               numiStaticMax(1.0f,numiStaticMax(numiStaticLength(a.point),numiStaticLength(b.point)))) {
-                hit.status=NumiStaticSegmentUnresolved;return hit;
+        float sceneLowerBound=numiStaticMin(boxBound,floorBound);
+        bool useFloor=!floorClear&&(boxClear||current.floor<current.box.gap);
+        hit.time=time;hit.gap=useFloor?current.floor:current.box.gap;
+        hit.parameter=useFloor?(current.b.z<current.a.z?1:0):current.box.parameter;
+        hit.normal=useFloor?NumiStaticVec3{0,0,1}:current.box.normal;hit.feature=useFloor?5:current.box.feature;
+        if(!numiStaticFinite(bound)){hit.status=NumiStaticSegmentUnresolved;return hit;}
+        if(bound<=contactTolerance){
+            // Caller contactTolerance is unchanged. Separately require the
+            // whole signed scene lower bound and represented witness upper
+            // bound within the existing +/-2 um contact arrival acceptance.
+            if(sceneLowerBound>=-2e-6f&&numiStaticSegmentSweepWitnessGapUpper(a0,b0,a1,b1,radius,time,hit.parameter,useFloor)<=2e-6f){
+                hit.contact=true;hit.valid=true;hit.status=NumiStaticSegmentContact;return hit;
             }
-            hit.contact=true;hit.valid=true;hit.status=NumiStaticSegmentContact;return hit;
+            hit.status=NumiStaticSegmentUnresolved;return hit;
         }
-        // The unsigned distance from any material point to the fixed collider
-        // is 1-Lipschitz; Hausdorff segment motion is bounded by the larger
-        // endpoint displacement. Outward rounding makes this an upper speed
-        // and a lower clearance, so the advancement cannot overstep contact.
-        float step=numiSegmentDown(bound/speed);
-        float remaining=numiSegmentUp(1-time);
-        if(step>=remaining){hit.time=1;hit.valid=true;hit.status=NumiStaticSegmentClear;return hit;}
-        float next=numiSegmentDown(time+step);
-        if(!(next>time)){hit.status=NumiStaticSegmentUnresolved;return hit;}
+        // A constant support plane separates the complete bilinear time/u hull.
+        // Try an analytic root, but always certify the proposed whole interval.
+        // Each outer geometry iteration may use up to 32 scalar time splits
+        // per box plane (two candidates) and floor: at most 3*32 additional
+        // scalar splits. The 128 outer-iteration limit is unchanged; this is
+        // deliberately not a constant-cost 128-operation collision query.
+        float boxEnd=boxClear?1:time;
+        if(!boxClear)for(auto n:normals){
+            if(numiStaticSegmentSweepHullBound(a0,b0,a1,b1,n,radius,time,time)<0)continue;
+            if(numiStaticSegmentSweepHullBound(a0,b0,a1,b1,n,radius,time,1)>=0){boxEnd=1;break;}
+            auto bench=numiStaticBench();float magnitude=numiStaticSegmentUpperLength(n);
+            float threshold=numiSegmentUp(radius*magnitude),candidate=1;
+            for(unsigned endpoint=0;endpoint<2;++endpoint){
+                auto start=endpoint?b0:a0,end=endpoint?b1:a1;
+                float first=numiStaticSegmentLowerPlane(bench,start,start,n),last=numiStaticSegmentLowerPlane(bench,end,end,n);
+                if(last<threshold){
+                    float root=first>threshold&&first>last?(first-threshold)/(first-last):time;
+                    candidate=numiStaticMin(candidate,root);
+                }
+            }
+            if(candidate>time&&candidate<=1&&numiStaticSegmentSweepHullBound(a0,b0,a1,b1,n,radius,time,candidate)>=0){
+                boxEnd=numiStaticMax(boxEnd,candidate);continue;
+            }
+            float low=time,high=1;
+            for(unsigned split=0;split<32;++split){
+                float middle=low+(high-low)*.5f;if(!(middle>low&&middle<high))break;
+                if(numiStaticSegmentSweepHullBound(a0,b0,a1,b1,n,radius,time,middle)>=0)low=middle;else high=middle;
+            }
+            boxEnd=numiStaticMax(boxEnd,low);
+        }
+        float floorEnd=floorClear?1:time;
+        if(!floorClear){
+            if(numiStaticSegmentSweepFloorHull(a0,b0,a1,b1,radius,time,1)>=0)floorEnd=1;
+            else {float low=time,high=1;for(unsigned split=0;split<32;++split){
+                float middle=low+(high-low)*.5f;if(!(middle>low&&middle<high))break;
+                if(numiStaticSegmentSweepFloorHull(a0,b0,a1,b1,radius,time,middle)>=0)low=middle;else high=middle;
+            }floorEnd=low;}
+        }
+        float next=numiStaticMin(boxEnd,floorEnd);
+        if(next==1){hit.time=1;hit.contact=false;hit.valid=true;hit.status=NumiStaticSegmentClear;return hit;}
+        if(!(next>time)){
+            if(sceneLowerBound>=-2e-6f&&numiStaticSegmentSweepWitnessGapUpper(a0,b0,a1,b1,radius,time,hit.parameter,useFloor)<=2e-6f){
+                hit.contact=true;hit.valid=true;hit.status=NumiStaticSegmentContact;return hit;
+            }
+            hit.status=NumiStaticSegmentUnresolved;return hit;
+        }
         time=next;
     }
     hit.status=NumiStaticSegmentIterationLimit;return hit;

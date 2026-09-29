@@ -39,8 +39,12 @@ though both saved fruit traces pass independent static geometry checks.
 [Exact first-replay comparison](assets/loaded-drop-corrected-first-replay-comparison.json) ·
 [48-substep fruit trace](assets/loaded-drop-corrected-48-r1-fruits.csv) ·
 [96-substep fruit trace](assets/loaded-drop-corrected-96-r1-fruits.csv).
-Both solver invocations still need their actual terminal exits, second-replay
-equality and full cloth/peak geometry audits. The floor observation is a saved
+The 48-substep invocation now has actual exit 0, two complete replays and
+passing audits of all 73 regular snapshots, both replay peaks and the final
+copy. Cloth center descends 1.7041 m; 33 nodes finish at the lower floor. It
+releases no fruit. The [complete 48-substep evidence](assets/loaded-drop-corrected-48-terminal-evidence.json)
+binds that authored result. The 96-substep second replay and terminal audits
+remain pending. The floor observation is a saved
 radius and vertical-velocity match; it does not qualify reaction or energy
 closure. No new full-scene video is qualified by these partial results.
 

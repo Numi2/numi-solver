@@ -30,17 +30,23 @@ Fruit geometry remains rigid spheres. Same-source timestep convergence,
 elastic-fruit/bag coupling, calibrated materials, native full spill and
 whole-scene work/reaction closure remain open.
 
-The next contact slice now passes CPU checks for whole-yarn static geometry
-and passive velocity response. The new response removes two retained cases
-where normal or friction impulses added kinetic energy. General deforming
-sweeps still return explicit unresolved results in 129 of 518 cases; native
-execution and the complete scene remain pending. See the
-[measured geometry and energy limits](docs/WHOLE_YARN_STATIC_MATH.md).
+The stronger whole-yarn static sweep now resolves all **1,299 seeded CPU
+cases**, preserving the 2 µm contact budget. Four extreme-length controls
+remain explicitly unresolved. Passive velocity response removes two retained
+normal/friction energy-injection cases. Native execution and the complete
+scene remain pending. See the
+[measured geometry, cost and energy limits](docs/WHOLE_YARN_STATIC_MATH.md).
 
 The host now also checks transactional contact subdivision against an analytic
 impact and rollback controls. Rejected child steps cannot commit partial time,
 warm state or controller generations. Native adaptive execution is pending.
 [Subdivision contract and measured boundary](docs/TRANSACTIONAL_STATIC_CONTACT.md).
+
+Reciprocal yarn/elastic-boundary normal contact now passes CPU geometry,
+momentum, angular momentum and energy checks using five independently moving
+owning nodes. A captured FEM boundary fixture exercises all five responses.
+Moving contact, FEM advancement and full native bag coupling remain open.
+[Elastic contact mechanics and qualification boundary](docs/ELASTIC_YARN_CONTACT.md).
 
 
 ### Newest loaded release · finite tabletop and lower floor · September 29, 2026
@@ -83,7 +89,9 @@ new complete six-second CPU96 drop is running against the unchanged gates.
 The matched repaired runs have completed their first fruit replays: 48
 substeps release none, while 96 release fruit 10. Corresponding fruit positions
 differ by up to **1.6745 m**, so release-outcome timestep convergence fails.
-The second replays and full cloth audits remain pending.
+The repaired 48-substep run now completes both replays and all saved contact
+audits, with 1.704 m of cloth descent and 33 floor-contact nodes. The 96-substep
+second replay and terminal audits remain pending.
 [Impact/departure repair and frozen evidence](docs/CPU_IMPACT_DEPARTURE.md).
 
 

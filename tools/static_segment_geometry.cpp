@@ -9,6 +9,7 @@
 #include <limits>
 #include <random>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 // This qualification reference does not import the production FP64 bench helper
@@ -129,7 +130,7 @@ struct Test {
             ++sampleFailures;if(sampleFailures<=8)std::cerr<<"sample_failure="<<samples<<" gap="<<actual.gap<<" ref="<<reference.gap
                 <<" u="<<actual.parameter<<" witness="<<witness<<" valid="<<actual.valid<<'\n';
         }
-        ++certificates;double excess=actual.clearanceLowerBound-reference.unsignedGap;
+        ++certificates;double excess=actual.clearanceLowerBound-reference.gap;
         maxLowerBoundExcess=std::max(maxLowerBoundExcess,excess);
         if(excess>2e-13||!actual.valid){++certificateFailures;if(certificateFailures<=8)std::cerr<<"certificate_failure="<<samples<<" excess="<<excess<<'\n';}
     }
@@ -144,7 +145,7 @@ struct Test {
             auto a=wide(a0)+(wide(a1)-wide(a0))*actual.time,b=wide(b0)+(wide(b1)-wide(b0))*actual.time;
             double gap=sceneReference(a,b,radius,wide(numiStaticBench())).gap;
             maxImpactGap=std::max(maxImpactGap,std::abs(gap));
-            if(gap< -1e-6||actual.time>referenceTime+2e-6)failure=true;
+            if(gap< -1e-6||gap>2e-6||actual.time>referenceTime+2e-6)failure=true;
             double position=std::max(length(wide(a1)-wide(a0)),length(wide(b1)-wide(b0)))*std::abs(actual.time-referenceTime);
             if(exactTranslation)maxImpactPositionError=std::max(maxImpactPositionError,position);
         }
@@ -191,11 +192,196 @@ TimeOracle deformingReference(D3 a0,D3 b0,D3 a1,D3 b1,double radius,double toler
     };
     return interval(interval,0,1,gap(0),gap(1),0);
 }
+struct SweepRefinementQualification {
+ unsigned controls{},failures{},clear{},contact{},unresolved{},oracleUnresolved{},intervalOracleUnresolved{},analyticClosures{},falseClear{},falseContact{},acceptanceFailures{},maxIterations{},negativeControls{},tangentControls{},tinyClosingControls{},cancellationControls{},signedToleranceControls{},signedToleranceExpectedRejections{},signedToleranceNegativeControls{},certificateChecks{},certificateFailures{},witnessChecks{},witnessFailures{};
+ double maxContactGap{},minContactGap{},maxBoundExcess{},maxWitnessDeficit{};
+
+ void require(bool v,const std::string& message){if(!v){++failures;std::cerr<<"qualification_failure="<<message<<'\n';}}
+ void sweep(const std::string& name,NumiStaticVec3 a0,NumiStaticVec3 b0,NumiStaticVec3 a1,NumiStaticVec3 b1,float radius,bool mustClear=false,bool mustContact=false,double analyticMinimum=std::numeric_limits<double>::quiet_NaN(),float tolerance=1e-7f){
+  ++controls;auto h=numiStaticSegmentSceneCast(a0,b0,a1,b1,radius,tolerance);
+  clear+=h.valid&&!h.contact;contact+=h.valid&&h.contact;unresolved+=!h.valid;maxIterations=std::max(maxIterations,h.iterations);
+  unsigned nodes=0;auto ref=deformingReference(wide(a0),wide(b0),wide(a1),wide(b1),radius,tolerance,nodes);
+  intervalOracleUnresolved+=!ref.known;
+  if(std::isfinite(analyticMinimum)){
+    if(!ref.known)++analyticClosures;ref.known=true;ref.contact=analyticMinimum<=-double(tolerance);
+  }else if(!ref.known&&std::min({double(a0.z),double(b0.z),double(a1.z),double(b1.z)})>=double(radius)-double(tolerance)){
+    // Independent analytic top and floor half-spaces: no point of the complete
+    // bilinear hull can penetrate either collider farther than contact tolerance.
+    ++analyticClosures;ref.known=true;ref.contact=false;
+  }
+  if(!ref.known){
+    // Independent FP64 supporting feature from the physical-edge/face/LP oracle.
+    // This closes exact tangent and rounded-corner miss controls for which a
+    // temporal Lipschitz subdivision cannot finish at depth 30.
+    auto initial=sceneReference(wide(a0),wide(b0),radius,wide(numiStaticBench()));
+    auto box=wide(numiStaticBench());double floor=INFINITY;bool boxSafe=false;
+    for(auto point:{wide(a0),wide(b0),wide(a1),wide(b1)})floor=std::min(floor,point.z+.75-radius);
+    for(auto normal:{initial.normal,D3{1,0,0},D3{-1,0,0},D3{0,1,0},D3{0,-1,0},D3{0,0,1},D3{0,0,-1}}){
+      D3 corner{normal.x>0?box.high.x:box.low.x,normal.y>0?box.high.y:box.low.y,normal.z>0?box.high.z:box.low.z};
+      double projection=INFINITY;
+      for(auto point:{wide(a0),wide(b0),wide(a1),wide(b1)})projection=std::min(projection,dot(point-corner,normal));
+      boxSafe=boxSafe||projection/length(normal)-radius>=-double(tolerance)+1e-12;
+    }
+    if(boxSafe&&floor>=-double(tolerance)+1e-12){++analyticClosures;ref.known=true;ref.contact=false;}
+  }
+  oracleUnresolved+=!ref.known;falseClear+=h.valid&&!h.contact&&ref.known&&ref.contact;
+  double gap=0;
+  if(h.valid&&h.contact){auto a=wide(a0)+(wide(a1)-wide(a0))*h.time,b=wide(b0)+(wide(b1)-wide(b0))*h.time;
+   gap=sceneReference(a,b,radius,wide(numiStaticBench())).gap;
+   maxContactGap=std::max(maxContactGap,gap);minContactGap=std::min(minContactGap,gap);
+   acceptanceFailures+=gap>2e-6||gap< -2e-6;
+   falseContact+=gap>2e-6;
+  }
+  require(!mustClear||(h.valid&&!h.contact),name+" failed required clear");
+  require(!mustContact||(h.valid&&h.contact),name+" failed required contact");
+  require(h.iterations<=128,name+" exceeded cap");
+
+ }
+};
+
+SweepRefinementQualification sweepRefinementControls(){
+ SweepRefinementQualification q;
+ for(float r:{.0001f,.001f,.004f,.04f,.08f})for(float direction:{-1.f,1.f}){
+  // Whole interior face contact, with clear endpoint point trajectories.
+  NumiStaticVec3 a0{direction*-1,0,.2f},b0{direction*1,0,.2f},a1{direction*-1,0,-.2f},b1{direction*1,0,-.2f};
+  q.sweep("interior-face",a0,b0,a1,b1,r,false,true);
+  q.require(!numiStaticSceneCast(a0,a1,r).contact&&!numiStaticSceneCast(b0,b1,r).contact,"endpoint-only negative control");++q.negativeControls;
+  q.sweep("top-supported-tangent",{-.3f,0,r},{.3f,0,r},{-.2f,direction*.2f,r},{.4f,direction*.2f,r},r,true);++q.tangentControls;
+  q.sweep("top-supported-outward",{-.3f,0,r},{.3f,0,r},{-.2f,direction*.2f,r+.1f},{.4f,direction*.2f,r+.1f},r,true);++q.tangentControls;
+  float floor=-.75f+r;
+  q.sweep("floor-supported-tangent",{1,0,floor},{1.2f,0,floor},{1.1f,direction*.2f,floor},{1.3f,direction*.2f,floor},r,true);++q.tangentControls;
+  q.sweep("floor-supported-outward",{1,0,floor},{1.2f,0,floor},{1.1f,direction*.2f,floor+.1f},{1.3f,direction*.2f,floor+.1f},r,true);++q.tangentControls;
+  q.sweep("floor-endpoint-cross",{1,0,-.5f},{1.2f,0,-.6f},{1.1f,0,-.8f},{1.3f,0,-.7f},r,false,true);
+  // Explicit time boundaries: very early events, near t=1 impact, and exactly
+  // terminal support. A globally certified hull within contact tolerance may
+  // end on support without claiming an inward crossing or a time-zero lock.
+  for(float gap:{2e-7f,5e-6f})for(float displacement:{.1f,1000.f}){
+   float start=r+gap,end=start-displacement;
+   q.sweep("near-time-zero-impact",{direction*-.3f,0,start},{direction*.3f,0,start},
+       {direction*-.3f,0,end},{direction*.3f,0,end},r,false,true);
+  }
+  q.sweep("near-terminal-impact",{-.3f,0,r+.1f},{.3f,0,r+.1f},
+      {-.3f,direction*.2f,r-1e-6f},{.3f,direction*.2f,r-1e-6f},r,false,true);
+  q.sweep("terminal-supported-boundary",{-.3f,0,r+.1f},{.3f,0,r+.1f},
+      {-.3f,direction*.2f,r},{.3f,direction*.2f,r},r,true);
+  // Both directions of a rounded vertical edge and rounded horizontal edge.
+  // The exact represented geometry, not a nominal unrepresented sqrt(2), owns
+  // touch/miss classification. +/-4um controls bound tiny grazing ambiguity.
+  for(float offset:{-4e-6f,-2e-7f,0.f,2e-7f,4e-6f}){
+   float d=r/std::sqrt(2.f)+offset;
+   NumiStaticVec3 c{.75f+d,.5f+d,-.04f},t{direction*.15f,-direction*.15f,0};
+   auto start=numiStaticSub(c,t),end=numiStaticAdd(c,t);
+   auto cornerMinimum=[&](NumiStaticVec3 first,NumiStaticVec3 last,bool top){
+    D3 p=wide(first),v=wide(last)-p,corner{.75,top?0.:.5,0};
+    if(top){p.y=0;v.y=0;}else {p.z=0;v.z=0;}
+    auto o=p-corner;double time=std::clamp(-dot(o,v)/dot(v,v),0.,1.);
+    return length(o+v*time)-r;
+   };
+   double minimum=cornerMinimum(start,end,false);
+   q.sweep("vertical-edge-graze",{start.x,start.y,-.07f},{start.x,start.y,-.01f},{end.x,end.y,-.07f},{end.x,end.y,-.01f},r,offset>3e-6f,offset< -3e-6f,minimum);++q.cancellationControls;
+   c={.75f+d,0,d};t={direction*.15f,0,-direction*.15f};start=numiStaticSub(c,t);end=numiStaticAdd(c,t);
+   minimum=cornerMinimum(start,end,true);
+   q.sweep("top-edge-graze",{start.x,-.4f,start.z},{start.x,.4f,start.z},{end.x,-.4f,end.z},{end.x,.4f,end.z},r,offset>3e-6f,offset< -3e-6f,minimum);++q.cancellationControls;
+  }
+  // FP32 top-boundary sweeps where projected closing is tiny next to tangential
+  // motion. A small normal closing speed must neither exhaust a distant clear
+  // chord nor turn the two physical translation directions into different rules.
+  for(float closing:{0.f,1e-8f,1e-7f,2e-6f}){
+   float height=r+3e-6f;
+   q.sweep("tiny-plane-closing",{-.3f,-.1f,height},{.3f,-.1f,height},
+       {-.3f,direction*.4f,height-closing},{.3f,direction*.4f,height-closing},r,true);++q.tinyClosingControls;
+  }
+  // Expanded finite AABB reports a hit in this rounded-corner miss region.
+  float cornerX=.75f+.8f*r,cornerY=.5f+.8f*r;
+  q.require(cornerX<.75f+r&&cornerY<.5f+r,"expanded-AABB corner negative control");
+  q.sweep("expanded-box-false-positive",{cornerX,cornerY,direction*.1f},{cornerX,cornerY,direction*.1f},
+      {cornerX,cornerY,-direction*.1f},{cornerX,cornerY,-direction*.1f},r,true);++q.negativeControls;
+  q.sweep("deforming-descending-bridge",{-1,0,.2f},{1,0,.2f},{-1,0,-.2f},{1,0,.1f},r,false,true);
+  q.sweep("deforming-endpoint-exchange",{-1,-.7f,.3f},{1,.7f,.3f},{1,-.7f,-.1f},{-1,.7f,.2f},r);
+  q.sweep("deforming-clear-outward",{-.3f,-.2f,r+4e-6f},{.3f,.2f,r+4e-6f},
+       {-.6f,.3f,r+.2f},{.6f,-.3f,r+.1f},r,true);
+ }
+ // A zero/nonfinite normal is no plane. For a nonzero subnormal normal the
+ // directed lower norm may be zero; negative projection must fail explicitly.
+ for(auto normal:{NumiStaticVec3{0,0,0},NumiStaticVec3{std::numeric_limits<float>::quiet_NaN(),0,0},
+                  NumiStaticVec3{std::numeric_limits<float>::infinity(),0,0}})
+  q.require(!std::isfinite(numiStaticSegmentPlaneClearanceBound(0,normal,.004f)),"zero/nonfinite support plane admitted");
+ q.require(!std::isfinite(numiStaticSegmentPlaneClearanceBound(-1e-20f,{1e-38f,0,0},.004f)),"zero lower norm negative division admitted");
+ // Radius smaller than tolerance and large custom tolerances must use signed
+ // support planes. The old unsigned projection clamp returned -radius and
+ // certified these 4cm interior crossings clear. Reverse endpoint ordering too.
+ for(float direction:{-1.f,1.f}){
+  const double unspecified=std::numeric_limits<double>::quiet_NaN();
+  auto control=[&](const char* name,float radius,float tolerance,float initial,float final,bool clear,bool contact,bool reject){
+   NumiStaticVec3 a0{direction*-.1f,0,initial},b0{direction*.1f,0,initial},a1{direction*-.1f,0,final},b1{direction*.1f,0,final};
+   q.sweep(name,a0,b0,a1,b1,radius,clear,contact,unspecified,tolerance);++q.signedToleranceControls;
+   auto h=numiStaticSegmentSceneCast(a0,b0,a1,b1,radius,tolerance);
+   if(reject){++q.signedToleranceExpectedRejections;q.require(!h.valid,"signed tolerance case fabricated accepted contact/clear");}
+   if(final<-.03f&&initial>=-.01f){
+    q.require(-double(radius)>=-double(tolerance),"old unsigned support admission negative control");++q.signedToleranceNegativeControls;
+   }
+  };
+  control("sub-tolerance-radius-cross",5e-8f,1e-7f,.01f,-.04f,false,true,false);
+  control("sub-tolerance-radius-initial-penetration",5e-8f,1e-7f,-.04f,.01f,false,false,true);
+  control("custom-tolerance-inward-overlap",.004f,.015f,-.01f,-.04f,false,false,true);
+  control("custom-tolerance-outward-overlap",.004f,.015f,-.01f,-.009f,true,false,false);
+  control("custom-tolerance-through-bench",.004f,.015f,.1f,-.12f,false,true,false);
+  // Box is globally clear at caller tolerance but has a 24mm solid overlap.
+  // The floor impact must be rejected by the complete scene lower gate.
+  NumiStaticVec3 a0{.73f,0,-.01f},b0{.73f,0,-.65f},a1=a0,b1{.73f,0,-.8f};
+  if(direction<0){std::swap(a0,b0);std::swap(a1,b1);}
+  q.sweep("ignored-box-overlap-at-floor-impact",a0,b0,a1,b1,.004f,false,false,unspecified,.05f);
+  auto h=numiStaticSegmentSceneCast(a0,b0,a1,b1,.004f,.05f);
+  q.require(!h.valid,"ignored globally tolerated box overlap escaped lower contact gate");++q.signedToleranceControls;++q.signedToleranceExpectedRejections;
+ }
+ // Hard cancellation: long thin yarns compared with the same fixed 2um witness
+ // allowance. Failure is permitted and observable; an inaccurate clear is not.
+ for(float length:{1.f,8.f,32.f,1024.f})for(float direction:{-1.f,1.f})for(float r:{.0001f,.004f}){
+  q.sweep("long-interior-cross",{direction*-length,0,.1f},{direction*length,0,.1f},
+       {direction*-length,0,-.1f},{direction*length,0,-.1f},r,false,length<=32);++q.cancellationControls;
+ }
+ // Independent exact FP64 half-space certificates. Any normal is legal: local
+ // feature selection need not be accurate for these conservative bounds to hold.
+ std::mt19937 rng(190629);std::uniform_real_distribution<float> coord(-3,3),unit(0,1),nv(-1,1);
+ auto box=numiStaticBench();DBox db=wide(box);
+ for(unsigned i=0;i<20000;++i){
+  NumiStaticVec3 a0{coord(rng),coord(rng),coord(rng)},b0{coord(rng),coord(rng),coord(rng)},a1{coord(rng),coord(rng),coord(rng)},b1{coord(rng),coord(rng),coord(rng)},n{nv(rng),nv(rng),nv(rng)};
+  float radius=.0001f+unit(rng)*.08f,t0=unit(rng),t1=unit(rng);if(t0>t1)std::swap(t0,t1);
+  if(i%3==0){auto s=numiStaticSegmentSweepSample(a0,b0,a1,b1,radius,t0);n=numiStaticSegmentSweepFeaturePlane(s);}
+  if(i%17==0)n={1,1e-12f,-1e-12f};
+  auto nd=wide(n);double norm=length(nd),minimum=INFINITY;
+  D3 corner{n.x>0?db.high.x:db.low.x,n.y>0?db.high.y:db.low.y,n.z>0?db.high.z:db.low.z};
+  for(double t:{double(t0),double(t1)})for(auto endpoints:{std::pair{wide(a0),wide(a1)},std::pair{wide(b0),wide(b1)}}){
+   auto point=endpoints.first+(endpoints.second-endpoints.first)*t;
+   minimum=std::min(minimum,dot(point-corner,nd));
+  }
+  double reference=minimum/norm-radius;
+  float bound=numiStaticSegmentSweepHullBound(a0,b0,a1,b1,n,radius,t0,t1);
+  ++q.certificateChecks;double excess=double(bound)-reference;q.maxBoundExcess=std::max(q.maxBoundExcess,excess);q.certificateFailures+=excess>1e-13||!std::isfinite(bound);
+  double floorReference=INFINITY;
+  for(double t:{double(t0),double(t1)})for(auto endpoints:{std::pair{wide(a0),wide(a1)},std::pair{wide(b0),wide(b1)}})
+   floorReference=std::min(floorReference,(endpoints.first+(endpoints.second-endpoints.first)*t).z+.75-radius);
+  float floorBound=numiStaticSegmentSweepFloorHull(a0,b0,a1,b1,radius,t0,t1);
+  ++q.certificateChecks;excess=double(floorBound)-floorReference;q.maxBoundExcess=std::max(q.maxBoundExcess,excess);q.certificateFailures+=excess>1e-13||!std::isfinite(floorBound);
+  float t=unit(rng),u=unit(rng);auto a=wide(a0)+(wide(a1)-wide(a0))*t,b=wide(b0)+(wide(b1)-wide(b0))*t,p=a+(b-a)*u;
+  double gap=length(p-clampBox(p,db))-radius;
+  float upper=numiStaticSegmentSweepWitnessGapUpper(a0,b0,a1,b1,radius,t,u,false);
+  ++q.witnessChecks;double deficit=gap-double(upper);q.maxWitnessDeficit=std::max(q.maxWitnessDeficit,deficit);q.witnessFailures+=deficit>1e-13||!std::isfinite(upper);
+  upper=numiStaticSegmentSweepWitnessGapUpper(a0,b0,a1,b1,radius,t,u,true);gap=p.z+.75-radius;
+  ++q.witnessChecks;deficit=gap-double(upper);q.maxWitnessDeficit=std::max(q.maxWitnessDeficit,deficit);q.witnessFailures+=deficit>1e-13||!std::isfinite(upper);
+ }
+ q.require(!q.oracleUnresolved&&!q.falseClear&&!q.falseContact&&!q.acceptanceFailures,"independent oracle/contact acceptance");
+ q.require(q.unresolved==4+q.signedToleranceExpectedRejections,"extreme-length failure count changed");
+ q.require(!q.certificateFailures&&!q.witnessFailures,"outward arithmetic certificate/witness"); std::cout<<std::setprecision(17)<<"sweep_refinement_controls="<<q.controls<<" control_failures="<<q.failures<<" clear="<<q.clear<<" contact="<<q.contact<<" explicit_unresolved="<<q.unresolved<<" oracle_unresolved="<<q.oracleUnresolved<<" interval_oracle_unresolved="<<q.intervalOracleUnresolved<<" analytic_oracle_closures="<<q.analyticClosures<<" false_clear="<<q.falseClear<<" false_contact="<<q.falseContact<<" contact_acceptance_failures="<<q.acceptanceFailures<<" maximum_contact_gap_m="<<q.maxContactGap<<" minimum_contact_gap_m="<<q.minContactGap<<" maximum_geometry_queries="<<q.maxIterations<<" endpoint_negative_controls="<<q.negativeControls<<" tangent_outward_controls="<<q.tangentControls<<" near_zero_closing_controls="<<q.tinyClosingControls<<" cancellation_grazing_controls="<<q.cancellationControls<<" signed_tolerance_controls="<<q.signedToleranceControls<<" signed_tolerance_expected_rejections="<<q.signedToleranceExpectedRejections<<" signed_tolerance_negative_controls="<<q.signedToleranceNegativeControls<<'\n'
+ <<"sweep_refinement_outward_certificate_checks="<<q.certificateChecks<<" certificate_failures="<<q.certificateFailures<<" maximum_bound_excess_m="<<q.maxBoundExcess<<" witness_upper_bound_checks="<<q.witnessChecks<<" witness_upper_bound_failures="<<q.witnessFailures<<" maximum_witness_deficit_m="<<q.maxWitnessDeficit<<'\n';
+ return q;
+}
+
 }
 
 int main() {
     try {
-        Test test;auto box=numiStaticBench();
+        Test test;auto refinement=sweepRefinementControls();auto box=numiStaticBench();
         for(float radius:{.0001f,.004f,.04f,.07f}) {
             for(unsigned axis=0;axis<3;++axis)for(int sign:{-1,1}) {
                 NumiStaticVec3 a{0,0,-.04f},b=a;
@@ -391,7 +577,7 @@ int main() {
         test.require(!numiStaticSegmentSceneSample({nan,0,1},{0,0,1},.004f).valid,"NaN endpoint accepted");++test.rejected;
         auto initial=numiStaticSegmentSceneCast({-1,0,-.04f},{1,0,-.04f},{-1,0,.1f},{1,0,.1f},.004f);
         test.require(!initial.valid&&initial.status==NumiStaticSegmentInitialPenetration,"interior initial penetration accepted");++test.rejected;
-        bool pass=!test.sampleFailures&&!test.certificateFailures&&!test.sweepFailures&&!test.velocityFailures&&!test.deformingMisses&&test.negativeControls>=8;
+        bool pass=!refinement.failures&&!test.unresolved&&!test.deformingSweepUnresolved&&!test.sampleFailures&&!test.certificateFailures&&!test.sweepFailures&&!test.velocityFailures&&!test.deformingMisses&&test.negativeControls>=8;
         std::cout<<std::setprecision(17)
             <<"backend=CPU_shared_FP32_segment_geometry native_Metal_execution=NOT_RUN full_scene=NOT_QUALIFIED\n"
             <<"samples="<<test.samples<<" sample_failures="<<test.sampleFailures<<" signed_gap_max_error_m="<<test.maxGapError
