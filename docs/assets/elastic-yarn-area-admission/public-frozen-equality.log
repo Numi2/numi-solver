@@ -1,0 +1,6 @@
+{"accepted": true, "face_area_m2": 1e-08, "source": "frozen", "status": "passive", "strict_gate_m2": 1e-08}
+Traceback (most recent call last):
+  File "/private/var/folders/t9/k15zzp692dl6xfhzqr26qvkr0000gn/T/numi-area-admission-v6ksawf0/asset/strict_gate_check.py", line 22, in <module>
+    assert not r['accepted'], 'equal-to-gate face must be rejected by strict area admission'
+           ^^^^^^^^^^^^^^^^^
+AssertionError: equal-to-gate face must be rejected by strict area admission

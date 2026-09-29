@@ -1,0 +1,373 @@
+{
+  "scope": "bounded local CPU math; saved cloth velocities absent, all velocity cases declared synthetic; no full-drop repair",
+  "bindings_verified_before": 15,
+  "unchanged_strict_area_gate_m2": 1e-08,
+  "retained_triangle": 2813,
+  "owners": [
+    1433,
+    1444,
+    1445
+  ],
+  "authored_owner_masses_kg": [
+    5e-05,
+    5e-05,
+    5e-05
+  ],
+  "rest_area_m2": 0.0001518076671989042,
+  "retained_area_m2": 5.8289935398001674e-09,
+  "decimal80_retained_area_m2": 5.828993539895199e-09,
+  "area_ratio": 3.839722754031124e-05,
+  "gate_ratio_to_rest": 6.587282569132439e-05,
+  "retained_gradients": [
+    [
+      -0.007912603050000001,
+      0.018021005000000034,
+      0.0
+    ],
+    [
+      0.01680547845,
+      -0.038274955,
+      0.0
+    ],
+    [
+      -0.0088928754,
+      0.020253949999999965,
+      0.0
+    ]
+  ],
+  "independent_decimal80_gradients": [
+    [
+      -0.007912603050000001,
+      0.018021005000000034,
+      0.0
+    ],
+    [
+      0.01680547845,
+      -0.038274955,
+      0.0
+    ],
+    [
+      -0.0088928754,
+      0.020253949999999965,
+      0.0
+    ]
+  ],
+  "gradient_faces": 64,
+  "reciprocal_velocity_cases": 256,
+  "maximum_gradient_oracle_error_m": 2.3551386880256624e-16,
+  "maximum_gradient_translation_residual_m": 2.3055512673781017e-16,
+  "maximum_gradient_torque_residual_m2": 1.3877787807814457e-16,
+  "maximum_velocity_energy_identity_residual_J": 3.4762232155316486e-17,
+  "maximum_impulse_momentum_balance_residual_kg_m_s": 6.938893903907228e-18,
+  "maximum_impulse_angular_balance_residual_kg_m2_s": 6.938893903907228e-18,
+  "maximum_remaining_closing_rate_m2_s": 2.1094237467877974e-15,
+  "retained_cell_synthetic_inward_velocity_impulse": {
+    "status": "projected",
+    "velocities": [
+      [
+        0.14993185040479173,
+        -0.3414707661600702,
+        0.0
+      ],
+      [
+        0.1334015719622556,
+        -0.3038258731505852,
+        0.0
+      ],
+      [
+        0.11869389446889717,
+        -0.27033103419826576,
+        0.0
+      ]
+    ],
+    "impulse": 0.001593017815014126,
+    "rate_before": -0.08360373882058612,
+    "rate_after": -9.540979117872439e-18,
+    "kinetic_before_J": 7.500000000000001e-05,
+    "kinetic_after_J": 8.408877328509105e-06,
+    "predicted_kinetic_loss_J": 6.659112267149089e-05,
+    "energy_identity_residual_J": -1.3552527156068805e-20,
+    "momentum_balance_residual": 3.3881317890172014e-21,
+    "angular_balance_residual": 6.776263578034403e-21,
+    "fixed_pin_external_reaction_impulse": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "fixed_pin_external_reaction_angular_impulse": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "bounded_position_repairs": [
+    {
+      "status": "projected",
+      "positions": [
+        [
+          1.1610155172683811,
+          0.07600736642154045,
+          -0.746
+        ],
+        [
+          1.2015235507571498,
+          0.09379281319801076,
+          -0.746
+        ],
+        [
+          1.2375654219744692,
+          0.10961833538044878,
+          -0.746
+        ]
+      ],
+      "area_m2": 2.0000141709333556e-08,
+      "outer_iterations": 1,
+      "scalar_trials": 1,
+      "target_area_m2": 2e-08,
+      "target_ratio": 0.00013174565138264878,
+      "maximum_owner_correction_m": 2.2574891492976625e-07,
+      "mass_weighted_position_sum_residual": 4.0389678347315804e-28,
+      "old_position_gradient_torque_residual": 0.0,
+      "reconstructed_velocity": [
+        {
+          "dt_s": 8.680555555555556e-05,
+          "injected_kinetic_from_declared_rest_J": 2.5391009801321917e-10,
+          "maximum_added_speed_m_s": 0.002600627499990907
+        },
+        {
+          "dt_s": 4.340277777777778e-05,
+          "injected_kinetic_from_declared_rest_J": 1.0156403920528767e-09,
+          "maximum_added_speed_m_s": 0.005201254999981814
+        },
+        {
+          "dt_s": 2.170138888888889e-05,
+          "injected_kinetic_from_declared_rest_J": 4.062561568211507e-09,
+          "maximum_added_speed_m_s": 0.010402509999963628
+        },
+        {
+          "dt_s": 5.4253472222222224e-06,
+          "injected_kinetic_from_declared_rest_J": 6.500098509138411e-08,
+          "maximum_added_speed_m_s": 0.04161003999985451
+        }
+      ],
+      "four_existing_yarn_spring_energy_before_J": 0.2780253174269279,
+      "four_existing_yarn_spring_energy_after_J": 0.27796777373519643,
+      "neighboring_render_triangle_area_m2": 0.0020780314734414338,
+      "angular_change_if_old_velocity_unchanged_kg_m2_s": 0.0,
+      "four_yarn_plus_reconstructed_kinetic_change_at_native_dt_J": -5.7543437821345125e-05
+    },
+    {
+      "status": "projected",
+      "positions": [
+        [
+          1.161015119812137,
+          0.07600827163072596,
+          -0.746
+        ],
+        [
+          1.2015243949094854,
+          0.09379089061706475,
+          -0.746
+        ],
+        [
+          1.2375649752783777,
+          0.10961935275220928,
+          -0.746
+        ]
+      ],
+      "area_m2": 1.5180912699900954e-07,
+      "outer_iterations": 1,
+      "scalar_trials": 1,
+      "target_area_m2": 1.518076671989042e-07,
+      "target_ratio": 0.001,
+      "maximum_owner_correction_m": 2.3254895321630256e-06,
+      "mass_weighted_position_sum_residual": 3.2311742677852644e-27,
+      "old_position_gradient_torque_residual": 0.0,
+      "reconstructed_velocity": [
+        {
+          "dt_s": 8.680555555555556e-05,
+          "injected_kinetic_from_declared_rest_J": 2.694371077394472e-08,
+          "maximum_added_speed_m_s": 0.026789639410518054
+        },
+        {
+          "dt_s": 4.340277777777778e-05,
+          "injected_kinetic_from_declared_rest_J": 1.0777484309577888e-07,
+          "maximum_added_speed_m_s": 0.05357927882103611
+        },
+        {
+          "dt_s": 2.170138888888889e-05,
+          "injected_kinetic_from_declared_rest_J": 4.3109937238311553e-07,
+          "maximum_added_speed_m_s": 0.10715855764207222
+        },
+        {
+          "dt_s": 5.4253472222222224e-06,
+          "injected_kinetic_from_declared_rest_J": 6.8975899581298485e-06,
+          "maximum_added_speed_m_s": 0.42863423056828887
+        }
+      ],
+      "four_existing_yarn_spring_energy_before_J": 0.2780253174269279,
+      "four_existing_yarn_spring_energy_after_J": 0.27750537681339277,
+      "neighboring_render_triangle_area_m2": 0.002078075731216436,
+      "angular_change_if_old_velocity_unchanged_kg_m2_s": 0.0,
+      "four_yarn_plus_reconstructed_kinetic_change_at_native_dt_J": -0.0005199136698243341
+    },
+    {
+      "status": "projected",
+      "positions": [
+        [
+          1.161010999929291,
+          0.07601765469075047,
+          -0.746
+        ],
+        [
+          1.2015331450770281,
+          0.09377096186169288,
+          -0.746
+        ],
+        [
+          1.2375603449936812,
+          0.10962989844755665,
+          -0.746
+        ]
+      ],
+      "area_m2": 1.5180917959188968e-06,
+      "outer_iterations": 1,
+      "scalar_trials": 1,
+      "target_area_m2": 1.5180766719890421e-06,
+      "target_ratio": 0.01,
+      "maximum_owner_correction_m": 2.4090615828557048e-05,
+      "mass_weighted_position_sum_residual": 1.1102263085321884e-20,
+      "old_position_gradient_torque_residual": 5.176599670933416e-22,
+      "reconstructed_velocity": [
+        {
+          "dt_s": 8.680555555555556e-05,
+          "injected_kinetic_from_declared_rest_J": 2.8915082387415047e-06,
+          "maximum_added_speed_m_s": 0.2775238943449772
+        },
+        {
+          "dt_s": 4.340277777777778e-05,
+          "injected_kinetic_from_declared_rest_J": 1.1566032954966019e-05,
+          "maximum_added_speed_m_s": 0.5550477886899544
+        },
+        {
+          "dt_s": 2.170138888888889e-05,
+          "injected_kinetic_from_declared_rest_J": 4.6264131819864075e-05,
+          "maximum_added_speed_m_s": 1.1100955773799088
+        },
+        {
+          "dt_s": 5.4253472222222224e-06,
+          "injected_kinetic_from_declared_rest_J": 0.0007402261091178252,
+          "maximum_added_speed_m_s": 4.440382309519635
+        }
+      ],
+      "four_existing_yarn_spring_energy_before_J": 0.2780253174269279,
+      "four_existing_yarn_spring_energy_after_J": 0.28046034305383,
+      "neighboring_render_triangle_area_m2": 0.0020785344916521235,
+      "angular_change_if_old_velocity_unchanged_kg_m2_s": 0.0,
+      "four_yarn_plus_reconstructed_kinetic_change_at_native_dt_J": 0.0024379171351408624
+    },
+    {
+      "status": "projected",
+      "positions": [
+        [
+          1.1609698011008305,
+          0.0761114852909955,
+          -0.746
+        ],
+        [
+          1.2016206467524544,
+          0.09357167430797422,
+          -0.746
+        ],
+        [
+          1.2375140421467152,
+          0.10973535540103026,
+          -0.746
+        ]
+      ],
+      "area_m2": 1.5180918615472373e-05,
+      "outer_iterations": 1,
+      "scalar_trials": 1,
+      "target_area_m2": 1.5180766719890421e-05,
+      "target_ratio": 0.1,
+      "maximum_owner_correction_m": 0.00024174187879197437,
+      "mass_weighted_position_sum_residual": 4.1359030627651384e-25,
+      "old_position_gradient_torque_residual": 5.178150634581953e-22,
+      "reconstructed_velocity": [
+        {
+          "dt_s": 8.680555555555556e-05,
+          "injected_kinetic_from_declared_rest_J": 0.00029116047297540005,
+          "maximum_added_speed_m_s": 2.7848664436835446
+        },
+        {
+          "dt_s": 4.340277777777778e-05,
+          "injected_kinetic_from_declared_rest_J": 0.0011646418919016002,
+          "maximum_added_speed_m_s": 5.569732887367089
+        },
+        {
+          "dt_s": 2.170138888888889e-05,
+          "injected_kinetic_from_declared_rest_J": 0.004658567567606401,
+          "maximum_added_speed_m_s": 11.139465774734179
+        },
+        {
+          "dt_s": 5.4253472222222224e-06,
+          "injected_kinetic_from_declared_rest_J": 0.07453708108170241,
+          "maximum_added_speed_m_s": 44.557863098936714
+        }
+      ],
+      "four_existing_yarn_spring_energy_before_J": 0.2780253174269279,
+      "four_existing_yarn_spring_energy_after_J": 1.0882626860173679,
+      "neighboring_render_triangle_area_m2": 0.0020831221845592483,
+      "angular_change_if_old_velocity_unchanged_kg_m2_s": 0.0,
+      "four_yarn_plus_reconstructed_kinetic_change_at_native_dt_J": 0.8105285290634154
+    }
+  ],
+  "position_outer_cap": 16,
+  "position_scalar_line_search_cap_per_outer": 16,
+  "rejected_mechanisms": {
+    "aggregate_cell_area_blindspot": {
+      "collapsed_face_m2": 5.8289935398001674e-09,
+      "neighbor_area_m2": 0.0020780267151666613,
+      "aggregate_m2": 0.002078032544160201
+    },
+    "fixed_world_normal": {
+      "unsigned_rigidly_rotated_area_m2": 0.5,
+      "signed_fixed_normal_area_m2": 0.0,
+      "nonzero_net_torque_per_scalar_impulse_m2": 0.5
+    },
+    "raw_squared_area_newton": [
+      {
+        "height_m": 1e-05,
+        "area_m2": 5e-06,
+        "maximum_raw_squared_area_newton_correction_m": 0.0012626582276882713
+      },
+      {
+        "height_m": 1e-09,
+        "area_m2": 5e-10,
+        "maximum_raw_squared_area_newton_correction_m": 12.658227847784813
+      },
+      {
+        "height_m": 1e-13,
+        "area_m2": 5e-14,
+        "maximum_raw_squared_area_newton_correction_m": 126582.27848101266
+      }
+    ],
+    "endpoint_only": {
+      "start_area_m2": 0.5,
+      "end_area_m2": 0.5,
+      "midpoint_area_m2": 0.0
+    },
+    "velocity_only_does_not_restore_invalid_area": true,
+    "position_velocity_reconstruction_has_dt_inverse_square_energy": true
+  },
+  "illustrative_finite_compliance": {
+    "compliance_inverse_J": 1.0,
+    "barrier_energy_before_J": 4.356964116924346e-09,
+    "barrier_energy_after_J": 1.3211768805738309e-11,
+    "area_after_one_soft_step_m2": 1.9219650444941838e-08,
+    "area_after_dt_reduced_1000_m2": 5.829236707807599e-09,
+    "hard_gate_qualification": false,
+    "material_calibrated": false
+  },
+  "bindings_verified_after": 15
+}

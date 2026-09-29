@@ -1,0 +1,31 @@
+{
+  "analytic_first_root_controls": 48,
+  "candidate_above_gate_accepted": true,
+  "candidate_below_gate_accepted": false,
+  "candidate_equal_gate_accepted": false,
+  "candidate_qualification_actual_exit": 0,
+  "candidate_qualification_source_sha256": "3709e6575abafc5613ee4c49d05e59f21d61840f9b367c372a28c9647e806d00",
+  "candidate_source_sha256": "bc83f8c623e57796cb1d3ecc92830d270fc3d121ae56206675188ba48d825fad",
+  "double_root_counted": true,
+  "endpoint_root_counted": true,
+  "exhausted_budget_rejected": true,
+  "frozen_equal_gate_accepted": true,
+  "frozen_source_sha256_before_after": "5b9de1a9879657506a0a6b653cb05e13f7313e8f4ba44acdf276f2482cb09a1a",
+  "future_crossing_rejected": true,
+  "independent_represented_passive_checks": 36,
+  "independently_bounded_3d_clear_controls": 64,
+  "integration_blockers": [
+    "no full-scene common earliest event or incident-constraint authority",
+    "no proof for native integrator rounding/history or actual saved owner velocities",
+    "no all-affected yarn/bend/contact and external-work closure",
+    "corrected CPU96 full drop remains FAIL"
+  ],
+  "maximum_exact_root_bracket_width": "1/17592186044416",
+  "maximum_represented_balance_residual_l": 4.067277344316102e-15,
+  "maximum_represented_balance_residual_p": 2.6645352591003757e-15,
+  "moving_pin_rejected": true,
+  "private_immutable_input_passed": true,
+  "quartic_four_roots_counted": true,
+  "scope": "CPU affine-triangle path/velocity primitive only; no full cloth authority or actual drop repair",
+  "status": "PASS_WITH_ONE_FROZEN_HELPER_DEFECT_CORRECTED_LOCALLY"
+}

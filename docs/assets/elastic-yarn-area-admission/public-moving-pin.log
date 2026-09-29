@@ -1,0 +1,1 @@
+{"negative_control": "moving-pin", "qualification": "REJECTED_OR_UNRESOLVED", "retained_control": {"new": {"accepted": false, "reason": "signed actuator work is not implemented", "status": "unsupported_moving_pin"}, "old_exact_actual_kinetic_gain_J": "1", "old_sealed_status": "projected"}}

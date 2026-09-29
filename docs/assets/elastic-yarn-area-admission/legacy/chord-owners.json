@@ -1,0 +1,47 @@
+{
+  "frames": [
+    {
+      "owners_1433_1444_1445": [
+        [
+          -0.178533727,
+          0.118820815,
+          0.0130182924
+        ],
+        [
+          -0.142752517,
+          0.142752517,
+          0.0232488439
+        ],
+        [
+          -0.110270727,
+          0.164996513,
+          0.0255654076
+        ]
+      ],
+      "source_name": "frame0.obj",
+      "source_sha256": "21483357b0deb815b8cb071e40c171b46f05bd285425d0ed4661e2c0d68b3122"
+    },
+    {
+      "owners_1433_1444_1445": [
+        [
+          1.16101556,
+          0.0760072691,
+          -0.746
+        ],
+        [
+          1.20152346,
+          0.0937930199,
+          -0.746
+        ],
+        [
+          1.23756547,
+          0.109618226,
+          -0.746
+        ]
+      ],
+      "source_name": "frame620.obj",
+      "source_sha256": "e52a1c9cc7d56d0661cc013e2eaf9345da55539de3537536dd98be86a4b71fa3"
+    }
+  ],
+  "scope": "selected three represented FP64 owners for declared synthetic rest-to-frame620 chord; no saved velocities or intermediate owner history"
+}

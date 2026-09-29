@@ -1,0 +1,33 @@
+{
+  "actual_exits": {
+    "candidate-equality": 0,
+    "frozen-equality": 1,
+    "high-common-x": 1,
+    "high-common-y": 1,
+    "independent-review": 0,
+    "local-rate-only": 1,
+    "moving-pin": 1,
+    "position-reconstruction": 1,
+    "qualification": 0,
+    "tangent-margin": 1
+  },
+  "historical_case_result_identical_except_external_binding_counts": true,
+  "historical_external_binding_checks": 17,
+  "independent_review_sha256": "79af2aad21f817bccbee7793a22df2d212af6eea6e05fe23026f494ab6b9d969",
+  "inputs_identical_before_after": true,
+  "metrics": {
+    "analytic_planar_first_root_cases": 64,
+    "anchored_response_cases": 16,
+    "general_3d_independent_bernstein_clear_cases": 64,
+    "maximum_temporal_proof_nodes": 94,
+    "named_temporal_cases": 215,
+    "ordinary_represented_velocity_cases": 128,
+    "ordinary_velocity_admitted": 128,
+    "safe_linear_contraction_cases": 64
+  },
+  "portable_included_binding_checks": 4,
+  "qualification_result_sha256": "302eaafff939ebb95f1bd97fb47138d13752deddaad0c5042ec95d118e6cd8a6",
+  "schema": "numi.elastic-yarn-area-admission.portable-reproduction.v1",
+  "scope": "CPU exact affine triangle primitive only; synthetic selected-owner chord, no actual CPU96 repair, GPU, production integration, native history or incident-work closure",
+  "source_manifest_sha256": "2efa7f4f079dd10e240934fa66f16cb727f39acbdfdba0bb5264ed413169b60f"
+}

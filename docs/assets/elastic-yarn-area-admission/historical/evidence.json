@@ -1,0 +1,159 @@
+{
+  "actual_exits": {
+    "high-common-x": 1,
+    "high-common-y": 1,
+    "local-rate-only": 1,
+    "moving-pin": 1,
+    "position-reconstruction": 1,
+    "qualification": 0,
+    "tangent-margin": 1
+  },
+  "bindings": {
+    "README.md": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/README.md",
+      "sha256": "072488c21996dc65d6b1051ce7694475363cf3f69dc469453ee637dd11babda8"
+    },
+    "area_admission.py": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/area_admission.py",
+      "sha256": "5b9de1a9879657506a0a6b653cb05e13f7313e8f4ba44acdf276f2482cb09a1a"
+    },
+    "high-common-x.exit": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/high-common-x.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    "high-common-x.log": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/high-common-x.log",
+      "sha256": "1819b5913b97178561315266a7822c33ebe58c0408b0e7fdb77298e3de8bda6f"
+    },
+    "high-common-y.exit": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/high-common-y.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    "high-common-y.log": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/high-common-y.log",
+      "sha256": "88d166356f5d7c561cb46f0c8ca90df1f6f0014fccfc98b8fa978fcfc812229c"
+    },
+    "local-rate-only.exit": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/local-rate-only.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    "local-rate-only.log": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/local-rate-only.log",
+      "sha256": "68a6a176982462a5c2f6159274a02b709a32bdda3564bd7946683cf898958f77"
+    },
+    "moving-pin.exit": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/moving-pin.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    "moving-pin.log": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/moving-pin.log",
+      "sha256": "404b581109bfa4cbe41fd070401eac7d4756b66d733cc97e7ebd20d4aa704b03"
+    },
+    "position-reconstruction.exit": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/position-reconstruction.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    "position-reconstruction.log": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/position-reconstruction.log",
+      "sha256": "0a4c94ad4065cc952e2fe24e2dfad312420781a0990a916c484c55ace026829c"
+    },
+    "qualification.exit": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/qualification.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "qualification.log": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/qualification.log",
+      "sha256": "c20a4a650037790a44ed6bb1536030dc0a45eb046c8b2826456a0f0bdb6ef1af"
+    },
+    "qualify.py": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/qualify.py",
+      "sha256": "6cfc4a901b9e4846cf1ba5a90f78f039cd63b4ba5bdf461e41d1634cee6563c5"
+    },
+    "result.json": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/result.json",
+      "sha256": "962a5630caa92e40951f6d8bbec2af97bee41d184266a04c826e90d11bc3c5d3"
+    },
+    "run.py": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/run.py",
+      "sha256": "8c9e4da657f12d1f464b139faf71a5fa9c4656d45e3b7ca121ab8c2e13fbb254"
+    },
+    "tangent-margin.exit": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/tangent-margin.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    "tangent-margin.log": {
+      "path": "build/loaded-drop-area-constraint-study/preventive/tangent-margin.log",
+      "sha256": "4c43f590d2b4cdb93265587bba676d0fa056ffe41195b35e2079e37ccbcc9511"
+    }
+  },
+  "device": "Apple CPU only, Python FP64 owners / exact Fraction / independent Decimal100 analytic roots and exact Bernstein bounds",
+  "input_bindings": {
+    "path": "build/loaded-drop-area-constraint-study/input-bindings.json",
+    "sha256": "267aa14962b28182a93d0a46be61fd092179c8bb5ff15312e7f2fa0a4a720486"
+  },
+  "limits": [
+    "no production source, frozen input, GPU, full-scene or full-trajectory changes",
+    "frame620 rest-to-failure chord is declared synthetic; owner velocities/history are absent",
+    "exact continuous affine paths from represented FP64 endpoints; no native integrator rounding proof",
+    "128 shared temporal proof nodes plus bounded degree4 rational work and bit complexity; 16 boundary retries",
+    "fixed zero-velocity pins only; moving support work rejected",
+    "strict unchanged1e-8 area and30m/s source domain; no material law or stronger area target",
+    "later post-response crossing and represented double-root margin remain explicit unresolved",
+    "local kinetic passivity and reciprocal ledgers do not close all yarn/constraint/external energy",
+    "full corrected CPU96 drop remains FAIL; no actual repair qualification"
+  ],
+  "metrics": {
+    "analytic_planar_first_root_cases": 64,
+    "anchored_response_cases": 16,
+    "area_gate_strict_m2": 1e-08,
+    "direct_polynomial_identity_checks": 384,
+    "domain_cases": 26,
+    "frozen_binding_checks_after": 17,
+    "frozen_binding_checks_before": 17,
+    "general_3d_independent_bernstein_clear_cases": 64,
+    "maximum_actual_represented_angular_balance_residual_kg_m2_s": 7.503077998808516e-20,
+    "maximum_actual_represented_linear_balance_residual_kg_m_s": 7.216449660063518e-20,
+    "maximum_admitted_kinetic_change_J": 0.0,
+    "maximum_first_root_bracket_width": 5.684341886080802e-14,
+    "maximum_temporal_proof_nodes": 94,
+    "maximum_total_proof_nodes": 128,
+    "named_temporal_cases": 215,
+    "ordinary_represented_velocity_cases": 128,
+    "ordinary_velocity_admitted": 128,
+    "ordinary_velocity_positive_energy_rejected": 0,
+    "represented_boundary_retry_cap": 16,
+    "requested_normalized_time_width_exact": "1/17592186044416",
+    "retained_full_CPU96_fail_unchanged": true,
+    "safe_linear_contraction_cases": 64,
+    "scope": "bounded CPU FP64 represented-owner exact-rational polynomial/velocity primitive; no full-drop repair",
+    "source_owned_chord_is_synthetic": true,
+    "strict_scene_speed_limit_m_s": 30.0,
+    "temporal_proof_node_cap": 128
+  },
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
+  "schema": "numi.loaded-drop.preventive-material-face-area-admission.v1",
+  "sealed_first_study": {
+    "README.md": {
+      "path": "build/loaded-drop-area-constraint-study/README.md",
+      "sha256": "1978cce16b13a56ccad22a9bdff0284bcefd947b696c7b10b19f52e4f1110d73"
+    },
+    "evidence.json": {
+      "path": "build/loaded-drop-area-constraint-study/evidence.json",
+      "sha256": "c6adf30bf17d9a6b2c301e03791630638dc47b3d6a6676d07f503b7e5e39da8e"
+    },
+    "qualification.log": {
+      "path": "build/loaded-drop-area-constraint-study/qualification.log",
+      "sha256": "31f91ecce5bead08cf0134e5e9b1eded9dc154aee798f31ee66c34f91a39e87a"
+    },
+    "result.json": {
+      "path": "build/loaded-drop-area-constraint-study/result.json",
+      "sha256": "fa4dee71bd60cc2c50a806f39d650f5e2e06d3244402057423b1486bf25375a2"
+    },
+    "study.py": {
+      "path": "build/loaded-drop-area-constraint-study/study.py",
+      "sha256": "9520a130e51d25e270f53efe3366367b283aedc9fceb9b4ed1ea643d92c5770c"
+    }
+  },
+  "timestamp_utc": "2026-09-29T16:43:31.316966+00:00"
+}

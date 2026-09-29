@@ -1,0 +1,117 @@
+{
+  "actual_exits": {
+    "candidate_full_qualification": 0,
+    "candidate_strict_gate": 0,
+    "frozen_strict_gate": 1,
+    "independent_review": 0
+  },
+  "candidate_artifacts": {
+    "area_admission.py": {
+      "bytes": 14000,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/candidate/area_admission.py",
+      "sha256": "bc83f8c623e57796cb1d3ecc92830d270fc3d121ae56206675188ba48d825fad"
+    },
+    "qualification.exit": {
+      "bytes": 2,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/candidate/qualification.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "qualification.log": {
+      "bytes": 1227,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/candidate/qualification.log",
+      "sha256": "c20a4a650037790a44ed6bb1536030dc0a45eb046c8b2826456a0f0bdb6ef1af"
+    },
+    "qualify.py": {
+      "bytes": 18834,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/candidate/qualify.py",
+      "sha256": "3709e6575abafc5613ee4c49d05e59f21d61840f9b367c372a28c9647e806d00"
+    },
+    "result.json": {
+      "bytes": 823782,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/candidate/result.json",
+      "sha256": "962a5630caa92e40951f6d8bbec2af97bee41d184266a04c826e90d11bc3c5d3"
+    }
+  },
+  "candidate_full_qualification_result_byte_identical_to_frozen": true,
+  "frozen_inputs": {
+    "README.md": {
+      "bytes": 7834,
+      "path": "/Users/home/numi-solver/build/loaded-drop-area-constraint-study/preventive/frozen/README.md",
+      "sha256": "072488c21996dc65d6b1051ce7694475363cf3f69dc469453ee637dd11babda8"
+    },
+    "area_admission.py": {
+      "bytes": 13998,
+      "path": "/Users/home/numi-solver/build/loaded-drop-area-constraint-study/preventive/frozen/area_admission.py",
+      "sha256": "5b9de1a9879657506a0a6b653cb05e13f7313e8f4ba44acdf276f2482cb09a1a"
+    },
+    "evidence.json": {
+      "bytes": 7771,
+      "path": "/Users/home/numi-solver/build/loaded-drop-area-constraint-study/preventive/frozen/evidence.json",
+      "sha256": "30628e6dd788a813014f43cc28d7ee82297ab378feb26ca9e9e3e898bd424b0f"
+    },
+    "qualify.py": {
+      "bytes": 18791,
+      "path": "/Users/home/numi-solver/build/loaded-drop-area-constraint-study/preventive/frozen/qualify.py",
+      "sha256": "6cfc4a901b9e4846cf1ba5a90f78f039cd63b4ba5bdf461e41d1634cee6563c5"
+    },
+    "result.json": {
+      "bytes": 823782,
+      "path": "/Users/home/numi-solver/build/loaded-drop-area-constraint-study/preventive/frozen/result.json",
+      "sha256": "962a5630caa92e40951f6d8bbec2af97bee41d184266a04c826e90d11bc3c5d3"
+    }
+  },
+  "integration_status": "NOT_READY: no owned common event, incident-constraint coupling, native-history proof, or full energy/work closure",
+  "review_artifacts": {
+    "README.md": {
+      "bytes": 2221,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/README.md",
+      "sha256": "07e9b7ee66c4fcca3387202f07bc4d35c769e449a6ade68784fab6d35e646a5b"
+    },
+    "candidate-equality.exit": {
+      "bytes": 2,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/candidate-equality.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "candidate-equality.log": {
+      "bytes": 112,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/candidate-equality.log",
+      "sha256": "c5a1fe537f9f1ca1ba5812b403dbc3935315c8ab77da62bf131434578c758b30"
+    },
+    "frozen-equality.exit": {
+      "bytes": 2,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/frozen-equality.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    "frozen-equality.log": {
+      "bytes": 463,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/frozen-equality.log",
+      "sha256": "12e83f87f04a60dcb79388ba9a9a883c8bdbff824d1accefd723f44a7b39af3e"
+    },
+    "result.json": {
+      "bytes": 1588,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/result.json",
+      "sha256": "68df9c3d3fd779b4795d31c50872709d7bab3f4e28533f0605c954d4e44f541a"
+    },
+    "review.exit": {
+      "bytes": 2,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/review.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "review.log": {
+      "bytes": 1518,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/review.log",
+      "sha256": "f7ea3c457624e5a9e02fc3d6579801afd0841dec3692d04f49b8ed9184a55f14"
+    },
+    "review.py": {
+      "bytes": 11079,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/review.py",
+      "sha256": "e4d78111a275c238b9a306422eca9a48c23137a2c869b5c3ac116cd36b61c139"
+    },
+    "strict_gate_check.py": {
+      "bytes": 967,
+      "path": "/Users/home/numi-solver/build/area-guard-independent-review-20260929/strict_gate_check.py",
+      "sha256": "00e816aecf980d2f991236880b989121be582b9395c477d740b83d46965e1f30"
+    }
+  },
+  "schema": "numi.area-guard.independent-strict-gate-review.v1"
+}

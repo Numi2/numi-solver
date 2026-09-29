@@ -1,0 +1,1 @@
+{"negative_control": "position-reconstruction", "qualification": "REJECTED_OR_UNRESOLVED", "retained_control": {"declared_zero_velocity_kinetic_gain_J": 2.5391009801321917e-10, "no_preventive_position_projection": true, "sealed_result_sha256": "fa4dee71bd60cc2c50a806f39d650f5e2e06d3244402057423b1486bf25375a2"}}

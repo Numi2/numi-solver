@@ -1,0 +1,153 @@
+{
+  "schema": "numi.loaded-drop.local-material-face-area-mechanics-study.v1",
+  "timestamp_utc": "2026-09-29T16:20:21.321660+00:00",
+  "source_owner_sha256": "d575b0154af35b2a110b21fc091c9913955b0ee62637ef67ba3c09cb0b623f9b",
+  "device": "Apple CPU, Python FP64/Decimal80 reference arithmetic",
+  "python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "actual_exits": {
+    "qualification": 0,
+    "negative-reconstruction-energy": 1,
+    "negative-squared-singularity": 1,
+    "negative-aggregate-cell": 1
+  },
+  "bindings": {
+    "freeze.py": {
+      "path": "build/loaded-drop-area-constraint-study/freeze.py",
+      "sha256": "4cae7b7cc87f9c952426250ac43a0671c5d1a18df73c938382189b24717d4401"
+    },
+    "study.py": {
+      "path": "build/loaded-drop-area-constraint-study/study.py",
+      "sha256": "9520a130e51d25e270f53efe3366367b283aedc9fceb9b4ed1ea643d92c5770c"
+    },
+    "README.md": {
+      "path": "build/loaded-drop-area-constraint-study/README.md",
+      "sha256": "1978cce16b13a56ccad22a9bdff0284bcefd947b696c7b10b19f52e4f1110d73"
+    },
+    "input-bindings.json": {
+      "path": "build/loaded-drop-area-constraint-study/input-bindings.json",
+      "sha256": "267aa14962b28182a93d0a46be61fd092179c8bb5ff15312e7f2fa0a4a720486"
+    },
+    "result.json": {
+      "path": "build/loaded-drop-area-constraint-study/result.json",
+      "sha256": "fa4dee71bd60cc2c50a806f39d650f5e2e06d3244402057423b1486bf25375a2"
+    },
+    "qualification.log": {
+      "path": "build/loaded-drop-area-constraint-study/qualification.log",
+      "sha256": "31f91ecce5bead08cf0134e5e9b1eded9dc154aee798f31ee66c34f91a39e87a"
+    },
+    "qualification.exit": {
+      "path": "build/loaded-drop-area-constraint-study/qualification.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "negative-reconstruction-energy.log": {
+      "path": "build/loaded-drop-area-constraint-study/negative-reconstruction-energy.log",
+      "sha256": "033e2377997cc1b4a5f23705f9898bb39ac3decf7a5b2cfd8026a06eea63dbc1"
+    },
+    "negative-reconstruction-energy.exit": {
+      "path": "build/loaded-drop-area-constraint-study/negative-reconstruction-energy.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    "negative-squared-singularity.log": {
+      "path": "build/loaded-drop-area-constraint-study/negative-squared-singularity.log",
+      "sha256": "0172501f2d3a1d4f084cae459c3f164301c64ec1056b8498d684b96d1754e3af"
+    },
+    "negative-squared-singularity.exit": {
+      "path": "build/loaded-drop-area-constraint-study/negative-squared-singularity.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    "negative-aggregate-cell.log": {
+      "path": "build/loaded-drop-area-constraint-study/negative-aggregate-cell.log",
+      "sha256": "e920f28576d032185619095ac0fd6ad9f86c29a60a7b8293315e6489e543f9c3"
+    },
+    "negative-aggregate-cell.exit": {
+      "path": "build/loaded-drop-area-constraint-study/negative-aggregate-cell.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    }
+  },
+  "metrics": {
+    "scope": "bounded local CPU math; saved cloth velocities absent, all velocity cases declared synthetic; no full-drop repair",
+    "bindings_verified_before": 15,
+    "unchanged_strict_area_gate_m2": 1e-08,
+    "retained_triangle": 2813,
+    "owners": [
+      1433,
+      1444,
+      1445
+    ],
+    "authored_owner_masses_kg": [
+      5e-05,
+      5e-05,
+      5e-05
+    ],
+    "rest_area_m2": 0.0001518076671989042,
+    "retained_area_m2": 5.8289935398001674e-09,
+    "decimal80_retained_area_m2": 5.828993539895199e-09,
+    "area_ratio": 3.839722754031124e-05,
+    "gate_ratio_to_rest": 6.587282569132439e-05,
+    "gradient_faces": 64,
+    "reciprocal_velocity_cases": 256,
+    "maximum_gradient_oracle_error_m": 2.3551386880256624e-16,
+    "maximum_gradient_translation_residual_m": 2.3055512673781017e-16,
+    "maximum_gradient_torque_residual_m2": 1.3877787807814457e-16,
+    "maximum_velocity_energy_identity_residual_J": 3.4762232155316486e-17,
+    "maximum_impulse_momentum_balance_residual_kg_m_s": 6.938893903907228e-18,
+    "maximum_impulse_angular_balance_residual_kg_m2_s": 6.938893903907228e-18,
+    "maximum_remaining_closing_rate_m2_s": 2.1094237467877974e-15,
+    "position_outer_cap": 16,
+    "position_scalar_line_search_cap_per_outer": 16,
+    "rejected_mechanisms": {
+      "aggregate_cell_area_blindspot": {
+        "collapsed_face_m2": 5.8289935398001674e-09,
+        "neighbor_area_m2": 0.0020780267151666613,
+        "aggregate_m2": 0.002078032544160201
+      },
+      "fixed_world_normal": {
+        "unsigned_rigidly_rotated_area_m2": 0.5,
+        "signed_fixed_normal_area_m2": 0.0,
+        "nonzero_net_torque_per_scalar_impulse_m2": 0.5
+      },
+      "raw_squared_area_newton": [
+        {
+          "height_m": 1e-05,
+          "area_m2": 5e-06,
+          "maximum_raw_squared_area_newton_correction_m": 0.0012626582276882713
+        },
+        {
+          "height_m": 1e-09,
+          "area_m2": 5e-10,
+          "maximum_raw_squared_area_newton_correction_m": 12.658227847784813
+        },
+        {
+          "height_m": 1e-13,
+          "area_m2": 5e-14,
+          "maximum_raw_squared_area_newton_correction_m": 126582.27848101266
+        }
+      ],
+      "endpoint_only": {
+        "start_area_m2": 0.5,
+        "end_area_m2": 0.5,
+        "midpoint_area_m2": 0.0
+      },
+      "velocity_only_does_not_restore_invalid_area": true,
+      "position_velocity_reconstruction_has_dt_inverse_square_energy": true
+    },
+    "illustrative_finite_compliance": {
+      "compliance_inverse_J": 1.0,
+      "barrier_energy_before_J": 4.356964116924346e-09,
+      "barrier_energy_after_J": 1.3211768805738309e-11,
+      "area_after_one_soft_step_m2": 1.9219650444941838e-08,
+      "area_after_dt_reduced_1000_m2": 5.829236707807599e-09,
+      "hard_gate_qualification": false,
+      "material_calibrated": false
+    },
+    "bindings_verified_after": 15
+  },
+  "limits": [
+    "no actual cloth velocities exported; synthetic velocity controls only",
+    "source render triangles have no authored material-area constraint or work ledger",
+    "position probes and stronger targets are illustrative, not a calibrated material law",
+    "four-yarn stored-energy diagnostic excludes other incident/internal terms",
+    "full corrected CPU96 drop remains FAIL; no trajectory/GPU/production edits"
+  ]
+}
