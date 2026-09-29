@@ -5292,11 +5292,23 @@ TrajectoryReplay runTrajectoryReplay(
     const std::uint32_t dumpEvery,
     const std::uint32_t replayIndex,
     const std::string& dumpPrefix,
-    const numi::GripTrajectory* trajectory = nullptr
+    const numi::GripTrajectory* trajectory = nullptr,
+    const float fruitMassScale = 1.0f
 ) {
     InitialState state = makeTrajectoryInitialState(
         initial, scenario, trajectory
     );
+    if (fruitMassScale != 1.0f) {
+        if (scenario != TrajectoryScenario::pickup ||
+            !std::isfinite(fruitMassScale) || !(fruitMassScale > 0.0f)) {
+            throw std::logic_error("fruit mass scale requires a finite positive pickup trajectory");
+        }
+        for (NumiClothBagGPUFruit& fruit : state.fruits) {
+            // Keep fruit geometry and bag material fixed; Metal derives mass,
+            // contact response, and rotational inertia from inverse mass.
+            fruit.positionAndInverseMass.w /= fruitMassScale;
+        }
+    }
     TrajectoryReplay replay;
     replay.frameHashes.reserve(steps);
     std::ofstream fruitTrace, combinedTrace;
@@ -6169,6 +6181,7 @@ int run(const int argc, const char* const* argv) {
     std::uint32_t pickupSteps = kPickupQualificationFrames;
     std::uint32_t pickupDumpEvery = 10u;
     std::string pickupPrefix;
+    float pickupFruitMassScale = 1.0f;
     std::uint32_t recordedSteps = 0u;
     std::uint32_t recordedDumpEvery = 1u;
     std::string recordedPrefix;
@@ -6240,6 +6253,14 @@ int run(const int argc, const char* const* argv) {
             pickupDumpEvery = static_cast<std::uint32_t>(
                 std::stoul(argv[++argument])
             );
+        } else if (value == "--pickup-fruit-mass-scale" &&
+                   argument + 1 < argc) {
+            const std::string literal(argv[++argument]);
+            std::size_t consumed = 0u;
+            pickupFruitMassScale = std::stof(literal, &consumed);
+            if (consumed != literal.size()) {
+                throw std::runtime_error("invalid pickup fruit mass scale");
+            }
         } else if (value == "--recorded-prefix" && argument + 1 < argc) {
             recordedPrefix = argv[++argument];
         } else if (value == "--recorded-steps" && argument + 1 < argc) {
@@ -6264,6 +6285,7 @@ int run(const int argc, const char* const* argv) {
                    "[--spin-prefix PATH] [--spin-steps N] "
                    "[--spin-dump-every N] [--pickup-prefix PATH] "
                    "[--pickup-steps N] [--pickup-dump-every N] "
+                   "[--pickup-fruit-mass-scale POSITIVE] "
                    "[--fruit-flight-probe] [--initial-state-probe] [--finite-bench] "
                    "[--finite-bench-probe] [--diagnose-failure]\n";
             return 0;
@@ -6312,6 +6334,11 @@ int run(const int argc, const char* const* argv) {
         throw std::runtime_error(
             "Metal pickup requires 1..480 steps and positive dump cadence"
         );
+    }
+    if (!std::isfinite(pickupFruitMassScale) ||
+        !(pickupFruitMassScale > 0.0f) ||
+        (pickupPrefix.empty() && pickupFruitMassScale != 1.0f)) {
+        throw std::runtime_error("pickup fruit mass scale requires a positive finite pickup run");
     }
     if (gripTrajectoryPointer == nullptr &&
         (recordedSteps != 0u || !recordedPrefix.empty())) {
@@ -7016,6 +7043,7 @@ int run(const int argc, const char* const* argv) {
     std::uint32_t pickupReleasedMask = 0u;
     std::uint32_t pickupGroundedReleasedCount = 0u;
     if (pickupRequested) {
+        std::cout << "pickup_fruit_mass_scale=" << pickupFruitMassScale << '\n';
         pickupFirst = runTrajectoryReplay(
             device,
             queue,
@@ -7027,7 +7055,9 @@ int run(const int argc, const char* const* argv) {
             pickupSteps,
             pickupDumpEvery,
             1u,
-            pickupPrefix
+            pickupPrefix,
+            nullptr,
+            pickupFruitMassScale
         );
         pickupSecond = runTrajectoryReplay(
             device,
@@ -7040,7 +7070,9 @@ int run(const int argc, const char* const* argv) {
             pickupSteps,
             pickupDumpEvery,
             2u,
-            pickupPrefix
+            pickupPrefix,
+            nullptr,
+            pickupFruitMassScale
         );
         pickupReplayExact = pickupFirst.frameHashes ==
                 pickupSecond.frameHashes &&
