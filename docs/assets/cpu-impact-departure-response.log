@@ -1,0 +1,2 @@
+probe=coupled_yarn_deformable_contact_response node_mass_kg=0.000050000000 free_ball_advance=0.000003998001 free_cloth_advance=0.007996001999 free_center_shift=0.000000000000 supported_ball_advance=0.008000000000 supported_cloth_advance=0.000000000000 crossing_ball_advance=0.007000000000 crossing_cloth_advance=0.001000000000 maximum_separation_error=0.000000000000 maximum_ground_violation=0.000000000000 deterministic=true
+result=PASS

@@ -1,0 +1,2 @@
+probe=cloth_self_coulomb_friction sticking_slip=0.000000000000 sticking_momentum=2.000000000000 sticking_energy=0.500000000000 sliding_slip=0.660000000000 sliding_momentum=2.000000000000 sliding_cone_ratio=1.000000000000 deterministic=true
+result=PASS

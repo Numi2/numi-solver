@@ -1,0 +1,5 @@
+departure_feature=0 error_m_s=5 final_gap_m=0.02 support_impulse_Ns=0.00125 stale_support_normal_squared=1
+departure_feature=1 error_m_s=4.9999999999999876 final_gap_m=0.019999999999999997 support_impulse_Ns=0.0012500000000000007 stale_support_normal_squared=1.0000000000000002
+departure_feature=2 error_m_s=4.6984157192071301 final_gap_m=0.020099682825100076 support_impulse_Ns=0.0012226543444827235 stale_support_normal_squared=0.99999999999999967
+departure_feature=3 error_m_s=4.9999999999999787 final_gap_m=0.020000000000000021 support_impulse_Ns=0.0012500000000000011 stale_support_normal_squared=1
+maximum_departure_velocity_error_m_s=5

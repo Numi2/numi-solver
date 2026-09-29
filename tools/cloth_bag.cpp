@@ -282,9 +282,10 @@ double projectStaticSurface(Vec3& position, const double radius, Vec3& normal) {
 
 // Clip the remaining prediction to the tangent at the earliest exact impact.
 // This tangent supports the convex sphere-offset box, including edge/corner
-// features. Publication below removes the remaining incoming normal velocity.
+// features. Dynamic callers also remove incoming velocity at this same impact,
+// then reconstruct later constraint motion from the post-impact prediction.
 double sweepStaticSurface(const Vec3 previous, Vec3& position,
-                          const double radius, Vec3& normal) {
+                          const double radius, Vec3& normal, Vec3* velocity = nullptr) {
     auto hit = numi::bench::cast(kBench, benchVector(previous), benchVector(position), radius);
     const auto floor = numi::bench::castFloor(
         benchVector(previous), benchVector(position), radius, kRoomFloorHeight);
@@ -293,6 +294,10 @@ double sweepStaticSurface(const Vec3 previous, Vec3& position,
     normal = clothVector(hit.normal);
     const Vec3 impact = previous + (position - previous) * hit.time;
     const double removed = std::max(0.0, -dot(position - impact, normal));
+    if (velocity != nullptr && dot(*velocity, normal) < 0.0) {
+        *velocity = cross(normal, cross(*velocity, normal)) /
+            lengthSquared(normal);
+    }
     position += normal * removed;
     return removed;
 }
@@ -301,7 +306,13 @@ double publishStaticVelocity(const Vec3 position, const double radius,
                              Vec3& normal, Vec3& velocity,
                              const Vec3 predictedVelocity, const double inverseMass) {
     const auto surface = staticSurface(position, radius);
-    if (surface.gap <= 1.0e-6) normal = clothVector(surface.normal);
+    if (surface.gap > 1.0e-9) {
+        // A past impact cannot constrain departure or provide current support
+        // friction. This capacity is not a history of all impulses in the step.
+        normal = {};
+        return 0.0;
+    }
+    normal = clothVector(surface.normal);
     if (lengthSquared(normal) < 0.5 || inverseMass <= 0.0) return 0.0;
     const double incoming = dot(predictedVelocity, normal);
     const double current = dot(velocity, normal);
@@ -492,6 +503,9 @@ struct Metrics {
     double maximumSweptBallAdvance{};
     double minimumTriangleArea{std::numeric_limits<double>::infinity()};
     double maximumSpeed{};
+    std::uint32_t maximumSpeedFrame{};
+    std::uint32_t maximumSpeedBody{};
+    bool maximumSpeedIsFruit{};
     double maximumAngularSpeed{};
     double maximumYarnAerodynamicForce{};
     double maximumFruitAerodynamicForce{};
@@ -2884,11 +2898,12 @@ double sweepGroundPrediction(
     if (gFiniteBench) {
         for (Particle& particle : particles)
             maximumAdvance = std::max(maximumAdvance, sweepStaticSurface(
-                particle.previous, particle.position, kClothRadius, particle.surfaceNormal));
+                particle.previous, particle.position, kClothRadius, particle.surfaceNormal,
+                &particle.velocity));
         for (std::size_t index = 0; index < balls.size(); ++index) {
             Ball& ball = balls[index];
             const double removed = sweepStaticSurface(
-                ball.previous, ball.position, ball.radius, ball.surfaceNormal);
+                ball.previous, ball.position, ball.radius, ball.surfaceNormal, &ball.velocity);
             maximumAdvance = std::max(maximumAdvance, removed);
             ballNormalImpulses[index] += removed / (ball.inverseMass * timestep);
         }
@@ -4945,11 +4960,22 @@ void updateMetrics(
             0.5 * length(cross(second - first, third - first))
         );
     }
-    for (const Particle& particle : cloth.particles) {
-        metrics.maximumSpeed = std::max(metrics.maximumSpeed, length(particle.velocity));
+    for (std::uint32_t index = 0; index < cloth.particles.size(); ++index) {
+        const double speed = length(cloth.particles[index].velocity);
+        if (speed > metrics.maximumSpeed) {
+            metrics.maximumSpeed = speed;
+            metrics.maximumSpeedBody = index;
+            metrics.maximumSpeedIsFruit = false;
+        }
     }
-    for (const Ball& ball : balls) {
-        metrics.maximumSpeed = std::max(metrics.maximumSpeed, length(ball.velocity));
+    for (std::uint32_t index = 0; index < balls.size(); ++index) {
+        const Ball& ball = balls[index];
+        const double speed = length(ball.velocity);
+        if (speed > metrics.maximumSpeed) {
+            metrics.maximumSpeed = speed;
+            metrics.maximumSpeedBody = index;
+            metrics.maximumSpeedIsFruit = true;
+        }
         metrics.maximumAngularSpeed = std::max(
             metrics.maximumAngularSpeed,
             length(ball.angularVelocity)
@@ -5486,6 +5512,15 @@ SimulationResult simulate(
                     )
                 );
             }
+            if (gFiniteBench && staticGround) {
+                // CCD already changes force-integrated velocity at impact.
+                // Reconstruct only the subsequent constraint displacement;
+                // the pre-impact chord carries a fractional incoming velocity.
+                for (std::size_t index = 0; index < result.cloth.particles.size(); ++index)
+                    predictedClothPositions[index] = result.cloth.particles[index].position;
+                for (std::size_t index = 0; index < result.balls.size(); ++index)
+                    predictedFruitPositions[index] = result.balls[index].position;
+            }
             for (DistanceConstraint& constraint : result.cloth.distances) {
                 constraint.lambda = 0.0;
             }
@@ -5857,7 +5892,8 @@ SimulationResult simulate(
                         clothGroundNormalImpulses[index] = publishStaticVelocity(
                             particle.position, kClothRadius, particle.surfaceNormal,
                             particle.velocity, predictedClothVelocities[index], particle.inverseMass);
-                        clothGroundNormalImpulses[index] += particle.blockedStaticPositionImpulse / timestep;
+                        if (lengthSquared(particle.surfaceNormal) > 0.5)
+                            clothGroundNormalImpulses[index] += particle.blockedStaticPositionImpulse / timestep;
                         result.metrics.accumulatedBlockedStaticSupportImpulse += particle.blockedStaticPositionImpulse / timestep;
                         result.metrics.maximumBlockedStaticSupportImpulse = std::max(
                             result.metrics.maximumBlockedStaticSupportImpulse,
@@ -5888,7 +5924,8 @@ SimulationResult simulate(
                     groundNormalImpulses[index] = publishStaticVelocity(
                         ball.position, ball.radius, ball.surfaceNormal, ball.velocity,
                         predictedFruitVelocities[index], ball.inverseMass);
-                    groundNormalImpulses[index] += ball.blockedStaticPositionImpulse / timestep;
+                    if (lengthSquared(ball.surfaceNormal) > 0.5)
+                        groundNormalImpulses[index] += ball.blockedStaticPositionImpulse / timestep;
                     result.metrics.accumulatedBlockedStaticSupportImpulse += ball.blockedStaticPositionImpulse / timestep;
                     result.metrics.maximumBlockedStaticSupportImpulse = std::max(
                         result.metrics.maximumBlockedStaticSupportImpulse,
@@ -5983,7 +6020,29 @@ SimulationResult simulate(
             measureStrainLimitViolation(result.cloth)
         );
         const double previousKnotPeak = result.metrics.maximumKnotAngleError;
+        const double previousSpeedPeak = result.metrics.maximumSpeed;
         updateMetrics(result.cloth, result.balls, result.metrics);
+        if (result.metrics.maximumSpeed > previousSpeedPeak) {
+            result.metrics.maximumSpeedFrame = step + 1u;
+            if (!gContactPeakPrefix.empty() && result.metrics.maximumSpeed > 30.0) {
+                const std::string prefix = gContactPeakPrefix + "-r" +
+                    std::to_string(replayIndex) + "-speed-peak";
+                dumpOBJ(prefix + ".obj", result);
+                std::ofstream witness(prefix + ".csv");
+                if (!witness) throw std::runtime_error("failed to open speed peak trace");
+                witness << "replay,frame,time_s,node,x_m,y_m,z_m,vx_m_s,vy_m_s,vz_m_s,static_gap_m\n"
+                        << std::setprecision(17);
+                for (std::size_t index = 0; index < result.cloth.particles.size(); ++index) {
+                    const auto& particle = result.cloth.particles[index];
+                    witness << replayIndex << ',' << step + 1u << ',' << (step + 1u) * frameTimestep
+                        << ',' << index << ',' << particle.position.x << ',' << particle.position.y
+                        << ',' << particle.position.z << ',' << particle.velocity.x << ','
+                        << particle.velocity.y << ',' << particle.velocity.z << ','
+                        << staticSurface(particle.position, kClothRadius).gap << '\n';
+                }
+                if (!witness) throw std::runtime_error("failed to write speed peak trace");
+            }
+        }
         result.metrics.maximumPublishedLocalNodePenetration = std::max(
             result.metrics.maximumPublishedLocalNodePenetration,
             measureLocalNodePenetration(result.cloth));
@@ -6013,6 +6072,10 @@ SimulationResult simulate(
                 <<" frame="<<step+1u<<'/'<<steps<<" released_mask="<<result.metrics.releasedMask
                 <<" maximum_fruit_yarn_overlap_m="<<result.metrics.maximumPublishedBallPenetration
                 <<" maximum_fruit_pair_overlap_m="<<result.metrics.maximumPublishedBallPairPenetration
+                <<" maximum_dynamic_speed_m_s="<<result.metrics.maximumSpeed
+                <<" speed_peak_frame="<<result.metrics.maximumSpeedFrame
+                <<" speed_peak_body="<<result.metrics.maximumSpeedBody
+                <<" speed_peak_is_fruit="<<result.metrics.maximumSpeedIsFruit
                 <<" coupled_blocks="<<result.metrics.coupledBallYarnBlocks
                 <<" block_fallbacks="<<result.metrics.coupledBallYarnFallbacks<<std::endl;
     }
@@ -6288,6 +6351,8 @@ FiniteBenchProbeResult finiteBenchTrajectory(const std::uint32_t steps) {
             predictedVelocities[index] = ball.velocity;
         }
         sweepGroundPrediction(particles, balls, dt, impulses);
+        for (std::size_t index = 0; index < balls.size(); ++index)
+            predictedPositions[index] = balls[index].position;
         double clothCorrection = 0.0, ballCorrection = 0.0;
         solveGround(particles, balls, dt, impulses, clothCorrection, ballCorrection);
         for (std::size_t index = 0; index < balls.size(); ++index) {
@@ -6372,7 +6437,9 @@ bool runFiniteLoadedSupportProbe() {
                 predictedVelocity[index] = particle.velocity;
                 predictedPosition[index] = particle.position + particle.velocity * dt;
                 particle.position = predictedPosition[index];
-                sweepStaticSurface(particle.previous, particle.position, kClothRadius, particle.surfaceNormal);
+                sweepStaticSurface(particle.previous, particle.position, kClothRadius,
+                    particle.surfaceNormal, &particle.velocity);
+                predictedPosition[index] = particle.position;
             }
             ball.blockedStaticPositionImpulse = 0;
             ball.previous = ball.position;
@@ -6422,9 +6489,70 @@ bool runFiniteLoadedSupportProbe() {
     return pass;
 }
 
+bool runFiniteImpactDepartureProbe() {
+    constexpr double dt = 0.001;
+    std::array<std::vector<std::array<double, 10>>, 2> replays;
+    bool pass = true;
+    double maximumVelocityError = 0.0;
+    double maximumDepartureImpulse = 0.0;
+    for (unsigned replay = 0; replay < 2; ++replay) {
+        for (unsigned feature = 0; feature < 4; ++feature) {
+            const double root = std::sqrt(0.5);
+            const double third = 1.0 / std::sqrt(3.0);
+            const Vec3 normal = feature == 1 ? Vec3{root, 0, root} :
+                feature == 2 ? Vec3{third, third, third} : Vec3{0, 0, 1};
+            const Vec3 origin = feature == 0 ? Vec3{} :
+                feature == 1 ? Vec3{0.75, 0, 0} :
+                feature == 2 ? Vec3{0.75, 0.5, 0} : Vec3{1.5, 0, kRoomFloorHeight};
+            const Vec3 tangent = feature == 2 ? normalized(Vec3{1, -1, 0}) : Vec3{0, 1, 0};
+            for (const double radius : {kClothRadius, 0.07}) {
+                for (const double departure : {0.0, 0.02}) {
+                    const double mass = radius == kClothRadius ? kClothNodeMass : 0.2;
+                    const Vec3 freeVelocity = normal * -10.0 + tangent * 2.0;
+                    const Vec3 impact = origin + normal * radius;
+                    const Vec3 previous = impact - freeVelocity * (0.5 * dt);
+                    Vec3 position = previous + freeVelocity * dt;
+                    Vec3 velocity = freeVelocity;
+                    Vec3 support{};
+                    sweepStaticSurface(previous, position, radius, support, &velocity);
+                    const Vec3 postImpactPrediction = position;
+                    const Vec3 correction = normal * departure;
+                    position += correction;
+                    velocity += (position - postImpactPrediction) / dt;
+                    const double impulse = publishStaticVelocity(position, radius, support,
+                        velocity, freeVelocity, 1.0 / mass);
+                    const Vec3 expected = tangent * 2.0 + correction / dt;
+                    const double error = length(velocity - expected);
+                    maximumVelocityError = std::max(maximumVelocityError, error);
+                    const bool departed = departure > 0.0;
+                    if (departed) maximumDepartureImpulse = std::max(maximumDepartureImpulse, impulse);
+                    const bool supported = staticSurface(position, radius).gap <= 1.0e-9;
+                    pass &= error < 2.0e-10 &&
+                        (!departed || (impulse == 0.0 && lengthSquared(support) == 0.0)) &&
+                        (supported || impulse == 0.0) &&
+                        (!supported || std::abs(impulse - 10.0 * mass) < 1.0e-12);
+                    replays[replay].push_back({position.x, position.y, position.z,
+                        velocity.x, velocity.y, velocity.z,
+                        support.x, support.y, support.z, impulse});
+                }
+            }
+        }
+    }
+    const bool exactReplay = replays[0] == replays[1];
+    pass &= exactReplay;
+    std::cout << std::setprecision(17)
+        << "finite_impact_departure cases=" << replays[0].size()
+        << " exact_replay=" << exactReplay
+        << " maximum_velocity_error_m_s=" << maximumVelocityError
+        << " maximum_departure_support_impulse_Ns=" << maximumDepartureImpulse
+        << " passed=" << pass << '\n';
+    return pass;
+}
+
 bool runFiniteBenchProbe() {
     const bool supportedYarn = runFiniteSupportedYarnProbe();
     const bool loadedSupport = runFiniteLoadedSupportProbe();
+    const bool impactDeparture = runFiniteImpactDepartureProbe();
     const auto first = finiteBenchTrajectory(12000u);
     const auto replay = finiteBenchTrajectory(12000u);
     const auto fine = finiteBenchTrajectory(24000u);
@@ -6449,7 +6577,7 @@ bool runFiniteBenchProbe() {
         std::abs(balls[0].position.x - 0.82) < 1.0e-12 && balls[0].surfaceNormal.x == 1.0;
     const auto& final = first.captures.back();
     const bool deterministic = first.captures == replay.captures;
-    const bool pass = supportedYarn && loadedSupport && deterministic && first.leftBench && first.reachedFloor && side &&
+    const bool pass = supportedYarn && loadedSupport && impactDeparture && deterministic && first.leftBench && first.reachedFloor && side &&
         first.maximumPenetration < 1.0e-9 && fine.maximumPenetration < 1.0e-9 &&
         first.maximumFrictionRatio <= 1.0 + 1.0e-12 && maximumPositionDifference < 0.002 &&
         std::abs(final[2] - (kRoomFloorHeight + 0.07)) < 1.0e-9 && std::abs(final[5]) < 1.0e-10;
@@ -7056,6 +7184,9 @@ int main(int argc, char** argv) try {
               << " final_strain_limit_violation="
               << metrics.finalStrainLimitViolation
               << " max_speed=" << metrics.maximumSpeed
+              << " max_speed_frame=" << metrics.maximumSpeedFrame
+              << " max_speed_body=" << metrics.maximumSpeedBody
+              << " max_speed_is_fruit=" << metrics.maximumSpeedIsFruit
               << " max_angular_speed=" << metrics.maximumAngularSpeed
               << " max_yarn_aerodynamic_force="
               << metrics.maximumYarnAerodynamicForce

@@ -1,0 +1,72 @@
+{
+  "schema": "numi.loaded-drop.cpu-contact-bookkeeping-repair.v1",
+  "source_parent_commit": "09d8ca1",
+  "source": "../../tools/cloth_bag.cpp",
+  "working_patch": "build/loaded-drop-investigation-corrected-launch/working-source.patch",
+  "frozen_manifest": "cpu-impact-departure-launch-manifest.json",
+  "defect": "Pre-impact chord reconstruction retained fractional incoming velocity after constraint-driven departure and stale static normal supplied unsupported final friction capacity. The focused control does not attribute the entire retained35.93m/s scene failure to this defect.",
+  "original_focused_departure": {
+    "file": "cpu-impact-departure-old-control.log",
+    "maximum_velocity_error_m_s": 5.0,
+    "maximum_departure_static_capacity_Ns": 0.0012500000000000011,
+    "gap_m": 0.02
+  },
+  "corrected_focused_cases": {
+    "cases": 16,
+    "replays": 2,
+    "exact": true,
+    "maximum_velocity_error_m_s": 1.2643368769200156e-13,
+    "maximum_departure_static_capacity_Ns": 0,
+    "result": "PASS"
+  },
+  "negative_control": {
+    "file": "cpu-impact-departure-negative-control.log",
+    "actual_exit_code": 1,
+    "change": "disable only impact velocity update",
+    "maximum_velocity_error_m_s": 10.000000000000039,
+    "result": "FAIL"
+  },
+  "other_checks": {
+    "finite": {
+      "log": "cpu-impact-departure-finite.log",
+      "sha256": "bca7ca8c461376ea96d929f3f928850004e07aa764715725204eff0567a1d886",
+      "result": "PASS"
+    },
+    "coupled": {
+      "log": "cpu-impact-departure-coupled.log",
+      "sha256": "e81af99ed5ccbe91e53917ac56229d609a8c71407a8fb6a34611145c013f8107",
+      "result": "PASS"
+    },
+    "local": {
+      "log": "cpu-impact-departure-local.log",
+      "sha256": "0f24a5c63cc87a7639c4fd77015850e20bdcd807fce77c0a85b16ecf72fcca63",
+      "result": "PASS"
+    },
+    "friction": {
+      "log": "cpu-impact-departure-friction.log",
+      "sha256": "750c0d395695daf6869de55a0bd1d704a3f7ab794a3fe73621ec6231712efaea",
+      "result": "PASS"
+    },
+    "response": {
+      "log": "cpu-impact-departure-response.log",
+      "sha256": "a510c0f77bc4bb4f268a952eea522697c61e61dda77fe40d131fed4f910b02ed",
+      "result": "PASS"
+    }
+  },
+  "unchanged_speed_gate_m_s": 30,
+  "full_qualification": "PENDING; this immutable receipt records preparation and focused qualification, not full six-second qualification.",
+  "full_candidate_launch": "build/loaded-drop-investigation-corrected-96.launch.json",
+  "old_diagnostic_launch": "build/loaded-drop-investigation-old/launch.json",
+  "boundary": "CPU FP64 mechanics. No native GPU qualification, complete energy/work history, material calibration or deformable-fruit coupling claim.",
+  "physics_source_sha256": "d575b0154af35b2a110b21fc091c9913955b0ee62637ef67ba3c09cb0b623f9b",
+  "raw_control_files": {
+    "old-control": {
+      "file": "cpu-impact-departure-old-control.log",
+      "sha256": "c8513137e0174cb17489a2146d41edd5fcf408bdf31807113965f4b36eebe6a0"
+    },
+    "negative-control": {
+      "file": "cpu-impact-departure-negative-control.log",
+      "sha256": "d0166ec38bb65a818d08d51b1b8836c37ab5e07a78d7ad3f073683aad288cb29"
+    }
+  }
+}

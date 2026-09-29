@@ -65,6 +65,11 @@ Native spill qualification remains open.
 [Contact repair and actual finer results](docs/COUPLED_YARN_CONTACT.md) ·
 [Native finite-bench response and qualification boundary](docs/NATIVE_FINITE_BENCH.md).
 
+The CPU impact/departure repair now passes **16 exact replay cases**, removing
+pre-impact velocity reconstruction and stale friction after separation. Its
+new complete six-second CPU96 drop is running against the unchanged gates.
+[Impact/departure repair and frozen evidence](docs/CPU_IMPACT_DEPARTURE.md).
+
 
 ### Earlier plane pickup · local thickness repair · September 29, 2026
 

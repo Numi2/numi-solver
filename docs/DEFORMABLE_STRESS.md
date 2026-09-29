@@ -151,3 +151,10 @@ benchmark is separate, and its mesh-resolution convergence is still open.
 Replacing sphere fruit with deformable volumes requires reciprocal surface
 contact and cloth/volume coupling. Native finite-bench execution, calibrated
 specimens and full contact-work/energy closure remain open.
+
+## Impact and departure follow-up
+
+The retained finer six-second speed failure is now under a frozen full rerun
+with the [CPU impact/departure repair](CPU_IMPACT_DEPARTURE.md). Sixteen focused
+cases pass; the complete new drop remains pending. The earlier source and
+failed 30 m/s gate are retained.

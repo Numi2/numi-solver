@@ -1,0 +1,23 @@
+{
+  "schema": "numi.loaded-drop.cpu-static-velocity-repair-launch.v1",
+  "physics_parent_commit": "09d8ca1",
+  "checkout_head_at_freeze": "09d8ca144402d7f9b5a5dfa9433cacc073191347",
+  "physics_source": "frozen cloth_bag.cpp plus exact working-source.patch against09d8ca1",
+  "device": "Apple CPU FP64",
+  "compiler": "clang++ -O3 -DNDEBUG -std=gnu++2b -arch arm64 -Wall -Wextra -Wpedantic",
+  "sha256": {
+    "build/loaded-drop-investigation-corrected-launch/include/numi/cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd",
+    "build/loaded-drop-investigation-corrected-launch/include/numi/grip_trajectory.h": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+    "build/loaded-drop-investigation-corrected-launch/include/numi/finite_bench_geometry.h": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade",
+    "build/loaded-drop-investigation-corrected-launch/cloth_bag.cpp": "d575b0154af35b2a110b21fc091c9913955b0ee62637ef67ba3c09cb0b623f9b",
+    "build/loaded-drop-investigation-corrected-launch/numi-solver-cloth-bag": "1c6d90eb01d8ad49394c426433b2b19e7ade2dc5395fc4ab675336cdd3c19458",
+    "build/loaded-drop-investigation-corrected-launch/finite-bench-loaded-drop.csv": "1313ab661da38fe49c764209391e489050aef5e35399230561d3be7a8c62afd1",
+    "build/loaded-drop-investigation-corrected-launch/working-source.patch": "c193bc6c3da348cf59124a8bdfca590c8072d925ca4b9f0b705579f2eeaf4968"
+  },
+  "unchanged_gates": {
+    "maximum_dynamic_speed_m_s": 30,
+    "accepted_contact_overlap_m": 2e-06,
+    "certificate_pass_cap": 128
+  },
+  "boundary": "Focused mechanics pass; full6s candidate preparation is not qualification. No physical clipping, damping, trajectory or target changes."
+}

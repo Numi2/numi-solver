@@ -1,0 +1,2 @@
+probe=local_node_thickness pair_count=5754 witness_included=1 initial_witness_separation_m=0.000887036632677 final_witness_separation_m=0.008 free_COM_error_m=3.46944695195e-18 supported_lower_z_m=0.004 supported_upper_z_m=0.012 arrival_lower_z_m=0.004 arrival_upper_z_m=0.012 swept_signed_separation_m=0.008 swept_COM_error_m=1.73472347598e-18 coincident_separation_m=0.008 cold_overlap_m=0
+result=PASS
