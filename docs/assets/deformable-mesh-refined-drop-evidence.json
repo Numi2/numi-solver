@@ -1,0 +1,618 @@
+{
+  "base_commit": "579937a",
+  "native_device": "Apple M4",
+  "initial_body": "Same piecewise-flat icosahedral volume, authored radius50mm and centerheight170mm. Shared edge midpoints, no projection to a sphere.",
+  "authored_material": {
+    "mu_Pa": 3000,
+    "lambda_Pa": 6000,
+    "density_kg_m3": 1000
+  },
+  "fine_mesh": {
+    "nodes": 309,
+    "tetrahedra": 1280,
+    "boundary_triangles": 320,
+    "mass_kg": 0.31701882882,
+    "simulated_seconds": 0.5,
+    "native_steps": 5000,
+    "half_step_native_steps": 10000,
+    "captures": 101,
+    "two_exact_replays": true,
+    "qualified_native_component": true,
+    "maximum_half_step_nodal_difference_m": 0.000135849822793,
+    "initial_height_m": 0.0850650817156,
+    "minimum_height_m": 0.0478545464575,
+    "final_height_m": 0.0796041339636,
+    "minimum_coarse_all_step_volume_ratio": 0.270893633366,
+    "maximum_momentum_balance_error_Ns": 1.35853263716e-06,
+    "five_transactional_rejections_pass": true
+  },
+  "source_and_binary_sha256": {
+    "CMakeLists.txt": "5f873d465dee130d22ef8c4a053e1ad7d0a88fa652c3ec29e17621713ed2a21f",
+    "include/numi/deformable_mesh.h": "a0096fef902fc70774cfcde746587cb662c1f3f9be9c2bc2cbf9bae9a7fe020f",
+    "include/numi/deformable_tet.h": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0",
+    "src/metal/DeformableMesh.metal": "bbc8dbcc30463fe6986883bdd9aa8d860a32ccf8b0efcd055c8251cba34049ce",
+    "src/metal/DeformableTet.metal": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072",
+    "tools/deformable_mesh.mm": "1fd6ccea1483c440faf625be81f7fb6a29fa981776ea27c1a3596c7b3e4f6d4a",
+    "tools/audit_deformable_mesh_trajectory.py": "c5def80d6583e3cf969e19845186a1b1864700cd166ffee5b3b50ab52c863b99",
+    "tools/audit_deformable_mesh_refinement.py": "28df9048dfc74e4877db73ea7bd2eeee62ea99753aa64744e880838d5a7fef9c",
+    "tools/render_deformable_mesh.py": "26aee3432136a80b30a5c60660f4d545e8fe0133e21c1bd518a632edb22e6632",
+    "build-local-thickness/numi-solver-deformable-mesh": "ffd255e49ba06a7d6c33dc127e88d32ceaffe0148985f342a81946e21e4159a5",
+    "build-local-thickness/shaders/NumiDeformableMesh.metallib": "6e4c73b8a3f2c24aae8086d487044bfd7e73d0baed1962c45f2f74a93f93b594"
+  },
+  "media_and_trace_sha256": {
+    "docs/assets/deformable-mesh-refined-drop-trajectory.csv": "1d5d2d52c200104eccf31804050ad543cb97bb6fb5e01e1e9957009347cf0931",
+    "docs/assets/deformable-mesh-refined-drop-qualified.log": "a17f729da057003cc8a74513576bc1dff882f5c54a7c03ab9223e847ba9c95a3",
+    "docs/assets/deformable-mesh-refined-drop.gif": "36799de92599d46c238f8d1c6b868417ef13bd9df03e0623ad10643787912cb4",
+    "docs/assets/deformable-mesh-refined-drop-100.png": "f264157e60a270889972d3c3f17d60792c509c3445619cac18ac5816166ac88a",
+    "docs/assets/deformable-mesh-refined-drop.mp4": "ba0c9620f76e63d7e9d50a38e84c51aafee49ce88c923b760b033db764f83279",
+    "docs/assets/deformable-mesh-refined-drop-37.png": "469c0bae520a1b79adad0e79658a0bccc8bd322d913e643f6083732c596d1e5c",
+    "docs/assets/deformable-mesh-refined-drop-0.png": "a3669743a6967e82856a9c837ceef52cde4b5f990a38db44eb15a642c4382daf",
+    "docs/assets/deformable-mesh-refined-drop-75.png": "4b11e59b6ff4ba681f7534f0fa9f632c1d1f65fdf68cdd8c20b2c036710a400e",
+    "docs/assets/deformable-mesh-refined-drop-topology.csv": "b7fad29493ed114f3a755899fe7348968e8991b4836a040fb3680e0670c18232"
+  },
+  "geometry_audit": {
+    "captured_frames": 101,
+    "rows": 31209,
+    "nodes": 309,
+    "tetrahedra": 1280,
+    "boundary_triangles": 320,
+    "boundary_oriented_manifold": true,
+    "OBJ_CSV_positions_exact": true,
+    "volume_derived_masses_match": true,
+    "minimum_sampled_volume_ratio": 0.32768139605412583,
+    "minimum_sampled_clearance_m": 0.0,
+    "trace_sha256": "1d5d2d52c200104eccf31804050ad543cb97bb6fb5e01e1e9957009347cf0931",
+    "topology_sha256": "b7fad29493ed114f3a755899fe7348968e8991b4836a040fb3680e0670c18232",
+    "evidence_boundary": "Exported state geometry and mass only; not independent proof of intermediate device steps, force accuracy, total contact-work closure or fruit calibration.",
+    "snapshots": [
+      {
+        "frame": 0,
+        "sha256": "79ae8c230d53ad12c93a50ff199f5b24bdcebd0f198bfb6bff1ba72b03278da4",
+        "minimum_volume_ratio": 0.9999999437776309
+      },
+      {
+        "frame": 1,
+        "sha256": "6620c3210d60ce97fefd8efaaf329db02c6c4fdd845b36003aa01d123be9604b",
+        "minimum_volume_ratio": 0.9999976986420991
+      },
+      {
+        "frame": 2,
+        "sha256": "4d542339edc80f804c47e381137fadce148c31ce78c7c67212d8a81d0f7d5152",
+        "minimum_volume_ratio": 0.9999965934803668
+      },
+      {
+        "frame": 3,
+        "sha256": "945fe24c9904ec789373e767dc659310fed07adffe7402ab1e988af80b510d6f",
+        "minimum_volume_ratio": 0.9999953188063304
+      },
+      {
+        "frame": 4,
+        "sha256": "852bb116d7a46ce23e7254816a2f8fee92a85fcc3bcbdaf32217971c4cc24b18",
+        "minimum_volume_ratio": 0.9999947382903284
+      },
+      {
+        "frame": 5,
+        "sha256": "8a829a75f751f94686d9805b77a68c5df684e8f9efd3a513e7e58edd8bbd997a",
+        "minimum_volume_ratio": 0.9999912836419628
+      },
+      {
+        "frame": 6,
+        "sha256": "120a02d8e2432987efb293f43ec4b14586fcc59083486b5cc935d63afb3e4d40",
+        "minimum_volume_ratio": 0.9999932307896254
+      },
+      {
+        "frame": 7,
+        "sha256": "19a4fdb15a0bab388db45fb5842815a6b0d8ef00792c34b53b0eb2d0f67ecb2c",
+        "minimum_volume_ratio": 0.9999930231231088
+      },
+      {
+        "frame": 8,
+        "sha256": "f245de71072bd9c3dacb1bf50ceab80c669b516a07fb6e7217e94f565404d77c",
+        "minimum_volume_ratio": 0.9999894600619829
+      },
+      {
+        "frame": 9,
+        "sha256": "38b53e1e9f6b9ba359d1366fde9ffbeabf117b27d4e49049945519f3982d50a4",
+        "minimum_volume_ratio": 0.999990508293525
+      },
+      {
+        "frame": 10,
+        "sha256": "7ef1811233308ac5f5ab90e6794849e59e7ba9159f72391bcb281f474523aa12",
+        "minimum_volume_ratio": 0.9999879939327764
+      },
+      {
+        "frame": 11,
+        "sha256": "41e4b29d18a93b69439a31baf333184da701e9eac83a787aabf9d78b126f8984",
+        "minimum_volume_ratio": 0.9999915134312267
+      },
+      {
+        "frame": 12,
+        "sha256": "863fb83109935e83eeb1f488fc8298d0ed44830fedf4c77a72f554c1b6434609",
+        "minimum_volume_ratio": 0.9999902248341026
+      },
+      {
+        "frame": 13,
+        "sha256": "dc8b4f6d271566e099040616f9cbdf5f0b0aacdc51979625207481f3b979ec66",
+        "minimum_volume_ratio": 0.9999897917428688
+      },
+      {
+        "frame": 14,
+        "sha256": "5157f6ee30583aa51c02555fba7cd04cd09b6bd0ab6711227e5e0e87314a2910",
+        "minimum_volume_ratio": 0.9999890230664881
+      },
+      {
+        "frame": 15,
+        "sha256": "a5b237dcd3cbd918e33b24d12b2387fd31b218de252f19e28a41aaf4013d0960",
+        "minimum_volume_ratio": 0.9999909589899719
+      },
+      {
+        "frame": 16,
+        "sha256": "3c269cdd5cf44ebd893471c20a3732007eeaa2de598a6d9684f4475f97fb8f43",
+        "minimum_volume_ratio": 0.9999882763617812
+      },
+      {
+        "frame": 17,
+        "sha256": "57e269ce9c23be01c7085dc8b38f15d35c63fbd2328fb5f5555106a23f9a2aee",
+        "minimum_volume_ratio": 0.999989810410648
+      },
+      {
+        "frame": 18,
+        "sha256": "3f829ae6a66880ce4a5ee3f9622bb21fb2c57c0ce19c34a2bf7299c5e031904a",
+        "minimum_volume_ratio": 0.9999904877361971
+      },
+      {
+        "frame": 19,
+        "sha256": "265da0cf85d6174914b116662c3ed10bf2280684ad3f92e83313e12583b77b31",
+        "minimum_volume_ratio": 0.9999909352354415
+      },
+      {
+        "frame": 20,
+        "sha256": "00325f84e35ef578940667bad729f38efdbf6ec48f4ab185877835581e96d953",
+        "minimum_volume_ratio": 0.9999902968297928
+      },
+      {
+        "frame": 21,
+        "sha256": "9c0e47c47a4a6e212556d9f9d4336d2567250cfd4ef5c0991d1cfd5ba1977dc8",
+        "minimum_volume_ratio": 0.9999894904291995
+      },
+      {
+        "frame": 22,
+        "sha256": "7d59bf37c8c6cec78d1ad6aee73ea7ceda30bba327f74f338adf3156cb6a1084",
+        "minimum_volume_ratio": 0.9999889845305696
+      },
+      {
+        "frame": 23,
+        "sha256": "f4670fa546dc22ccbd2e884536144f2473c573c2c93ea8e60644b1c679efdb79",
+        "minimum_volume_ratio": 0.9999871825110896
+      },
+      {
+        "frame": 24,
+        "sha256": "0469bb2fb0cb1695e3c3c2e42521441553a12810054d1ddfeaa511fbb81dd190",
+        "minimum_volume_ratio": 0.9999852166253796
+      },
+      {
+        "frame": 25,
+        "sha256": "1e1b79377fe8714dafee4c36e2f083cca707bd6fd2e00e9f33293a61ef2e5f77",
+        "minimum_volume_ratio": 0.9999839849331861
+      },
+      {
+        "frame": 26,
+        "sha256": "174785ac7b7928ca1e91308936526294cc49dad1c5e21f3d3f813b47fc37dcc5",
+        "minimum_volume_ratio": 0.9999861370876075
+      },
+      {
+        "frame": 27,
+        "sha256": "36aa50a3eb167310a3b2cba637c4cc2e32d4156644f3adbab026f664ca273d68",
+        "minimum_volume_ratio": 0.9999870245269012
+      },
+      {
+        "frame": 28,
+        "sha256": "ab330f3b24fc102060109e99d4436661be4393240c5267b196ff8b2d9e16bb8f",
+        "minimum_volume_ratio": 0.9999887059195143
+      },
+      {
+        "frame": 29,
+        "sha256": "dece87790e308a291fe5cda9a9c332420b3423af3e600dd6beb870a15e238acd",
+        "minimum_volume_ratio": 0.9999888776567865
+      },
+      {
+        "frame": 30,
+        "sha256": "731892af5baf2dc3f79ebc243d9e9c913a3210bdc36d22467c2a8566af1862d0",
+        "minimum_volume_ratio": 0.9999890197511722
+      },
+      {
+        "frame": 31,
+        "sha256": "b6d56636966d86064d21b9547aec51a1ab9cf17ac8619da00dfae2b499911241",
+        "minimum_volume_ratio": 0.9999872663550542
+      },
+      {
+        "frame": 32,
+        "sha256": "6bd89755abdd1f7015886869037cf27218141ac917c90f35e24342a76e722402",
+        "minimum_volume_ratio": 0.9999825641304103
+      },
+      {
+        "frame": 33,
+        "sha256": "85e60ed77b712a0c9406df85a47993ff9b341bd400597468b3bbf717232d2fa5",
+        "minimum_volume_ratio": 0.5438209202178901
+      },
+      {
+        "frame": 34,
+        "sha256": "2f4a7a0356e4816722c1a872dfe20d025ed70701f86cdecde457399e958f4539",
+        "minimum_volume_ratio": 0.5512962944752917
+      },
+      {
+        "frame": 35,
+        "sha256": "cd18c408b8fbed34757a3babe3bc5768d8bd6e0b636c6807f930ce9b91b889d2",
+        "minimum_volume_ratio": 0.4168527035286368
+      },
+      {
+        "frame": 36,
+        "sha256": "f93c95253349e6079568b8bfbe4856c520004ecfa8d9a226003c5c8976af2a9d",
+        "minimum_volume_ratio": 0.42502287767543795
+      },
+      {
+        "frame": 37,
+        "sha256": "888cdd551c7d4fd44b083dd28ea7e44055961e0761e4af349bc9cceeaa301a44",
+        "minimum_volume_ratio": 0.42452593001615907
+      },
+      {
+        "frame": 38,
+        "sha256": "1113fa0175fd573c2557ccc8d69d5272f45d1f71aef8f10ccbf5e5dc2492066c",
+        "minimum_volume_ratio": 0.44716723218707066
+      },
+      {
+        "frame": 39,
+        "sha256": "d2123cbf4e7a6123d4b966ca112000357331770d45bacd50d47462f33ef2bb9c",
+        "minimum_volume_ratio": 0.44593220491417274
+      },
+      {
+        "frame": 40,
+        "sha256": "bd9c6fa7432370f8e2a9b01fc4cc5e8ffe9d3f0d5979c33232eb8813b4944309",
+        "minimum_volume_ratio": 0.48631569349876774
+      },
+      {
+        "frame": 41,
+        "sha256": "479137591d8f4d5ff55e212915d670b447a8bb4f53c8daa85779ee07160ed464",
+        "minimum_volume_ratio": 0.39296595942776685
+      },
+      {
+        "frame": 42,
+        "sha256": "b7a89e0846272fb74315180891993a622392356c5911a13a341c10ba175c2d80",
+        "minimum_volume_ratio": 0.45913377829546376
+      },
+      {
+        "frame": 43,
+        "sha256": "9103cbd2aee7cb536f7b5b8e0371e847c47228e61953267137bd78d3a1be66fe",
+        "minimum_volume_ratio": 0.5685001478011371
+      },
+      {
+        "frame": 44,
+        "sha256": "0cddac32e5ec5e7bc51842b58491990b0a4c124bd4d4a6aaa9b35e790e82272f",
+        "minimum_volume_ratio": 0.7299280616113377
+      },
+      {
+        "frame": 45,
+        "sha256": "afba780ee73ff02ece4d6775bbef5a2bd50044f0a2a30f9519f9a6f94a6962b2",
+        "minimum_volume_ratio": 0.8045891023203213
+      },
+      {
+        "frame": 46,
+        "sha256": "e68f074c0e37451778d993293ea623c34a0d5d2c789c0a3da4a64b86d6a24520",
+        "minimum_volume_ratio": 0.7607639272043922
+      },
+      {
+        "frame": 47,
+        "sha256": "e25f3bb8b55b913390bda081cf14a6cca4837293252fd05e821232642f64160b",
+        "minimum_volume_ratio": 0.6355760917209969
+      },
+      {
+        "frame": 48,
+        "sha256": "33a055dfae3f426f0be2eda93e1bf005d16e6843922804df383523eb744dc59b",
+        "minimum_volume_ratio": 0.590942716008705
+      },
+      {
+        "frame": 49,
+        "sha256": "45231113aaf2f758d18b5fd1844d467991928c74bb5a2e6f79af16f2f68b468d",
+        "minimum_volume_ratio": 0.6233119251973211
+      },
+      {
+        "frame": 50,
+        "sha256": "14a05aa2e292b4592cc099735b36e7270b9904fef0dfe494573afae8ac9285a7",
+        "minimum_volume_ratio": 0.7281200423189174
+      },
+      {
+        "frame": 51,
+        "sha256": "b500440eb9bd29879de25de89b3b76bc4ef8128e0d6c949122451be7e52f81bf",
+        "minimum_volume_ratio": 0.801454700257648
+      },
+      {
+        "frame": 52,
+        "sha256": "fe140d11df8ba3135d603413b45323927a1a3cbab6e59bab33770bd5927f1f3d",
+        "minimum_volume_ratio": 0.7408062580908767
+      },
+      {
+        "frame": 53,
+        "sha256": "fec87336aec6d7500c8ce7f8d644be1e51115a806057cc01e6ad61bc6cff9989",
+        "minimum_volume_ratio": 0.5845740863517991
+      },
+      {
+        "frame": 54,
+        "sha256": "65f437fb6bd30a9c0b9887ec40e8e9bf128fb4d75e55055d5fddda55b1957122",
+        "minimum_volume_ratio": 0.5103372659157442
+      },
+      {
+        "frame": 55,
+        "sha256": "56ed7b618672507aa0376d7ca27659fbe166ee6c7aca7ddcc8ba7b33609c9a85",
+        "minimum_volume_ratio": 0.6084351165933418
+      },
+      {
+        "frame": 56,
+        "sha256": "7d132863b00bcd46a04472af3f4b2f38fe7753e4ade4825398828d96bcf2b15d",
+        "minimum_volume_ratio": 0.7374702909185658
+      },
+      {
+        "frame": 57,
+        "sha256": "545954f63ff0e70b55b0e9481fcf92592e452f3461c4da55f68add5d87af7288",
+        "minimum_volume_ratio": 0.7578038486332574
+      },
+      {
+        "frame": 58,
+        "sha256": "9b8af9d8d70addff197bd788dbac2c546e1ab0e567dceb8fe66953167d8dd9cb",
+        "minimum_volume_ratio": 0.7125873549234247
+      },
+      {
+        "frame": 59,
+        "sha256": "910bc18042a9fa46e153b9d2a2e26ee853527687920bcf93b0322f15f502d434",
+        "minimum_volume_ratio": 0.5722471298578686
+      },
+      {
+        "frame": 60,
+        "sha256": "7cde01c1c6c936c7b3b51aa185e9774068d7741f9b39023310d774445c108eef",
+        "minimum_volume_ratio": 0.506518886232577
+      },
+      {
+        "frame": 61,
+        "sha256": "4269cfc9bf103c01671dbaca12b822cbbab7ae4f9f3e6f2b60c6b86bdb88bcb1",
+        "minimum_volume_ratio": 0.6764801438878464
+      },
+      {
+        "frame": 62,
+        "sha256": "061191717a6cbb743d87f51eaf6fa6aaa486efeee5e63396fafc85efd69c251c",
+        "minimum_volume_ratio": 0.7046581808523149
+      },
+      {
+        "frame": 63,
+        "sha256": "47f956075387d055e0bc21dfd97e278e930aea2b0afb0ae99b4dde0efcdb5931",
+        "minimum_volume_ratio": 0.7628465041350109
+      },
+      {
+        "frame": 64,
+        "sha256": "c2da0c918b3612e84ceb77a82c9ed9fdb8e272e32de70df831f36a35a93e12b6",
+        "minimum_volume_ratio": 0.6687314154389223
+      },
+      {
+        "frame": 65,
+        "sha256": "151681acb487145cfb4b5b41531f6e925028947b5d7691831113c08725b1f535",
+        "minimum_volume_ratio": 0.5342546662801142
+      },
+      {
+        "frame": 66,
+        "sha256": "d5793073a6f7ec617d93b602690ce6d201acf03533838013d53c8cfa7d0d06b9",
+        "minimum_volume_ratio": 0.6017965297229237
+      },
+      {
+        "frame": 67,
+        "sha256": "4c4dd42625d16dd680fdcc46926f66805b6d8d765c7791834b5174a4f4b7e14f",
+        "minimum_volume_ratio": 0.6930380538803718
+      },
+      {
+        "frame": 68,
+        "sha256": "e58c50b797b935bc4357fb656ef7e9ad4745e1b1af85eebb2afa57ae01c556f3",
+        "minimum_volume_ratio": 0.6856007220528763
+      },
+      {
+        "frame": 69,
+        "sha256": "631d277cd8a52211dd4702d9ffd535da25bc044ac518b365694bf06d48fc6ec6",
+        "minimum_volume_ratio": 0.8176560582490432
+      },
+      {
+        "frame": 70,
+        "sha256": "ee203f1b3adf8704e2d47844e76cd46c3b7b59ef71143cdef59d6b517cd9e0da",
+        "minimum_volume_ratio": 0.7211323508619586
+      },
+      {
+        "frame": 71,
+        "sha256": "ee3fe066f240af8bc3df383b3752c6639d88ea6790dacc202c96680cdbbe8fd2",
+        "minimum_volume_ratio": 0.5378951854529108
+      },
+      {
+        "frame": 72,
+        "sha256": "d6d5eb60b495cb0875aaddcda331fbad0f782fd5f94e11c83a1bd5911a3dc3dd",
+        "minimum_volume_ratio": 0.5863279278620736
+      },
+      {
+        "frame": 73,
+        "sha256": "16ba222dc32e1236b88e6ab8b61a445cac323e45942d84c6f0634fff8679ea0d",
+        "minimum_volume_ratio": 0.7105381326868129
+      },
+      {
+        "frame": 74,
+        "sha256": "f391ba377ab35c26a81cda9302eaa495959910634957c351f5fa98511c32e39f",
+        "minimum_volume_ratio": 0.7979268115176813
+      },
+      {
+        "frame": 75,
+        "sha256": "d6abfa1fd72c2db7c0d24a891c5157888cb6a6a9d890c78b48060d8651d1697d",
+        "minimum_volume_ratio": 0.7813816077796447
+      },
+      {
+        "frame": 76,
+        "sha256": "c1fbbfbe896c9f79d0df5639df4d531bf425675dc6b8194518672a7545748146",
+        "minimum_volume_ratio": 0.6851583533934474
+      },
+      {
+        "frame": 77,
+        "sha256": "4d3c74deab00cf7524a421ea76f415e44a5c6cfc087bf67de01541615df66c6d",
+        "minimum_volume_ratio": 0.5531785707860352
+      },
+      {
+        "frame": 78,
+        "sha256": "ec107bb2bc8c545344a6cf38422f5e5ef78eae6b07a35278df361500944f88b3",
+        "minimum_volume_ratio": 0.6108236926138003
+      },
+      {
+        "frame": 79,
+        "sha256": "3c84bb3796e85485b7fe9498e3c3e0957daa9abd4bae9da0967487b34a66d80e",
+        "minimum_volume_ratio": 0.6932711223648248
+      },
+      {
+        "frame": 80,
+        "sha256": "bd1e9b0769ccb5cabff31ec00ae5840c30daed82aba718ab010d5a1c7eb71b7e",
+        "minimum_volume_ratio": 0.7442712457263374
+      },
+      {
+        "frame": 81,
+        "sha256": "b86cfe4d49803b3b6cc2828b0f4c2826860a979ad98f8483860e99b5ac2293e6",
+        "minimum_volume_ratio": 0.7541946677404774
+      },
+      {
+        "frame": 82,
+        "sha256": "1a391393fcddd15bda0f39fbde470dbc3c430ad6f326bbb17670c9ebffde6848",
+        "minimum_volume_ratio": 0.6442793382123498
+      },
+      {
+        "frame": 83,
+        "sha256": "fb9e6cca6d874f3e7f2358723acd375fea8cd39b3cf1dbf52ad7085c702bed67",
+        "minimum_volume_ratio": 0.5164067904171721
+      },
+      {
+        "frame": 84,
+        "sha256": "f737d933d49d97586750e81cbf7b61532e027f4620fb2ef7c3e97fd424ef4a6f",
+        "minimum_volume_ratio": 0.5818555372498058
+      },
+      {
+        "frame": 85,
+        "sha256": "46d02338a415075a9af455fc535622b934edf24de4ba668c1a9d1003350d3317",
+        "minimum_volume_ratio": 0.6686116795576879
+      },
+      {
+        "frame": 86,
+        "sha256": "360222557cbf6a2dfa9fcdb89bc7e789c659d0a09eecb32aa5fcbe17c4d54ac3",
+        "minimum_volume_ratio": 0.756885475521998
+      },
+      {
+        "frame": 87,
+        "sha256": "7e099b6b7b7ad6d2deda493eac5d37ddc5b1eba88882dcb1235581b7958c26d4",
+        "minimum_volume_ratio": 0.7256303151210114
+      },
+      {
+        "frame": 88,
+        "sha256": "516ebe550c110d0f31249138970472fa1bbcb6d1599353c9ff1c5e205d200f8a",
+        "minimum_volume_ratio": 0.5983226310704103
+      },
+      {
+        "frame": 89,
+        "sha256": "66e431d7e7daded7a5076ebe59dd5db9d602d9a083adb4598eeec394ea078c16",
+        "minimum_volume_ratio": 0.5409105136265338
+      },
+      {
+        "frame": 90,
+        "sha256": "a8452ef5343aa6af6c80f2e7464d105a6af96eba558418b68b847f543a6752d5",
+        "minimum_volume_ratio": 0.4029015342141927
+      },
+      {
+        "frame": 91,
+        "sha256": "e19f7d778fdffb35ddda372e40ca7f76d8b51b902819e50e9d73f3fd1f52ec5a",
+        "minimum_volume_ratio": 0.4311667303121183
+      },
+      {
+        "frame": 92,
+        "sha256": "b2f0477003f319f1b8174ce2b1c94ab308bb41c02aaa81226634a328411358aa",
+        "minimum_volume_ratio": 0.45268424339115165
+      },
+      {
+        "frame": 93,
+        "sha256": "31c31a5cd72a3454c175b02c15595b3889c37a88afd1e0039370f9a784b02f56",
+        "minimum_volume_ratio": 0.4949905709613899
+      },
+      {
+        "frame": 94,
+        "sha256": "123bd4aa2ffcc7c7fc06d5b4baab0057692f041a72ae2bb07faff461977c7c7e",
+        "minimum_volume_ratio": 0.32768139605412583
+      },
+      {
+        "frame": 95,
+        "sha256": "e82fce4a5213219358b71063b35e17bae3e53ed68896a2c74a6f7a2b6ee43456",
+        "minimum_volume_ratio": 0.3316464128760048
+      },
+      {
+        "frame": 96,
+        "sha256": "081ea0f02ed7f87cad3831ce546c1bfc7980e59a20aa38bf9ddc00e6f2376f6d",
+        "minimum_volume_ratio": 0.44073556815199866
+      },
+      {
+        "frame": 97,
+        "sha256": "4ff29fb602c679fc119252740274e7c047ee116c91ac2a060a3aa965a4251920",
+        "minimum_volume_ratio": 0.4633952978365417
+      },
+      {
+        "frame": 98,
+        "sha256": "aa25190bf920f2e882b23931d5b8722b9e5f6d7479d4b13f908d1c75b5e34e65",
+        "minimum_volume_ratio": 0.45493216132825615
+      },
+      {
+        "frame": 99,
+        "sha256": "d84e9e4ff681aa989c71ea32dcc74c137427649ab9153be07bac8e97200be0e7",
+        "minimum_volume_ratio": 0.3585415032550855
+      },
+      {
+        "frame": 100,
+        "sha256": "d342dd56aa0e6e9770668ec00dcaf67b4ddee17df7ae40586293e4af723a3e43",
+        "minimum_volume_ratio": 0.5069754394086355
+      }
+    ]
+  },
+  "spatial_comparison": {
+    "spatial_target_m": 0.001,
+    "comparison": [
+      {
+        "coarse_nodes": 13,
+        "fine_nodes": 55,
+        "coarse_tetrahedra": 20,
+        "fine_tetrahedra": 160,
+        "total_mass_difference_kg": 1.8625500031177467e-09,
+        "maximum_matched_node_difference_m": 0.03718117695914844,
+        "maximum_COM_difference_m": 0.021900717015709184,
+        "maximum_height_difference_m": 0.03330413624610001,
+        "within_spatial_target": false,
+        "coarse_trace_sha256": "ebe705014535a1654d0eeb98287e862607864fcfc95e1335cfd4de538bcf6816",
+        "fine_trace_sha256": "73a76923c8bbc1eff0ce38f2d492c7fedea3c2eafd174b19b37a4e24e10f2533"
+      },
+      {
+        "coarse_nodes": 55,
+        "fine_nodes": 309,
+        "coarse_tetrahedra": 160,
+        "fine_tetrahedra": 1280,
+        "total_mass_difference_kg": 9.778823029105155e-09,
+        "maximum_matched_node_difference_m": 0.03638726903802977,
+        "maximum_COM_difference_m": 0.01763520822126289,
+        "maximum_height_difference_m": 0.03308754354119091,
+        "within_spatial_target": false,
+        "coarse_trace_sha256": "73a76923c8bbc1eff0ce38f2d492c7fedea3c2eafd174b19b37a4e24e10f2533",
+        "fine_trace_sha256": "1d5d2d52c200104eccf31804050ad543cb97bb6fb5e01e1e9957009347cf0931"
+      }
+    ],
+    "finest_pair_within_spatial_target": false,
+    "evidence_boundary": "Matched owning-node positions at equal exported times for the same piecewise-flat rest body, authored material and volume-derived masses. Each complete trajectory is independently checked for topology, geometry and mass. Timestep convergence does not imply spatial convergence. This comparison does not calibrate fruit properties or close intervening contact work."
+  },
+  "original_coarse_101_OBJ_states_byte_identical": true,
+  "video": {
+    "width": 960,
+    "height": 800,
+    "frames": 101,
+    "fps": 30,
+    "duration_s": 3.366667,
+    "playback_speed_relative_to_simulation": 0.1485148514851485
+  },
+  "evidence_boundary": "Native shared-node elastic benchmark with authored material and a frictionless inelastic plane. Individual replay/timestep/geometry checks PASS. Spatial target remains FAIL with 36.39mm maximum matched node discrepancy in the finest pair. No calibrated fruit, frictional surface, finite bench, woven-bag coupling, or total contact-work closure qualification."
+}

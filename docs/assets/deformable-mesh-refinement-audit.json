@@ -1,0 +1,33 @@
+{
+  "spatial_target_m": 0.001,
+  "comparison": [
+    {
+      "coarse_nodes": 13,
+      "fine_nodes": 55,
+      "coarse_tetrahedra": 20,
+      "fine_tetrahedra": 160,
+      "total_mass_difference_kg": 1.8625500031177467e-09,
+      "maximum_matched_node_difference_m": 0.03718117695914844,
+      "maximum_COM_difference_m": 0.021900717015709184,
+      "maximum_height_difference_m": 0.03330413624610001,
+      "within_spatial_target": false,
+      "coarse_trace_sha256": "ebe705014535a1654d0eeb98287e862607864fcfc95e1335cfd4de538bcf6816",
+      "fine_trace_sha256": "73a76923c8bbc1eff0ce38f2d492c7fedea3c2eafd174b19b37a4e24e10f2533"
+    },
+    {
+      "coarse_nodes": 55,
+      "fine_nodes": 309,
+      "coarse_tetrahedra": 160,
+      "fine_tetrahedra": 1280,
+      "total_mass_difference_kg": 9.778823029105155e-09,
+      "maximum_matched_node_difference_m": 0.03638726903802977,
+      "maximum_COM_difference_m": 0.01763520822126289,
+      "maximum_height_difference_m": 0.03308754354119091,
+      "within_spatial_target": false,
+      "coarse_trace_sha256": "73a76923c8bbc1eff0ce38f2d492c7fedea3c2eafd174b19b37a4e24e10f2533",
+      "fine_trace_sha256": "1d5d2d52c200104eccf31804050ad543cb97bb6fb5e01e1e9957009347cf0931"
+    }
+  ],
+  "finest_pair_within_spatial_target": false,
+  "evidence_boundary": "Matched owning-node positions at equal exported times for the same piecewise-flat rest body, authored material and volume-derived masses. Each complete trajectory is independently checked for topology, geometry and mass. Timestep convergence does not imply spatial convergence. This comparison does not calibrate fruit properties or close intervening contact work."
+}

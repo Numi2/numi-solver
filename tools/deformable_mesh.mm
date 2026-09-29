@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -29,7 +30,7 @@ struct Mesh {
     std::vector<uint32_t> offsets;
     std::vector<mr_uint4> incidence;
 };
-Mesh makeMesh(){
+Mesh makeMesh(const uint32_t refinement=0){
     Mesh mesh;double phi=(1+std::sqrt(5.0))/2,radius=.05;
     std::vector<V> surface{{-1,phi,0},{1,phi,0},{-1,-phi,0},{1,-phi,0},
         {0,-1,phi},{0,1,phi},{0,-1,-phi},{0,1,-phi},
@@ -49,13 +50,49 @@ Mesh makeMesh(){
         if(boundary)mesh.faces.push_back(face);
     }
     if(mesh.faces.size()!=20)throw std::runtime_error("icosahedron boundary is not twenty triangles");
-    std::vector<double> masses(13);
-    for(auto face:mesh.faces){
+    std::vector<std::array<uint32_t,4>> tets;
+    for(auto face:mesh.faces)tets.push_back({0,face[0],face[1],face[2]});
+    for(uint32_t level=0;level<refinement;++level){
+        // Shared midpoints preserve the exact original piecewise-flat body.
+        // No radius projection or changed material is hidden in refinement.
+        std::map<std::pair<uint32_t,uint32_t>,uint32_t> midpointNodes;
+        auto midpoint=[&](uint32_t first,uint32_t second){
+            auto edge=std::minmax(first,second);
+            auto key=std::pair{edge.first,edge.second};
+            auto found=midpointNodes.find(key);if(found!=midpointNodes.end())return found->second;
+            V point{};for(int k=0;k<3;++k)point[k]=.5*(xyz(mesh.positions[first])[k]+xyz(mesh.positions[second])[k]);
+            uint32_t node=uint32_t(mesh.positions.size());mesh.positions.push_back(f4(point));
+            midpointNodes.emplace(key,node);return node;
+        };
+        std::vector<std::array<uint32_t,4>> children;
+        for(auto tet:tets){
+            uint32_t a=tet[0],b=tet[1],c=tet[2],d=tet[3];
+            uint32_t ab=midpoint(a,b),ac=midpoint(a,c),ad=midpoint(a,d),
+                     bc=midpoint(b,c),bd=midpoint(b,d),cd=midpoint(c,d);
+            for(auto child:std::array<std::array<uint32_t,4>,8>{{
+                {a,ab,ac,ad},{b,ab,bc,bd},{c,ac,bc,cd},{d,ad,bd,cd},
+                {ab,ac,ad,cd},{ab,ac,bc,cd},{ab,ad,bd,cd},{ab,bc,bd,cd}}}){
+                V x=sub(xyz(mesh.positions[child[1]]),xyz(mesh.positions[child[0]]));
+                V y=sub(xyz(mesh.positions[child[2]]),xyz(mesh.positions[child[0]]));
+                V z=sub(xyz(mesh.positions[child[3]]),xyz(mesh.positions[child[0]]));
+                if(dot(x,cross(y,z))<0)std::swap(child[1],child[2]);
+                children.push_back(child);
+            }
+        }
+        std::vector<Face> boundary;
+        for(auto face:mesh.faces){
+            uint32_t a=face[0],b=face[1],c=face[2],ab=midpoint(a,b),bc=midpoint(b,c),ac=midpoint(a,c);
+            for(auto child:std::array<Face,4>{{{a,ab,ac},{ab,b,bc},{ac,bc,c},{ab,bc,ac}}})boundary.push_back(child);
+        }
+        tets=std::move(children);mesh.faces=std::move(boundary);
+    }
+    std::vector<double> masses(mesh.positions.size());
+    for(auto tet:tets){
         NumiDeformableMeshElement element{};
-        element.nodes={0,face[0],face[1],face[2]};
-        V a=sub(xyz(mesh.positions[face[0]]),xyz(mesh.positions[0]));
-        V b=sub(xyz(mesh.positions[face[1]]),xyz(mesh.positions[0]));
-        V c=sub(xyz(mesh.positions[face[2]]),xyz(mesh.positions[0]));
+        element.nodes={tet[0],tet[1],tet[2],tet[3]};
+        V a=sub(xyz(mesh.positions[tet[1]]),xyz(mesh.positions[tet[0]]));
+        V b=sub(xyz(mesh.positions[tet[2]]),xyz(mesh.positions[tet[0]]));
+        V c=sub(xyz(mesh.positions[tet[3]]),xyz(mesh.positions[tet[0]]));
         double det=dot(a,cross(b,c)),volume=det/6;
         if(!(volume>0))throw std::runtime_error("invalid authored tetrahedron");
         std::array<V,3> rows{cross(b,c),cross(c,a),cross(a,b)};
@@ -66,13 +103,13 @@ Mesh makeMesh(){
         for(int n=0;n<4;++n)masses[corner(element.nodes,n)]+=1000*element.inverseRestRows[0].w/4;
     }
     for(double mass:masses)mesh.velocityAndMass.push_back({0,0,0,float(mass)});
-    for(uint32_t node=0;node<13;++node){
+    for(uint32_t node=0;node<mesh.positions.size();++node){
         mesh.offsets.push_back(uint32_t(mesh.incidence.size()));
         for(uint32_t element=0;element<mesh.elements.size();++element)for(uint32_t n=0;n<4;++n)
             if(corner(mesh.elements[element].nodes,n)==node)mesh.incidence.push_back({element,n,node,0});
     }
     mesh.offsets.push_back(uint32_t(mesh.incidence.size()));
-    if(mesh.incidence.size()!=80)throw std::runtime_error("incorrect incidence count");
+    if(mesh.incidence.size()!=4*mesh.elements.size())throw std::runtime_error("incorrect incidence count");
     for(auto face:mesh.faces)for(int edge=0;edge<3;++edge){
         uint32_t a=face[edge],b=face[(edge+1)%3];int forward=0,reverse=0;
         for(auto other:mesh.faces)for(int e=0;e<3;++e){
@@ -192,7 +229,7 @@ void exportFrames(const std::string& prefix,const Mesh& mesh,const std::vector<F
         for(auto face:mesh.faces)obj<<"f "<<face[0]+1<<' '<<face[1]+1<<' '<<face[2]+1<<'\n';
     }
 }
-int run(const std::string& prefix){
+int run(const std::string& prefix,const uint32_t refinement){
     auto device=MTLCreateSystemDefaultDevice();if(!device)throw std::runtime_error("Metal device unavailable");
     NSError* error=nil;
     auto library=[device newLibraryWithURL:[NSURL fileURLWithPath:@NUMI_DEFORMABLE_MESH_METALLIB] error:&error];
@@ -201,7 +238,7 @@ int run(const std::string& prefix){
         if(!result)throw std::runtime_error(error.localizedDescription.UTF8String);return result;};
     Pipelines pipelines{pipeline(@"numi_deformable_mesh_evaluate"),pipeline(@"numi_deformable_mesh_predict"),
         pipeline(@"numi_deformable_mesh_validate"),pipeline(@"numi_deformable_mesh_commit")};
-    auto mesh=makeMesh();auto motion=simulate(device,pipelines,mesh,1e-4f),replay=simulate(device,pipelines,mesh,1e-4f),fine=simulate(device,pipelines,mesh,5e-5f);
+    auto mesh=makeMesh(refinement);auto motion=simulate(device,pipelines,mesh,1e-4f),replay=simulate(device,pipelines,mesh,1e-4f),fine=simulate(device,pipelines,mesh,5e-5f);
     bool rollbackExact=true;uint32_t rejectedCases=0;
     auto reject=[&](Mesh malformed,uint32_t bit,uint32_t abi=NUMI_DEFORMABLE_MESH_ABI_VERSION){
         auto states=simulate(device,pipelines,malformed,1e-4f,true,1,abi);
@@ -247,7 +284,7 @@ int run(const std::string& prefix){
         finalHeight-minimumHeight>.001&&difference<.001&&energyIncrease<.001&&freeFallError<2e-5&&maximumMomentumError<2e-4;
     exportFrames(prefix,mesh,motion);
     std::cout<<std::setprecision(12)<<"device="<<device.name.UTF8String<<" backend=Apple_Metal\n"
-        <<"shared_nodes=13 tetrahedra=20 boundary_triangles=20 density_kg_m3=1000 mass_kg="<<mass<<'\n'
+        <<"shared_nodes="<<mesh.positions.size()<<" tetrahedra="<<mesh.elements.size()<<" boundary_triangles="<<mesh.faces.size()<<" mesh_refinement="<<refinement<<" density_kg_m3=1000 mass_kg="<<mass<<'\n'
         <<"simulated_seconds=.5 steps=5000 refined_steps=10000 captured_frames="<<motion.size()<<" replay_exact="<<exact<<" all_candidates_valid="<<allValid<<'\n'
         <<"maximum_nodal_refinement_difference_m="<<difference<<" maximum_relative_shape_change_m="<<maximumShape<<'\n'
         <<"initial_height_m="<<height(motion[0])<<" minimum_height_m="<<minimumHeight<<" final_height_m="<<finalHeight<<'\n'
@@ -263,8 +300,15 @@ int run(const std::string& prefix){
 }
 }
 int main(int argc,const char* const* argv){@autoreleasepool{try{
-    std::string prefix;
-    if(argc==3&&std::string(argv[1])=="--trajectory")prefix=argv[2];
-    else if(argc!=1)throw std::runtime_error("usage: numi-solver-deformable-mesh [--trajectory PREFIX]");
-    return run(prefix);
+    std::string prefix;uint32_t refinement=0;
+    for(int argument=1;argument<argc;++argument){
+        std::string option=argv[argument];
+        if(option=="--trajectory"&&argument+1<argc)prefix=argv[++argument];
+        else if(option=="--mesh-refinement"&&argument+1<argc){
+            std::string value=argv[++argument];
+            if(value!="0"&&value!="1"&&value!="2")throw std::runtime_error("mesh refinement must be 0, 1, or 2");
+            refinement=uint32_t(std::stoul(value));
+        } else throw std::runtime_error("usage: numi-solver-deformable-mesh [--trajectory PREFIX] [--mesh-refinement 0|1|2]");
+    }
+    return run(prefix,refinement);
 }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 2;}}}
