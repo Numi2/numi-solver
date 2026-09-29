@@ -1,0 +1,11 @@
+small_radius=0.0040000001899898052 fixed_tolerance=1.9999999999999999e-06 status=bracket outer=28 seconds=0.000901916
+small_radius=5.0000000584304871e-08 fixed_tolerance=1.9999999999999999e-06 status=bracket outer=35 seconds=0.001017916
+small_radius=1.0000000036274937e-15 fixed_tolerance=1.9999999999999999e-06 status=unresolved outer=104 seconds=0.0029326249999999999
+small_radius=1.4012984643248171e-45 fixed_tolerance=1.9999999999999999e-06 status=unresolved outer=107 seconds=0.0030357919999999998
+caller_budget=0 status=unresolved counted_nodes=0
+caller_budget=1 status=unresolved counted_nodes=1
+caller_budget=128 status=bracket counted_nodes=28
+five_nonidentical_owner_displacements=1
+grazing_status=unresolved clear_prefix=0.24999999981810106 outer=90
+projection_plane_controls=162 failures=0 maximum_lower_excess=0
+bounded_status_controls=9 failures=0 custom_tolerance_API=NONE fixed_accuracy=2e-6 outer_budget=128

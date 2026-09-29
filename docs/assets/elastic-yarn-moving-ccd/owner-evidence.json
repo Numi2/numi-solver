@@ -1,0 +1,91 @@
+{
+  "schema": "numi.elastic-yarn.ccd.bounded-helper-repair.v1",
+  "runs": [
+    {
+      "label": "prototype",
+      "command": [
+        "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/prototype"
+      ],
+      "actual_exit": 0,
+      "wall_seconds": 0.4374680519104004,
+      "expected_exit": 0
+    },
+    {
+      "label": "grazing-frontier",
+      "command": [
+        "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/prototype",
+        "--grazing-frontier"
+      ],
+      "actual_exit": 1,
+      "wall_seconds": 0.011812925338745117,
+      "expected_exit": 1
+    },
+    {
+      "label": "endpoint-only-negative",
+      "command": [
+        "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/prototype",
+        "--endpoint-only-negative-control"
+      ],
+      "actual_exit": 1,
+      "wall_seconds": 0.0050470829010009766,
+      "expected_exit": 1
+    },
+    {
+      "label": "bounded-controls",
+      "command": [
+        "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/bounded-controls"
+      ],
+      "actual_exit": 0,
+      "wall_seconds": 0.31674695014953613,
+      "expected_exit": 0
+    },
+    {
+      "label": "independent-controls",
+      "command": [
+        "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/independent-controls"
+      ],
+      "actual_exit": 0,
+      "wall_seconds": 0.3099491596221924,
+      "expected_exit": 0
+    }
+  ],
+  "sha256": {
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/prototype.cpp": "1e4bd044a16122bc667189796b0adaec7588964f8a265d5fb156a66138c26dac",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/prototype": "643a9fcd8fb70076a280e8065c74798d0ceb9f2624c2030781bc118ff5d5832f",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/bounded-controls.cpp": "45fe2c150784657e4a5165a821cdfc3ad17663f1f68516f24c217f39a16dd5cf",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/bounded-controls": "4281eba021c130ab4e685e5fe40d205d00dbe8089a18054a79c4e7827c182f51",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/independent-controls.cpp": "ef179b04ea0ee73cb711b2e19d65e463f586f25c72e90b4c61f9364c6fcf88aa",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/independent-controls": "243df8302813ce34c46a53a0784e58ef5762a608eec5bb2047eaa12ca4806409",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/run.py": "3b0be2ba63742e9a0f747326ca3291807421360673ff5bf18638311c76de7df6",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/parent-manifest.json": "945d53070fbc21a80ec541e7540a47fc51d30bcf5394060650ca8880c9de25e1",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/production-manifest.json": "bfab157d2b6bcc9190b089bbbeebc105df638fd8671b9dd205540a7d2ec1a78f",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/exact-simplex-controls.json": "b975422037258369a6645dd8b2039346df7b3b0ff96b979d92db4c11636f96cf",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/prototype.log": "a97b1ed01a4b2154721d4f44a71a4ccb5a29f54c37d2846d48e734de44c12c3f",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/prototype.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/grazing-frontier.log": "3faa1bbd89ca87d6ec19fe0769bbb83de9714a7ee6a907ff84c2a050302b6918",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/grazing-frontier.exit": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/endpoint-only-negative.log": "b3d1f7722f7b41738cd7ae90051b541f43bd73b867fa2cc5fd4f9f8d5e1b7509",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/endpoint-only-negative.exit": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/bounded-controls.log": "a0b4f8d5d209f6aff8ff95c4ba946f9a2c85f0f6bd265f72c2190da66004f7ca",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/bounded-controls.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/independent-controls.log": "22f7e907731a15f7d6830bfbae2b42403137c71df1971aaef7c70338425ee005",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/independent-controls.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/include/numi/elastic_yarn_contact.h": "3fad55a3fb387d4a647f82c4c620901c2db325f39c06bba0e48c2b5ce8a2314c",
+    "/Users/home/numi-solver/build/elastic-yarn-ccd-bounded/include/numi/static_contact_geometry.h": "7d288795b0e382ee50baf9ae407e3ef97803a8c40152a09606afb7f2133908a4"
+  },
+  "original_parent_artifacts_verified_before_and_after": true,
+  "original_evidence_sha256": "0f2cbdf147f687cb63dbc648e6ca8affbafc2a882ea60a2f7724b96c32c9d69b",
+  "compiler": "clang++ -std=c++23 -O2 -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off",
+  "summary": "passed_contact_clear_support_cases=22 retained_failure_controls=8 maximum_conservative_spatial_earliness_m=1.604193960016713e-06 analytic_temporal_controls=12 maximum_oracle_analytic_time_error=1.6653345369377348e-16 tolerance_m=1.9999999999999999e-06 outer_budget=128 exact_replays=2 no_gpu=1",
+  "exact_binary_rational_actual_helper_cases": 81,
+  "repairs": [
+    "Single-step conservative barycentric complement eliminates predecessor loop",
+    "Nonfinite planes/owners/radius and invalid intervals return negative infinity",
+    "Nonfinite or individually out-of-range u/v/z return positive infinity",
+    "Every accepted bracket/support lower endpoint has instantaneous certified gap>=-2um",
+    "Temporal search requires strictly certified initial separation; other initial touch stays unresolved"
+  ],
+  "accuracy_m": 2e-06,
+  "outer_budget": 128,
+  "boundary": "Ignored CPU math prototype only; original source/binary/logs/receipt immutable. No GPU, long trajectory, production integration, contact impulse or energy/work qualification. Later exact grazing remains unresolved."
+}

@@ -1,0 +1,264 @@
+{
+  "schema": "numi.elastic-yarn.ccd.bounded-repair-independent-review.v1",
+  "observed_utc": "2026-09-29T15:47:28.148897+00:00",
+  "original_source_sha256": "d75af94a71f8556ec59ff2f11f1fbc5b2836b3292a8021e3470bc5c32d6d209c",
+  "bounded_source_sha256": "1e4bd044a16122bc667189796b0adaec7588964f8a265d5fb156a66138c26dac",
+  "bounded_owner_source_still_matches": true,
+  "original_receipt_artifact_verification": {
+    "build/elastic-yarn-ccd/prototype.cpp": true,
+    "build/elastic-yarn-ccd/prototype": true,
+    "build/elastic-yarn-ccd/prototype.log": true,
+    "build/elastic-yarn-ccd/prototype.exit": true,
+    "build/elastic-yarn-ccd/grazing-frontier.log": true,
+    "build/elastic-yarn-ccd/grazing-frontier.exit": true,
+    "build/elastic-yarn-ccd/endpoint-only-negative.log": true,
+    "build/elastic-yarn-ccd/endpoint-only-negative.exit": true,
+    "build/elastic-yarn-ccd/production-manifest.json": true
+  },
+  "frozen_header_sha256": {
+    "build/elastic-yarn-ccd-independent-review/include/numi/elastic_yarn_contact.h": "3fad55a3fb387d4a647f82c4c620901c2db325f39c06bba0e48c2b5ce8a2314c",
+    "build/elastic-yarn-ccd-independent-review/include/numi/static_contact_geometry.h": "7d288795b0e382ee50baf9ae407e3ef97803a8c40152a09606afb7f2133908a4"
+  },
+  "compile_flags": [
+    "-std=c++23",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-fno-fast-math",
+    "-ffp-contract=off"
+  ],
+  "actual_bounded_CPU_runs": [
+    {
+      "name": "bounded-default-rerun",
+      "source": "build/elastic-yarn-ccd-independent-review/bounded-prototype-snapshot.cpp",
+      "source_sha256": "1e4bd044a16122bc667189796b0adaec7588964f8a265d5fb156a66138c26dac",
+      "binary_sha256": "2d44632f52b7e0a5abbeafd50a812c860ed44297df9033fb7c98f98cd2f86d25",
+      "argv": [
+        "build/elastic-yarn-ccd-independent-review/bounded-default-rerun"
+      ],
+      "actual_exit": 0,
+      "expected_exit": 0,
+      "timeout_s": 3,
+      "timed_out": false,
+      "elapsed_s": 0.544489,
+      "stdout_sha256": "a97b1ed01a4b2154721d4f44a71a4ccb5a29f54c37d2846d48e734de44c12c3f"
+    },
+    {
+      "name": "bounded-grazing-rerun",
+      "source": "build/elastic-yarn-ccd-independent-review/bounded-prototype-snapshot.cpp",
+      "source_sha256": "1e4bd044a16122bc667189796b0adaec7588964f8a265d5fb156a66138c26dac",
+      "binary_sha256": "2f053625435396798837a6aae959f729254e90e08f3fc75a3ed87abdad193e91",
+      "argv": [
+        "build/elastic-yarn-ccd-independent-review/bounded-grazing-rerun",
+        "--grazing-frontier"
+      ],
+      "actual_exit": 1,
+      "expected_exit": 1,
+      "timeout_s": 3,
+      "timed_out": false,
+      "elapsed_s": 0.272986,
+      "stdout_sha256": "3faa1bbd89ca87d6ec19fe0769bbb83de9714a7ee6a907ff84c2a050302b6918"
+    },
+    {
+      "name": "bounded-controls-rerun",
+      "source": "build/elastic-yarn-ccd-independent-review/bounded-controls-rerun.cpp",
+      "source_sha256": "008024ca3f49243d2e0d71c4f5e14f809e239ee7d30a1e1bec5aeba8d396636d",
+      "binary_sha256": "2d8e082649d0b7f6f2c5281faee7e624226aa6dccf7d3d08028c7a02ad81b7f4",
+      "argv": [
+        "build/elastic-yarn-ccd-independent-review/bounded-controls-rerun"
+      ],
+      "actual_exit": 0,
+      "expected_exit": 0,
+      "timeout_s": 3,
+      "timed_out": false,
+      "elapsed_s": 0.264313,
+      "stdout_sha256": "82ead6ca2943ce95768ea7d346d2c89f89f5234bbaeac34444a48b626f8a1657"
+    },
+    {
+      "name": "bounded-independent-controls-rerun",
+      "source": "build/elastic-yarn-ccd-independent-review/independent-controls-rerun.cpp",
+      "source_sha256": "4925283f9d062ca4b671808b654af2f74cc121da6ff0cc77475e1fd3fae605c6",
+      "binary_sha256": "30466a71c3b2bb8b50b9f654cafe3fb6df53a16a6b72cb5f38727481c59ff542",
+      "argv": [
+        "build/elastic-yarn-ccd-independent-review/bounded-independent-controls-rerun"
+      ],
+      "actual_exit": 0,
+      "expected_exit": 0,
+      "timeout_s": 3,
+      "timed_out": false,
+      "elapsed_s": 0.412167,
+      "stdout_sha256": "dccb8e6bd5be325639118ef3eb04f07ab205f042fe172ae101fbe56cb99f7fba"
+    },
+    {
+      "name": "initial-overlap-probe",
+      "source": "build/elastic-yarn-ccd-independent-review/initial-overlap-probe.cpp",
+      "source_sha256": "270de5ed1cfb0165124cc8753313df3ebfc1a49c2a15459ae148ee00585e442d",
+      "binary_sha256": "cc36aecadbd96424ea949bb3a9ed70caef4ada7c36b184b2afbabeeade7fd271",
+      "argv": [
+        "build/elastic-yarn-ccd-independent-review/initial-overlap-probe"
+      ],
+      "actual_exit": 1,
+      "expected_exit": 0,
+      "timeout_s": 3,
+      "timed_out": false,
+      "elapsed_s": 0.336758,
+      "stdout_sha256": "fcee9038e9dcf706e809b4839d65b804939cb0dc5855c68a3853ec7b10aad42f"
+    },
+    {
+      "name": "original-initial-overlap-exact-control",
+      "included_source": "prototype-frozen.cpp",
+      "included_source_sha256": "d75af94a71f8556ec59ff2f11f1fbc5b2836b3292a8021e3470bc5c32d6d209c",
+      "control_source_sha256": "4d636c8cb0af411bf3c1dd859ca83937c422c2d10d8323d2d0f392027d9babfc",
+      "binary_sha256": "78e35fc7b0c8369a1aa4afd067edd71a65320c6508c25fd31b924f317a36c642",
+      "actual_exit": 1,
+      "expected_exit": 1,
+      "timeout_s": 3,
+      "timed_out": false,
+      "elapsed_s": 0.357219,
+      "stdout_sha256": "7f23a64d51ada1d5465729fa4cd1bfc889383976c51095924fa91b1a45b1346a"
+    },
+    {
+      "name": "bounded-initial-overlap-exact-control",
+      "included_source": "bounded-prototype-snapshot.cpp",
+      "included_source_sha256": "1e4bd044a16122bc667189796b0adaec7588964f8a265d5fb156a66138c26dac",
+      "control_source_sha256": "4d636c8cb0af411bf3c1dd859ca83937c422c2d10d8323d2d0f392027d9babfc",
+      "binary_sha256": "40856396720a15279cc835075971b9b3c7206dd2f612f3cf889148ce38776606",
+      "actual_exit": 0,
+      "expected_exit": 0,
+      "timeout_s": 3,
+      "timed_out": false,
+      "elapsed_s": 0.270274,
+      "stdout_sha256": "d131715a1f3ea317ed3b61dbe068f9008b0db60bae787a2728d572d0abcaff03"
+    }
+  ],
+  "actual_helper_exact_rational_controls": 81,
+  "helper_failures": 0,
+  "original_initial_overlap_counterexample": {
+    "schema": "numi.elastic-yarn.ccd.initial-clearance-counterexample.v1",
+    "start": [
+      [
+        413000,
+        31000,
+        2
+      ],
+      [
+        413000,
+        31000,
+        2
+      ],
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        1000000,
+        0,
+        0
+      ],
+      [
+        0,
+        1000000,
+        0
+      ]
+    ],
+    "end": [
+      [
+        413000,
+        31000,
+        1.9999990463256836
+      ],
+      [
+        413000,
+        31000,
+        1.9999990463256836
+      ],
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        1000000,
+        0,
+        0
+      ],
+      [
+        0,
+        1000000,
+        0
+      ]
+    ],
+    "radius_m": 2.0005571842193604,
+    "independent_oracle": "Axis is a point whose xy projection is inside a planar z=0 triangle: exact closest distance is z=2. Initial signed gap is exactly 2 minus represented FP32 radius. This does not use production witness or QP.",
+    "actual_initial_gap_m": -0.0005571842193603516,
+    "production_pair_gap_upper_m": 3.201236014049869e-07,
+    "certified_initial_gap_lower_m": -0.0005571842193620609,
+    "original_status": "bracket",
+    "original_bracket_t": [
+      0,
+      0.5
+    ],
+    "repaired_status": "unresolved",
+    "outside_metre_scale_qualification": true
+  },
+  "default_outer_budget": 128,
+  "fixed_accuracy_m": 2e-06,
+  "grazing_acceptance": false,
+  "grazing_actual_exit": 1,
+  "production_or_original_changes_by_reviewer": false,
+  "GPU_execution": false,
+  "full_scene_qualified": false,
+  "artifacts_sha256": {
+    "build/elastic-yarn-ccd-independent-review/initial-overlap-large-probe.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "build/elastic-yarn-ccd-independent-review/initial-overlap-exact-control.cpp": "4d636c8cb0af411bf3c1dd859ca83937c422c2d10d8323d2d0f392027d9babfc",
+    "build/elastic-yarn-ccd-independent-review/bounded-default-rerun.build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/elastic-yarn-ccd-independent-review/bounded-review-CPU-runs.json": "405b654c6ab72db631455f30bd88bf09986031a5d646972c424e0b0b418b8a48",
+    "build/elastic-yarn-ccd-independent-review/original-initial-overlap-exact-control": "78e35fc7b0c8369a1aa4afd067edd71a65320c6508c25fd31b924f317a36c642",
+    "build/elastic-yarn-ccd-independent-review/initial-overlap-large-probe.cpp": "d2d0c221d05d7fc125982fcf1ffaec848a0d6020bf8caa48e9cfed7343535999",
+    "build/elastic-yarn-ccd-independent-review/bounded-independent-controls-rerun.log": "dccb8e6bd5be325639118ef3eb04f07ab205f042fe172ae101fbe56cb99f7fba",
+    "build/elastic-yarn-ccd-independent-review/bounded-initial-overlap-exact-control": "40856396720a15279cc835075971b9b3c7206dd2f612f3cf889148ce38776606",
+    "build/elastic-yarn-ccd-independent-review/initial-overlap-probe.log": "fcee9038e9dcf706e809b4839d65b804939cb0dc5855c68a3853ec7b10aad42f",
+    "build/elastic-yarn-ccd-independent-review/bounded-grazing-rerun.log": "3faa1bbd89ca87d6ec19fe0769bbb83de9714a7ee6a907ff84c2a050302b6918",
+    "build/elastic-yarn-ccd-independent-review/original-initial-overlap-exact-control.exit": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    "build/elastic-yarn-ccd-independent-review/initial-overlap-probe.cpp": "270de5ed1cfb0165124cc8753313df3ebfc1a49c2a15459ae148ee00585e442d",
+    "build/elastic-yarn-ccd-independent-review/bounded-grazing-rerun.build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/elastic-yarn-ccd-independent-review/initial-overlap-large-probe.log": "907e2853ae6b72a520a6ada50b6a3ce91256a529321be119c4c1570956389ce0",
+    "build/elastic-yarn-ccd-independent-review/initial-overlap-probe.exit": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    "build/elastic-yarn-ccd-independent-review/initial-clearance-counterexample.json": "1fb69f41ebcb872e9cf32ff01969992b60b435d71b27a6bab4905277fbf9dc36",
+    "build/elastic-yarn-ccd-independent-review/bounded-controls-rerun": "2d8e082649d0b7f6f2c5281faee7e624226aa6dccf7d3d08028c7a02ad81b7f4",
+    "build/elastic-yarn-ccd-independent-review/bounded-independent-controls-rerun": "30466a71c3b2bb8b50b9f654cafe3fb6df53a16a6b72cb5f38727481c59ff542",
+    "build/elastic-yarn-ccd-independent-review/bounded-actual-simplex-exact-controls.json": "a114aa435c991e9a40195b9cb58347f523d3d171bd8a2fb4479c2960af0efc93",
+    "build/elastic-yarn-ccd-independent-review/original-initial-overlap-exact-control.log": "7f23a64d51ada1d5465729fa4cd1bfc889383976c51095924fa91b1a45b1346a",
+    "build/elastic-yarn-ccd-independent-review/bounded-default-rerun": "2d44632f52b7e0a5abbeafd50a812c860ed44297df9033fb7c98f98cd2f86d25",
+    "build/elastic-yarn-ccd-independent-review/initial-overlap-probe": "cc36aecadbd96424ea949bb3a9ed70caef4ada7c36b184b2afbabeeade7fd271",
+    "build/elastic-yarn-ccd-independent-review/bounded-controls-rerun.build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/elastic-yarn-ccd-independent-review/bounded-default-rerun.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "build/elastic-yarn-ccd-independent-review/initial-overlap-large-probe.build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/elastic-yarn-ccd-independent-review/bounded-initial-overlap-exact-control.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "build/elastic-yarn-ccd-independent-review/initial-overlap-large-probe": "d55926d25245a1677d91db351026b339991f101dce205a5b593d1ae53b6e04f4",
+    "build/elastic-yarn-ccd-independent-review/BOUNDED_REVIEW.md": "2109f0c91c80d2af09a82401710b30cff43286dea6b02f5d363b1422d6916a33",
+    "build/elastic-yarn-ccd-independent-review/bounded-independent-controls-rerun.build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/elastic-yarn-ccd-independent-review/original-initial-overlap-exact-control.build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/elastic-yarn-ccd-independent-review/bounded-controls-rerun.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "build/elastic-yarn-ccd-independent-review/bounded-initial-overlap-exact-control.build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/elastic-yarn-ccd-independent-review/initial-overlap-probe.build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/elastic-yarn-ccd-independent-review/bounded-default-rerun.log": "a97b1ed01a4b2154721d4f44a71a4ccb5a29f54c37d2846d48e734de44c12c3f",
+    "build/elastic-yarn-ccd-independent-review/initial-overlap-exact-runs.json": "e47b6677c274932a73721a72ab60e0666f83428515ead54dde1d1a20185941c7",
+    "build/elastic-yarn-ccd-independent-review/bounded-grazing-rerun": "2f053625435396798837a6aae959f729254e90e08f3fc75a3ed87abdad193e91",
+    "build/elastic-yarn-ccd-independent-review/bounded-prototype-snapshot.cpp": "1e4bd044a16122bc667189796b0adaec7588964f8a265d5fb156a66138c26dac",
+    "build/elastic-yarn-ccd-independent-review/bounded-grazing-rerun.exit": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    "build/elastic-yarn-ccd-independent-review/bounded-initial-overlap-exact-control.log": "d131715a1f3ea317ed3b61dbe068f9008b0db60bae787a2728d572d0abcaff03",
+    "build/elastic-yarn-ccd-independent-review/bounded-controls-rerun.log": "82ead6ca2943ce95768ea7d346d2c89f89f5234bbaeac34444a48b626f8a1657",
+    "build/elastic-yarn-ccd-independent-review/bounded-controls-rerun.cpp": "008024ca3f49243d2e0d71c4f5e14f809e239ee7d30a1e1bec5aeba8d396636d",
+    "build/elastic-yarn-ccd-independent-review/bounded-independent-controls-rerun.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+  },
+  "review_limits": [
+    "Finite valid-plane mathematical review and bounded CPU controls are not exhaustive floating-point proof.",
+    "Original large-scale unsafe bracket is outside metre-scale qualification but demonstrates missing proof gate.",
+    "Synthetic independently linear owners do not establish actual coupled FEM motion or contact response.",
+    "No caller-configurable accuracy; budget can be explicitly overridden.",
+    "Grazing remains unresolved."
+  ]
+}

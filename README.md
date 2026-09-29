@@ -45,8 +45,12 @@ warm state or controller generations. Native adaptive execution is pending.
 Reciprocal yarn/elastic-boundary normal contact now passes CPU geometry,
 momentum, angular momentum and energy checks using five independently moving
 owning nodes. A captured FEM boundary fixture exercises all five responses.
-Moving contact, FEM advancement and full native bag coupling remain open.
+The reviewed moving-contact CPU candidate now passes 22 fixtures, including
+five independently moving owners, within the unchanged 2 µm budget. Initial
+incoming touch and grazing still retain explicit rejection. FEM advancement
+and full native bag coupling remain open.
 [Elastic contact mechanics and qualification boundary](docs/ELASTIC_YARN_CONTACT.md).
+[Moving geometry and retained counterexamples](docs/ELASTIC_YARN_MOVING_CCD.md).
 
 
 ### Newest loaded release · finite tabletop and lower floor · September 29, 2026

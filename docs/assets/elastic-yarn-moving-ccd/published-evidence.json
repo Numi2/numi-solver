@@ -1,0 +1,69 @@
+{
+  "schema": "numi.elastic-yarn.moving-CCD.published-reviewed-CPU-prototype.v1",
+  "source_sha256": "1e4bd044a16122bc667189796b0adaec7588964f8a265d5fb156a66138c26dac",
+  "public_sources_rebuild_byte_identical_to_qualified_owner_binaries": {
+    "prototype": {
+      "byte_identical": true,
+      "owner_binary_sha256": "643a9fcd8fb70076a280e8065c74798d0ceb9f2624c2030781bc118ff5d5832f",
+      "rebuilt_binary_sha256": "643a9fcd8fb70076a280e8065c74798d0ceb9f2624c2030781bc118ff5d5832f"
+    },
+    "bounded-controls": {
+      "byte_identical": true,
+      "owner_binary_sha256": "4281eba021c130ab4e685e5fe40d205d00dbe8089a18054a79c4e7827c182f51",
+      "rebuilt_binary_sha256": "4281eba021c130ab4e685e5fe40d205d00dbe8089a18054a79c4e7827c182f51"
+    },
+    "independent-controls": {
+      "byte_identical": true,
+      "owner_binary_sha256": "243df8302813ce34c46a53a0784e58ef5762a608eec5bb2047eaa12ca4806409",
+      "rebuilt_binary_sha256": "243df8302813ce34c46a53a0784e58ef5762a608eec5bb2047eaa12ca4806409"
+    }
+  },
+  "compiler_flags": "clang++ -std=c++23 -O2 -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off -Iinclude",
+  "required_production_header_sha256": {
+    "include/numi/elastic_yarn_contact.h": "3fad55a3fb387d4a647f82c4c620901c2db325f39c06bba0e48c2b5ce8a2314c",
+    "include/numi/static_contact_geometry.h": "7d288795b0e382ee50baf9ae407e3ef97803a8c40152a09606afb7f2133908a4"
+  },
+  "published_exact_copies_sha256": {
+    "docs/assets/elastic-yarn-moving-ccd/bounded-controls.cpp": "45fe2c150784657e4a5165a821cdfc3ad17663f1f68516f24c217f39a16dd5cf",
+    "docs/assets/elastic-yarn-moving-ccd/bounded-controls.log": "a0b4f8d5d209f6aff8ff95c4ba946f9a2c85f0f6bd265f72c2190da66004f7ca",
+    "docs/assets/elastic-yarn-moving-ccd/bounded-initial-overlap-control.log": "d131715a1f3ea317ed3b61dbe068f9008b0db60bae787a2728d572d0abcaff03",
+    "docs/assets/elastic-yarn-moving-ccd/endpoint-only-negative.log": "b3d1f7722f7b41738cd7ae90051b541f43bd73b867fa2cc5fd4f9f8d5e1b7509",
+    "docs/assets/elastic-yarn-moving-ccd/exact-simplex-controls.json": "b975422037258369a6645dd8b2039346df7b3b0ff96b979d92db4c11636f96cf",
+    "docs/assets/elastic-yarn-moving-ccd/independent-controls.cpp": "ef179b04ea0ee73cb711b2e19d65e463f586f25c72e90b4c61f9364c6fcf88aa",
+    "docs/assets/elastic-yarn-moving-ccd/independent-controls.log": "22f7e907731a15f7d6830bfbae2b42403137c71df1971aaef7c70338425ee005",
+    "docs/assets/elastic-yarn-moving-ccd/independent-review-evidence.json": "b70a6037e40425841bf20a0c821f4f40565f8887ef2bbc9c508dc39c1650ba6e",
+    "docs/assets/elastic-yarn-moving-ccd/initial-clearance-counterexample.json": "1fb69f41ebcb872e9cf32ff01969992b60b435d71b27a6bab4905277fbf9dc36",
+    "docs/assets/elastic-yarn-moving-ccd/original-initial-overlap-control.log": "7f23a64d51ada1d5465729fa4cd1bfc889383976c51095924fa91b1a45b1346a",
+    "docs/assets/elastic-yarn-moving-ccd/owner-evidence.json": "b8318d31ea6b6abc878d07bfbada2c93e3a019128dc43b7fbbae0228ac722e03",
+    "docs/assets/elastic-yarn-moving-ccd/prototype.cpp": "1e4bd044a16122bc667189796b0adaec7588964f8a265d5fb156a66138c26dac",
+    "docs/assets/elastic-yarn-moving-ccd/prototype.log": "a97b1ed01a4b2154721d4f44a71a4ccb5a29f54c37d2846d48e734de44c12c3f",
+    "docs/assets/elastic-yarn-moving-ccd/retained-grazing-frontier.log": "3faa1bbd89ca87d6ec19fe0769bbb83de9714a7ee6a907ff84c2a050302b6918"
+  },
+  "owner_actual_exits": {
+    "default": 0,
+    "bounded_helpers": 0,
+    "independent_controls": 0,
+    "later_grazing_frontier": 1,
+    "endpoint_only_negative": 1
+  },
+  "independent_review_actual_exits": {
+    "default": 0,
+    "bounded_helpers": 0,
+    "independent_controls": 0,
+    "bounded_initial_overlap_negative_control": 0,
+    "original_initial_overlap_negative_control": 1,
+    "later_grazing_frontier": 1
+  },
+  "passed_fixture_count": 22,
+  "retained_failure_controls": 8,
+  "analytic_temporal_controls": 12,
+  "helper_controls": 56,
+  "independent_plane_controls": 162,
+  "independent_status_controls": 9,
+  "actual_compiled_simplex_outputs_checked_exactly": 81,
+  "accuracy_m": 2e-06,
+  "outer_interval_node_budget": 128,
+  "maximum_successful_default_outer_nodes": 29,
+  "maximum_conservative_default_spatial_earliness_m": 1.604193960016713e-06,
+  "boundary": "Published source-bound CPU geometry experiment, not an integrated runtime module. Five owners move independently along linear paths between represented FP32 endpoints. FP64 interval bounds certify accepted clearance/brackets; a different FP64 QP checks fixtures. Incoming initial touch lacking complete support and later exact grazing remain unresolved. No contact impulse, FEM stress advancement, force/work closure, GPU, or full-scene qualification. Public source builds are byte-identical to the already executed owner binaries; no redundant trajectory or GPU jobs were run."
+}

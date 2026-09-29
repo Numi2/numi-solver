@@ -1,0 +1,493 @@
+{
+  "cases": 81,
+  "failures": 0,
+  "method": "Actual compiled shared prototype helper output checked against independent exact binary-rational Fraction arithmetic",
+  "checks": [
+    {
+      "v": 0.0,
+      "z": 0.0,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.0,
+      "z": 1.0,
+      "third_result": 0.9999999999999999,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.0,
+      "z": 1.401298464324817e-45,
+      "third_result": 1.401298464324817e-45,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.0,
+      "z": 9.999999682655225e-21,
+      "third_result": 9.999999682655225e-21,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.0,
+      "z": 9.99999993922529e-09,
+      "third_result": 9.99999993922529e-09,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.0,
+      "z": 0.25,
+      "third_result": 0.25,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.0,
+      "z": 0.5,
+      "third_result": 0.5,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.0,
+      "z": 0.75,
+      "third_result": 0.75,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.0,
+      "z": 0.9999999403953552,
+      "third_result": 0.9999999403953552,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.0,
+      "z": 0.0,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.0,
+      "z": 1.0,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.0,
+      "z": 1.401298464324817e-45,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.0,
+      "z": 9.999999682655225e-21,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.0,
+      "z": 9.99999993922529e-09,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.0,
+      "z": 0.25,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.0,
+      "z": 0.5,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.0,
+      "z": 0.75,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.0,
+      "z": 0.9999999403953552,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.401298464324817e-45,
+      "z": 0.0,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.401298464324817e-45,
+      "z": 1.0,
+      "third_result": 0.9999999999999999,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.401298464324817e-45,
+      "z": 1.401298464324817e-45,
+      "third_result": 1.401298464324817e-45,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.401298464324817e-45,
+      "z": 9.999999682655225e-21,
+      "third_result": 9.999999682655225e-21,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.401298464324817e-45,
+      "z": 9.99999993922529e-09,
+      "third_result": 9.99999993922529e-09,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.401298464324817e-45,
+      "z": 0.25,
+      "third_result": 0.25,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.401298464324817e-45,
+      "z": 0.5,
+      "third_result": 0.5,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.401298464324817e-45,
+      "z": 0.75,
+      "third_result": 0.75,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 1.401298464324817e-45,
+      "z": 0.9999999403953552,
+      "third_result": 0.9999999403953552,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.999999682655225e-21,
+      "z": 0.0,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.999999682655225e-21,
+      "z": 1.0,
+      "third_result": 0.9999999999999999,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.999999682655225e-21,
+      "z": 1.401298464324817e-45,
+      "third_result": 1.401298464324817e-45,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.999999682655225e-21,
+      "z": 9.999999682655225e-21,
+      "third_result": 9.999999682655225e-21,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.999999682655225e-21,
+      "z": 9.99999993922529e-09,
+      "third_result": 9.99999993922529e-09,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.999999682655225e-21,
+      "z": 0.25,
+      "third_result": 0.25,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.999999682655225e-21,
+      "z": 0.5,
+      "third_result": 0.5,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.999999682655225e-21,
+      "z": 0.75,
+      "third_result": 0.75,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.999999682655225e-21,
+      "z": 0.9999999403953552,
+      "third_result": 0.9999999403953552,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.99999993922529e-09,
+      "z": 0.0,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.99999993922529e-09,
+      "z": 1.0,
+      "third_result": 0.99999999,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.99999993922529e-09,
+      "z": 1.401298464324817e-45,
+      "third_result": 1.401298464324817e-45,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.99999993922529e-09,
+      "z": 9.999999682655225e-21,
+      "third_result": 9.999999682655225e-21,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.99999993922529e-09,
+      "z": 9.99999993922529e-09,
+      "third_result": 9.99999993922529e-09,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.99999993922529e-09,
+      "z": 0.25,
+      "third_result": 0.25,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.99999993922529e-09,
+      "z": 0.5,
+      "third_result": 0.5,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.99999993922529e-09,
+      "z": 0.75,
+      "third_result": 0.75,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 9.99999993922529e-09,
+      "z": 0.9999999403953552,
+      "third_result": 0.9999999403953552,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.25,
+      "z": 0.0,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.25,
+      "z": 1.0,
+      "third_result": 0.7499999999999999,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.25,
+      "z": 1.401298464324817e-45,
+      "third_result": 1.401298464324817e-45,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.25,
+      "z": 9.999999682655225e-21,
+      "third_result": 9.999999682655225e-21,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.25,
+      "z": 9.99999993922529e-09,
+      "third_result": 9.99999993922529e-09,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.25,
+      "z": 0.25,
+      "third_result": 0.25,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.25,
+      "z": 0.5,
+      "third_result": 0.5,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.25,
+      "z": 0.75,
+      "third_result": 0.7499999999999999,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.25,
+      "z": 0.9999999403953552,
+      "third_result": 0.7499999999999999,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.5,
+      "z": 0.0,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.5,
+      "z": 1.0,
+      "third_result": 0.49999999999999994,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.5,
+      "z": 1.401298464324817e-45,
+      "third_result": 1.401298464324817e-45,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.5,
+      "z": 9.999999682655225e-21,
+      "third_result": 9.999999682655225e-21,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.5,
+      "z": 9.99999993922529e-09,
+      "third_result": 9.99999993922529e-09,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.5,
+      "z": 0.25,
+      "third_result": 0.25,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.5,
+      "z": 0.5,
+      "third_result": 0.49999999999999994,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.5,
+      "z": 0.75,
+      "third_result": 0.49999999999999994,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.5,
+      "z": 0.9999999403953552,
+      "third_result": 0.49999999999999994,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.75,
+      "z": 0.0,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.75,
+      "z": 1.0,
+      "third_result": 0.24999999999999997,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.75,
+      "z": 1.401298464324817e-45,
+      "third_result": 1.401298464324817e-45,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.75,
+      "z": 9.999999682655225e-21,
+      "third_result": 9.999999682655225e-21,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.75,
+      "z": 9.99999993922529e-09,
+      "third_result": 9.99999993922529e-09,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.75,
+      "z": 0.25,
+      "third_result": 0.24999999999999997,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.75,
+      "z": 0.5,
+      "third_result": 0.24999999999999997,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.75,
+      "z": 0.75,
+      "third_result": 0.24999999999999997,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.75,
+      "z": 0.9999999403953552,
+      "third_result": 0.24999999999999997,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.9999999403953552,
+      "z": 0.0,
+      "third_result": 0.0,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.9999999403953552,
+      "z": 1.0,
+      "third_result": 5.960464477539062e-08,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.9999999403953552,
+      "z": 1.401298464324817e-45,
+      "third_result": 1.401298464324817e-45,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.9999999403953552,
+      "z": 9.999999682655225e-21,
+      "third_result": 9.999999682655225e-21,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.9999999403953552,
+      "z": 9.99999993922529e-09,
+      "third_result": 9.99999993922529e-09,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.9999999403953552,
+      "z": 0.25,
+      "third_result": 5.960464477539062e-08,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.9999999403953552,
+      "z": 0.5,
+      "third_result": 5.960464477539062e-08,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.9999999403953552,
+      "z": 0.75,
+      "third_result": 5.960464477539062e-08,
+      "exact_binary_rational_feasible": true
+    },
+    {
+      "v": 0.9999999403953552,
+      "z": 0.9999999403953552,
+      "third_result": 5.960464477539062e-08,
+      "exact_binary_rational_feasible": true
+    }
+  ]
+}

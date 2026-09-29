@@ -1,0 +1,69 @@
+{
+  "schema": "numi.elastic-yarn.ccd.initial-clearance-counterexample.v1",
+  "start": [
+    [
+      413000,
+      31000,
+      2
+    ],
+    [
+      413000,
+      31000,
+      2
+    ],
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      1000000,
+      0,
+      0
+    ],
+    [
+      0,
+      1000000,
+      0
+    ]
+  ],
+  "end": [
+    [
+      413000,
+      31000,
+      1.9999990463256836
+    ],
+    [
+      413000,
+      31000,
+      1.9999990463256836
+    ],
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      1000000,
+      0,
+      0
+    ],
+    [
+      0,
+      1000000,
+      0
+    ]
+  ],
+  "radius_m": 2.0005571842193604,
+  "independent_oracle": "Axis is a point whose xy projection is inside a planar z=0 triangle: exact closest distance is z=2. Initial signed gap is exactly 2 minus represented FP32 radius. This does not use production witness or QP.",
+  "actual_initial_gap_m": -0.0005571842193603516,
+  "production_pair_gap_upper_m": 3.201236014049869e-07,
+  "certified_initial_gap_lower_m": -0.0005571842193620609,
+  "original_status": "bracket",
+  "original_bracket_t": [
+    0,
+    0.5
+  ],
+  "repaired_status": "unresolved",
+  "outside_metre_scale_qualification": true
+}

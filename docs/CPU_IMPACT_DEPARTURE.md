@@ -39,6 +39,12 @@ This is the sole definite numeric violation visible in the rounded summary.
 Unexported final velocities and exact quaternion norms do not allow a claim
 that every other runtime predicate independently passed. The solver updates
 area at frame ends; retained captures do not bound intervening substep area.
+At the failed cell, the centered opposite-neighbor knot angle changes by only
+1.16 × 10⁻⁵ rad from rest, while one outgoing-arm angle changes by 0.175 rad
+and triangle area falls to 3.84 × 10⁻⁵ of its rest value. The centered knot
+measure does not certify individual-face noncollapse. This
+[two-state geometric diagnostic](assets/loaded-drop-corrected-96-local-cell-diagnostic.json)
+does not identify a unique causal solver operator or qualify a material repair.
 The retained prior 35.93 m/s cloth-speed failure remains a failure
 against the unchanged 30 m/s target; focused controls do not establish that
 this defect caused that full-scene peak. Peak speed frame, body and a complete

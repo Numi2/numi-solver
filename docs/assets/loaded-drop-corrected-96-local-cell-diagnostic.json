@@ -1,0 +1,75 @@
+{
+  "schema": "numi.loaded-drop.retained-local-cell-shape-diagnostic.v1",
+  "source_sha256": "d575b0154af35b2a110b21fc091c9913955b0ee62637ef67ba3c09cb0b623f9b",
+  "frozen_manifest_sha256": "2bf2787ce59663de0d03178545d3c09a48f33cd2842efa5d06bcfb46ac8c0710",
+  "all_seven_frozen_hashes_verified": true,
+  "snapshot_sha256": {
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-0.obj": "21483357b0deb815b8cb071e40c171b46f05bd285425d0ed4661e2c0d68b3122",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-620.obj": "e52a1c9cc7d56d0661cc013e2eaf9345da55539de3537536dd98be86a4b71fa3"
+  },
+  "rows": [
+    {
+      "frame": 0,
+      "center_owner": 1444,
+      "centered_knot_owners": [
+        1433,
+        1455,
+        1443,
+        1445
+      ],
+      "centered_knot_angle_rad": 1.0854763016978735,
+      "outgoing_arm_angles_rad": {
+        "north_east": 2.9667000733822086,
+        "north_west": 0.7502969917904281,
+        "south_east": 1.0251372847558884,
+        "south_west": 1.357133792072887
+      },
+      "triangle": 2813,
+      "triangle_owners": [
+        1433,
+        1444,
+        1445
+      ],
+      "triangle_area_fp64_m2": 0.0001518076671989042,
+      "triangle_edge_lengths_m": [
+        0.04424574028847361,
+        0.03943638557256831,
+        0.08336343535765112
+      ]
+    },
+    {
+      "frame": 620,
+      "center_owner": 1444,
+      "centered_knot_owners": [
+        1433,
+        1455,
+        1443,
+        1445
+      ],
+      "centered_knot_angle_rad": 1.085487912521862,
+      "outgoing_arm_angles_rad": {
+        "north_east": 3.1415859591732405,
+        "north_west": 0.7409449304505725,
+        "south_east": 1.0487273938036064,
+        "south_west": 1.3600143172003978
+      },
+      "triangle": 2813,
+      "triangle_owners": [
+        1433,
+        1444,
+        1445
+      ],
+      "triangle_area_fp64_m2": 5.8289935398001674e-09,
+      "triangle_edge_lengths_m": [
+        0.04424051190854029,
+        0.03936322691227921,
+        0.08360373882035275
+      ]
+    }
+  ],
+  "centered_knot_angle_change_rad": 1.1610823988483787e-05,
+  "outgoing_north_east_angle_change_rad": 0.17488588579103181,
+  "retained_triangle_area_ratio": 3.839722754031124e-05,
+  "diagnostic_sha256": "41577a2621003fc5620cf5aec77f72b4185e78a6483833635037be2f19729c1a",
+  "boundary": "Read-only two-state geometric diagnostic. Frame0 is makeCloth rest geometry before simulation, verified in frozen source. The production centered knot measure uses opposite-neighbor axes, not all outgoing-arm angles or individual face area. A stable centered angle therefore does not certify local triangle noncollapse. No unique causal solver operator, material calibration, new energy/force model or successful repair is established."
+}

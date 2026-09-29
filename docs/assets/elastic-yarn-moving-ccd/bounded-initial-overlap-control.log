@@ -1,0 +1,2 @@
+flat_triangle_projection_inside=1 actual_initial_gap_m=-0.00055718421936035156 radius=2.0005571842193604 v=0.41300004720687866 z=0.031000001356005669 start_upper_m=3.2012360140498691e-07 certified_initial_lower_m=-0.00055718421936206092 normal_defined=1 status=unresolved lower_t=0 upper_t=1 gap_upper_m=3.2012360140498691e-07 motion_bound_m=9.5367431640625085e-07 outer=1
+initial_overlap_unsafe_bracket=0 no_gpu=1

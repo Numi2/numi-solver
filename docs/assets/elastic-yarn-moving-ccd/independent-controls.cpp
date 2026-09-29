@@ -1,0 +1,18 @@
+#define main frozenPrototypeMain
+#include "prototype.cpp"
+#undef main
+#include <chrono>
+int main(){using namespace ccd;unsigned failures=0,cases=0;std::cout<<std::setprecision(17);
+ const std::array<NumiStaticVec3,5> base={NumiStaticVec3{-.8f,0,.1f},{.8f,0,.1f},{-.3f,-.3f,0},{.3f,-.3f,0},{0,.3f,0}};
+ Motion crossing{base,base};crossing.end[0].z=crossing.end[1].z=-.1f;
+ for(float radius:{.004f,5e-8f,1e-15f,std::numeric_limits<float>::denorm_min()}){auto m=crossing;m.radius=radius;auto begin=std::chrono::steady_clock::now();auto result=sweep(m);double elapsed=std::chrono::duration<double>(std::chrono::steady_clock::now()-begin).count();bool allowed=result.status==Status::bracket||result.status==Status::unresolved||result.status==Status::degenerate;failures+=!allowed||result.outer>outerBudget||!std::isfinite(result.lowerTime)||result.lowerTime<0||result.upperTime>1;++cases;std::cout<<"small_radius="<<radius<<" fixed_tolerance="<<tolerance<<" status="<<name(result.status)<<" outer="<<result.outer<<" seconds="<<elapsed<<'\n';}
+ for(unsigned budget:{0u,1u,128u}){auto result=sweep(crossing,budget);failures+=result.outer>budget||((budget<128)&&result.status!=Status::unresolved);++cases;std::cout<<"caller_budget="<<budget<<" status="<<name(result.status)<<" counted_nodes="<<result.outer<<'\n';}
+ auto all=crossing;all.start[0].z=all.start[1].z=0;for(unsigned i=2;i<5;++i)all.start[i].z=.1f;all.end[2].z=-.12f;all.end[3].z=-.08f;all.end[4].z=-.15f;all.end[0].z=.03f;all.end[1].z=.02f;all.end[0].x-=.02f;all.end[1].x+=.05f;
+ bool distinct=true;for(unsigned i=0;i<5;++i)for(unsigned j=0;j<i;++j){V di=minus(points(all,1)[i],points(all,0)[i]),dj=minus(points(all,1)[j],points(all,0)[j]);distinct&=di!=dj;}failures+=!distinct;++cases;std::cout<<"five_nonidentical_owner_displacements="<<distinct<<'\n';
+ auto graze=crossing;for(unsigned i=0;i<2;++i){graze.start[i].z=graze.end[i].z=graze.radius;graze.start[i].y=.6f;graze.end[i].y=-.6f;}auto grazing=sweep(graze);failures+=grazing.status!=Status::unresolved||grazing.lowerTime>.25||grazing.outer>128;++cases;std::cout<<"grazing_status="<<name(grazing.status)<<" clear_prefix="<<grazing.lowerTime<<" outer="<<grazing.outer<<'\n';
+ unsigned planeCases=0,planeFailures=0;double maxExcess=0;
+ const std::array<V,9> normals{{{1,0,0},{0,1,0},{0,0,1},{1,2,3},{-2,1,-3},{1e-100,2e-100,-3e-100},{0,0,0},{1e300,0,0},{NAN,0,1}}};
+ for(auto m:{crossing,all})for(auto n:normals)for(auto interval:std::array<std::array<double,2>,3>{{{{0,1}},{{.25,.75}},{{.3,.4}}}}){double actual=planeLower(m,interval[0],interval[1],n);long double length=std::sqrt((long double)n[0]*n[0]+(long double)n[1]*n[1]+(long double)n[2]*n[2]);for(unsigned step=0;step<3;++step){++planeCases;double t=interval[0]+(interval[1]-interval[0])*step*.5;long double yarn=INFINITY,triangle=-INFINITY;for(unsigned i=0;i<5;++i){long double d=0;for(unsigned k=0;k<3;++k)d+=((1-(long double)t)*component(m.start[i],k)+(long double)t*component(m.end[i],k))*n[k];if(i<2)yarn=std::min(yarn,d);else triangle=std::max(triangle,d);}if(!std::isfinite(length)||length<=0){planeFailures+=std::isfinite(actual);continue;}long double reference=(yarn-triangle)/length-m.radius;double excess=double((long double)actual-reference);maxExcess=std::max(maxExcess,excess);planeFailures+=std::isnan(actual)||excess>0;}}
+ failures+=planeFailures;std::cout<<"projection_plane_controls="<<planeCases<<" failures="<<planeFailures<<" maximum_lower_excess="<<maxExcess<<'\n';
+ std::cout<<"bounded_status_controls="<<cases<<" failures="<<failures<<" custom_tolerance_API=NONE fixed_accuracy=2e-6 outer_budget=128\n";return failures?1:0;
+}
