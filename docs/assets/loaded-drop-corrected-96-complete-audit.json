@@ -1,0 +1,4292 @@
+{
+  "schema": "numi.finite-bench.loaded-cloth-drop-audit.v1",
+  "actual_solver_result": "FAIL",
+  "actual_exit_code": 1,
+  "terminal_log_sha256": "a89932166ca71c119023cddfce3bf0df3ef8655aa3cf48df8f11300fd6025a08",
+  "simulated_seconds": 6,
+  "snapshots": [
+    {
+      "frame": 0,
+      "time_s": 0.0,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-0.obj",
+      "sha256": "21483357b0deb815b8cb071e40c171b46f05bd285425d0ed4661e2c0d68b3122",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        6.6031276713636165e-06,
+        -3.05796227674606e-06,
+        0.12183047695199871
+      ],
+      "minimum_cloth_node_z_m": 0.004357338,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 10,
+      "time_s": 0.08333333333333333,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-10.obj",
+      "sha256": "0666278b7495d431a709c88b4ef28799e5e2c721e8d105af1f20bc8ae4164a09",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.005699849124425368,
+        -0.0007073648368133246,
+        0.1135463608965791
+      ],
+      "minimum_cloth_node_z_m": 0.004,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 20,
+      "time_s": 0.16666666666666666,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-20.obj",
+      "sha256": "4ad232b73ed0c931c416333fb278dca6422533d1d0a88fa4459996450878ce34",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.007956900182889174,
+        -0.0074757136105868035,
+        0.12670528503568865
+      ],
+      "minimum_cloth_node_z_m": 0.004,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 30,
+      "time_s": 0.25,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-30.obj",
+      "sha256": "af16e1a3144186ebe0a9dfaf741a9750dd3a106917c7b5c5d627fbd40e5d64bc",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.01566993451616861,
+        -0.01191501248436643,
+        0.15446074272329274
+      ],
+      "minimum_cloth_node_z_m": 0.004,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 40,
+      "time_s": 0.3333333333333333,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-40.obj",
+      "sha256": "0cb63d409ee9d35207223336bddcd3b0788cb4617c3125b4744d3bf8b32b5a17",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.04579536141243561,
+        -0.014139979157369377,
+        0.19657973680162075
+      ],
+      "minimum_cloth_node_z_m": 0.004,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 50,
+      "time_s": 0.4166666666666667,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-50.obj",
+      "sha256": "95dee6a1d5dc18710a64b616e51545135afa477a8f538b144166e8ffd8968a19",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.08799318510699486,
+        -0.0010721997240079433,
+        0.2631609495193338
+      ],
+      "minimum_cloth_node_z_m": 0.004,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 60,
+      "time_s": 0.5,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-60.obj",
+      "sha256": "991df45573f510bb2394033f542068e426a8a9e0d52088b16f6ed810a6108d7d",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.14871298672331007,
+        0.01583785027103741,
+        0.37137080324573984
+      ],
+      "minimum_cloth_node_z_m": 0.0664792303,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 70,
+      "time_s": 0.5833333333333334,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-70.obj",
+      "sha256": "eb9267fa3cf36742c3b451fd3aa3c95a6e41e852f39f0d9f216f596afdf82046",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.2147693513647854,
+        0.03083269839615695,
+        0.4936801465092889
+      ],
+      "minimum_cloth_node_z_m": 0.163053057,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 80,
+      "time_s": 0.6666666666666666,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-80.obj",
+      "sha256": "61706bc3e2798080c8aed6a5453c748ea343bec6108e1ebd8d5546ddb70353cd",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.26563319319160794,
+        0.03813752875408456,
+        0.6258317930852018
+      ],
+      "minimum_cloth_node_z_m": 0.291051017,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 90,
+      "time_s": 0.75,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-90.obj",
+      "sha256": "3dbacbb46330bdb615ba355d7011c9c7d27e7cdb3cd6dd2daf013b410a89ebef",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.29541279819795,
+        0.04219974712882319,
+        0.7660034945329917
+      ],
+      "minimum_cloth_node_z_m": 0.436501032,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 100,
+      "time_s": 0.8333333333333334,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-100.obj",
+      "sha256": "3cdc41409b9761856a664847bf2ca5ff246da1c8703b58ff6b898a801cf989c8",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.3073222677514414,
+        0.04341008712238943,
+        0.8879499148545804
+      ],
+      "minimum_cloth_node_z_m": 0.561676099,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 110,
+      "time_s": 0.9166666666666666,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-110.obj",
+      "sha256": "9dd5026215a776f7d8f23a75551fdb43ab82e0c3c133990b074bd02e4514fd55",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.302154953652146,
+        0.04204554542014349,
+        0.9845852046143497
+      ],
+      "minimum_cloth_node_z_m": 0.657249861,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 120,
+      "time_s": 1.0,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-120.obj",
+      "sha256": "7988f91bd13363094e909399c78268d9d094ccea6139b221e094cbd6b2e6b785",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.2823678502056374,
+        0.03803038978119597,
+        1.0542996428058935
+      ],
+      "minimum_cloth_node_z_m": 0.721754362,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 130,
+      "time_s": 1.0833333333333333,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-130.obj",
+      "sha256": "c71b9648aa10dbbb4234ad8187fdc6aac883769cba495e815fa2f9aa3e8aca3c",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.2491810684202434,
+        0.03184949061595989,
+        1.0978061134138373
+      ],
+      "minimum_cloth_node_z_m": 0.76390515,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 140,
+      "time_s": 1.1666666666666667,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-140.obj",
+      "sha256": "80b0f2fbd6bef95cd6bc4eef4a30e5f15254d021bd80d8c460495ebe1d50dfbf",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.20624446781992248,
+        0.025572570059017294,
+        1.118939427908392
+      ],
+      "minimum_cloth_node_z_m": 0.793022167,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 150,
+      "time_s": 1.25,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-150.obj",
+      "sha256": "f2ebc255db66437e89413141ee0f50e0919211f998fbbc91b9e35241fbb655d8",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.15836022158127686,
+        0.019256351555508647,
+        1.1199515758404868
+      ],
+      "minimum_cloth_node_z_m": 0.812171542,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 160,
+      "time_s": 1.3333333333333333,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-160.obj",
+      "sha256": "a09d446eda743a7591ca22a0d862dfa9013154c556f7aac18bf30c93dd9ccb49",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.11478180598224183,
+        0.01245552572757986,
+        1.122055680368994
+      ],
+      "minimum_cloth_node_z_m": 0.838389954,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 170,
+      "time_s": 1.4166666666666667,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-170.obj",
+      "sha256": "6ff53309c67f1d9eecb7da64de1396ea1b07e442bd13d04ace007cac4d3041c4",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.0862935848166374,
+        0.009381475528244074,
+        1.1391439131941064
+      ],
+      "minimum_cloth_node_z_m": 0.87929993,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 180,
+      "time_s": 1.5,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-180.obj",
+      "sha256": "60ca322e8a2f0743b1fc87b620ca6f3bc7e4303de8796de2acda2936800803be",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.06990003507828878,
+        0.007368340517042664,
+        1.1462571809679691
+      ],
+      "minimum_cloth_node_z_m": 0.898630166,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 190,
+      "time_s": 1.5833333333333333,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-190.obj",
+      "sha256": "a04f0f02d7cc849984c4c4cf3dd9857c907e0ecdf4129990e0b330c3795f9563",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.06923488216473926,
+        0.0058367760476720045,
+        1.144749281392697
+      ],
+      "minimum_cloth_node_z_m": 0.89598805,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 200,
+      "time_s": 1.6666666666666667,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-200.obj",
+      "sha256": "964b80e4b872808f02e8bc7458c41cc49471acdb87f92b912a3142ac3a39a2af",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.08899522329045291,
+        0.007765751645236258,
+        1.139143063397822
+      ],
+      "minimum_cloth_node_z_m": 0.883096342,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 210,
+      "time_s": 1.75,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-210.obj",
+      "sha256": "cb602a6e77565719ef14792cf5bd2cce65a5fe32b93b18d157ae010fe2ff7c7d",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.13109933874647123,
+        0.011263341426378604,
+        1.130510130620756
+      ],
+      "minimum_cloth_node_z_m": 0.864430894,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 220,
+      "time_s": 1.8333333333333333,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-220.obj",
+      "sha256": "c21f6f946ff3aa10c4e1a80982706711c537c4468eb662b1820b539365de5444",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.19415714425338312,
+        0.01765734310238116,
+        1.1255017934285714
+      ],
+      "minimum_cloth_node_z_m": 0.850246378,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 230,
+      "time_s": 1.9166666666666667,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-230.obj",
+      "sha256": "30198aed09a61bba4196c3794f6a63197327e5bb058b68c57d5ad9b48e873ddb",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.2709735469182575,
+        0.0244275618332082,
+        1.1199065067027545
+      ],
+      "minimum_cloth_node_z_m": 0.833654845,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 240,
+      "time_s": 2.0,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-240.obj",
+      "sha256": "7f540a649d98d0641560631f43c9bb8314383b06f2085ffb2a4a8a22273981c2",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.35697567336194747,
+        0.032266867939993914,
+        1.119000722608584
+      ],
+      "minimum_cloth_node_z_m": 0.827154725,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 250,
+      "time_s": 2.0833333333333335,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-250.obj",
+      "sha256": "a333dc701dcbf42cec272c9ca9e3cd62ed3e3955af9e6ca4daa70626a2c30979",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.44983208983151823,
+        0.03816288526003395,
+        1.1200580475560538
+      ],
+      "minimum_cloth_node_z_m": 0.825079191,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 260,
+      "time_s": 2.1666666666666665,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-260.obj",
+      "sha256": "94da804f4018e266a96c3491858fa8effcfa03f5b1d8762618fbb4eb101217f4",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.5458830998987828,
+        0.04192300794294234,
+        1.1204685086201152
+      ],
+      "minimum_cloth_node_z_m": 0.82314427,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 270,
+      "time_s": 2.25,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-270.obj",
+      "sha256": "ed4b931dc7104827e49387f1955c1b1006dc1b6828ec10bb9b3ae7228f03e81c",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.6428968775912877,
+        0.04191618707519987,
+        1.1236381302805893
+      ],
+      "minimum_cloth_node_z_m": 0.822947505,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 280,
+      "time_s": 2.3333333333333335,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-280.obj",
+      "sha256": "f4d43a44e46e7ae592916b48e047269e55001dfb6901fbadc57786faf2f2276a",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.738736686024984,
+        0.03877886639646906,
+        1.1267051825067265
+      ],
+      "minimum_cloth_node_z_m": 0.823619944,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 290,
+      "time_s": 2.4166666666666665,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-290.obj",
+      "sha256": "ed7cad25b99bf492bd03d8c439e8d409795d7a2f0d62ed19759b11cacaa8ea8e",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.8322668224650864,
+        0.03212450528295195,
+        1.129706476994875
+      ],
+      "minimum_cloth_node_z_m": 0.82684153,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 300,
+      "time_s": 2.5,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-300.obj",
+      "sha256": "679898b586e9f411c2e568a4407383573e9d1cc699a08ac0f7b292cfe3a88492",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        0.9224752949205637,
+        0.023994457373579112,
+        1.1354038864240872
+      ],
+      "minimum_cloth_node_z_m": 0.829973383,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 310,
+      "time_s": 2.5833333333333335,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-310.obj",
+      "sha256": "e7d7366c3ddfc4b40d9210fd706f28b869dd1f2a246807e647bcd9b7c697abcd",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.008295564941704,
+        0.014645395786826393,
+        1.1422225635810377
+      ],
+      "minimum_cloth_node_z_m": 0.833231397,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 320,
+      "time_s": 2.6666666666666665,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-320.obj",
+      "sha256": "317326d735d84ed11326e9a941372d017fbed7547e39184160bda6cd7362e34a",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.0889163172069185,
+        0.005350588645618834,
+        1.1507592780634208
+      ],
+      "minimum_cloth_node_z_m": 0.839658457,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 330,
+      "time_s": 2.75,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-330.obj",
+      "sha256": "77990088a7dfa1b2f7cf0f93bc1d3cf6652c1028442e53fe085c1a63be6eab8d",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.1612100073959,
+        -0.0037905231509788597,
+        1.1551431136668802
+      ],
+      "minimum_cloth_node_z_m": 0.84193797,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 340,
+      "time_s": 2.8333333333333335,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-340.obj",
+      "sha256": "39770aa25de99ca204548e4a1e2cc91e5f95ce0584a5e7c3233ed4b8479c7732",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.2238527314862266,
+        -0.012398213395644458,
+        1.1513324767943627
+      ],
+      "minimum_cloth_node_z_m": 0.833842688,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 350,
+      "time_s": 2.9166666666666665,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-350.obj",
+      "sha256": "52e1a7370051612130d071af46c3e1ace720b6dd66bfcbaa11eae144bf65cc8e",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.2704017867713004,
+        -0.01893812103845932,
+        1.1529420461941062
+      ],
+      "minimum_cloth_node_z_m": 0.829059056,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 360,
+      "time_s": 3.0,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-360.obj",
+      "sha256": "cb55b6ce2f78cfdb4966855c3be706a3dff8aa92d2b6680ab63559904c591917",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.3004702333247917,
+        -0.02042629651075272,
+        1.158194025201153
+      ],
+      "minimum_cloth_node_z_m": 0.826835258,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 370,
+      "time_s": 3.0833333333333335,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-370.obj",
+      "sha256": "03c3c63c83737ad4d50af6eca35b4f6416ca0aaf90f92a74fcbc41c5e2a382ce",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.3161426388212683,
+        -0.02277035765618962,
+        1.1631273352889173
+      ],
+      "minimum_cloth_node_z_m": 0.8343801,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 380,
+      "time_s": 3.1666666666666665,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-380.obj",
+      "sha256": "d1e25c372d897c8f03ab2368d8a5dae01abe2143edfe1d9d8437cfcea7f85f28",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.3173685810890454,
+        -0.02166339317940743,
+        1.1597279406867391
+      ],
+      "minimum_cloth_node_z_m": 0.830590458,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 390,
+      "time_s": 3.25,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-390.obj",
+      "sha256": "cc99b2af93aee5d20d77e9a06c885b1ea58faaad12919bd48f57071110672485",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.3031484160217808,
+        -0.02259561447327252,
+        1.1563857451460602
+      ],
+      "minimum_cloth_node_z_m": 0.828214501,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 400,
+      "time_s": 3.3333333333333335,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-400.obj",
+      "sha256": "ea8fb712f2306c96f291e6383ee0f88329e0e6d72c8f9359afd515f371d1df3e",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.2771021631262012,
+        -0.021679907011902946,
+        1.1546531275253042
+      ],
+      "minimum_cloth_node_z_m": 0.834873029,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 410,
+      "time_s": 3.4166666666666665,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-410.obj",
+      "sha256": "75c259b5e9b528a76f23b2a99528a43e7b5376cd191c7336f0030dba2eb96a5d",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.2444659836835361,
+        -0.019790313830350993,
+        1.1539421729545163
+      ],
+      "minimum_cloth_node_z_m": 0.848276169,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 420,
+      "time_s": 3.5,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-420.obj",
+      "sha256": "0deec37e8266cc93b2358857e2fe3008275b58024faa5dfa6faca05811d50675",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.2118748127149264,
+        -0.01643594926903267,
+        1.1606224979871878
+      ],
+      "minimum_cloth_node_z_m": 0.874231827,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 430,
+      "time_s": 3.5833333333333335,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-430.obj",
+      "sha256": "d51c68b31da0036889db7c84f7f2e4816c9f743c46ceeebf4bc68cece6477831",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.1847543956694426,
+        -0.013178970864427226,
+        1.167331467730301
+      ],
+      "minimum_cloth_node_z_m": 0.90061666,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 440,
+      "time_s": 3.6666666666666665,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-440.obj",
+      "sha256": "e7383c73cff290396eb48a7d6e46e6ebc8575cd45ea43f6abbdb42c0c6cb6221",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.1687094837879564,
+        -0.010277314243007558,
+        1.1740841619320947
+      ],
+      "minimum_cloth_node_z_m": 0.917362746,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 450,
+      "time_s": 3.75,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-450.obj",
+      "sha256": "95103ed11bc7dc5eedf61cf098d1b5e232039e627b82af60c1cedb9d6256e92a",
+      "grip_active": true,
+      "cloth_mass_center_m": [
+        1.1650838986591927,
+        -0.009273553889245995,
+        1.176373037429212
+      ],
+      "minimum_cloth_node_z_m": 0.921067996,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 460,
+      "time_s": 3.8333333333333335,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-460.obj",
+      "sha256": "55d59b72db9463c42063978adf5cd1ea2e790d8015c21a861804962651b26af7",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.1627823380884048,
+        -0.004817447522509546,
+        1.1354922988975016
+      ],
+      "minimum_cloth_node_z_m": 0.872656498,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 470,
+      "time_s": 3.9166666666666665,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-470.obj",
+      "sha256": "72c7425cdc62451762cc10593b995d8738a56c94fde81dc735f4bcee54efd8a2",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.1663651196335683,
+        -0.004148644620066624,
+        1.0069253103901343
+      ],
+      "minimum_cloth_node_z_m": 0.707543755,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 480,
+      "time_s": 4.0,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-480.obj",
+      "sha256": "929c79d187aea89ef86d95ba13691dc09a93efa869d4d839e915aa5bb3be3c53",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.1636079079474695,
+        -0.005486023899315823,
+        0.8829609759852658
+      ],
+      "minimum_cloth_node_z_m": 0.579953548,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 490,
+      "time_s": 4.083333333333333,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-490.obj",
+      "sha256": "8df47fcae7183814deb9bc662b0f396bc05e2de8e7b0d90a4b3d8a764b7a6612",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.1827455157629725,
+        -0.010847811055377321,
+        0.7240012442459961
+      ],
+      "minimum_cloth_node_z_m": 0.413266655,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 500,
+      "time_s": 4.166666666666667,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-500.obj",
+      "sha256": "f6e160a73e65bea3213e544a2ceffb9a44687e8309b5a92c109cac9edf4d4fc7",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.2122270451447787,
+        -0.022860044222243817,
+        0.4891394624503523
+      ],
+      "minimum_cloth_node_z_m": 0.195479583,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 510,
+      "time_s": 4.25,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-510.obj",
+      "sha256": "1823190725bd20134513133da5ab0b583b04c6c38282175674de8d0ad7090137",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.2156388217085201,
+        -0.02160594432755093,
+        0.18254691329647404
+      ],
+      "minimum_cloth_node_z_m": -0.128753893,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 520,
+      "time_s": 4.333333333333333,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-520.obj",
+      "sha256": "8c2bf152f3fe1ebd889bc582b48789bd979d6c8d742bb4b2224565f78dd977d6",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.2189712792658551,
+        -0.02330093372652338,
+        -0.18411564293920177
+      ],
+      "minimum_cloth_node_z_m": -0.513081861,
+      "lower_floor_contact_node_count": 0,
+      "lower_floor_contact_node_mass_kg": 0
+    },
+    {
+      "frame": 530,
+      "time_s": 4.416666666666667,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-530.obj",
+      "sha256": "c6ca2a283fbb92bddfd2edb04096eabae3ca0600018240bce36977140e4e458d",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.229557838480461,
+        -0.019967022263732863,
+        -0.5813902565932094
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 9,
+      "lower_floor_contact_node_mass_kg": 0.00045000000000000004
+    },
+    {
+      "frame": 540,
+      "time_s": 4.5,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-540.obj",
+      "sha256": "394afa1ba439e8aba7d5ad30c0b2f46867a0309195929ae799de054c491362a0",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.2405055985836002,
+        -0.0023278255435624597,
+        -0.5901856060275463
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 3,
+      "lower_floor_contact_node_mass_kg": 0.00015000000000000001
+    },
+    {
+      "frame": 550,
+      "time_s": 4.583333333333333,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-550.obj",
+      "sha256": "e4a622c181a3a50978d132ddc3a05467455fd7802cd0bc3d3da3d7c7d455fd3e",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.253331157438821,
+        -0.01275070723772838,
+        -0.5902457993664317
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 11,
+      "lower_floor_contact_node_mass_kg": 0.00055
+    },
+    {
+      "frame": 560,
+      "time_s": 4.666666666666667,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-560.obj",
+      "sha256": "f737e2e4e44d3dc64943019b3988dc20315ac1af82ada3dbe66742afc5291295",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.264840460931454,
+        -0.03972111610800576,
+        -0.5919098836444586
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 13,
+      "lower_floor_contact_node_mass_kg": 0.0006500000000000001
+    },
+    {
+      "frame": 570,
+      "time_s": 4.75,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-570.obj",
+      "sha256": "f5f6e685bf04b7175bf2952c1cf1183168bb58e86f0962e47fc2d3f16263bed8",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.2812403767591287,
+        -0.05182500934833472,
+        -0.5975964031960281
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 17,
+      "lower_floor_contact_node_mass_kg": 0.0008500000000000001
+    },
+    {
+      "frame": 580,
+      "time_s": 4.833333333333333,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-580.obj",
+      "sha256": "d5a3d1adcac99532b810fa0c937914f942cb479e00bccce250bf9c56bb9f6264",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.2891837608770018,
+        -0.05807433244331389,
+        -0.6007834724266495
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 17,
+      "lower_floor_contact_node_mass_kg": 0.0008500000000000001
+    },
+    {
+      "frame": 590,
+      "time_s": 4.916666666666667,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-590.obj",
+      "sha256": "7597aeb1f9f5a18aaf500136aa2355b90306cbca94f2268203f5c55178ce836b",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.2961859110038436,
+        -0.06395765999566816,
+        -0.609064565172966
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 24,
+      "lower_floor_contact_node_mass_kg": 0.0012000000000000001
+    },
+    {
+      "frame": 600,
+      "time_s": 5.0,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-600.obj",
+      "sha256": "e520a7e7dad35550dd736825e76a2b3f6ca04a2f28090c3e84017015dec58aa1",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.301721709745035,
+        -0.07017900110035996,
+        -0.6137347377655349
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 26,
+      "lower_floor_contact_node_mass_kg": 0.0013000000000000002
+    },
+    {
+      "frame": 610,
+      "time_s": 5.083333333333333,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-610.obj",
+      "sha256": "743824773aaa4c130a0a47aa8d448a6b289cc787122f6f524c633c4de511f091",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.3104845112767456,
+        -0.07803494294798302,
+        -0.6164474152286995
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 30,
+      "lower_floor_contact_node_mass_kg": 0.0015
+    },
+    {
+      "frame": 620,
+      "time_s": 5.166666666666667,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-620.obj",
+      "sha256": "e52a1c9cc7d56d0661cc013e2eaf9345da55539de3537536dd98be86a4b71fa3",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.3139753738891735,
+        -0.08379629733446957,
+        -0.6182813232786675
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 31,
+      "lower_floor_contact_node_mass_kg": 0.0015500000000000002
+    },
+    {
+      "frame": 630,
+      "time_s": 5.25,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-630.obj",
+      "sha256": "c8547060175dd3758b320745ccb19ff67549037f6bdf01cfb3cd0dc0a7bab82a",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.315703238710442,
+        -0.08532230165882934,
+        -0.6176188587443946
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 30,
+      "lower_floor_contact_node_mass_kg": 0.0015
+    },
+    {
+      "frame": 640,
+      "time_s": 5.333333333333333,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-640.obj",
+      "sha256": "cad4b205fd3bfd534476d16cf05588d711f783c70dec0b0334e2edca474e2444",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.317799643074952,
+        -0.08623333293889172,
+        -0.6172322392203715
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 32,
+      "lower_floor_contact_node_mass_kg": 0.0016
+    },
+    {
+      "frame": 650,
+      "time_s": 5.416666666666667,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-650.obj",
+      "sha256": "e4a9a91b58d22ce59a52ef0f71d1806e2da8e81e2da8d3e2104fb4aa0700567a",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.3193798129660474,
+        -0.08753635227166431,
+        -0.617638105376041
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 31,
+      "lower_floor_contact_node_mass_kg": 0.0015500000000000002
+    },
+    {
+      "frame": 660,
+      "time_s": 5.5,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-660.obj",
+      "sha256": "ccd68941b8b37ebbffdf4524d48acf364fbf85ddb8553f8be7eb73bfa6925002",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.3207066029788594,
+        -0.08774945862846252,
+        -0.6187353461370916
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 32,
+      "lower_floor_contact_node_mass_kg": 0.0016
+    },
+    {
+      "frame": 670,
+      "time_s": 5.583333333333333,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-670.obj",
+      "sha256": "c749a788b2707ad7a81bddf7d073c2630eb77c3655ff0da7fb99d586d5722875",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.3209000736643177,
+        -0.08760950841436259,
+        -0.6183247793587443
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 32,
+      "lower_floor_contact_node_mass_kg": 0.0016
+    },
+    {
+      "frame": 680,
+      "time_s": 5.666666666666667,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-680.obj",
+      "sha256": "f88f11b0ff9db37e105638ae375470502c64b6bfe2c25ba6c5dfb328446883e6",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.3210652939397822,
+        -0.08754804816053811,
+        -0.6185280262953234
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 30,
+      "lower_floor_contact_node_mass_kg": 0.0015
+    },
+    {
+      "frame": 690,
+      "time_s": 5.75,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-690.obj",
+      "sha256": "5824d379c32d2e27c3b358e780a07af36924a617c48ee8540f7c86cea7a5465a",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.3210545220884047,
+        -0.08746775341066623,
+        -0.618126172780269
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 30,
+      "lower_floor_contact_node_mass_kg": 0.0015
+    },
+    {
+      "frame": 700,
+      "time_s": 5.833333333333333,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-700.obj",
+      "sha256": "694514119b7ffadad14a6ccf0f0473edb7376102694de249e53fc2d768e2d1b5",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.3208662464061498,
+        -0.08716575837839846,
+        -0.6184939607200511
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 30,
+      "lower_floor_contact_node_mass_kg": 0.0015
+    },
+    {
+      "frame": 710,
+      "time_s": 5.916666666666667,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-710.obj",
+      "sha256": "f4b059ceb40da363f52782adf4b6536f1002f21d647765acbbb606a8dc5d3872",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.3209472160666238,
+        -0.08712974956195388,
+        -0.6183593512927611
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 31,
+      "lower_floor_contact_node_mass_kg": 0.0015500000000000002
+    },
+    {
+      "frame": 720,
+      "time_s": 6.0,
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-720.obj",
+      "sha256": "cb2f12edf3f203540ceeb9117953b1c33a04b8c1a32127ac04bb75bc959a3290",
+      "grip_active": false,
+      "cloth_mass_center_m": [
+        1.3209521909160793,
+        -0.08695401353186419,
+        -0.6183370150730301
+      ],
+      "minimum_cloth_node_z_m": -0.746,
+      "lower_floor_contact_node_count": 31,
+      "lower_floor_contact_node_mass_kg": 0.0015500000000000002
+    }
+  ],
+  "snapshot_count": 73,
+  "mass_model": {
+    "ordinary_node_mass_kg": 5e-05,
+    "hem_node_mass_kg": 0.0001,
+    "total_cloth_mass_kg": 0.07805000000000001
+  },
+  "solver_reports_both_ordered_721_frame_replays_match": true,
+  "solver_ordered_frame_hash": "0x5817168ee0b19855",
+  "requested_release_time_s": 3.8,
+  "first_saved_inactive_interval_time_s": 3.8333333333333335,
+  "all_post_release_saved_grips_inactive": true,
+  "cloth_center_descent_after_first_post_release_snapshot_m": 1.7538293139705317,
+  "first_saved_post_release_lower_floor_contact_time_s": 4.416666666666667,
+  "final_lower_floor_contact_node_count": 31,
+  "geometric_loaded_cloth_drop_outcome_pass": true,
+  "all_saved_contacts_pass": true,
+  "contacts": [
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-0.obj",
+      "snapshot_sha256": "21483357b0deb815b8cb071e40c171b46f05bd285425d0ed4661e2c0d68b3122",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 0.0,
+      "fruit_yarn_witness": null,
+      "fruit_pair_overlap_m": 0.0,
+      "fruit_pair_witness": null,
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 7394,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-10.obj",
+      "snapshot_sha256": "0666278b7495d431a709c88b4ef28799e5e2c721e8d105af1f20bc8ae4164a09",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 7.102474164355499e-11,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1446,
+          1447
+        ]
+      },
+      "fruit_pair_overlap_m": 0.0,
+      "fruit_pair_witness": null,
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 9265,
+      "ground_overlap_m": 3.469446951953614e-18,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 3.469446951953614e-18,
+      "yarn_static_witness": {
+        "yarn_endpoints": [
+          31,
+          32
+        ],
+        "segment_parameter": 1.0
+      }
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-20.obj",
+      "snapshot_sha256": "4ad232b73ed0c931c416333fb278dca6422533d1d0a88fa4459996450878ce34",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.416571942553958e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          254,
+          255
+        ]
+      },
+      "fruit_pair_overlap_m": 1.1163875379693877e-10,
+      "fruit_pair_witness": [
+        3,
+        10
+      ],
+      "nonlocal_yarn_overlap_m": 3.844145592124537e-10,
+      "nonlocal_yarn_witness": [
+        [
+          772,
+          773
+        ],
+        [
+          916,
+          964
+        ]
+      ],
+      "self_broadphase_candidates": 10722,
+      "ground_overlap_m": 3.469446951953614e-18,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 3.469446951953614e-18,
+      "yarn_static_witness": {
+        "yarn_endpoints": [
+          30,
+          31
+        ],
+        "segment_parameter": 1.0
+      }
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-30.obj",
+      "snapshot_sha256": "af16e1a3144186ebe0a9dfaf741a9750dd3a106917c7b5c5d627fbd40e5d64bc",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.05867528421966e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          255,
+          256
+        ]
+      },
+      "fruit_pair_overlap_m": 3.9862166345550065e-10,
+      "fruit_pair_witness": [
+        4,
+        10
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12138,
+      "ground_overlap_m": 3.469446951953614e-18,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 3.469446951953614e-18,
+      "yarn_static_witness": {
+        "yarn_endpoints": [
+          25,
+          26
+        ],
+        "segment_parameter": 1.0
+      }
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-40.obj",
+      "snapshot_sha256": "0cb63d409ee9d35207223336bddcd3b0788cb4617c3125b4744d3bf8b32b5a17",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.190167740032336e-10,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1430,
+          1441
+        ]
+      },
+      "fruit_pair_overlap_m": 5.986097728616357e-10,
+      "fruit_pair_witness": [
+        5,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 4.517031072098776e-10,
+      "nonlocal_yarn_witness": [
+        [
+          380,
+          381
+        ],
+        [
+          524,
+          525
+        ]
+      ],
+      "self_broadphase_candidates": 13385,
+      "ground_overlap_m": 3.469446951953614e-18,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 3.469446951953614e-18,
+      "yarn_static_witness": {
+        "yarn_endpoints": [
+          22,
+          23
+        ],
+        "segment_parameter": 1.0
+      }
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-50.obj",
+      "snapshot_sha256": "95dee6a1d5dc18710a64b616e51545135afa477a8f538b144166e8ffd8968a19",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.3715256414778025e-10,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1453,
+          1464
+        ]
+      },
+      "fruit_pair_overlap_m": 1.0904115110843549e-09,
+      "fruit_pair_witness": [
+        0,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 3.028847728181461e-10,
+      "nonlocal_yarn_witness": [
+        [
+          284,
+          285
+        ],
+        [
+          428,
+          429
+        ]
+      ],
+      "self_broadphase_candidates": 15430,
+      "ground_overlap_m": 3.469446951953614e-18,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.008200022940443e-09,
+      "local_node_witness": [
+        75,
+        171
+      ],
+      "yarn_static_overlap_m": 3.469446951953614e-18,
+      "yarn_static_witness": {
+        "yarn_endpoints": [
+          22,
+          23
+        ],
+        "segment_parameter": 1.0
+      }
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-60.obj",
+      "snapshot_sha256": "991df45573f510bb2394033f542068e426a8a9e0d52088b16f6ed810a6108d7d",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.6343442972052173e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1445,
+          1456
+        ]
+      },
+      "fruit_pair_overlap_m": 3.468361708947043e-10,
+      "fruit_pair_witness": [
+        10,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 2.078406821648393e-10,
+      "nonlocal_yarn_witness": [
+        [
+          186,
+          187
+        ],
+        [
+          330,
+          331
+        ]
+      ],
+      "self_broadphase_candidates": 14800,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.6950917325917487e-10,
+      "local_node_witness": [
+        233,
+        329
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-70.obj",
+      "snapshot_sha256": "eb9267fa3cf36742c3b451fd3aa3c95a6e41e852f39f0d9f216f596afdf82046",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.2969516833579746e-10,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          1410,
+          1411
+        ]
+      },
+      "fruit_pair_overlap_m": 2.444553448555098e-10,
+      "fruit_pair_witness": [
+        2,
+        3
+      ],
+      "nonlocal_yarn_overlap_m": 4.78624256547433e-10,
+      "nonlocal_yarn_witness": [
+        [
+          284,
+          285
+        ],
+        [
+          428,
+          429
+        ]
+      ],
+      "self_broadphase_candidates": 14651,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 4.176320556742441e-10,
+      "local_node_witness": [
+        215,
+        311
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-80.obj",
+      "snapshot_sha256": "61706bc3e2798080c8aed6a5453c748ea343bec6108e1ebd8d5546ddb70353cd",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.379415801698428e-10,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          214,
+          215
+        ]
+      },
+      "fruit_pair_overlap_m": 7.994201134398082e-10,
+      "fruit_pair_witness": [
+        0,
+        1
+      ],
+      "nonlocal_yarn_overlap_m": 4.638390713185281e-11,
+      "nonlocal_yarn_witness": [
+        [
+          186,
+          187
+        ],
+        [
+          330,
+          331
+        ]
+      ],
+      "self_broadphase_candidates": 13522,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 5.49244798947468e-10,
+      "local_node_witness": [
+        258,
+        354
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-90.obj",
+      "snapshot_sha256": "3dbacbb46330bdb615ba355d7011c9c7d27e7cdb3cd6dd2daf013b410a89ebef",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.71578512351023e-10,
+      "fruit_yarn_witness": {
+        "fruit": 10,
+        "yarn_endpoints": [
+          1317,
+          1318
+        ]
+      },
+      "fruit_pair_overlap_m": 8.155363884210232e-10,
+      "fruit_pair_witness": [
+        5,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 12750,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-100.obj",
+      "snapshot_sha256": "3cdc41409b9761856a664847bf2ca5ff246da1c8703b58ff6b898a801cf989c8",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 7.185463613001986e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          113,
+          114
+        ]
+      },
+      "fruit_pair_overlap_m": 7.73442809798297e-10,
+      "fruit_pair_witness": [
+        1,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13655,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.5040965001267281e-10,
+      "local_node_witness": [
+        37,
+        133
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-110.obj",
+      "snapshot_sha256": "9dd5026215a776f7d8f23a75551fdb43ab82e0c3c133990b074bd02e4514fd55",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 6.61755622521909e-10,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1459,
+          1460
+        ]
+      },
+      "fruit_pair_overlap_m": 6.192136525751124e-10,
+      "fruit_pair_witness": [
+        9,
+        10
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13227,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.9461459752762034e-09,
+      "local_node_witness": [
+        821,
+        917
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-120.obj",
+      "snapshot_sha256": "7988f91bd13363094e909399c78268d9d094ccea6139b221e094cbd6b2e6b785",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 7.677670305072937e-10,
+      "fruit_yarn_witness": {
+        "fruit": 6,
+        "yarn_endpoints": [
+          1371,
+          1382
+        ]
+      },
+      "fruit_pair_overlap_m": 2.40933051287584e-10,
+      "fruit_pair_witness": [
+        1,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 1.6816684104276058e-09,
+      "nonlocal_yarn_witness": [
+        [
+          186,
+          187
+        ],
+        [
+          330,
+          331
+        ]
+      ],
+      "self_broadphase_candidates": 13000,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.8583030652469246e-09,
+      "local_node_witness": [
+        37,
+        133
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-130.obj",
+      "snapshot_sha256": "c71b9648aa10dbbb4234ad8187fdc6aac883769cba495e815fa2f9aa3e8aca3c",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.7980239930558426e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1459,
+          1460
+        ]
+      },
+      "fruit_pair_overlap_m": 7.25841595161647e-09,
+      "fruit_pair_witness": [
+        0,
+        1
+      ],
+      "nonlocal_yarn_overlap_m": 4.781156911354278e-10,
+      "nonlocal_yarn_witness": [
+        [
+          784,
+          785
+        ],
+        [
+          593,
+          641
+        ]
+      ],
+      "self_broadphase_candidates": 13336,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.0831462596571093e-10,
+      "local_node_witness": [
+        214,
+        310
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-140.obj",
+      "snapshot_sha256": "80b0f2fbd6bef95cd6bc4eef4a30e5f15254d021bd80d8c460495ebe1d50dfbf",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.940953284877537e-10,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1444,
+          1455
+        ]
+      },
+      "fruit_pair_overlap_m": 3.083560767835891e-09,
+      "fruit_pair_witness": [
+        0,
+        1
+      ],
+      "nonlocal_yarn_overlap_m": 8.80848905968068e-10,
+      "nonlocal_yarn_witness": [
+        [
+          284,
+          285
+        ],
+        [
+          428,
+          429
+        ]
+      ],
+      "self_broadphase_candidates": 13789,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.0757745869404154e-10,
+      "local_node_witness": [
+        214,
+        310
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-150.obj",
+      "snapshot_sha256": "f2ebc255db66437e89413141ee0f50e0919211f998fbbc91b9e35241fbb655d8",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.502176687015691e-10,
+      "fruit_yarn_witness": {
+        "fruit": 1,
+        "yarn_endpoints": [
+          1414,
+          1425
+        ]
+      },
+      "fruit_pair_overlap_m": 1.6362599608577e-09,
+      "fruit_pair_witness": [
+        4,
+        10
+      ],
+      "nonlocal_yarn_overlap_m": 2.6015077592145275e-10,
+      "nonlocal_yarn_witness": [
+        [
+          284,
+          285
+        ],
+        [
+          428,
+          429
+        ]
+      ],
+      "self_broadphase_candidates": 14371,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.4085256358774565e-10,
+      "local_node_witness": [
+        215,
+        311
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-160.obj",
+      "snapshot_sha256": "a09d446eda743a7591ca22a0d862dfa9013154c556f7aac18bf30c93dd9ccb49",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.199427735580464e-09,
+      "fruit_yarn_witness": {
+        "fruit": 9,
+        "yarn_endpoints": [
+          1070,
+          1118
+        ]
+      },
+      "fruit_pair_overlap_m": 3.5272620935167254e-10,
+      "fruit_pair_witness": [
+        5,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 3.094570186906731e-09,
+      "nonlocal_yarn_witness": [
+        [
+          284,
+          285
+        ],
+        [
+          428,
+          429
+        ]
+      ],
+      "self_broadphase_candidates": 15877,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.5798275552342256e-09,
+      "local_node_witness": [
+        233,
+        329
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-170.obj",
+      "snapshot_sha256": "6ff53309c67f1d9eecb7da64de1396ea1b07e442bd13d04ace007cac4d3041c4",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.01374455841308e-10,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          1410,
+          1411
+        ]
+      },
+      "fruit_pair_overlap_m": 4.3408762417929125e-09,
+      "fruit_pair_witness": [
+        5,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 7.842640495359099e-10,
+      "nonlocal_yarn_witness": [
+        [
+          186,
+          187
+        ],
+        [
+          330,
+          331
+        ]
+      ],
+      "self_broadphase_candidates": 14577,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 7.065839406628083e-11,
+      "local_node_witness": [
+        77,
+        173
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-180.obj",
+      "snapshot_sha256": "60ca322e8a2f0743b1fc87b620ca6f3bc7e4303de8796de2acda2936800803be",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.4300463313521306e-09,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          508,
+          509
+        ]
+      },
+      "fruit_pair_overlap_m": 3.22394227980638e-09,
+      "fruit_pair_witness": [
+        2,
+        10
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 15279,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-190.obj",
+      "snapshot_sha256": "a04f0f02d7cc849984c4c4cf3dd9857c907e0ecdf4129990e0b330c3795f9563",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.6720045070695022e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1449,
+          1460
+        ]
+      },
+      "fruit_pair_overlap_m": 6.070738939323306e-09,
+      "fruit_pair_witness": [
+        6,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 6.604147541333649e-10,
+      "nonlocal_yarn_witness": [
+        [
+          186,
+          187
+        ],
+        [
+          330,
+          331
+        ]
+      ],
+      "self_broadphase_candidates": 15171,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.1832210593254455e-09,
+      "local_node_witness": [
+        821,
+        917
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-200.obj",
+      "snapshot_sha256": "964b80e4b872808f02e8bc7458c41cc49471acdb87f92b912a3142ac3a39a2af",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.0464758087858073e-09,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          320,
+          368
+        ]
+      },
+      "fruit_pair_overlap_m": 3.80800987964669e-09,
+      "fruit_pair_witness": [
+        6,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 2.2679970870104205e-09,
+      "nonlocal_yarn_witness": [
+        [
+          186,
+          187
+        ],
+        [
+          330,
+          331
+        ]
+      ],
+      "self_broadphase_candidates": 15384,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.5979513406927381e-09,
+      "local_node_witness": [
+        233,
+        329
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-210.obj",
+      "snapshot_sha256": "cb602a6e77565719ef14792cf5bd2cce65a5fe32b93b18d157ae010fe2ff7c7d",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 6.373872402098968e-10,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          1410,
+          1411
+        ]
+      },
+      "fruit_pair_overlap_m": 3.2845615394183625e-09,
+      "fruit_pair_witness": [
+        4,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 2.378314011008964e-09,
+      "nonlocal_yarn_witness": [
+        [
+          784,
+          785
+        ],
+        [
+          593,
+          641
+        ]
+      ],
+      "self_broadphase_candidates": 15467,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.8203736580505465e-09,
+      "local_node_witness": [
+        233,
+        329
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-220.obj",
+      "snapshot_sha256": "c21f6f946ff3aa10c4e1a80982706711c537c4468eb662b1820b539365de5444",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.060394952401289e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1451,
+          1452
+        ]
+      },
+      "fruit_pair_overlap_m": 4.209728732273987e-09,
+      "fruit_pair_witness": [
+        0,
+        1
+      ],
+      "nonlocal_yarn_overlap_m": 1.1075361652096438e-09,
+      "nonlocal_yarn_witness": [
+        [
+          186,
+          187
+        ],
+        [
+          330,
+          331
+        ]
+      ],
+      "self_broadphase_candidates": 15193,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.4189985651661425e-09,
+      "local_node_witness": [
+        233,
+        329
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-230.obj",
+      "snapshot_sha256": "30198aed09a61bba4196c3794f6a63197327e5bb058b68c57d5ad9b48e873ddb",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 6.911074490467684e-10,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1449,
+          1460
+        ]
+      },
+      "fruit_pair_overlap_m": 3.5985274482452922e-09,
+      "fruit_pair_witness": [
+        2,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 14864,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.220113901220012e-09,
+      "local_node_witness": [
+        821,
+        917
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-240.obj",
+      "snapshot_sha256": "7f540a649d98d0641560631f43c9bb8314383b06f2085ffb2a4a8a22273981c2",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.9475296375581763e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1439,
+          1450
+        ]
+      },
+      "fruit_pair_overlap_m": 2.853051794815542e-09,
+      "fruit_pair_witness": [
+        5,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 2.478969248626006e-09,
+      "nonlocal_yarn_witness": [
+        [
+          284,
+          285
+        ],
+        [
+          428,
+          429
+        ]
+      ],
+      "self_broadphase_candidates": 15057,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.769756711652361e-10,
+      "local_node_witness": [
+        18,
+        114
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-250.obj",
+      "snapshot_sha256": "a333dc701dcbf42cec272c9ca9e3cd62ed3e3955af9e6ca4daa70626a2c30979",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.7759661241623093e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1449,
+          1460
+        ]
+      },
+      "fruit_pair_overlap_m": 2.6086852400464267e-09,
+      "fruit_pair_witness": [
+        0,
+        1
+      ],
+      "nonlocal_yarn_overlap_m": 3.835582469691179e-09,
+      "nonlocal_yarn_witness": [
+        [
+          284,
+          285
+        ],
+        [
+          428,
+          429
+        ]
+      ],
+      "self_broadphase_candidates": 15145,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.966591185037503e-09,
+      "local_node_witness": [
+        233,
+        329
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-260.obj",
+      "snapshot_sha256": "94da804f4018e266a96c3491858fa8effcfa03f5b1d8762618fbb4eb101217f4",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.601178648003021e-09,
+      "fruit_yarn_witness": {
+        "fruit": 6,
+        "yarn_endpoints": [
+          1371,
+          1382
+        ]
+      },
+      "fruit_pair_overlap_m": 1.2435068252880654e-09,
+      "fruit_pair_witness": [
+        2,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 2.891871742072283e-09,
+      "nonlocal_yarn_witness": [
+        [
+          284,
+          285
+        ],
+        [
+          428,
+          429
+        ]
+      ],
+      "self_broadphase_candidates": 15553,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.6616148694758035e-09,
+      "local_node_witness": [
+        821,
+        917
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-270.obj",
+      "snapshot_sha256": "ed4b931dc7104827e49387f1955c1b1006dc1b6828ec10bb9b3ae7228f03e81c",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.7078861103136944e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1439,
+          1450
+        ]
+      },
+      "fruit_pair_overlap_m": 5.80909897962556e-09,
+      "fruit_pair_witness": [
+        6,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 16309,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 5.160389749195304e-09,
+      "local_node_witness": [
+        37,
+        133
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-280.obj",
+      "snapshot_sha256": "f4d43a44e46e7ae592916b48e047269e55001dfb6901fbadc57786faf2f2276a",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.9058414563465362e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          8,
+          9
+        ]
+      },
+      "fruit_pair_overlap_m": 3.932980274790054e-09,
+      "fruit_pair_witness": [
+        6,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 2.3068436397211123e-10,
+      "nonlocal_yarn_witness": [
+        [
+          185,
+          186
+        ],
+        [
+          330,
+          331
+        ]
+      ],
+      "self_broadphase_candidates": 16112,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.939690482359203e-09,
+      "local_node_witness": [
+        37,
+        133
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-290.obj",
+      "snapshot_sha256": "ed7cad25b99bf492bd03d8c439e8d409795d7a2f0d62ed19759b11cacaa8ea8e",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.280797604756415e-10,
+      "fruit_yarn_witness": {
+        "fruit": 7,
+        "yarn_endpoints": [
+          1378,
+          1379
+        ]
+      },
+      "fruit_pair_overlap_m": 4.901438976911976e-09,
+      "fruit_pair_witness": [
+        0,
+        1
+      ],
+      "nonlocal_yarn_overlap_m": 1.4184052907900702e-09,
+      "nonlocal_yarn_witness": [
+        [
+          784,
+          785
+        ],
+        [
+          593,
+          641
+        ]
+      ],
+      "self_broadphase_candidates": 15921,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.0004490985648928e-10,
+      "local_node_witness": [
+        790,
+        886
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-300.obj",
+      "snapshot_sha256": "679898b586e9f411c2e568a4407383573e9d1cc699a08ac0f7b292cfe3a88492",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.748066093600677e-09,
+      "fruit_yarn_witness": {
+        "fruit": 1,
+        "yarn_endpoints": [
+          1414,
+          1425
+        ]
+      },
+      "fruit_pair_overlap_m": 3.678807924956118e-09,
+      "fruit_pair_witness": [
+        4,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 9.385456561233907e-10,
+      "nonlocal_yarn_witness": [
+        [
+          284,
+          285
+        ],
+        [
+          428,
+          429
+        ]
+      ],
+      "self_broadphase_candidates": 15926,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 5.4526302362134516e-09,
+      "local_node_witness": [
+        238,
+        334
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-310.obj",
+      "snapshot_sha256": "e7d7366c3ddfc4b40d9210fd706f28b869dd1f2a246807e647bcd9b7c697abcd",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.250764032958209e-09,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1444,
+          1455
+        ]
+      },
+      "fruit_pair_overlap_m": 2.3936576054595093e-09,
+      "fruit_pair_witness": [
+        5,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 2.2775987207346304e-09,
+      "nonlocal_yarn_witness": [
+        [
+          186,
+          187
+        ],
+        [
+          330,
+          331
+        ]
+      ],
+      "self_broadphase_candidates": 16183,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 6.248027321215099e-09,
+      "local_node_witness": [
+        233,
+        329
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-320.obj",
+      "snapshot_sha256": "317326d735d84ed11326e9a941372d017fbed7547e39184160bda6cd7362e34a",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.143382582004861e-09,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          1347,
+          1358
+        ]
+      },
+      "fruit_pair_overlap_m": 5.1095287723068594e-09,
+      "fruit_pair_witness": [
+        1,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 2.7413644226176315e-08,
+      "nonlocal_yarn_witness": [
+        [
+          332,
+          333
+        ],
+        [
+          476,
+          477
+        ]
+      ],
+      "self_broadphase_candidates": 15364,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 8.245750466109869e-09,
+      "local_node_witness": [
+        236,
+        332
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-330.obj",
+      "snapshot_sha256": "77990088a7dfa1b2f7cf0f93bc1d3cf6652c1028442e53fe085c1a63be6eab8d",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 6.844117314552811e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1440,
+          1451
+        ]
+      },
+      "fruit_pair_overlap_m": 3.873142806476437e-09,
+      "fruit_pair_witness": [
+        4,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 5.810109447376699e-09,
+      "nonlocal_yarn_witness": [
+        [
+          186,
+          187
+        ],
+        [
+          330,
+          331
+        ]
+      ],
+      "self_broadphase_candidates": 15462,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.6615318542724522e-07,
+      "local_node_witness": [
+        724,
+        820
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-340.obj",
+      "snapshot_sha256": "39770aa25de99ca204548e4a1e2cc91e5f95ce0584a5e7c3233ed4b8479c7732",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.370063949072801e-09,
+      "fruit_yarn_witness": {
+        "fruit": 1,
+        "yarn_endpoints": [
+          1415,
+          1416
+        ]
+      },
+      "fruit_pair_overlap_m": 4.179882356902809e-09,
+      "fruit_pair_witness": [
+        4,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 2.2380594513066177e-09,
+      "nonlocal_yarn_witness": [
+        [
+          380,
+          381
+        ],
+        [
+          524,
+          525
+        ]
+      ],
+      "self_broadphase_candidates": 15619,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.481020124929124e-10,
+      "local_node_witness": [
+        0,
+        96
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-350.obj",
+      "snapshot_sha256": "52e1a7370051612130d071af46c3e1ace720b6dd66bfcbaa11eae144bf65cc8e",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.541170286504915e-09,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1445,
+          1456
+        ]
+      },
+      "fruit_pair_overlap_m": 4.531132830054574e-09,
+      "fruit_pair_witness": [
+        1,
+        2
+      ],
+      "nonlocal_yarn_overlap_m": 4.707809550183462e-09,
+      "nonlocal_yarn_witness": [
+        [
+          242,
+          243
+        ],
+        [
+          385,
+          386
+        ]
+      ],
+      "self_broadphase_candidates": 17034,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.951743826792863e-09,
+      "local_node_witness": [
+        37,
+        133
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-360.obj",
+      "snapshot_sha256": "cb55b6ce2f78cfdb4966855c3be706a3dff8aa92d2b6680ab63559904c591917",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 7.008363542282403e-09,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          1346,
+          1357
+        ]
+      },
+      "fruit_pair_overlap_m": 7.931354989443307e-09,
+      "fruit_pair_witness": [
+        6,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 6.109787413846601e-09,
+      "nonlocal_yarn_witness": [
+        [
+          194,
+          195
+        ],
+        [
+          386,
+          387
+        ]
+      ],
+      "self_broadphase_candidates": 16352,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 6.787468560896098e-07,
+      "local_node_witness": [
+        12,
+        108
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-370.obj",
+      "snapshot_sha256": "03c3c63c83737ad4d50af6eca35b4f6416ca0aaf90f92a74fcbc41c5e2a382ce",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.5082835248001487e-09,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          1346,
+          1357
+        ]
+      },
+      "fruit_pair_overlap_m": 4.049277774198501e-09,
+      "fruit_pair_witness": [
+        4,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 4.473427775777972e-09,
+      "nonlocal_yarn_witness": [
+        [
+          192,
+          193
+        ],
+        [
+          336,
+          337
+        ]
+      ],
+      "self_broadphase_candidates": 17380,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.9879785716908627e-09,
+      "local_node_witness": [
+        817,
+        913
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-380.obj",
+      "snapshot_sha256": "d1e25c372d897c8f03ab2368d8a5dae01abe2143edfe1d9d8437cfcea7f85f28",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.293907007735243e-09,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          320,
+          368
+        ]
+      },
+      "fruit_pair_overlap_m": 3.1246917553406917e-09,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 5.296017794448327e-09,
+      "nonlocal_yarn_witness": [
+        [
+          186,
+          187
+        ],
+        [
+          426,
+          474
+        ]
+      ],
+      "self_broadphase_candidates": 15952,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 6.579451108934542e-09,
+      "local_node_witness": [
+        215,
+        311
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-390.obj",
+      "snapshot_sha256": "cc99b2af93aee5d20d77e9a06c885b1ea58faaad12919bd48f57071110672485",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 8.382922037086793e-09,
+      "fruit_yarn_witness": {
+        "fruit": 1,
+        "yarn_endpoints": [
+          1414,
+          1425
+        ]
+      },
+      "fruit_pair_overlap_m": 3.831522876751592e-09,
+      "fruit_pair_witness": [
+        4,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 2.905765463315224e-09,
+      "nonlocal_yarn_witness": [
+        [
+          527,
+          480
+        ],
+        [
+          624,
+          625
+        ]
+      ],
+      "self_broadphase_candidates": 17061,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.415400112559807e-09,
+      "local_node_witness": [
+        751,
+        847
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-400.obj",
+      "snapshot_sha256": "ea8fb712f2306c96f291e6383ee0f88329e0e6d72c8f9359afd515f371d1df3e",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.581645632855235e-09,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          262,
+          263
+        ]
+      },
+      "fruit_pair_overlap_m": 4.851337997990868e-09,
+      "fruit_pair_witness": [
+        0,
+        1
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 17163,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.2114498282946315e-08,
+      "local_node_witness": [
+        12,
+        108
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-410.obj",
+      "snapshot_sha256": "75c259b5e9b528a76f23b2a99528a43e7b5376cd191c7336f0030dba2eb96a5d",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 8.354606895188965e-09,
+      "fruit_yarn_witness": {
+        "fruit": 9,
+        "yarn_endpoints": [
+          11,
+          12
+        ]
+      },
+      "fruit_pair_overlap_m": 6.194545543181107e-09,
+      "fruit_pair_witness": [
+        6,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 3.4303098382648667e-09,
+      "nonlocal_yarn_witness": [
+        [
+          527,
+          480
+        ],
+        [
+          624,
+          625
+        ]
+      ],
+      "self_broadphase_candidates": 16784,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 5.710425016527965e-09,
+      "local_node_witness": [
+        769,
+        865
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-420.obj",
+      "snapshot_sha256": "0deec37e8266cc93b2358857e2fe3008275b58024faa5dfa6faca05811d50675",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.662854782844228e-09,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          126,
+          127
+        ]
+      },
+      "fruit_pair_overlap_m": 6.319942180699201e-09,
+      "fruit_pair_witness": [
+        1,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 4.315942402077777e-09,
+      "nonlocal_yarn_witness": [
+        [
+          770,
+          771
+        ],
+        [
+          914,
+          915
+        ]
+      ],
+      "self_broadphase_candidates": 17009,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 4.111961224642635e-09,
+      "local_node_witness": [
+        529,
+        625
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-430.obj",
+      "snapshot_sha256": "d51c68b31da0036889db7c84f7f2e4816c9f743c46ceeebf4bc68cece6477831",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.199978573260488e-09,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          167,
+          168
+        ]
+      },
+      "fruit_pair_overlap_m": 4.227024369418686e-09,
+      "fruit_pair_witness": [
+        4,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 4.910552410877789e-09,
+      "nonlocal_yarn_witness": [
+        [
+          674,
+          675
+        ],
+        [
+          866,
+          867
+        ]
+      ],
+      "self_broadphase_candidates": 16616,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.4300710870645004e-09,
+      "local_node_witness": [
+        215,
+        311
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-440.obj",
+      "snapshot_sha256": "e7383c73cff290396eb48a7d6e46e6ebc8575cd45ea43f6abbdb42c0c6cb6221",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.4256244924035784e-09,
+      "fruit_yarn_witness": {
+        "fruit": 7,
+        "yarn_endpoints": [
+          1378,
+          1379
+        ]
+      },
+      "fruit_pair_overlap_m": 4.397075176187926e-09,
+      "fruit_pair_witness": [
+        4,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 6.245112883426773e-09,
+      "nonlocal_yarn_witness": [
+        [
+          194,
+          195
+        ],
+        [
+          385,
+          386
+        ]
+      ],
+      "self_broadphase_candidates": 16345,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.0953675818811681e-08,
+      "local_node_witness": [
+        12,
+        108
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-450.obj",
+      "snapshot_sha256": "95103ed11bc7dc5eedf61cf098d1b5e232039e627b82af60c1cedb9d6256e92a",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.4364880514023994e-09,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1446,
+          1457
+        ]
+      },
+      "fruit_pair_overlap_m": 6.7275371939956585e-09,
+      "fruit_pair_witness": [
+        8,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 4.2247090513425345e-09,
+      "nonlocal_yarn_witness": [
+        [
+          527,
+          480
+        ],
+        [
+          671,
+          624
+        ]
+      ],
+      "self_broadphase_candidates": 16696,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 7.1814086847338254e-09,
+      "local_node_witness": [
+        238,
+        334
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-460.obj",
+      "snapshot_sha256": "55d59b72db9463c42063978adf5cd1ea2e790d8015c21a861804962651b26af7",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 0.0,
+      "fruit_yarn_witness": null,
+      "fruit_pair_overlap_m": 0.0,
+      "fruit_pair_witness": null,
+      "nonlocal_yarn_overlap_m": 3.63082649709745e-09,
+      "nonlocal_yarn_witness": [
+        [
+          46,
+          47
+        ],
+        [
+          189,
+          190
+        ]
+      ],
+      "self_broadphase_candidates": 14728,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-470.obj",
+      "snapshot_sha256": "72c7425cdc62451762cc10593b995d8738a56c94fde81dc735f4bcee54efd8a2",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 0.0,
+      "fruit_yarn_witness": null,
+      "fruit_pair_overlap_m": 0.0,
+      "fruit_pair_witness": null,
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 15032,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 4.8600511393104284e-09,
+      "local_node_witness": [
+        285,
+        381
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-480.obj",
+      "snapshot_sha256": "929c79d187aea89ef86d95ba13691dc09a93efa869d4d839e915aa5bb3be3c53",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.5766729588584383e-09,
+      "fruit_yarn_witness": {
+        "fruit": 2,
+        "yarn_endpoints": [
+          1447,
+          1448
+        ]
+      },
+      "fruit_pair_overlap_m": 0.0,
+      "fruit_pair_witness": null,
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 14654,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.56900770154067e-10,
+      "local_node_witness": [
+        572,
+        668
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-490.obj",
+      "snapshot_sha256": "8df47fcae7183814deb9bc662b0f396bc05e2de8e7b0d90a4b3d8a764b7a6612",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.219148003719141e-10,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          1358,
+          1359
+        ]
+      },
+      "fruit_pair_overlap_m": 1.4761096789328576e-09,
+      "fruit_pair_witness": [
+        6,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13900,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.0792776932583292e-09,
+      "local_node_witness": [
+        200,
+        296
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-500.obj",
+      "snapshot_sha256": "f6e160a73e65bea3213e544a2ceffb9a44687e8309b5a92c109cac9edf4d4fc7",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.479912317165933e-09,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          362,
+          363
+        ]
+      },
+      "fruit_pair_overlap_m": 6.835630228518852e-09,
+      "fruit_pair_witness": [
+        5,
+        6
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13972,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-510.obj",
+      "snapshot_sha256": "1823190725bd20134513133da5ab0b583b04c6c38282175674de8d0ad7090137",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 6.152458251196258e-09,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          214,
+          215
+        ]
+      },
+      "fruit_pair_overlap_m": 4.18526915901829e-09,
+      "fruit_pair_witness": [
+        2,
+        10
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13961,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 8.221538155134267e-10,
+      "local_node_witness": [
+        233,
+        329
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-520.obj",
+      "snapshot_sha256": "8c2bf152f3fe1ebd889bc582b48789bd979d6c8d742bb4b2224565f78dd977d6",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 6.108385880443379e-09,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          458,
+          459
+        ]
+      },
+      "fruit_pair_overlap_m": 3.8348598185855565e-09,
+      "fruit_pair_witness": [
+        1,
+        2
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 13875,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 4.222213627336213e-09,
+      "local_node_witness": [
+        751,
+        847
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-530.obj",
+      "snapshot_sha256": "c6ca2a283fbb92bddfd2edb04096eabae3ca0600018240bce36977140e4e458d",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.6492252008504238e-09,
+      "fruit_yarn_witness": {
+        "fruit": 10,
+        "yarn_endpoints": [
+          1317,
+          1318
+        ]
+      },
+      "fruit_pair_overlap_m": 8.7248142044416e-10,
+      "fruit_pair_witness": [
+        1,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 6.955223321343518e-07,
+      "nonlocal_yarn_witness": [
+        [
+          37,
+          38
+        ],
+        [
+          180,
+          181
+        ]
+      ],
+      "self_broadphase_candidates": 18088,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-540.obj",
+      "snapshot_sha256": "394afa1ba439e8aba7d5ad30c0b2f46867a0309195929ae799de054c491362a0",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.0243531295704997e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          194,
+          195
+        ]
+      },
+      "fruit_pair_overlap_m": 6.909995631243504e-10,
+      "fruit_pair_witness": [
+        4,
+        5
+      ],
+      "nonlocal_yarn_overlap_m": 1.7648816534598932e-07,
+      "nonlocal_yarn_witness": [
+        [
+          29,
+          30
+        ],
+        [
+          173,
+          174
+        ]
+      ],
+      "self_broadphase_candidates": 14476,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.2376451363641534e-09,
+      "local_node_witness": [
+        821,
+        917
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-550.obj",
+      "snapshot_sha256": "e4a622c181a3a50978d132ddc3a05467455fd7802cd0bc3d3da3d7c7d455fd3e",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.20606457995909e-09,
+      "fruit_yarn_witness": {
+        "fruit": 11,
+        "yarn_endpoints": [
+          1048,
+          1049
+        ]
+      },
+      "fruit_pair_overlap_m": 1.0382116555351928e-09,
+      "fruit_pair_witness": [
+        3,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 3.947007108217465e-07,
+      "nonlocal_yarn_witness": [
+        [
+          7,
+          8
+        ],
+        [
+          151,
+          152
+        ]
+      ],
+      "self_broadphase_candidates": 12078,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 8.783186677963073e-10,
+      "local_node_witness": [
+        37,
+        133
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-560.obj",
+      "snapshot_sha256": "f737e2e4e44d3dc64943019b3988dc20315ac1af82ada3dbe66742afc5291295",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.974574668332622e-09,
+      "fruit_yarn_witness": {
+        "fruit": 11,
+        "yarn_endpoints": [
+          1003,
+          1004
+        ]
+      },
+      "fruit_pair_overlap_m": 7.197886731091785e-10,
+      "fruit_pair_witness": [
+        2,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10439,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-570.obj",
+      "snapshot_sha256": "f5f6e685bf04b7175bf2952c1cf1183168bb58e86f0962e47fc2d3f16263bed8",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.3802278903130016e-09,
+      "fruit_yarn_witness": {
+        "fruit": 5,
+        "yarn_endpoints": [
+          1359,
+          1370
+        ]
+      },
+      "fruit_pair_overlap_m": 1.3891967021173457e-09,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 1.939338040851668e-09,
+      "nonlocal_yarn_witness": [
+        [
+          26,
+          27
+        ],
+        [
+          170,
+          171
+        ]
+      ],
+      "self_broadphase_candidates": 10797,
+      "ground_overlap_m": 0.0,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-580.obj",
+      "snapshot_sha256": "d5a3d1adcac99532b810fa0c937914f942cb479e00bccce250bf9c56bb9f6264",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.258564792469777e-09,
+      "fruit_yarn_witness": {
+        "fruit": 11,
+        "yarn_endpoints": [
+          1002,
+          1003
+        ]
+      },
+      "fruit_pair_overlap_m": 4.860161814668196e-09,
+      "fruit_pair_witness": [
+        3,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 2.385660627379771e-10,
+      "nonlocal_yarn_witness": [
+        [
+          11,
+          12
+        ],
+        [
+          155,
+          156
+        ]
+      ],
+      "self_broadphase_candidates": 10981,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 5.462599225389275e-09,
+      "local_node_witness": [
+        150,
+        246
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-590.obj",
+      "snapshot_sha256": "7597aeb1f9f5a18aaf500136aa2355b90306cbca94f2268203f5c55178ce836b",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.9641474830199854e-09,
+      "fruit_yarn_witness": {
+        "fruit": 3,
+        "yarn_endpoints": [
+          258,
+          259
+        ]
+      },
+      "fruit_pair_overlap_m": 4.906607592447543e-09,
+      "fruit_pair_witness": [
+        4,
+        5
+      ],
+      "nonlocal_yarn_overlap_m": 0.0,
+      "nonlocal_yarn_witness": null,
+      "self_broadphase_candidates": 10766,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.1777812908980723e-09,
+      "local_node_witness": [
+        150,
+        246
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-600.obj",
+      "snapshot_sha256": "e520a7e7dad35550dd736825e76a2b3f6ca04a2f28090c3e84017015dec58aa1",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.2744160999010887e-09,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          412,
+          413
+        ]
+      },
+      "fruit_pair_overlap_m": 4.512670320755419e-09,
+      "fruit_pair_witness": [
+        5,
+        6
+      ],
+      "nonlocal_yarn_overlap_m": 8.942301239767136e-11,
+      "nonlocal_yarn_witness": [
+        [
+          176,
+          177
+        ],
+        [
+          33,
+          1346
+        ]
+      ],
+      "self_broadphase_candidates": 11452,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 0.0,
+      "local_node_witness": null,
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-610.obj",
+      "snapshot_sha256": "743824773aaa4c130a0a47aa8d448a6b289cc787122f6f524c633c4de511f091",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.4565129092278823e-09,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          412,
+          413
+        ]
+      },
+      "fruit_pair_overlap_m": 7.237004162607974e-09,
+      "fruit_pair_witness": [
+        5,
+        6
+      ],
+      "nonlocal_yarn_overlap_m": 1.828104334578029e-11,
+      "nonlocal_yarn_witness": [
+        [
+          176,
+          177
+        ],
+        [
+          33,
+          1346
+        ]
+      ],
+      "self_broadphase_candidates": 11531,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.1021721394870463e-09,
+      "local_node_witness": [
+        723,
+        819
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-620.obj",
+      "snapshot_sha256": "e52a1c9cc7d56d0661cc013e2eaf9345da55539de3537536dd98be86a4b71fa3",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.827697241971407e-09,
+      "fruit_yarn_witness": {
+        "fruit": 11,
+        "yarn_endpoints": [
+          668,
+          669
+        ]
+      },
+      "fruit_pair_overlap_m": 2.478246580173149e-09,
+      "fruit_pair_witness": [
+        1,
+        5
+      ],
+      "nonlocal_yarn_overlap_m": 8.837922321064395e-10,
+      "nonlocal_yarn_witness": [
+        [
+          228,
+          229
+        ],
+        [
+          37,
+          1350
+        ]
+      ],
+      "self_broadphase_candidates": 12324,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 3.564010184198274e-09,
+      "local_node_witness": [
+        675,
+        771
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-630.obj",
+      "snapshot_sha256": "c8547060175dd3758b320745ccb19ff67549037f6bdf01cfb3cd0dc0a7bab82a",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 3.224741348950566e-09,
+      "fruit_yarn_witness": {
+        "fruit": 11,
+        "yarn_endpoints": [
+          668,
+          669
+        ]
+      },
+      "fruit_pair_overlap_m": 2.8500021787003504e-09,
+      "fruit_pair_witness": [
+        6,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 3.338734653329789e-10,
+      "nonlocal_yarn_witness": [
+        [
+          183,
+          184
+        ],
+        [
+          39,
+          1352
+        ]
+      ],
+      "self_broadphase_candidates": 11885,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 8.435309707677252e-10,
+      "local_node_witness": [
+        286,
+        382
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-640.obj",
+      "snapshot_sha256": "cad4b205fd3bfd534476d16cf05588d711f783c70dec0b0334e2edca474e2444",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.250573254482859e-09,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          412,
+          413
+        ]
+      },
+      "fruit_pair_overlap_m": 5.3666315280587185e-09,
+      "fruit_pair_witness": [
+        6,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 1.2236790573882939e-10,
+      "nonlocal_yarn_witness": [
+        [
+          176,
+          177
+        ],
+        [
+          33,
+          1346
+        ]
+      ],
+      "self_broadphase_candidates": 11709,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 5.186002150284197e-09,
+      "local_node_witness": [
+        675,
+        771
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-650.obj",
+      "snapshot_sha256": "e4a9a91b58d22ce59a52ef0f71d1806e2da8e81e2da8d3e2104fb4aa0700567a",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.0904374193351245e-09,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          412,
+          413
+        ]
+      },
+      "fruit_pair_overlap_m": 8.493683811838793e-09,
+      "fruit_pair_witness": [
+        6,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 3.879258733685553e-09,
+      "nonlocal_yarn_witness": [
+        [
+          769,
+          770
+        ],
+        [
+          913,
+          914
+        ]
+      ],
+      "self_broadphase_candidates": 11576,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.7103213983959975e-10,
+      "local_node_witness": [
+        9,
+        105
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-660.obj",
+      "snapshot_sha256": "ccd68941b8b37ebbffdf4524d48acf364fbf85ddb8553f8be7eb73bfa6925002",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.439348277347378e-09,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          412,
+          413
+        ]
+      },
+      "fruit_pair_overlap_m": 2.541689886337295e-09,
+      "fruit_pair_witness": [
+        3,
+        7
+      ],
+      "nonlocal_yarn_overlap_m": 4.636136301250371e-10,
+      "nonlocal_yarn_witness": [
+        [
+          228,
+          229
+        ],
+        [
+          37,
+          1350
+        ]
+      ],
+      "self_broadphase_candidates": 11628,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 7.16928672678252e-10,
+      "local_node_witness": [
+        286,
+        382
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-670.obj",
+      "snapshot_sha256": "c749a788b2707ad7a81bddf7d073c2630eb77c3655ff0da7fb99d586d5722875",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.300439337441176e-09,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          412,
+          413
+        ]
+      },
+      "fruit_pair_overlap_m": 3.6119813806578804e-09,
+      "fruit_pair_witness": [
+        2,
+        8
+      ],
+      "nonlocal_yarn_overlap_m": 7.537934287177306e-10,
+      "nonlocal_yarn_witness": [
+        [
+          144,
+          145
+        ],
+        [
+          1420,
+          1
+        ]
+      ],
+      "self_broadphase_candidates": 11758,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 5.618648116212377e-10,
+      "local_node_witness": [
+        775,
+        871
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-680.obj",
+      "snapshot_sha256": "f88f11b0ff9db37e105638ae375470502c64b6bfe2c25ba6c5dfb328446883e6",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 4.31839082548624e-09,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          412,
+          413
+        ]
+      },
+      "fruit_pair_overlap_m": 7.3372307396457614e-09,
+      "fruit_pair_witness": [
+        5,
+        6
+      ],
+      "nonlocal_yarn_overlap_m": 2.801205465502443e-10,
+      "nonlocal_yarn_witness": [
+        [
+          176,
+          177
+        ],
+        [
+          33,
+          1346
+        ]
+      ],
+      "self_broadphase_candidates": 11627,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 6.178232526271588e-10,
+      "local_node_witness": [
+        228,
+        324
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-690.obj",
+      "snapshot_sha256": "5824d379c32d2e27c3b358e780a07af36924a617c48ee8540f7c86cea7a5465a",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 1.8539595830757705e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1452,
+          1463
+        ]
+      },
+      "fruit_pair_overlap_m": 4.550397558755748e-09,
+      "fruit_pair_witness": [
+        4,
+        5
+      ],
+      "nonlocal_yarn_overlap_m": 3.607063467359062e-10,
+      "nonlocal_yarn_witness": [
+        [
+          176,
+          177
+        ],
+        [
+          33,
+          1346
+        ]
+      ],
+      "self_broadphase_candidates": 11584,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 8.857496749947735e-10,
+      "local_node_witness": [
+        439,
+        535
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-700.obj",
+      "snapshot_sha256": "694514119b7ffadad14a6ccf0f0473edb7376102694de249e53fc2d768e2d1b5",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 5.617986562067578e-09,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          412,
+          413
+        ]
+      },
+      "fruit_pair_overlap_m": 7.1845974586315364e-09,
+      "fruit_pair_witness": [
+        3,
+        9
+      ],
+      "nonlocal_yarn_overlap_m": 3.5013546055562283e-10,
+      "nonlocal_yarn_witness": [
+        [
+          11,
+          12
+        ],
+        [
+          155,
+          156
+        ]
+      ],
+      "self_broadphase_candidates": 11545,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 1.2753557619704647e-09,
+      "local_node_witness": [
+        439,
+        535
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-710.obj",
+      "snapshot_sha256": "f4b059ceb40da363f52782adf4b6536f1002f21d647765acbbb606a8dc5d3872",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.1791625726130803e-09,
+      "fruit_yarn_witness": {
+        "fruit": 4,
+        "yarn_endpoints": [
+          316,
+          317
+        ]
+      },
+      "fruit_pair_overlap_m": 5.001787234393262e-09,
+      "fruit_pair_witness": [
+        6,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 5.12158966278764e-10,
+      "nonlocal_yarn_witness": [
+        [
+          11,
+          12
+        ],
+        [
+          155,
+          156
+        ]
+      ],
+      "self_broadphase_candidates": 11528,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 7.223963129077138e-10,
+      "local_node_witness": [
+        439,
+        535
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    },
+    {
+      "snapshot": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-720.obj",
+      "snapshot_sha256": "cb2f12edf3f203540ceeb9117953b1c33a04b8c1a32127ac04bb75bc959a3290",
+      "static_surface_model": "finite_bench_and_room_floor",
+      "fruit_yarn_overlap_m": 2.3972377832803815e-09,
+      "fruit_yarn_witness": {
+        "fruit": 0,
+        "yarn_endpoints": [
+          1452,
+          1463
+        ]
+      },
+      "fruit_pair_overlap_m": 2.9152176783675543e-09,
+      "fruit_pair_witness": [
+        6,
+        11
+      ],
+      "nonlocal_yarn_overlap_m": 4.5088771084833557e-10,
+      "nonlocal_yarn_witness": [
+        [
+          183,
+          184
+        ],
+        [
+          39,
+          1352
+        ]
+      ],
+      "self_broadphase_candidates": 11814,
+      "ground_overlap_m": 5.551115123125783e-17,
+      "within_contact_tolerance": true,
+      "local_node_pair_count": 5754,
+      "local_node_overlap_m": 2.205484612646802e-09,
+      "local_node_witness": [
+        343,
+        439
+      ],
+      "yarn_static_overlap_m": 0.0,
+      "yarn_static_witness": null
+    }
+  ],
+  "fruit_trace": {
+    "schema": "numi.finite-bench.fruit-trace-audit.v1",
+    "trace": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-fruits.csv",
+    "trace_sha256": "9932961656e0abd3333e42324e94ef62c65858ba8db439070edbadde05ebe32f",
+    "simulated_seconds": 6.0,
+    "backend": "cpu_fp64",
+    "both_replays_complete": true,
+    "serialized_fruit_replay_exact": true,
+    "minimum_independent_static_gap_m": 5.551115123125783e-17,
+    "maximum_exported_gap_discrepancy_m": 2.220446049250313e-16,
+    "independent_geometry_pass": true,
+    "replays": [
+      {
+        "replay": 1,
+        "frames": 721,
+        "released_fruits": [
+          10
+        ],
+        "released_fruits_landed_on_floor": [
+          10
+        ],
+        "fruits": [
+          {
+            "fruit": 0,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.47955021584177,
+              0.03660880391567976,
+              -0.6719866834271769
+            ],
+            "final_static_gap_m": 0.00801331657282306,
+            "final_floor_gap_m": 0.00801331657282306,
+            "final_vertical_velocity_m_s": -0.0033491567582749444,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 1,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.3063686428689314,
+              -0.15629997776252147,
+              -0.6770276020588538
+            ],
+            "final_static_gap_m": 0.007972397941146181,
+            "final_floor_gap_m": 0.007972397941146181,
+            "final_vertical_velocity_m_s": 0.00030958738839674657,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 2,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.3385460738520847,
+              -0.02040668330986855,
+              -0.667147042385951
+            ],
+            "final_static_gap_m": 0.007852957614048986,
+            "final_floor_gap_m": 0.007852957614048986,
+            "final_vertical_velocity_m_s": -0.0003812093226858869,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 3,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.1849323207986167,
+              0.09259683942086853,
+              -0.6821622135525385
+            ],
+            "final_static_gap_m": 0.007837786447461526,
+            "final_floor_gap_m": 0.007837786447461526,
+            "final_vertical_velocity_m_s": 0.00011330651528394538,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 4,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.1394354676509262,
+              -0.17182888696728413,
+              -0.6736015058196739
+            ],
+            "final_static_gap_m": 0.008398494180326066,
+            "final_floor_gap_m": 0.008398494180326066,
+            "final_vertical_velocity_m_s": 0.007370668036367812,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 5,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.2356747862572002,
+              -0.2734411836727194,
+              -0.6700050203488925
+            ],
+            "final_static_gap_m": 0.007994979651107473,
+            "final_floor_gap_m": 0.007994979651107473,
+            "final_vertical_velocity_m_s": 3.495868262546816e-06,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 6,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.3703417189633411,
+              -0.2704777862531505,
+              -0.6790069927697847
+            ],
+            "final_static_gap_m": 0.007993007230215288,
+            "final_floor_gap_m": 0.007993007230215288,
+            "final_vertical_velocity_m_s": -0.00015852286388732176,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 7,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.138477387223693,
+              -0.024480612018262002,
+              -0.6788744314677775
+            ],
+            "final_static_gap_m": 0.005125568532222513,
+            "final_floor_gap_m": 0.005125568532222513,
+            "final_vertical_velocity_m_s": 0.0005125063307134448,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 8,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.4594651808643893,
+              -0.10394956824623335,
+              -0.6700029020966178
+            ],
+            "final_static_gap_m": 0.00799709790338217,
+            "final_floor_gap_m": 0.00799709790338217,
+            "final_vertical_velocity_m_s": 3.6778175661947125e-05,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 9,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.3069220271792943,
+              0.11449058772578592,
+              -0.6782666619463144
+            ],
+            "final_static_gap_m": 0.0077333380536856455,
+            "final_floor_gap_m": 0.0077333380536856455,
+            "final_vertical_velocity_m_s": 0.0009637362893349581,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 10,
+            "first_release_frame": 537,
+            "first_release_time_s": 4.475,
+            "first_lower_floor_contact_frame_after_release": 576,
+            "first_lower_floor_contact_time_s_after_release": 4.8,
+            "maximum_downward_speed_after_release_m_s": 2.1346053832908796,
+            "final_center_m": [
+              -0.14108666586767243,
+              1.2984109770038017,
+              -0.6799999999999999
+            ],
+            "final_static_gap_m": 5.551115123125783e-17,
+            "final_floor_gap_m": 5.551115123125783e-17,
+            "final_vertical_velocity_m_s": 0.0,
+            "final_lower_floor_contact": true
+          },
+          {
+            "fruit": 11,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.4847426019522396,
+              -0.23432248356564764,
+              -0.6289546995261824
+            ],
+            "final_static_gap_m": 0.05404530047381756,
+            "final_floor_gap_m": 0.05404530047381756,
+            "final_vertical_velocity_m_s": 0.002515553886023736,
+            "final_lower_floor_contact": false
+          }
+        ]
+      },
+      {
+        "replay": 2,
+        "frames": 721,
+        "released_fruits": [
+          10
+        ],
+        "released_fruits_landed_on_floor": [
+          10
+        ],
+        "fruits": [
+          {
+            "fruit": 0,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.47955021584177,
+              0.03660880391567976,
+              -0.6719866834271769
+            ],
+            "final_static_gap_m": 0.00801331657282306,
+            "final_floor_gap_m": 0.00801331657282306,
+            "final_vertical_velocity_m_s": -0.0033491567582749444,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 1,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.3063686428689314,
+              -0.15629997776252147,
+              -0.6770276020588538
+            ],
+            "final_static_gap_m": 0.007972397941146181,
+            "final_floor_gap_m": 0.007972397941146181,
+            "final_vertical_velocity_m_s": 0.00030958738839674657,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 2,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.3385460738520847,
+              -0.02040668330986855,
+              -0.667147042385951
+            ],
+            "final_static_gap_m": 0.007852957614048986,
+            "final_floor_gap_m": 0.007852957614048986,
+            "final_vertical_velocity_m_s": -0.0003812093226858869,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 3,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.1849323207986167,
+              0.09259683942086853,
+              -0.6821622135525385
+            ],
+            "final_static_gap_m": 0.007837786447461526,
+            "final_floor_gap_m": 0.007837786447461526,
+            "final_vertical_velocity_m_s": 0.00011330651528394538,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 4,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.1394354676509262,
+              -0.17182888696728413,
+              -0.6736015058196739
+            ],
+            "final_static_gap_m": 0.008398494180326066,
+            "final_floor_gap_m": 0.008398494180326066,
+            "final_vertical_velocity_m_s": 0.007370668036367812,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 5,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.2356747862572002,
+              -0.2734411836727194,
+              -0.6700050203488925
+            ],
+            "final_static_gap_m": 0.007994979651107473,
+            "final_floor_gap_m": 0.007994979651107473,
+            "final_vertical_velocity_m_s": 3.495868262546816e-06,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 6,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.3703417189633411,
+              -0.2704777862531505,
+              -0.6790069927697847
+            ],
+            "final_static_gap_m": 0.007993007230215288,
+            "final_floor_gap_m": 0.007993007230215288,
+            "final_vertical_velocity_m_s": -0.00015852286388732176,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 7,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.138477387223693,
+              -0.024480612018262002,
+              -0.6788744314677775
+            ],
+            "final_static_gap_m": 0.005125568532222513,
+            "final_floor_gap_m": 0.005125568532222513,
+            "final_vertical_velocity_m_s": 0.0005125063307134448,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 8,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.4594651808643893,
+              -0.10394956824623335,
+              -0.6700029020966178
+            ],
+            "final_static_gap_m": 0.00799709790338217,
+            "final_floor_gap_m": 0.00799709790338217,
+            "final_vertical_velocity_m_s": 3.6778175661947125e-05,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 9,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.3069220271792943,
+              0.11449058772578592,
+              -0.6782666619463144
+            ],
+            "final_static_gap_m": 0.0077333380536856455,
+            "final_floor_gap_m": 0.0077333380536856455,
+            "final_vertical_velocity_m_s": 0.0009637362893349581,
+            "final_lower_floor_contact": false
+          },
+          {
+            "fruit": 10,
+            "first_release_frame": 537,
+            "first_release_time_s": 4.475,
+            "first_lower_floor_contact_frame_after_release": 576,
+            "first_lower_floor_contact_time_s_after_release": 4.8,
+            "maximum_downward_speed_after_release_m_s": 2.1346053832908796,
+            "final_center_m": [
+              -0.14108666586767243,
+              1.2984109770038017,
+              -0.6799999999999999
+            ],
+            "final_static_gap_m": 5.551115123125783e-17,
+            "final_floor_gap_m": 5.551115123125783e-17,
+            "final_vertical_velocity_m_s": 0.0,
+            "final_lower_floor_contact": true
+          },
+          {
+            "fruit": 11,
+            "first_release_frame": null,
+            "first_release_time_s": null,
+            "first_lower_floor_contact_frame_after_release": null,
+            "first_lower_floor_contact_time_s_after_release": null,
+            "maximum_downward_speed_after_release_m_s": 0.0,
+            "final_center_m": [
+              1.4847426019522396,
+              -0.23432248356564764,
+              -0.6289546995261824
+            ],
+            "final_static_gap_m": 0.05404530047381756,
+            "final_floor_gap_m": 0.05404530047381756,
+            "final_vertical_velocity_m_s": 0.002515553886023736,
+            "final_lower_floor_contact": false
+          }
+        ]
+      }
+    ],
+    "evidence_boundary": "The caller asserts the authored finite-bench geometry and binds source/config separately. Both complete CSV fruit sequences are compared and gaps independently reconstructed. Floor support is an observed radius/vertical-velocity match, not a reaction-force audit. Release is latched and may include re-entry. This does not establish whole-cloth replay, cloth contacts, intervening substeps, calibration or energy closure."
+  },
+  "qualified_loaded_cloth_drop": false,
+  "boundary": "Fixed authored 1465-node mass/topology, 4 mm yarn and finite collider. Caller binds source, binary, trajectory and material. Descent uses mass-weighted saved positions, and floor contact is geometric, not a support reaction or impact-velocity measurement. Exact whole-scene replay is reported by the solver; the independent audit compares all fruit CSV states. Contacts cover saved states, including full yarn interiors, not intervening substeps. No calibrated material, total contact-work/energy closure or deformable fruit qualification.",
+  "auditor_sha256": {
+    "/Users/home/numi-solver/build/loaded-drop-investigation-terminal-audit/audit_loaded_cloth_drop.py": "998015491fe45ce60284977e5491b5862c499327f1bba39c5da999a3a49d4312",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-terminal-audit/audit_cloth_snapshot.py": "465e30940458a80a42d47bcb4575b39940a037b0aa8b2e01aa80ff84235dbb3e",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-terminal-audit/audit_replayed_finite_fruit_trace.py": "4ceee6a669b99a4ff7d8885ceed6927cd42822e551d592db9eb21d95f02c999b"
+  }
+}

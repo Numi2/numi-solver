@@ -22,19 +22,37 @@ and the [frozen source/binary manifest](assets/cpu-impact-departure-launch-manif
 bind the result.
 
 A new complete six-second recorded drop uses 96 substeps, 32 constraint
-iterations and two full replays from a frozen build. Its qualification is
-pending. The retained prior 35.93 m/s cloth-speed failure remains a failure
+iterations and two full replays from a frozen build. Its actual exit is **1**.
+The maximum frame-end dynamic speed is **27.1111 m/s**, below the unchanged
+30 m/s gate. It still fails: the reported minimum frame-end render-triangle
+area is approximately **6 × 10⁻⁹ m²**, below the unchanged **10⁻⁸ m²** gate.
+The log rounds area to nine decimal places. Independent 60-digit Decimal
+evaluation of all 218,880 triangles in the 76 retained states finds a robust
+witness at **frame 620, triangle 2813, nodes 1433/1444/1445**: serialized area
+**5.828993541 × 10⁻⁹ m²**. Including coordinate serialization uncertainty,
+its possible original area is **[5.1862, 6.4718] × 10⁻⁹ m²**, entirely below
+the gate. The three bottom-grid owners are nearly collinear against the floor.
+
+[Independent area audit](assets/loaded-drop-corrected-96-area-audit.json) ·
+[Exact retained witness](assets/loaded-drop-corrected-96-area-witness.obj).
+This is the sole definite numeric violation visible in the rounded summary.
+Unexported final velocities and exact quaternion norms do not allow a claim
+that every other runtime predicate independently passed. The solver updates
+area at frame ends; retained captures do not bound intervening substep area.
+The retained prior 35.93 m/s cloth-speed failure remains a failure
 against the unchanged 30 m/s target; focused controls do not establish that
 this defect caused that full-scene peak. Peak speed frame, body and a complete
 cloth velocity snapshot are now retained whenever that unchanged gate fails.
 
-The repaired 48- and 96-substep runs have now each completed their first full
-six-second fruit replay. Identical frozen source, binary, controller and gates
+The repaired 48- and 96-substep runs have now each completed both full
+six-second fruit replays. Identical frozen source, binary, controller and gates
 give **different release outcomes**: no fruit is released at 48 substeps;
 fruit 10 is released at 96, with a saved floor contact at 4.8 seconds. Their
-maximum corresponding fruit position difference is **1.6745 m**. Release bits
-first differ at frame 537. This is a **timestep-convergence failure**, even
-though both saved fruit traces pass independent static geometry checks.
+maximum corresponding fruit position difference is **1.6745 m**. Saved cloth
+nodes differ by **315.895 mm** at frame 660, node 1018; the largest mass-weighted
+RMS difference is **215.843 mm**, also at frame 660. Release bits first differ
+at frame 537. This is a **timestep-convergence failure**, even though both
+complete fruit replay pairs match exactly and their static geometry passes.
 
 [Exact first-replay comparison](assets/loaded-drop-corrected-first-replay-comparison.json) ·
 [48-substep fruit trace](assets/loaded-drop-corrected-48-r1-fruits.csv) ·
@@ -43,10 +61,20 @@ The 48-substep invocation now has actual exit 0, two complete replays and
 passing audits of all 73 regular snapshots, both replay peaks and the final
 copy. Cloth center descends 1.7041 m; 33 nodes finish at the lower floor. It
 releases no fruit. The [complete 48-substep evidence](assets/loaded-drop-corrected-48-terminal-evidence.json)
-binds that authored result. The 96-substep second replay and terminal audits
-remain pending. The floor observation is a saved
+binds that authored result. The 96-substep run completes with matching ordered
+721-frame hashes and exact fruit replay, but retains its actual failure. All
+73 regular states, both contact peaks and the final copy pass independent
+contact audits. Cloth descends 1.7538 m; 31 nodes finish at the lower floor,
+along with fruit 10.
+
+[Actual CPU96 terminal evidence](assets/loaded-drop-corrected-96-terminal-evidence.json) ·
+[Complete matched comparison](assets/loaded-drop-corrected-complete-comparison.json) ·
+[Complete CPU48 fruit replays, gzip](assets/loaded-drop-corrected-48-complete-fruits.csv.gz) ·
+[Complete CPU96 fruit replays, gzip](assets/loaded-drop-corrected-96-complete-fruits.csv.gz).
+
+The floor observation is a saved
 radius and vertical-velocity match; it does not qualify reaction or energy
-closure. No new full-scene video is qualified by these partial results.
+closure. The failed finer run does not qualify a replacement full-scene video.
 
 This is CPU FP64 contact bookkeeping. Full native finite-bench spill,
 continuous whole-yarn contact through every accepted substep, reciprocal

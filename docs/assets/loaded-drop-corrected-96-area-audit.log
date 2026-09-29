@@ -1,0 +1,6 @@
+actual_solver_exit=1 independent_area_audit=PASS retained_states=76 triangle_evaluations=218880
+saved_minimum_area_m2=5.828993541E-9 triangle=2813 nodes=[1433, 1444, 1445]
+saved_minimum_path=/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-620.obj
+possible_unserialized_witness_area_m2=['5.18623056543134225928917461458630990826211929121728487255006E-9', '6.47175651656865774071082538541369009173788070878271512744994E-9']
+saved_states_with_robust_failure=1 sole_definite_logged_numeric_failure=min_triangle_area
+rounding_indeterminate_gates=max_friction_cone_ratio,max_rolling_resistance_ratio,final cloth velocity finiteness,exact final unit-quaternion norms

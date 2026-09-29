@@ -1,0 +1,3276 @@
+{
+  "schema": "numi.loaded-drop.cpu96.retained-render-triangle-area-attribution.v1",
+  "source_parent_commit": "09d8ca1",
+  "all_seven_frozen_physics_hashes_verified": true,
+  "source_sha256": "d575b0154af35b2a110b21fc091c9913955b0ee62637ef67ba3c09cb0b623f9b",
+  "source_manifest_sha256": "2bf2787ce59663de0d03178545d3c09a48f33cd2842efa5d06bcfb46ac8c0710",
+  "terminal_status_sha256": "0e7eb57fcd0cbf3c32def44d6397015c7cd0a1045734abb8e9b06eb5f0b10264",
+  "terminal_log_sha256": "a89932166ca71c119023cddfce3bf0df3ef8655aa3cf48df8f11300fd6025a08",
+  "actual_solver_exit": 1,
+  "actual_exit_file_sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+  "audit_script_sha256": "5760ddc136eff2e6dd712065fd1c71c6a04f2e8c5104ed448d41d3dcd6686ad3",
+  "method": "Independent Decimal60 on every serialized triangle; FP64 cross comparison; independent Decimal60 Gram identity for each saved-state minimum; perturbation norm bound for precision9 coordinate serialization.",
+  "retained_state_count": 76,
+  "triangle_evaluations": 218880,
+  "maximum_fp64_vs_decimal_area_difference_m2": "9.36210985229881589175531825022014668219840672E-18",
+  "unchanged_area_gate": {
+    "predicate": "minimumTriangleArea > 1e-8",
+    "threshold_m2": "1E-8"
+  },
+  "reported_minimum_triangle_area_m2": "0.000000006",
+  "reported_metric_possible_interval_m2": [
+    "5.5e-9",
+    "6.5e-9"
+  ],
+  "metric_semantics": {
+    "source_area_update_lines": [
+      4954,
+      4961
+    ],
+    "source_frame_end_call_line": 6024,
+    "substep_loop_ends_line": 5992,
+    "updated_at": "each of720 frame ends, after all96 substeps; not each substep",
+    "minimum_witness_instrumented": false,
+    "saved_regular_cadence_frames": 10
+  },
+  "overall_saved_minimum": {
+    "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-620.obj",
+    "sha256": "e52a1c9cc7d56d0661cc013e2eaf9345da55539de3537536dd98be86a4b71fa3",
+    "minimum_serialized_area_m2": "5.828993541E-9",
+    "triangle_zero_based": 2813,
+    "nodes_zero_based": [
+      1433,
+      1444,
+      1445
+    ],
+    "positions_m": [
+      [
+        "1.16101556",
+        "0.0760072691",
+        "-0.746"
+      ],
+      [
+        "1.20152346",
+        "0.0937930199",
+        "-0.746"
+      ],
+      [
+        "1.23756547",
+        "0.109618226",
+        "-0.746"
+      ]
+    ],
+    "possible_unserialized_witness_area_m2": [
+      "5.18623056543134225928917461458630990826211929121728487255006E-9",
+      "6.47175651656865774071082538541369009173788070878271512744994E-9"
+    ],
+    "serialization_area_error_bound_m2": "6.42762975568657740710825385413690091737880708782715127449931E-10",
+    "minimum_gram_area_m2": "5.82899354100E-9",
+    "triangle_count": 2880,
+    "serialized_faces_at_or_below_gate": [
+      2813
+    ],
+    "witness_robustly_fails_gate": true
+  },
+  "saved_states_with_robust_area_failure_count": 1,
+  "saved_states_with_robust_area_failure": [
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-620.obj"
+  ],
+  "logged_numeric_gate_comparison": [
+    {
+      "log_field": "escaped_mask",
+      "value": "0",
+      "comparison": "==",
+      "unchanged_threshold": "0",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0",
+        "0"
+      ]
+    },
+    {
+      "log_field": "spilled_mask",
+      "value": "0",
+      "comparison": "==",
+      "unchanged_threshold": "0",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0",
+        "0"
+      ]
+    },
+    {
+      "log_field": "max_ground_contact_correction",
+      "value": "0.000000000",
+      "comparison": "<",
+      "unchanged_threshold": "0.004001",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0",
+        "5E-10"
+      ]
+    },
+    {
+      "log_field": "max_regrab_capture_distance",
+      "value": "0.000000000",
+      "comparison": "<=",
+      "unchanged_threshold": "0.120000000001",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0",
+        "5E-10"
+      ]
+    },
+    {
+      "log_field": "max_regrab_capture_error",
+      "value": "0.000000000",
+      "comparison": "<=",
+      "unchanged_threshold": "1e-9",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0",
+        "5E-10"
+      ]
+    },
+    {
+      "log_field": "min_triangle_area",
+      "value": "0.000000006",
+      "comparison": ">",
+      "unchanged_threshold": "1e-8",
+      "rounded_value_pass": false,
+      "rounding_robust_status": "FAIL",
+      "possible_underlying_value_interval": [
+        "5.5E-9",
+        "6.5E-9"
+      ]
+    },
+    {
+      "log_field": "max_warp_extension",
+      "value": "0.101225197",
+      "comparison": "<",
+      "unchanged_threshold": "0.30",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0.1012251965",
+        "0.1012251975"
+      ]
+    },
+    {
+      "log_field": "max_warp_compression",
+      "value": "0.085251495",
+      "comparison": "<",
+      "unchanged_threshold": "0.60",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0.0852514945",
+        "0.0852514955"
+      ]
+    },
+    {
+      "log_field": "max_weft_extension",
+      "value": "0.018826000",
+      "comparison": "<",
+      "unchanged_threshold": "0.30",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0.0188259995",
+        "0.0188260005"
+      ]
+    },
+    {
+      "log_field": "max_weft_compression",
+      "value": "0.022659810",
+      "comparison": "<",
+      "unchanged_threshold": "0.60",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0.0226598095",
+        "0.0226598105"
+      ]
+    },
+    {
+      "log_field": "max_bottom_extension",
+      "value": "0.022303457",
+      "comparison": "<",
+      "unchanged_threshold": "0.30",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0.0223034565",
+        "0.0223034575"
+      ]
+    },
+    {
+      "log_field": "max_bottom_compression",
+      "value": "0.019504893",
+      "comparison": "<",
+      "unchanged_threshold": "0.60",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0.0195048925",
+        "0.0195048935"
+      ]
+    },
+    {
+      "log_field": "max_knot_angle_error",
+      "value": "0.047254203",
+      "comparison": "<",
+      "unchanged_threshold": "0.80",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0.0472542025",
+        "0.0472542035"
+      ]
+    },
+    {
+      "log_field": "max_ball_contact_correction",
+      "value": "0.000461585",
+      "comparison": "<",
+      "unchanged_threshold": "0.010",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0.0004615845",
+        "0.0004615855"
+      ]
+    },
+    {
+      "log_field": "max_published_ball_penetration",
+      "value": "0.000000000",
+      "comparison": "<",
+      "unchanged_threshold": "2e-6",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0",
+        "5E-10"
+      ]
+    },
+    {
+      "log_field": "max_published_fruit_pair_penetration",
+      "value": "0.000000001",
+      "comparison": "<",
+      "unchanged_threshold": "2e-6",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "5E-10",
+        "1.5E-9"
+      ]
+    },
+    {
+      "log_field": "max_published_ground_penetration",
+      "value": "0.000000000",
+      "comparison": "<",
+      "unchanged_threshold": "2e-6",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0",
+        "5E-10"
+      ]
+    },
+    {
+      "log_field": "max_published_primitive_self_penetration",
+      "value": "0.000000695",
+      "comparison": "<",
+      "unchanged_threshold": "2e-6",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "6.945E-7",
+        "6.955E-7"
+      ]
+    },
+    {
+      "log_field": "max_published_local_node_penetration",
+      "value": "0.000000718",
+      "comparison": "<",
+      "unchanged_threshold": "2e-6",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "7.175E-7",
+        "7.185E-7"
+      ]
+    },
+    {
+      "log_field": "max_published_strain_limit_violation",
+      "value": "0.000000000",
+      "comparison": "<",
+      "unchanged_threshold": "2e-6",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0",
+        "5E-10"
+      ]
+    },
+    {
+      "log_field": "max_self_penetration",
+      "value": "0.002265897",
+      "comparison": "<",
+      "unchanged_threshold": "0.008",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0.0022658965",
+        "0.0022658975"
+      ]
+    },
+    {
+      "log_field": "final_primitive_self_penetration",
+      "value": "0.000000000",
+      "comparison": "<",
+      "unchanged_threshold": "2e-6",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0",
+        "5E-10"
+      ]
+    },
+    {
+      "log_field": "final_strain_limit_violation",
+      "value": "0.000000000",
+      "comparison": "<",
+      "unchanged_threshold": "2e-6",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "0",
+        "5E-10"
+      ]
+    },
+    {
+      "log_field": "max_speed",
+      "value": "27.111061838",
+      "comparison": "<",
+      "unchanged_threshold": "30",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "27.1110618375",
+        "27.1110618385"
+      ]
+    },
+    {
+      "log_field": "max_angular_speed",
+      "value": "34.858915034",
+      "comparison": "<",
+      "unchanged_threshold": "200",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "34.8589150335",
+        "34.8589150345"
+      ]
+    },
+    {
+      "log_field": "max_grip_force",
+      "value": "167.706561369",
+      "comparison": "<",
+      "unchanged_threshold": "500",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "PASS",
+      "possible_underlying_value_interval": [
+        "167.7065613685",
+        "167.7065613695"
+      ]
+    },
+    {
+      "log_field": "max_friction_cone_ratio",
+      "value": "1.000000000",
+      "comparison": "<=",
+      "unchanged_threshold": "1.000000000001",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "INDETERMINATE",
+      "possible_underlying_value_interval": [
+        "0.9999999995",
+        "1.0000000005"
+      ]
+    },
+    {
+      "log_field": "max_rolling_resistance_ratio",
+      "value": "1.000000000",
+      "comparison": "<=",
+      "unchanged_threshold": "1.000000000001",
+      "rounded_value_pass": true,
+      "rounding_robust_status": "INDETERMINATE",
+      "possible_underlying_value_interval": [
+        "0.9999999995",
+        "1.0000000005"
+      ]
+    }
+  ],
+  "remaining_acceptance_predicates": [
+    {
+      "predicate": "deterministic",
+      "status": "PASS_REPORTED",
+      "evidence": "true"
+    },
+    {
+      "predicate": "pickupOutcome",
+      "status": "PASS_NOT_APPLICABLE",
+      "evidence": "scenario=recorded"
+    },
+    {
+      "predicate": "spatialPatchValid",
+      "status": "PASS_REPORTED",
+      "evidence": "patch_selection_count=0; zero bypasses patch topology branch"
+    },
+    {
+      "predicate": "cloth mass",
+      "status": "PASS_SOURCE_INVARIANT",
+      "evidence": "1369 ordinary nodes at5e-5kg and96 hem nodes at1e-4kg; mass unchanged by simulate"
+    },
+    {
+      "predicate": "allFinite including final grip/fruit unit quaternion checks",
+      "status": "PARTIAL_OBSERVABILITY",
+      "evidence": "Saved positions/OBJ fruit velocity/quaternions finite; final cloth velocities are not exported; OBJ quaternion precision9 cannot generally certify1e-9 norm gate."
+    }
+  ],
+  "source_mass_check": {
+    "sequential_mass_kg": 0.07805000000000001,
+    "kClothMass_kg": 0.07805,
+    "error_kg": 1.3877787807814457e-17,
+    "unchanged_gate_kg": 1e-12
+  },
+  "sole_rounded_logged_numeric_failure": "min_triangle_area",
+  "sole_rounding_robust_logged_numeric_failure": "min_triangle_area",
+  "unresolved_predicate_observability": [
+    "max_friction_cone_ratio",
+    "max_rolling_resistance_ratio",
+    "final cloth velocity finiteness",
+    "exact final unit-quaternion norms"
+  ],
+  "all76_retained_contact_geometry_pass": true,
+  "boundary": "Retained triangle area failure is independently confirmed. This is the sole definite numeric failure visible in the rounded log, not proof every unexported runtime predicate passed. The exact all720-frame area minimum witness and all substep minima are not retained; no claim of absent transient failures, inversion, solver-operator attribution or physical energy closure. No simulation or GPU work.",
+  "states": [
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-0.obj",
+      "sha256": "21483357b0deb815b8cb071e40c171b46f05bd285425d0ed4661e2c0d68b3122",
+      "minimum_serialized_area_m2": "0.000056867941218993908002249088968110894281035754106657226377160",
+      "triangle_zero_based": 2592,
+      "nodes_zero_based": [
+        30,
+        29,
+        31
+      ],
+      "positions_m": [
+        [
+          "-0.210172663",
+          "-0.210172663",
+          "0.0169267308"
+        ],
+        [
+          "-0.241712712",
+          "-0.185472688",
+          "0.0294883737"
+        ],
+        [
+          "-0.178679109",
+          "-0.232859148",
+          "0.00708947562"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000568678831253053856231372411771317122268665810061845105871962",
+        "0.0000568679993126824303813609367590900763352049272071299421671238"
+      ],
+      "serialization_area_error_bound_m2": "5.80936885223791118477909791820541691731004727157899637420101E-11",
+      "minimum_gram_area_m2": "0.000056867941218993908002249088968110894281035754106657226377160",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-10.obj",
+      "sha256": "0666278b7495d431a709c88b4ef28799e5e2c721e8d105af1f20bc8ae4164a09",
+      "minimum_serialized_area_m2": "0.0000399455228967312834975331298455289560327593114479556582721928",
+      "triangle_zero_based": 2835,
+      "nodes_zero_based": [
+        1443,
+        1454,
+        1455
+      ],
+      "positions_m": [
+        [
+          "-0.207129915",
+          "0.150956057",
+          "0.0100754847"
+        ],
+        [
+          "-0.171127383",
+          "0.175283859",
+          "0.0139475983"
+        ],
+        [
+          "-0.138637685",
+          "0.197878852",
+          "0.0157142409"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000399454329843795936062461546346351887912360146096211222858132",
+        "0.0000399456128090829733888201050564227232742826082862901942585724"
+      ],
+      "serialization_area_error_bound_m2": "8.99123516898912869752108937672415232968383345359863795126836E-11",
+      "minimum_gram_area_m2": "0.0000399455228967312834975331298455289560327593114479556582721928",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-100.obj",
+      "sha256": "3cdc41409b9761856a664847bf2ca5ff246da1c8703b58ff6b898a801cf989c8",
+      "minimum_serialized_area_m2": "0.000058237834437236565519521164052851590424509472632268888954836",
+      "triangle_zero_based": 2769,
+      "nodes_zero_based": [
+        1413,
+        1424,
+        1425
+      ],
+      "positions_m": [
+        [
+          "0.479936267",
+          "0.115793226",
+          "0.748759745"
+        ],
+        [
+          "0.497296758",
+          "0.135176607",
+          "0.786201834"
+        ],
+        [
+          "0.512367647",
+          "0.149497061",
+          "0.819402941"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000582377215763694676000118095734442556742498834094523597921472",
+        "0.0000582379472981036634390305185322589251747690618550854181175248"
+      ],
+      "serialization_area_error_bound_m2": "1.12860867097919509354479407334750259589222816529162688738964E-10",
+      "minimum_gram_area_m2": "0.000058237834437236565519521164052851590424509472632268888954836",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-110.obj",
+      "sha256": "9dd5026215a776f7d8f23a75551fdb43ab82e0c3c133990b074bd02e4514fd55",
+      "minimum_serialized_area_m2": "0.000058929601925318393244891676245118359919064080508946275581382",
+      "triangle_zero_based": 2769,
+      "nodes_zero_based": [
+        1413,
+        1424,
+        1425
+      ],
+      "positions_m": [
+        [
+          "0.471823872",
+          "0.114208239",
+          "0.841457872"
+        ],
+        [
+          "0.489468508",
+          "0.133966497",
+          "0.878578062"
+        ],
+        [
+          "0.505381642",
+          "0.148598462",
+          "0.911261313"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000589294890425964032715128061486760151998889196243831094496465",
+        "0.0000589297148080403832182705463415607046382392413935094417131175"
+      ],
+      "serialization_area_error_bound_m2": "1.12882721989973378870096442344719175160884563166131735393761E-10",
+      "minimum_gram_area_m2": "0.000058929601925318393244891676245118359919064080508946275581382",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-120.obj",
+      "sha256": "7988f91bd13363094e909399c78268d9d094ccea6139b221e094cbd6b2e6b785",
+      "minimum_serialized_area_m2": "0.000058675824260367855110249583868545924935397757413440012581491",
+      "triangle_zero_based": 2769,
+      "nodes_zero_based": [
+        1413,
+        1424,
+        1425
+      ],
+      "positions_m": [
+        [
+          "0.435971412",
+          "0.112083809",
+          "0.895485342"
+        ],
+        [
+          "0.455889958",
+          "0.133570998",
+          "0.930414281"
+        ],
+        [
+          "0.474170536",
+          "0.149817749",
+          "0.961028268"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000586757114010209571783325163815465173937699862162279343759993",
+        "0.0000586759371197147530421666513555453324770255286106520907869827"
+      ],
+      "serialization_area_error_bound_m2": "1.12859346897931917067486999407541627771197212078205491617832E-10",
+      "minimum_gram_area_m2": "0.000058675824260367855110249583868545924935397757413440012581491",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-130.obj",
+      "sha256": "c71b9648aa10dbbb4234ad8187fdc6aac883769cba495e815fa2f9aa3e8aca3c",
+      "minimum_serialized_area_m2": "0.0000613205247319654223393195914725182383859226913751285352264725",
+      "triangle_zero_based": 2769,
+      "nodes_zero_based": [
+        1413,
+        1424,
+        1425
+      ],
+      "positions_m": [
+        [
+          "0.379159536",
+          "0.106304655",
+          "0.917261861"
+        ],
+        [
+          "0.40237587",
+          "0.129669708",
+          "0.948788694"
+        ],
+        [
+          "0.423739443",
+          "0.147513321",
+          "0.976381473"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000613204118599926384703843118319266745883625055974756916753528",
+        "0.0000613206376039382062082548711131098021834828771527813787775922"
+      ],
+      "serialization_area_error_bound_m2": "1.12871972783868935279640591563797560185777652843551119594043E-10",
+      "minimum_gram_area_m2": "0.0000613205247319654223393195914725182383859226913751285352264725",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-140.obj",
+      "sha256": "80b0f2fbd6bef95cd6bc4eef4a30e5f15254d021bd80d8c460495ebe1d50dfbf",
+      "minimum_serialized_area_m2": "0.000061666156582979034356794116756441449225334067799687568633820",
+      "triangle_zero_based": 2769,
+      "nodes_zero_based": [
+        1413,
+        1424,
+        1425
+      ],
+      "positions_m": [
+        [
+          "0.30476865",
+          "0.0976613808",
+          "0.918123654"
+        ],
+        [
+          "0.332011587",
+          "0.122457808",
+          "0.944991641"
+        ],
+        [
+          "0.357113063",
+          "0.141655883",
+          "0.968183208"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000616660576951931560577945036396150476362690556482435663840154",
+        "0.0000616662554707649126557937298732678508143990799511315708836246"
+      ],
+      "serialization_area_error_bound_m2": "9.88877858782989996131168264015890650121514440022498045362786E-11",
+      "minimum_gram_area_m2": "0.000061666156582979034356794116756441449225334067799687568633820",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-150.obj",
+      "sha256": "f2ebc255db66437e89413141ee0f50e0919211f998fbbc91b9e35241fbb655d8",
+      "minimum_serialized_area_m2": "0.000061064385775358269695863289908241331407627757563854078075730",
+      "triangle_zero_based": 2769,
+      "nodes_zero_based": [
+        1413,
+        1424,
+        1425
+      ],
+      "positions_m": [
+        [
+          "0.220534616",
+          "0.0887539184",
+          "0.903117056"
+        ],
+        [
+          "0.251661107",
+          "0.114837448",
+          "0.923834838"
+        ],
+        [
+          "0.279941309",
+          "0.135073493",
+          "0.941934328"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000610642868915660169122975010642076058278029102629854677765843",
+        "0.0000610644846591505224794290787522750569874526048647226883748757"
+      ],
+      "serialization_area_error_bound_m2": "9.88837922527835657888440337255798248473008686102991455936556E-11",
+      "minimum_gram_area_m2": "0.000061064385775358269695863289908241331407627757563854078075730",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-160.obj",
+      "sha256": "a09d446eda743a7591ca22a0d862dfa9013154c556f7aac18bf30c93dd9ccb49",
+      "minimum_serialized_area_m2": "0.0000691382524227509423624222531659929586683656619294309645314395",
+      "triangle_zero_based": 2769,
+      "nodes_zero_based": [
+        1413,
+        1424,
+        1425
+      ],
+      "positions_m": [
+        [
+          "0.142405295",
+          "0.0828167211",
+          "0.892941203"
+        ],
+        [
+          "0.175210294",
+          "0.110648724",
+          "0.908202843"
+        ],
+        [
+          "0.205448177",
+          "0.132714743",
+          "0.920067189"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000691381534119341152691289757297479673607215737616451593033805",
+        "0.0000691383514335677694557155306022379499760097500972167697594985"
+      ],
+      "serialization_area_error_bound_m2": "9.90108168270932932774362449913076440881677858052280588842336E-11",
+      "minimum_gram_area_m2": "0.0000691382524227509423624222531659929586683656619294309645314395",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-170.obj",
+      "sha256": "6ff53309c67f1d9eecb7da64de1396ea1b07e442bd13d04ace007cac4d3041c4",
+      "minimum_serialized_area_m2": "0.000068895518417668697239389728032206676912569875380863202187113",
+      "triangle_zero_based": 2857,
+      "nodes_zero_based": [
+        19,
+        18,
+        17
+      ],
+      "positions_m": [
+        [
+          "-0.0613296646",
+          "0.164012928",
+          "0.947231095"
+        ],
+        [
+          "-0.0386339051",
+          "0.192978223",
+          "0.969559612"
+        ],
+        [
+          "-0.0197360474",
+          "0.219284943",
+          "0.992592374"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000688954292678453946128538909977688403333199107655002657219678",
+        "0.0000688956075674919998659255650666445134918198399962261386522582"
+      ],
+      "serialization_area_error_bound_m2": "8.91498233026265358370344378365792499646153629364651450684336E-11",
+      "minimum_gram_area_m2": "0.000068895518417668697239389728032206676912569875380863202187113",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-180.obj",
+      "sha256": "60ca322e8a2f0743b1fc87b620ca6f3bc7e4303de8796de2acda2936800803be",
+      "minimum_serialized_area_m2": "0.0000524567773529297774182423676751995239237912869063950365550705",
+      "triangle_zero_based": 2857,
+      "nodes_zero_based": [
+        19,
+        18,
+        17
+      ],
+      "positions_m": [
+        [
+          "-0.0911551281",
+          "0.159336908",
+          "0.964025783"
+        ],
+        [
+          "-0.0677768865",
+          "0.187484365",
+          "0.986678466"
+        ],
+        [
+          "-0.0473175743",
+          "0.215277876",
+          "1.00640146"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000524565983926414701320140780672876277401853997716078213973262",
+        "0.0000524569563132180847044706572831114201073971740411822517128148"
+      ],
+      "serialization_area_error_bound_m2": "1.78960288307286228289607911896183605887134787215157744168083E-10",
+      "minimum_gram_area_m2": "0.0000524567773529297774182423676751995239237912869063950365550705",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-190.obj",
+      "sha256": "a04f0f02d7cc849984c4c4cf3dd9857c907e0ecdf4129990e0b330c3795f9563",
+      "minimum_serialized_area_m2": "0.00000399193537583222693125386643313279743085463932284709750709418",
+      "triangle_zero_based": 2857,
+      "nodes_zero_based": [
+        19,
+        18,
+        17
+      ],
+      "positions_m": [
+        [
+          "-0.0928327368",
+          "0.156894778",
+          "0.961542945"
+        ],
+        [
+          "-0.0702142876",
+          "0.186213913",
+          "0.983483996"
+        ],
+        [
+          "-0.0494834829",
+          "0.213371541",
+          "1.00380157"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.00000399175636123124968125003750814778568971329976106664029326803",
+        "0.00000399211439043320418125769535811780917199597888462755472092033"
+      ],
+      "serialization_area_error_bound_m2": "1.79014600977250003828924985011741141339561780457213826139100E-10",
+      "minimum_gram_area_m2": "0.00000399193537583222693125386643313279743085463932284709750709418",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-20.obj",
+      "sha256": "4ad232b73ed0c931c416333fb278dca6422533d1d0a88fa4459996450878ce34",
+      "minimum_serialized_area_m2": "0.0000321039857032873804033638949558544071258045527388830856993110",
+      "triangle_zero_based": 2835,
+      "nodes_zero_based": [
+        1443,
+        1454,
+        1455
+      ],
+      "positions_m": [
+        [
+          "-0.19793461",
+          "0.139400814",
+          "0.00594251089"
+        ],
+        [
+          "-0.162442562",
+          "0.164396195",
+          "0.0103290594"
+        ],
+        [
+          "-0.130679256",
+          "0.18747918",
+          "0.0156541727"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000321038959228717876253800229817333143852733047742186023028756",
+        "0.0000321040754837029731813477669299754998663358007035475690957464"
+      ],
+      "serialization_area_error_bound_m2": "8.97804155927779838719741210927405312479646644833964352721476E-11",
+      "minimum_gram_area_m2": "0.0000321039857032873804033638949558544071258045527388830856993110",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-200.obj",
+      "sha256": "964b80e4b872808f02e8bc7458c41cc49471acdb87f92b912a3142ac3a39a2af",
+      "minimum_serialized_area_m2": "0.0000271256881954442702309900190951055071485320159104084353913996",
+      "triangle_zero_based": 2857,
+      "nodes_zero_based": [
+        19,
+        18,
+        17
+      ],
+      "positions_m": [
+        [
+          "-0.0641937873",
+          "0.159843682",
+          "0.950545747"
+        ],
+        [
+          "-0.0420030882",
+          "0.188825288",
+          "0.973352458"
+        ],
+        [
+          "-0.0225424438",
+          "0.215818466",
+          "0.995100544"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000271255990019422050374813578165342366565669200634122878553199",
+        "0.0000271257773889463354244986803736767776404971117574045829274793"
+      ],
+      "serialization_area_error_bound_m2": "8.91935020651935086612785712704919650958469961475360796016406E-11",
+      "minimum_gram_area_m2": "0.0000271256881954442702309900190951055071485320159104084353913996",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-210.obj",
+      "sha256": "cb602a6e77565719ef14792cf5bd2cce65a5fe32b93b18d157ae010fe2ff7c7d",
+      "minimum_serialized_area_m2": "0.0000198636979379332127916740571037637882928594013301582929465241",
+      "triangle_zero_based": 2857,
+      "nodes_zero_based": [
+        19,
+        18,
+        17
+      ],
+      "positions_m": [
+        [
+          "-0.00836432181",
+          "0.167633659",
+          "0.934517643"
+        ],
+        [
+          "0.0127102584",
+          "0.196219373",
+          "0.958835111"
+        ],
+        [
+          "0.0315247078",
+          "0.222521776",
+          "0.981942664"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000198636088991081815268345950459902179354920025028408096406787",
+        "0.0000198637869767582440565135191615373586502268001574757762523695"
+      ],
+      "serialization_area_error_bound_m2": "8.90388250312648394620577735703573673988273174833058452661951E-11",
+      "minimum_gram_area_m2": "0.0000198636979379332127916740571037637882928594013301582929465241",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-220.obj",
+      "sha256": "c21f6f946ff3aa10c4e1a80982706711c537c4468eb662b1820b539365de5444",
+      "minimum_serialized_area_m2": "0.000059865940725495565857948680177137027596087243813601093364329",
+      "triangle_zero_based": 2857,
+      "nodes_zero_based": [
+        19,
+        18,
+        17
+      ],
+      "positions_m": [
+        [
+          "0.0713516257",
+          "0.181448246",
+          "0.924843745"
+        ],
+        [
+          "0.0929839598",
+          "0.20898781",
+          "0.949853192"
+        ],
+        [
+          "0.111043283",
+          "0.23400672",
+          "0.974923601"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000598658494244946945202389498168273085176599697255802133232545",
+        "0.0000598660320264964371956584105374467466745145179016219734054035"
+      ],
+      "serialization_area_error_bound_m2": "9.13010008713377097303603097190784272740880208800410743660591E-11",
+      "minimum_gram_area_m2": "0.000059865940725495565857948680177137027596087243813601093364329",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-230.obj",
+      "sha256": "30198aed09a61bba4196c3794f6a63197327e5bb058b68c57d5ad9b48e873ddb",
+      "minimum_serialized_area_m2": "0.000056016958173928808423886995137676132273410885685923538660329",
+      "triangle_zero_based": 2857,
+      "nodes_zero_based": [
+        19,
+        18,
+        17
+      ],
+      "positions_m": [
+        [
+          "0.167526998",
+          "0.196927361",
+          "0.914544046"
+        ],
+        [
+          "0.187683583",
+          "0.22414131",
+          "0.941113434"
+        ],
+        [
+          "0.206612906",
+          "0.247279849",
+          "0.967296603"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000560168492413969275867344985578142830702018193047454737678004",
+        "0.0000560170671064606892610394917175379814766199520671016035528576"
+      ],
+      "serialization_area_error_bound_m2": "1.08932531880837152496579861849203209066381178064892528483503E-10",
+      "minimum_gram_area_m2": "0.000056016958173928808423886995137676132273410885685923538660329",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-240.obj",
+      "sha256": "7f540a649d98d0641560631f43c9bb8314383b06f2085ffb2a4a8a22273981c2",
+      "minimum_serialized_area_m2": "0.0000161455774029378438663137389690740555934612413430720091066837",
+      "triangle_zero_based": 2857,
+      "nodes_zero_based": [
+        19,
+        18,
+        17
+      ],
+      "positions_m": [
+        [
+          "0.271292254",
+          "0.21225944",
+          "0.912674629"
+        ],
+        [
+          "0.291694662",
+          "0.237414223",
+          "0.941028161"
+        ],
+        [
+          "0.310348502",
+          "0.260155522",
+          "0.967749911"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000161454684335759054135574304413107112380562302006572116916641",
+        "0.0000161456863722997823190700474968373999488662524854868065217033"
+      ],
+      "serialization_area_error_bound_m2": "1.08969361938452756308527763344355405011142414797415019481777E-10",
+      "minimum_gram_area_m2": "0.0000161455774029378438663137389690740555934612413430720091066837",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-250.obj",
+      "sha256": "a333dc701dcbf42cec272c9ca9e3cd62ed3e3955af9e6ca4daa70626a2c30979",
+      "minimum_serialized_area_m2": "0.000058085148266893029251424075273067160907295449975664317439653",
+      "triangle_zero_based": 2857,
+      "nodes_zero_based": [
+        19,
+        18,
+        17
+      ],
+      "positions_m": [
+        [
+          "0.381628988",
+          "0.22506634",
+          "0.914154599"
+        ],
+        [
+          "0.402386062",
+          "0.249757331",
+          "0.942652952"
+        ],
+        [
+          "0.421956796",
+          "0.270340616",
+          "0.970457429"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000580850393350062368126673307012513270073477516890138270939243",
+        "0.0000580852571987798216901808198448829948072431482623148077853817"
+      ],
+      "serialization_area_error_bound_m2": "1.08931886792438756744571815833899947698286650490345728579243E-10",
+      "minimum_gram_area_m2": "0.000058085148266893029251424075273067160907295449975664317439653",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-260.obj",
+      "sha256": "94da804f4018e266a96c3491858fa8effcfa03f5b1d8762618fbb4eb101217f4",
+      "minimum_serialized_area_m2": "0.000055728896365284055705600063325030427867086719754543263133296",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "0.681428256",
+          "0.173861557",
+          "1.36086725"
+        ],
+        [
+          "0.679847982",
+          "0.177566587",
+          "1.36358762"
+        ],
+        [
+          "0.695730393",
+          "0.140365764",
+          "1.36394028"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000557286872480326289112899230491131498066217779684277978834081",
+        "0.0000557291054825354824999102036009477059275516615406587283831839"
+      ],
+      "serialization_area_error_bound_m2": "2.09117251426794310140275917278060464941786115465249887780347E-10",
+      "minimum_gram_area_m2": "0.000055728896365284055705600063325030427867086719754543263133296",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-270.obj",
+      "sha256": "ed4b931dc7104827e49387f1955c1b1006dc1b6828ec10bb9b3ae7228f03e81c",
+      "minimum_serialized_area_m2": "0.0000646072369770938561384431929556410484490838175018885420162025",
+      "triangle_zero_based": 2857,
+      "nodes_zero_based": [
+        19,
+        18,
+        17
+      ],
+      "positions_m": [
+        [
+          "0.604088111",
+          "0.235082704",
+          "0.914654758"
+        ],
+        [
+          "0.626914601",
+          "0.257383779",
+          "0.943530674"
+        ],
+        [
+          "0.647921853",
+          "0.275548901",
+          "0.971963171"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000646071280651166311001696582011783470928782937821902438387303",
+        "0.0000646073458890710811767167277101037498052893412215868401936747"
+      ],
+      "serialization_area_error_bound_m2": "1.08911977225038273534754462701356205523719698298177472085664E-10",
+      "minimum_gram_area_m2": "0.0000646072369770938561384431929556410484490838175018885420162025",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-280.obj",
+      "sha256": "f4d43a44e46e7ae592916b48e047269e55001dfb6901fbadc57786faf2f2276a",
+      "minimum_serialized_area_m2": "0.0000658943167819768933987128744951085101745365316756753357777535",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "0.888518867",
+          "0.162807562",
+          "1.36423895"
+        ],
+        [
+          "0.88467662",
+          "0.1657562",
+          "1.36474364"
+        ],
+        [
+          "0.892216893",
+          "0.126076038",
+          "1.36469939"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000658941057548699490189646313384656958705946989778606266620279",
+        "0.0000658945278090838377784611176517513244784783643734900448934791"
+      ],
+      "serialization_area_error_bound_m2": "2.11027106944379748243156642814303941832697814709115725527240E-10",
+      "minimum_gram_area_m2": "0.0000658943167819768933987128744951085101745365316756753357777535",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-290.obj",
+      "sha256": "ed7cad25b99bf492bd03d8c439e8d409795d7a2f0d62ed19759b11cacaa8ea8e",
+      "minimum_serialized_area_m2": "0.000059888984966294476790602383770410857824769096463153244176605",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "0.987357686",
+          "0.154160494",
+          "1.36140861"
+        ],
+        [
+          "0.984102558",
+          "0.15766553",
+          "1.36221495"
+        ],
+        [
+          "0.987586974",
+          "0.117662433",
+          "1.35795167"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000598887753356734990400580632283625761965289729926446442772407",
+        "0.0000598891945969154545411467043124591394530092199336618440759693"
+      ],
+      "serialization_area_error_bound_m2": "2.09630620977750544320542048281628240123470508599899364214917E-10",
+      "minimum_gram_area_m2": "0.000059888984966294476790602383770410857824769096463153244176605",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-30.obj",
+      "sha256": "af16e1a3144186ebe0a9dfaf741a9750dd3a106917c7b5c5d627fbd40e5d64bc",
+      "minimum_serialized_area_m2": "0.000064632506275647240235458441414187830837892758967890121086719",
+      "triangle_zero_based": 2769,
+      "nodes_zero_based": [
+        1413,
+        1424,
+        1425
+      ],
+      "positions_m": [
+        [
+          "-0.0665348622",
+          "0.0284554774",
+          "0.0111173148"
+        ],
+        [
+          "-0.030371689",
+          "0.0561647788",
+          "0.00981375652"
+        ],
+        [
+          "0.00230673105",
+          "0.0777595091",
+          "0.00794143686"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000646324969596962368657611130844719143095900413285810547262843",
+        "0.0000646325155915982436051557697439037473661954766071991874471537"
+      ],
+      "serialization_area_error_bound_m2": "9.31595100336969732832971591652830271763930906636043456352901E-12",
+      "minimum_gram_area_m2": "0.000064632506275647240235458441414187830837892758967890121086719",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-300.obj",
+      "sha256": "679898b586e9f411c2e568a4407383573e9d1cc699a08ac0f7b292cfe3a88492",
+      "minimum_serialized_area_m2": "0.0000605559765662290066345385185077665529710094292950275608231135",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "1.07988887",
+          "0.150537564",
+          "1.36260853"
+        ],
+        [
+          "1.0766916",
+          "0.154170289",
+          "1.36311721"
+        ],
+        [
+          "1.07888489",
+          "0.114015097",
+          "1.35924728"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000605556819831825352803439707517639767113220172842272895209354",
+        "0.0000605562711492754779887330662637691292306968413058278321252916"
+      ],
+      "serialization_area_error_bound_m2": "2.94583046471354194547756002576259687412010800271302177961737E-10",
+      "minimum_gram_area_m2": "0.0000605559765662290066345385185077665529710094292950275608231135",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-310.obj",
+      "sha256": "e7d7366c3ddfc4b40d9210fd706f28b869dd1f2a246807e647bcd9b7c697abcd",
+      "minimum_serialized_area_m2": "0.000051118052829886156715743595741600841758219987028231597180789",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "1.16300408",
+          "0.147852577",
+          "1.36460638"
+        ],
+        [
+          "1.16027112",
+          "0.151880457",
+          "1.36483247"
+        ],
+        [
+          "1.16228167",
+          "0.111593343",
+          "1.36220866"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000511177606440151491505942641655368028106584116847904536385777",
+        "0.0000511183450157571642808929273176648807057815623716727407230003"
+      ],
+      "serialization_area_error_bound_m2": "2.92185871007565149331576064038947561575343441143542211234230E-10",
+      "minimum_gram_area_m2": "0.000051118052829886156715743595741600841758219987028231597180789",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-320.obj",
+      "sha256": "317326d735d84ed11326e9a941372d017fbed7547e39184160bda6cd7362e34a",
+      "minimum_serialized_area_m2": "0.0000370301071013348410473242153325878227330712327238339064358419",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "1.23575384",
+          "0.145761343",
+          "1.36645432"
+        ],
+        [
+          "1.23398409",
+          "0.150117233",
+          "1.3677527"
+        ],
+        [
+          "1.23469467",
+          "0.110064896",
+          "1.36237127"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000370298177219868753076353965987540929366072467892876884096801",
+        "0.0000370303964806828067870130340664215525295352186583801244620037"
+      ],
+      "serialization_area_error_bound_m2": "2.89379347965739688818733833729796463985934546218026161731659E-10",
+      "minimum_gram_area_m2": "0.0000370301071013348410473242153325878227330712327238339064358419",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-330.obj",
+      "sha256": "77990088a7dfa1b2f7cf0f93bc1d3cf6652c1028442e53fe085c1a63be6eab8d",
+      "minimum_serialized_area_m2": "0.0000370432544418433583844664760220027949516683280788667534965274",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "1.29225927",
+          "0.153064606",
+          "1.37092319"
+        ],
+        [
+          "1.29016777",
+          "0.157334274",
+          "1.37200325"
+        ],
+        [
+          "1.29324804",
+          "0.11739209",
+          "1.36705856"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000370429654315266357582398284881749274316471936684396893490889",
+        "0.0000370435434521600810106931235558306624716894624892938176439659"
+      ],
+      "serialization_area_error_bound_m2": "2.89010316722626226647533827867520021134410427064147438363770E-10",
+      "minimum_gram_area_m2": "0.0000370432544418433583844664760220027949516683280788667534965274",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-340.obj",
+      "sha256": "39770aa25de99ca204548e4a1e2cc91e5f95ce0584a5e7c3233ed4b8479c7732",
+      "minimum_serialized_area_m2": "0.0000443263460270647765735549845911452898435287441075193533561688",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "1.33691751",
+          "0.154220472",
+          "1.36566349"
+        ],
+        [
+          "1.3343441",
+          "0.158299777",
+          "1.36598099"
+        ],
+        [
+          "1.33832215",
+          "0.118761991",
+          "1.35893917"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000443260557337869522864945975260849293148404711426683044074075",
+        "0.0000443266363203426008606153716562056503722170170723704023049301"
+      ],
+      "serialization_area_error_bound_m2": "2.90293277824287060387065060360528688272964851048948761182985E-10",
+      "minimum_gram_area_m2": "0.0000443263460270647765735549845911452898435287441075193533561688",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-350.obj",
+      "sha256": "52e1a7370051612130d071af46c3e1ace720b6dd66bfcbaa11eae144bf65cc8e",
+      "minimum_serialized_area_m2": "0.0000546640832114188050839422906067775567995755085557325392512085",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "1.36645379",
+          "0.153041599",
+          "1.37395199"
+        ],
+        [
+          "1.36403112",
+          "0.157328458",
+          "1.37370498"
+        ],
+        [
+          "1.36230625",
+          "0.117285876",
+          "1.36890938"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000546637906084440036547437022909060180965798379470471347439491",
+        "0.0000546643758143936065131408789226490955025711791644179437584679"
+      ],
+      "serialization_area_error_bound_m2": "2.92602974801429198588315871538702995670608685404507259316047E-10",
+      "minimum_gram_area_m2": "0.0000546640832114188050839422906067775567995755085557325392512085",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-360.obj",
+      "sha256": "cb55b6ce2f78cfdb4966855c3be706a3dff8aa92d2b6680ab63559904c591917",
+      "minimum_serialized_area_m2": "0.0000354838839835010263009889489391767484511456260635058442654720",
+      "triangle_zero_based": 2879,
+      "nodes_zero_based": [
+        5,
+        7,
+        6
+      ],
+      "positions_m": [
+        [
+          "1.47616294",
+          "0.0972823724",
+          "1.28990943"
+        ],
+        [
+          "1.48029652",
+          "0.17710453",
+          "1.25941155"
+        ],
+        [
+          "1.47739609",
+          "0.137116114",
+          "1.27466232"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000354829766469460540024568875014779992930982918590342799862364",
+        "0.0000354847913200559985995210103768754976091929602679774085447076"
+      ],
+      "serialization_area_error_bound_m2": "9.07336554972298532061437698749158047334204471564279235512681E-10",
+      "minimum_gram_area_m2": "0.0000354838839835010263009889489391767484511456260635058442654720",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-370.obj",
+      "sha256": "03c3c63c83737ad4d50af6eca35b4f6416ca0aaf90f92a74fcbc41c5e2a382ce",
+      "minimum_serialized_area_m2": "0.000051393628212183954605087886898605435235734403301537510739713",
+      "triangle_zero_based": 2408,
+      "nodes_zero_based": [
+        1204,
+        1205,
+        1252
+      ],
+      "positions_m": [
+        [
+          "1.28696321",
+          "0.107181269",
+          "1.38637733"
+        ],
+        [
+          "1.28178242",
+          "0.12874355",
+          "1.37005372"
+        ],
+        [
+          "1.28137579",
+          "0.114558107",
+          "1.3796183"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000513933517831349541770080828850813259290930932895734118669688",
+        "0.0000513939046412329550331676909121295445423757133135016096124572"
+      ],
+      "serialization_area_error_bound_m2": "2.76429049000428079804013524109306641310011964098872744145216E-10",
+      "minimum_gram_area_m2": "0.000051393628212183954605087886898605435235734403301537510739713",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-380.obj",
+      "sha256": "d1e25c372d897c8f03ab2368d8a5dae01abe2143edfe1d9d8437cfcea7f85f28",
+      "minimum_serialized_area_m2": "0.000057963596481154090796745259436693841709236910808048917014402",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "1.3902488",
+          "0.129388907",
+          "1.38628622"
+        ],
+        [
+          "1.38810735",
+          "0.133562885",
+          "1.38494662"
+        ],
+        [
+          "1.38195617",
+          "0.0940293891",
+          "1.3906675"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000579633026355700414088108469098351544529567093176719613039762",
+        "0.0000579638903267381401846796719635525289655171122984258727248278"
+      ],
+      "serialization_area_error_bound_m2": "2.93845584049387934412526858687256280201490376955710425674420E-10",
+      "minimum_gram_area_m2": "0.000057963596481154090796745259436693841709236910808048917014402",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-390.obj",
+      "sha256": "cc99b2af93aee5d20d77e9a06c885b1ea58faaad12919bd48f57071110672485",
+      "minimum_serialized_area_m2": "0.000056318568144670127264834166017650573665488787304723881957946",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "1.39206616",
+          "0.127193305",
+          "1.37857964"
+        ],
+        [
+          "1.39002805",
+          "0.131453562",
+          "1.37736005"
+        ],
+        [
+          "1.38340976",
+          "0.0920521724",
+          "1.3833888"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000563182748211694747539957633251959581519350026160736865736415",
+        "0.0000563188614681707797756725687101051891790425719933740773422505"
+      ],
+      "serialization_area_error_bound_m2": "2.93323500652510838402692454615513553784688650195384304383321E-10",
+      "minimum_gram_area_m2": "0.000056318568144670127264834166017650573665488787304723881957946",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-40.obj",
+      "sha256": "0cb63d409ee9d35207223336bddcd3b0788cb4617c3125b4744d3bf8b32b5a17",
+      "minimum_serialized_area_m2": "0.000074282536880762347028178163387181109171607874642487779179856",
+      "triangle_zero_based": 2769,
+      "nodes_zero_based": [
+        1413,
+        1424,
+        1425
+      ],
+      "positions_m": [
+        [
+          "-0.00492710398",
+          "0.0325408964",
+          "0.00489722925"
+        ],
+        [
+          "0.0292867834",
+          "0.0612629696",
+          "0.0141082371"
+        ],
+        [
+          "0.060297548",
+          "0.0834277144",
+          "0.0233258065"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000742825286228264967800092089536583105069099003415055871519825",
+        "0.0000742825451386981972763471178207039078363058489434699712077295"
+      ],
+      "serialization_area_error_bound_m2": "8.25793585024816895443352279866469797430098219202787342402731E-12",
+      "minimum_gram_area_m2": "0.000074282536880762347028178163387181109171607874642487779179856",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-400.obj",
+      "sha256": "ea8fb712f2306c96f291e6383ee0f88329e0e6d72c8f9359afd515f371d1df3e",
+      "minimum_serialized_area_m2": "0.0000566462558068749790190346751875508161588432407517975920022495",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "1.39354696",
+          "0.123142428",
+          "1.3670581"
+        ],
+        [
+          "1.39151836",
+          "0.127497062",
+          "1.36621928"
+        ],
+        [
+          "1.38419013",
+          "0.0882159834",
+          "1.3721528"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000566459624511482722968272419851192544294687204589253071730530",
+        "0.0000566465491626016857412421083899823778882177610446698768314460"
+      ],
+      "serialization_area_error_bound_m2": "2.93355726706722207433202431561729374520292872284829196374601E-10",
+      "minimum_gram_area_m2": "0.0000566462558068749790190346751875508161588432407517975920022495",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-410.obj",
+      "sha256": "75c259b5e9b528a76f23b2a99528a43e7b5376cd191c7336f0030dba2eb96a5d",
+      "minimum_serialized_area_m2": "0.000055472206259889647913999444831321509133680132925642599540198",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "1.39089441",
+          "0.120630889",
+          "1.35110005"
+        ],
+        [
+          "1.38895229",
+          "0.125088855",
+          "1.35070663"
+        ],
+        [
+          "1.38152095",
+          "0.0858533908",
+          "1.35680355"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000554719132304516150983176541091303298440521236659645579283131",
+        "0.0000554724992893276807296812355535126884233081421853206411520829"
+      ],
+      "serialization_area_error_bound_m2": "2.93029438032815681790722191179289628009259678041611884770289E-10",
+      "minimum_gram_area_m2": "0.000055472206259889647913999444831321509133680132925642599540198",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-420.obj",
+      "sha256": "0deec37e8266cc93b2358857e2fe3008275b58024faa5dfa6faca05811d50675",
+      "minimum_serialized_area_m2": "0.000054890029017541030705709239630583594833771700057304325004103",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "1.38629203",
+          "0.119426581",
+          "1.33758961"
+        ],
+        [
+          "1.3844743",
+          "0.12395131",
+          "1.33769171"
+        ],
+        [
+          "1.37722225",
+          "0.0847410554",
+          "1.34412827"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000548897361686861528712665008081324980338809065699678652031659",
+        "0.0000548903218663959085401519784530346916336624935446407848050401"
+      ],
+      "serialization_area_error_bound_m2": "2.92848854877834442738822451096799890793487336459800936959485E-10",
+      "minimum_gram_area_m2": "0.000054890029017541030705709239630583594833771700057304325004103",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-430.obj",
+      "sha256": "d51c68b31da0036889db7c84f7f2e4816c9f743c46ceeebf4bc68cece6477831",
+      "minimum_serialized_area_m2": "0.000052491751147696820581275966686483520220911898277362961832786",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "1.38028254",
+          "0.118118296",
+          "1.3247484"
+        ],
+        [
+          "1.37873956",
+          "0.122724202",
+          "1.325187"
+        ],
+        [
+          "1.3714917",
+          "0.0835043801",
+          "1.33154432"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000524914589333187483170674240523268284135432472230784423726842",
+        "0.0000524920433620748928454845093206402120282805493316474812928878"
+      ],
+      "serialization_area_error_bound_m2": "2.92214378072264208542634156691807368651054284519460101688053E-10",
+      "minimum_gram_area_m2": "0.000052491751147696820581275966686483520220911898277362961832786",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-440.obj",
+      "sha256": "e7383c73cff290396eb48a7d6e46e6ebc8575cd45ea43f6abbdb42c0c6cb6221",
+      "minimum_serialized_area_m2": "0.0000478636210831992840339615598189509009141498433668379872122000",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "1.3768916",
+          "0.116845566",
+          "1.31830767"
+        ],
+        [
+          "1.37576662",
+          "0.121546966",
+          "1.3189049"
+        ],
+        [
+          "1.36793974",
+          "0.0823840973",
+          "1.32482208"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000478633300297715755784413265287535431792600221359251317299835",
+        "0.0000478639121366269924894817931091482586490396645977508426944165"
+      ],
+      "serialization_area_error_bound_m2": "2.91053427708455520233290197357734889821230912855482216402643E-10",
+      "minimum_gram_area_m2": "0.0000478636210831992840339615598189509009141498433668379872122000",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-450.obj",
+      "sha256": "95103ed11bc7dc5eedf61cf098d1b5e232039e627b82af60c1cedb9d6256e92a",
+      "minimum_serialized_area_m2": "0.0000481689283240231154956504071410141928903976005219785933682870",
+      "triangle_zero_based": 1641,
+      "nodes_zero_based": [
+        821,
+        869,
+        868
+      ],
+      "positions_m": [
+        [
+          "1.37736117",
+          "0.114484199",
+          "1.31692266"
+        ],
+        [
+          "1.37629717",
+          "0.11921196",
+          "1.31744321"
+        ],
+        [
+          "1.36795371",
+          "0.0802901906",
+          "1.32421875"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000481686371712112471548555773945784199343531290366780883631601",
+        "0.0000481692194768349838364452368874499658464420720072790983734139"
+      ],
+      "serialization_area_error_bound_m2": "2.91152811868340794829746435772956044471485300505005126826115E-10",
+      "minimum_gram_area_m2": "0.0000481689283240231154956504071410141928903976005219785933682870",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-460.obj",
+      "sha256": "55d59b72db9463c42063978adf5cd1ea2e790d8015c21a861804962651b26af7",
+      "minimum_serialized_area_m2": "0.0000689560684347781052972183840761547142745710750860276599981695",
+      "triangle_zero_based": 2644,
+      "nodes_zero_based": [
+        1356,
+        1367,
+        1357
+      ],
+      "positions_m": [
+        [
+          "1.1063728",
+          "-0.159034477",
+          "0.939986475"
+        ],
+        [
+          "1.08972202",
+          "-0.121832152",
+          "0.941949376"
+        ],
+        [
+          "1.12514563",
+          "-0.193815005",
+          "0.939781252"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000689556627890258560910638455511556075816795745627942022619023",
+        "0.0000689564740805303545033729226011538209674625756092611177344367"
+      ],
+      "serialization_area_error_bound_m2": "4.05645752249206154538524999106692891500523233457736267054199E-10",
+      "minimum_gram_area_m2": "0.0000689560684347781052972183840761547142745710750860276599981695",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-470.obj",
+      "sha256": "72c7425cdc62451762cc10593b995d8738a56c94fde81dc735f4bcee54efd8a2",
+      "minimum_serialized_area_m2": "0.0000599654997922186281928340743643703299595001285255002943693835",
+      "triangle_zero_based": 2769,
+      "nodes_zero_based": [
+        1413,
+        1424,
+        1425
+      ],
+      "positions_m": [
+        [
+          "1.18042926",
+          "0.00871085679",
+          "0.798009902"
+        ],
+        [
+          "1.22255742",
+          "0.0254319972",
+          "0.802739571"
+        ],
+        [
+          "1.25892962",
+          "0.0384675655",
+          "0.80906851"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000599648452963900748093514409869675100875496065788122005921641",
+        "0.0000599661542880471815763167077417731498314506504721883881466029"
+      ],
+      "serialization_area_error_bound_m2": "6.54495828553383482633377402819871950521946688093777219294286E-10",
+      "minimum_gram_area_m2": "0.0000599654997922186281928340743643703299595001285255002943693835",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-480.obj",
+      "sha256": "929c79d187aea89ef86d95ba13691dc09a93efa869d4d839e915aa5bb3be3c53",
+      "minimum_serialized_area_m2": "0.0000765583937520088882037861223850760908030374843610960991498615",
+      "triangle_zero_based": 1597,
+      "nodes_zero_based": [
+        799,
+        847,
+        846
+      ],
+      "positions_m": [
+        [
+          "0.967788205",
+          "-0.210307359",
+          "0.846760786"
+        ],
+        [
+          "0.96371336",
+          "-0.212825706",
+          "0.847432117"
+        ],
+        [
+          "0.963771462",
+          "-0.179211199",
+          "0.831171722"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000765583592381861655965513958911904855021879077823499799101120",
+        "0.0000765584282658316108110208488789616961038870609398422183896110"
+      ],
+      "serialization_area_error_bound_m2": "3.45138227226072347264938856053008495765787461192397493572345E-11",
+      "minimum_gram_area_m2": "0.0000765583937520088882037861223850760908030374843610960991498615",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-490.obj",
+      "sha256": "8df47fcae7183814deb9bc662b0f396bc05e2de8e7b0d90a4b3d8a764b7a6612",
+      "minimum_serialized_area_m2": "0.0000794937843623053293092938168290250390931574460939296033489355",
+      "triangle_zero_based": 1597,
+      "nodes_zero_based": [
+        799,
+        847,
+        846
+      ],
+      "positions_m": [
+        [
+          "0.987601249",
+          "-0.211427039",
+          "0.688009876"
+        ],
+        [
+          "0.983391579",
+          "-0.213409154",
+          "0.689340725"
+        ],
+        [
+          "0.982893969",
+          "-0.179625951",
+          "0.673401774"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000794937495909238760289301486125786686236049520875984762011963",
+        "0.0000794938191336867825896574850454714095627099401002607304966747"
+      ],
+      "serialization_area_error_bound_m2": "3.47713814532803636682164463704695524940063311271477390974397E-11",
+      "minimum_gram_area_m2": "0.0000794937843623053293092938168290250390931574460939296033489355",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-50.obj",
+      "sha256": "95dee6a1d5dc18710a64b616e51545135afa477a8f538b144166e8ffd8968a19",
+      "minimum_serialized_area_m2": "0.0000410597118916893012351210462468483544396638393920893171360132",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "0.0025613584",
+          "0.125421923",
+          "0.0406471889"
+        ],
+        [
+          "0.0330302585",
+          "0.151881584",
+          "0.0586855311"
+        ],
+        [
+          "0.059129002",
+          "0.17693376",
+          "0.0743446517"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000410596475759082263003742800282290105412350183986541775032230",
+        "0.0000410597762074703761698678124654676983380926603855244567688034"
+      ],
+      "serialization_area_error_bound_m2": "6.43157810749347467662186193438984288209934351396327901199506E-11",
+      "minimum_gram_area_m2": "0.0000410597118916893012351210462468483544396638393920893171360132",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-500.obj",
+      "sha256": "f6e160a73e65bea3213e544a2ceffb9a44687e8309b5a92c109cac9edf4d4fc7",
+      "minimum_serialized_area_m2": "0.0000715624119225021420057599582958760868776074569237740365574745",
+      "triangle_zero_based": 2769,
+      "nodes_zero_based": [
+        1413,
+        1424,
+        1425
+      ],
+      "positions_m": [
+        [
+          "1.2352187",
+          "-0.0080441873",
+          "0.259185391"
+        ],
+        [
+          "1.27519953",
+          "0.0110075411",
+          "0.269924471"
+        ],
+        [
+          "1.31075503",
+          "0.0244794887",
+          "0.279331885"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000715617574452408904761351429485289223963005539207047635335932",
+        "0.0000715630663997633935353847736432232513589143599268433095813558"
+      ],
+      "serialization_area_error_bound_m2": "6.54477261251529624815347347164481306903003069273023881226596E-10",
+      "minimum_gram_area_m2": "0.0000715624119225021420057599582958760868776074569237740365574745",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-510.obj",
+      "sha256": "1823190725bd20134513133da5ab0b583b04c6c38282175674de8d0ad7090137",
+      "minimum_serialized_area_m2": "0.000078458840878957125962825561806986688550386981046516486265308",
+      "triangle_zero_based": 2769,
+      "nodes_zero_based": [
+        1413,
+        1424,
+        1425
+      ],
+      "positions_m": [
+        [
+          "1.26072085",
+          "-0.0108443939",
+          "-0.048467397"
+        ],
+        [
+          "1.29963886",
+          "0.00767778499",
+          "-0.0336516424"
+        ],
+        [
+          "1.33455366",
+          "0.0224304637",
+          "-0.0238111641"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000784581896737002018888253435114924204387215763004759132406472",
+        "0.0000784594920842140500368257801024809566620523857925570592899688"
+      ],
+      "serialization_area_error_bound_m2": "6.51205256924074000218295494268111665404746040573024660700726E-10",
+      "minimum_gram_area_m2": "0.000078458840878957125962825561806986688550386981046516486265308",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-520.obj",
+      "sha256": "8c2bf152f3fe1ebd889bc582b48789bd979d6c8d742bb4b2224565f78dd977d6",
+      "minimum_serialized_area_m2": "0.000081715430637279389571947180165706645858239521280988039135220",
+      "triangle_zero_based": 1597,
+      "nodes_zero_based": [
+        799,
+        847,
+        846
+      ],
+      "positions_m": [
+        [
+          "1.03541834",
+          "-0.221967564",
+          "-0.256018783"
+        ],
+        [
+          "1.03107421",
+          "-0.22407146",
+          "-0.255677234"
+        ],
+        [
+          "1.03136509",
+          "-0.190604297",
+          "-0.272294263"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000817152266002719965636716209193230196198629095765881361926502",
+        "0.0000817156346742867825802227394120902720966161329853879420777898"
+      ],
+      "serialization_area_error_bound_m2": "2.04037007393008275559246383626238376611704399902942569725299E-10",
+      "minimum_gram_area_m2": "0.000081715430637279389571947180165706645858239521280988039135220",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-530.obj",
+      "sha256": "c6ca2a283fbb92bddfd2edb04096eabae3ca0600018240bce36977140e4e458d",
+      "minimum_serialized_area_m2": "0.0000317677633564742557599574442170660065755866571302219061359421",
+      "triangle_zero_based": 2670,
+      "nodes_zero_based": [
+        1368,
+        1379,
+        1369
+      ],
+      "positions_m": [
+        [
+          "1.18243969",
+          "-0.113026472",
+          "-0.735024715"
+        ],
+        [
+          "1.16187239",
+          "-0.0788688775",
+          "-0.741795807"
+        ],
+        [
+          "1.20165497",
+          "-0.147072724",
+          "-0.72952513"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000317673604531599415557743655891980539141379024715224003048656",
+        "0.0000317681662597885699641405228449339592370354117889214119670186"
+      ],
+      "serialization_area_error_bound_m2": "4.02903314314204183078627867952661448754658699505831076404209E-10",
+      "minimum_gram_area_m2": "0.0000317677633564742557599574442170660065755866571302219061359421",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-540.obj",
+      "sha256": "394afa1ba439e8aba7d5ad30c0b2f46867a0309195929ae799de054c491362a0",
+      "minimum_serialized_area_m2": "0.0000458416331949460691923606899698284993851089012878285385948076",
+      "triangle_zero_based": 2644,
+      "nodes_zero_based": [
+        1356,
+        1367,
+        1357
+      ],
+      "positions_m": [
+        [
+          "1.0947091",
+          "-0.151603781",
+          "-0.717918956"
+        ],
+        [
+          "1.06936462",
+          "-0.120328816",
+          "-0.724635691"
+        ],
+        [
+          "1.12085816",
+          "-0.180756624",
+          "-0.712503643"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000458412274666440724029445862028451364274566293547812434151722",
+        "0.0000458420389232480659817767937368118623427611732208758337744430"
+      ],
+      "serialization_area_error_bound_m2": "4.05728301996789416103766983362957652271933047295179635328998E-10",
+      "minimum_gram_area_m2": "0.0000458416331949460691923606899698284993851089012878285385948076",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-550.obj",
+      "sha256": "e4a622c181a3a50978d132ddc3a05467455fd7802cd0bc3d3da3d7c7d455fd3e",
+      "minimum_serialized_area_m2": "0.0000235449769091671666650230925175740858735004172665132499339326",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.09798436",
+          "0.106724768",
+          "-0.731128593"
+        ],
+        [
+          "1.13911627",
+          "0.122988231",
+          "-0.732118118"
+        ],
+        [
+          "1.17585994",
+          "0.137064243",
+          "-0.733976327"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000235443312129351356220055135053321036422144304728971553927043",
+        "0.0000235456226053991977080406715298160681047864040601293444751609"
+      ],
+      "serialization_area_error_bound_m2": "6.45696232031043017579012241982231285986793616094541228202376E-10",
+      "minimum_gram_area_m2": "0.0000235449769091671666650230925175740858735004172665132499339326",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-560.obj",
+      "sha256": "f737e2e4e44d3dc64943019b3988dc20315ac1af82ada3dbe66742afc5291295",
+      "minimum_serialized_area_m2": "0.0000658324313056530137042574284030124959687147144862363936681935",
+      "triangle_zero_based": 2769,
+      "nodes_zero_based": [
+        1413,
+        1424,
+        1425
+      ],
+      "positions_m": [
+        [
+          "1.16850828",
+          "0.0172700953",
+          "-0.733050729"
+        ],
+        [
+          "1.20930754",
+          "0.0362672324",
+          "-0.740057044"
+        ],
+        [
+          "1.24545649",
+          "0.0499109107",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000658317773808237565852011025985417777399123714557454425716660",
+        "0.0000658330852304822708233137542074832141975170575167273447647210"
+      ],
+      "serialization_area_error_bound_m2": "6.53924829257119056325804470718228802343030490951096527391046E-10",
+      "minimum_gram_area_m2": "0.0000658324313056530137042574284030124959687147144862363936681935",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-570.obj",
+      "sha256": "f5f6e685bf04b7175bf2952c1cf1183168bb58e86f0962e47fc2d3f16263bed8",
+      "minimum_serialized_area_m2": "0.00000287895431157196704656148565354007997357748549047517767662928",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.13634355",
+          "0.0936000494",
+          "-0.746"
+        ],
+        [
+          "1.17642122",
+          "0.11233782",
+          "-0.74593217"
+        ],
+        [
+          "1.21211623",
+          "0.129001949",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.00000287831077802585324356487131585239449569386097382093506595942",
+        "0.00000287959784511808084955809999122776545146111000712942028729914"
+      ],
+      "serialization_area_error_bound_m2": "6.43533546113802996614337687685477883624516654242610669846756E-10",
+      "minimum_gram_area_m2": "0.00000287895431157196704656148565354007997357748549047517767662928",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-580.obj",
+      "sha256": "d5a3d1adcac99532b810fa0c937914f942cb479e00bccce250bf9c56bb9f6264",
+      "minimum_serialized_area_m2": "0.0000120873797243248651214516716403466647075697105528015438847374",
+      "triangle_zero_based": 2853,
+      "nodes_zero_based": [
+        1453,
+        1463,
+        1464
+      ],
+      "positions_m": [
+        [
+          "1.53406878",
+          "0.059713313",
+          "-0.730263255"
+        ],
+        [
+          "1.48213462",
+          "0.11982843",
+          "-0.700042197"
+        ],
+        [
+          "1.50831589",
+          "0.0899428531",
+          "-0.715236113"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000120867389260288234238902916388433685896809950156750858014982",
+        "0.0000120880205226209068190130516418499608254584260899280019679766"
+      ],
+      "serialization_area_error_bound_m2": "6.40798296041697561380001503296117888715537126458083239083896E-10",
+      "minimum_gram_area_m2": "0.0000120873797243248651214516716403466647075697105528015438847374",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-590.obj",
+      "sha256": "7597aeb1f9f5a18aaf500136aa2355b90306cbca94f2268203f5c55178ce836b",
+      "minimum_serialized_area_m2": "0.0000323647960640768258827439439142844557517416352601980676893186",
+      "triangle_zero_based": 2835,
+      "nodes_zero_based": [
+        1443,
+        1454,
+        1455
+      ],
+      "positions_m": [
+        [
+          "1.12366528",
+          "0.132989645",
+          "-0.744723154"
+        ],
+        [
+          "1.16324889",
+          "0.151314958",
+          "-0.745388175"
+        ],
+        [
+          "1.19975396",
+          "0.166659522",
+          "-0.745534306"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000323641555826997939892116502969031996411213930935089075961956",
+        "0.0000323654365454538577762762375316657118623618774268872277824416"
+      ],
+      "serialization_area_error_bound_m2": "6.40481377031893532293617381256110620242166689160093122854141E-10",
+      "minimum_gram_area_m2": "0.0000323647960640768258827439439142844557517416352601980676893186",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-60.obj",
+      "sha256": "991df45573f510bb2394033f542068e426a8a9e0d52088b16f6ed810a6108d7d",
+      "minimum_serialized_area_m2": "0.0000664458129105187842267932187143139472970732795835112932297585",
+      "triangle_zero_based": 1597,
+      "nodes_zero_based": [
+        799,
+        847,
+        846
+      ],
+      "positions_m": [
+        [
+          "0.0388739848",
+          "-0.196386085",
+          "0.26596069"
+        ],
+        [
+          "0.0352864846",
+          "-0.198280263",
+          "0.268584946"
+        ],
+        [
+          "0.0370833414",
+          "-0.16871894",
+          "0.245785526"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000664457851791870365303083567805107087667642159715966097949296",
+        "0.0000664458406418505319232780806481171858273823431954259766645874"
+      ],
+      "serialization_area_error_bound_m2": "2.77313317476964848619338032385303090636119146834348287732645E-11",
+      "minimum_gram_area_m2": "0.0000664458129105187842267932187143139472970732795835112932297585",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-600.obj",
+      "sha256": "e520a7e7dad35550dd736825e76a2b3f6ca04a2f28090c3e84017015dec58aa1",
+      "minimum_serialized_area_m2": "0.000083834808491356272998180116958924107613597688516088899854249",
+      "triangle_zero_based": 2618,
+      "nodes_zero_based": [
+        1344,
+        1355,
+        1345
+      ],
+      "positions_m": [
+        [
+          "1.10836917",
+          "-0.20566409",
+          "-0.738056757"
+        ],
+        [
+          "1.08155667",
+          "-0.174659925",
+          "-0.743422765"
+        ],
+        [
+          "1.13492979",
+          "-0.235264723",
+          "-0.736875457"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000838343988185900071035109866663476185579221208801992985184336",
+        "0.0000838352181641225388928492472515005966692732561519785011900644"
+      ],
+      "serialization_area_error_bound_m2": "4.09672766265894669130292576489055675567635889601335815310691E-10",
+      "minimum_gram_area_m2": "0.000083834808491356272998180116958924107613597688516088899854249",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-610.obj",
+      "sha256": "743824773aaa4c130a0a47aa8d448a6b289cc787122f6f524c633c4de511f091",
+      "minimum_serialized_area_m2": "8.00504691842E-7",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.15630911",
+          "0.0798816262",
+          "-0.746"
+        ],
+        [
+          "1.19668823",
+          "0.0979501172",
+          "-0.746"
+        ],
+        [
+          "1.23263205",
+          "0.11399429",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "7.99861966389971184838560150743713959509636713126094675770231E-7",
+        "8.01147417294028815161439849256286040490363286873905324229769E-7"
+      ],
+      "serialization_area_error_bound_m2": "6.42725452028815161439849256286040490363286873905324229767676E-10",
+      "minimum_gram_area_m2": "8.0050469184200E-7",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-620.obj",
+      "sha256": "e52a1c9cc7d56d0661cc013e2eaf9345da55539de3537536dd98be86a4b71fa3",
+      "minimum_serialized_area_m2": "5.828993541E-9",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.16101556",
+          "0.0760072691",
+          "-0.746"
+        ],
+        [
+          "1.20152346",
+          "0.0937930199",
+          "-0.746"
+        ],
+        [
+          "1.23756547",
+          "0.109618226",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "5.18623056543134225928917461458630990826211929121728487255006E-9",
+        "6.47175651656865774071082538541369009173788070878271512744994E-9"
+      ],
+      "serialization_area_error_bound_m2": "6.42762975568657740710825385413690091737880708782715127449931E-10",
+      "minimum_gram_area_m2": "5.82899354100E-9",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [
+        2813
+      ],
+      "witness_robustly_fails_gate": true
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-630.obj",
+      "sha256": "c8547060175dd3758b320745ccb19ff67549037f6bdf01cfb3cd0dc0a7bab82a",
+      "minimum_serialized_area_m2": "7.45469414185E-8",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.16333781",
+          "0.0735917198",
+          "-0.746"
+        ],
+        [
+          "1.20382751",
+          "0.0914186329",
+          "-0.746"
+        ],
+        [
+          "1.23985094",
+          "0.107282807",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "7.39041860270854317330922089797875491355239782320258811418402E-8",
+        "7.51896968099145682669077910202124508644760217679741188581598E-8"
+      ],
+      "serialization_area_error_bound_m2": "6.42755391414568266907791020212450864476021767974118858159706E-10",
+      "minimum_gram_area_m2": "7.454694141850E-8",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-640.obj",
+      "sha256": "cad4b205fd3bfd534476d16cf05588d711f783c70dec0b0334e2edca474e2444",
+      "minimum_serialized_area_m2": "0.0000016608699765875",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.16544214",
+          "0.0724129441",
+          "-0.746"
+        ],
+        [
+          "1.20594261",
+          "0.0902101057",
+          "-0.746"
+        ],
+        [
+          "1.24194267",
+          "0.106111665",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.00000166022727435143133020851405461752406795820619681258372047914",
+        "0.00000166151267882356866979148594538247593204179380318741627952086"
+      ],
+      "serialization_area_error_bound_m2": "6.42702236068669791485945382475932041793803187416279520851061E-10",
+      "minimum_gram_area_m2": "0.00000166086997658750",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-650.obj",
+      "sha256": "e4a9a91b58d22ce59a52ef0f71d1806e2da8e81e2da8d3e2104fb4aa0700567a",
+      "minimum_serialized_area_m2": "0.0000010027125000625",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.16759259",
+          "0.0720389267",
+          "-0.746"
+        ],
+        [
+          "1.20819961",
+          "0.0895837788",
+          "-0.746"
+        ],
+        [
+          "1.244297",
+          "0.105229566",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.00000100206989613586679243620091398290953289837967180758004160195",
+        "0.00000100335510398913320756379908601709046710162032819241995839805"
+      ],
+      "serialization_area_error_bound_m2": "6.42603926633207563799086017090467101620328192419958398039516E-10",
+      "minimum_gram_area_m2": "0.00000100271250006250",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-660.obj",
+      "sha256": "ccd68941b8b37ebbffdf4524d48acf364fbf85ddb8553f8be7eb73bfa6925002",
+      "minimum_serialized_area_m2": "4.875858301475E-7",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.16928053",
+          "0.0714681119",
+          "-0.746"
+        ],
+        [
+          "1.20994003",
+          "0.0888980768",
+          "-0.746"
+        ],
+        [
+          "1.24612058",
+          "0.104384016",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "4.86943132078101604876965953005243143909443549821574202305455E-7",
+        "4.88228528216898395123034046994756856090556450178425797694545E-7"
+      ],
+      "serialization_area_error_bound_m2": "6.42698069398395123034046994756856090556450178425797694543856E-10",
+      "minimum_gram_area_m2": "4.8758583014750E-7",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-670.obj",
+      "sha256": "c749a788b2707ad7a81bddf7d073c2630eb77c3655ff0da7fb99d586d5722875",
+      "minimum_serialized_area_m2": "0.000001466095335571",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.16914464",
+          "0.0709796114",
+          "-0.746"
+        ],
+        [
+          "1.20974047",
+          "0.0885558664",
+          "-0.746"
+        ],
+        [
+          "1.24588241",
+          "0.104131549",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.00000146545264390370936385800721501671477777369040362904532634564",
+        "0.00000146673802723829063614199278498328522222630959637095467365436"
+      ],
+      "serialization_area_error_bound_m2": "6.42691667290636141992784983285222226309596370954673654349371E-10",
+      "minimum_gram_area_m2": "0.00000146609533557100",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-680.obj",
+      "sha256": "f88f11b0ff9db37e105638ae375470502c64b6bfe2c25ba6c5dfb328446883e6",
+      "minimum_serialized_area_m2": "4.67066384996E-7",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.16881181",
+          "0.0706063858",
+          "-0.746"
+        ],
+        [
+          "1.20937641",
+          "0.0882562119",
+          "-0.746"
+        ],
+        [
+          "1.24546773",
+          "0.103936667",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "4.66423711086235143851223485225366585862388500501569161224740E-7",
+        "4.67709058905764856148776514774633414137611499498430838775260E-7"
+      ],
+      "serialization_area_error_bound_m2": "6.42673909764856148776514774633414137611499498430838775259026E-10",
+      "minimum_gram_area_m2": "4.6706638499600E-7",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-690.obj",
+      "sha256": "5824d379c32d2e27c3b358e780a07af36924a617c48ee8540f7c86cea7a5465a",
+      "minimum_serialized_area_m2": "0.0000015757226463855",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.16891744",
+          "0.0711878247",
+          "-0.746"
+        ],
+        [
+          "1.20949191",
+          "0.0888173573",
+          "-0.746"
+        ],
+        [
+          "1.24560141",
+          "0.104429198",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.00000157508001627192254113519498930672954521523212074328298185404",
+        "0.00000157636527649907745886480501069327045478476787925671701814596"
+      ],
+      "serialization_area_error_bound_m2": "6.42630113577458864805010693270454784767879256717018145949416E-10",
+      "minimum_gram_area_m2": "0.00000157572264638550",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-70.obj",
+      "sha256": "eb9267fa3cf36742c3b451fd3aa3c95a6e41e852f39f0d9f216f596afdf82046",
+      "minimum_serialized_area_m2": "0.0000280600041331315000551612517644794280569534193766887360619020",
+      "triangle_zero_based": 2835,
+      "nodes_zero_based": [
+        1443,
+        1454,
+        1455
+      ],
+      "positions_m": [
+        [
+          "0.219935681",
+          "0.214804996",
+          "0.260457405"
+        ],
+        [
+          "0.241194266",
+          "0.234969462",
+          "0.292767971"
+        ],
+        [
+          "0.260840163",
+          "0.252115656",
+          "0.322538746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000280598943207591944895518423905756989171286134704298633024663",
+        "0.0000280601139455038056207706611383831571967782252829476088213377"
+      ],
+      "serialization_area_error_bound_m2": "1.09812372305565609409373903729139824805906258872759435619138E-10",
+      "minimum_gram_area_m2": "0.0000280600041331315000551612517644794280569534193766887360619020",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-700.obj",
+      "sha256": "694514119b7ffadad14a6ccf0f0473edb7376102694de249e53fc2d768e2d1b5",
+      "minimum_serialized_area_m2": "5.307000780935E-7",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.16915838",
+          "0.071393278",
+          "-0.746"
+        ],
+        [
+          "1.2097686",
+          "0.0889396653",
+          "-0.746"
+        ],
+        [
+          "1.24588279",
+          "0.104569597",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "5.30057392645361684161226863021135930519791763547526023834902E-7",
+        "5.31342763541638315838773136978864069480208236452473976165098E-7"
+      ],
+      "serialization_area_error_bound_m2": "6.42685448138315838773136978864069480208236452473976165097496E-10",
+      "minimum_gram_area_m2": "5.307000780935E-7",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-710.obj",
+      "sha256": "f4b059ceb40da363f52782adf4b6536f1002f21d647765acbbb606a8dc5d3872",
+      "minimum_serialized_area_m2": "8.7550288211E-8",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.16917397",
+          "0.0713885015",
+          "-0.746"
+        ],
+        [
+          "1.20977995",
+          "0.0889407753",
+          "-0.746"
+        ],
+        [
+          "1.24590021",
+          "0.104549747",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "8.69076322142796737180740080383915515993598544596018229020768E-8",
+        "8.81929442077203262819259919616084484006401455403981770979232E-8"
+      ],
+      "serialization_area_error_bound_m2": "6.42655996720326281925991961608448400640145540398177097923086E-10",
+      "minimum_gram_area_m2": "8.755028821100E-8",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-720.obj",
+      "sha256": "cb2f12edf3f203540ceeb9117953b1c33a04b8c1a32127ac04bb75bc959a3290",
+      "minimum_serialized_area_m2": "0.000001005988216419",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.16887381",
+          "0.0714211695",
+          "-0.746"
+        ],
+        [
+          "1.20945743",
+          "0.0890219997",
+          "-0.746"
+        ],
+        [
+          "1.24557205",
+          "0.10463508",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.00000100534559064927706707449009197801383282517693984404119021535",
+        "0.00000100663084218872293292550990802198616717482306015595880978465"
+      ],
+      "serialization_area_error_bound_m2": "6.42625769722932925509908021986167174823060155958809784642696E-10",
+      "minimum_gram_area_m2": "0.00000100598821641900",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-80.obj",
+      "sha256": "61706bc3e2798080c8aed6a5453c748ea343bec6108e1ebd8d5546ddb70353cd",
+      "minimum_serialized_area_m2": "0.0000297689058961411296446626381443648975800560076030026547645364",
+      "triangle_zero_based": 2835,
+      "nodes_zero_based": [
+        1443,
+        1454,
+        1455
+      ],
+      "positions_m": [
+        [
+          "0.317334976",
+          "0.226968886",
+          "0.40558249"
+        ],
+        [
+          "0.334688419",
+          "0.246628963",
+          "0.440423026"
+        ],
+        [
+          "0.351104807",
+          "0.263304346",
+          "0.472289123"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000297687961399293493484447805079689424387023981894463945438173",
+        "0.0000297690156523529099408804957807608527214096170165589149852555"
+      ],
+      "serialization_area_error_bound_m2": "1.09756211780296217857636395955141353609413556260220719039373E-10",
+      "minimum_gram_area_m2": "0.0000297689058961411296446626381443648975800560076030026547645364",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-90.obj",
+      "sha256": "3dbacbb46330bdb615ba355d7011c9c7d27e7cdb3cd6dd2daf013b410a89ebef",
+      "minimum_serialized_area_m2": "0.000056732252879742227368772262325593986959256545717352011492866",
+      "triangle_zero_based": 2769,
+      "nodes_zero_based": [
+        1413,
+        1424,
+        1425
+      ],
+      "positions_m": [
+        [
+          "0.460027093",
+          "0.118074303",
+          "0.614848441"
+        ],
+        [
+          "0.478435251",
+          "0.138543688",
+          "0.651218318"
+        ],
+        [
+          "0.495664728",
+          "0.154110621",
+          "0.682803933"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000567321399606433460353870201970572044397772598488741568070676",
+        "0.0000567323657988411087021575044541307694787358315858298661786644"
+      ],
+      "serialization_area_error_bound_m2": "1.12919098881333385242128536782519479285868477854685798309594E-10",
+      "minimum_gram_area_m2": "0.000056732252879742227368772262325593986959256545717352011492866",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-r1-peak.obj",
+      "sha256": "d9300365d8999fc87c0ce28b7a1fb7241072c56fc1ea20dc76d2489907051881",
+      "minimum_serialized_area_m2": "0.000068827411038256982898572258507321666899107918526186821967534",
+      "triangle_zero_based": 1597,
+      "nodes_zero_based": [
+        799,
+        847,
+        846
+      ],
+      "positions_m": [
+        [
+          "-0.0704105058",
+          "-0.232154112",
+          "0.178338314"
+        ],
+        [
+          "-0.0729016665",
+          "-0.233817794",
+          "0.182133254"
+        ],
+        [
+          "-0.0801704581",
+          "-0.205363493",
+          "0.159142469"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000688273832452241254638005598961461217435940509618230322202771",
+        "0.0000688274388312898403333439571184972120546217860905506117147909"
+      ],
+      "serialization_area_error_bound_m2": "2.77930328574347716986111755451555138675643637897472567863681E-11",
+      "minimum_gram_area_m2": "0.000068827411038256982898572258507321666899107918526186821967534",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-r2-peak.obj",
+      "sha256": "d9300365d8999fc87c0ce28b7a1fb7241072c56fc1ea20dc76d2489907051881",
+      "minimum_serialized_area_m2": "0.000068827411038256982898572258507321666899107918526186821967534",
+      "triangle_zero_based": 1597,
+      "nodes_zero_based": [
+        799,
+        847,
+        846
+      ],
+      "positions_m": [
+        [
+          "-0.0704105058",
+          "-0.232154112",
+          "0.178338314"
+        ],
+        [
+          "-0.0729016665",
+          "-0.233817794",
+          "0.182133254"
+        ],
+        [
+          "-0.0801704581",
+          "-0.205363493",
+          "0.159142469"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.0000688273832452241254638005598961461217435940509618230322202771",
+        "0.0000688274388312898403333439571184972120546217860905506117147909"
+      ],
+      "serialization_area_error_bound_m2": "2.77930328574347716986111755451555138675643637897472567863681E-11",
+      "minimum_gram_area_m2": "0.000068827411038256982898572258507321666899107918526186821967534",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    },
+    {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96.obj",
+      "sha256": "cb2f12edf3f203540ceeb9117953b1c33a04b8c1a32127ac04bb75bc959a3290",
+      "minimum_serialized_area_m2": "0.000001005988216419",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.16887381",
+          "0.0714211695",
+          "-0.746"
+        ],
+        [
+          "1.20945743",
+          "0.0890219997",
+          "-0.746"
+        ],
+        [
+          "1.24557205",
+          "0.10463508",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "0.00000100534559064927706707449009197801383282517693984404119021535",
+        "0.00000100663084218872293292550990802198616717482306015595880978465"
+      ],
+      "serialization_area_error_bound_m2": "6.42625769722932925509908021986167174823060155958809784642696E-10",
+      "minimum_gram_area_m2": "0.00000100598821641900",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [],
+      "witness_robustly_fails_gate": false
+    }
+  ]
+}

@@ -1,0 +1,199 @@
+{
+  "actual_solver_exit": 1,
+  "solver_pid": 87136,
+  "regular_snapshot_count": 73,
+  "additional_snapshot_count": 3,
+  "immutable_input_sha256": {
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-0.obj": "21483357b0deb815b8cb071e40c171b46f05bd285425d0ed4661e2c0d68b3122",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-10.obj": "0666278b7495d431a709c88b4ef28799e5e2c721e8d105af1f20bc8ae4164a09",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-100.obj": "3cdc41409b9761856a664847bf2ca5ff246da1c8703b58ff6b898a801cf989c8",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-110.obj": "9dd5026215a776f7d8f23a75551fdb43ab82e0c3c133990b074bd02e4514fd55",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-120.obj": "7988f91bd13363094e909399c78268d9d094ccea6139b221e094cbd6b2e6b785",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-130.obj": "c71b9648aa10dbbb4234ad8187fdc6aac883769cba495e815fa2f9aa3e8aca3c",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-140.obj": "80b0f2fbd6bef95cd6bc4eef4a30e5f15254d021bd80d8c460495ebe1d50dfbf",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-150.obj": "f2ebc255db66437e89413141ee0f50e0919211f998fbbc91b9e35241fbb655d8",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-160.obj": "a09d446eda743a7591ca22a0d862dfa9013154c556f7aac18bf30c93dd9ccb49",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-170.obj": "6ff53309c67f1d9eecb7da64de1396ea1b07e442bd13d04ace007cac4d3041c4",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-180.obj": "60ca322e8a2f0743b1fc87b620ca6f3bc7e4303de8796de2acda2936800803be",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-190.obj": "a04f0f02d7cc849984c4c4cf3dd9857c907e0ecdf4129990e0b330c3795f9563",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-20.obj": "4ad232b73ed0c931c416333fb278dca6422533d1d0a88fa4459996450878ce34",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-200.obj": "964b80e4b872808f02e8bc7458c41cc49471acdb87f92b912a3142ac3a39a2af",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-210.obj": "cb602a6e77565719ef14792cf5bd2cce65a5fe32b93b18d157ae010fe2ff7c7d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-220.obj": "c21f6f946ff3aa10c4e1a80982706711c537c4468eb662b1820b539365de5444",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-230.obj": "30198aed09a61bba4196c3794f6a63197327e5bb058b68c57d5ad9b48e873ddb",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-240.obj": "7f540a649d98d0641560631f43c9bb8314383b06f2085ffb2a4a8a22273981c2",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-250.obj": "a333dc701dcbf42cec272c9ca9e3cd62ed3e3955af9e6ca4daa70626a2c30979",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-260.obj": "94da804f4018e266a96c3491858fa8effcfa03f5b1d8762618fbb4eb101217f4",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-270.obj": "ed4b931dc7104827e49387f1955c1b1006dc1b6828ec10bb9b3ae7228f03e81c",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-280.obj": "f4d43a44e46e7ae592916b48e047269e55001dfb6901fbadc57786faf2f2276a",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-290.obj": "ed7cad25b99bf492bd03d8c439e8d409795d7a2f0d62ed19759b11cacaa8ea8e",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-30.obj": "af16e1a3144186ebe0a9dfaf741a9750dd3a106917c7b5c5d627fbd40e5d64bc",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-300.obj": "679898b586e9f411c2e568a4407383573e9d1cc699a08ac0f7b292cfe3a88492",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-310.obj": "e7d7366c3ddfc4b40d9210fd706f28b869dd1f2a246807e647bcd9b7c697abcd",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-320.obj": "317326d735d84ed11326e9a941372d017fbed7547e39184160bda6cd7362e34a",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-330.obj": "77990088a7dfa1b2f7cf0f93bc1d3cf6652c1028442e53fe085c1a63be6eab8d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-340.obj": "39770aa25de99ca204548e4a1e2cc91e5f95ce0584a5e7c3233ed4b8479c7732",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-350.obj": "52e1a7370051612130d071af46c3e1ace720b6dd66bfcbaa11eae144bf65cc8e",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-360.obj": "cb55b6ce2f78cfdb4966855c3be706a3dff8aa92d2b6680ab63559904c591917",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-370.obj": "03c3c63c83737ad4d50af6eca35b4f6416ca0aaf90f92a74fcbc41c5e2a382ce",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-380.obj": "d1e25c372d897c8f03ab2368d8a5dae01abe2143edfe1d9d8437cfcea7f85f28",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-390.obj": "cc99b2af93aee5d20d77e9a06c885b1ea58faaad12919bd48f57071110672485",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-40.obj": "0cb63d409ee9d35207223336bddcd3b0788cb4617c3125b4744d3bf8b32b5a17",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-400.obj": "ea8fb712f2306c96f291e6383ee0f88329e0e6d72c8f9359afd515f371d1df3e",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-410.obj": "75c259b5e9b528a76f23b2a99528a43e7b5376cd191c7336f0030dba2eb96a5d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-420.obj": "0deec37e8266cc93b2358857e2fe3008275b58024faa5dfa6faca05811d50675",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-430.obj": "d51c68b31da0036889db7c84f7f2e4816c9f743c46ceeebf4bc68cece6477831",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-440.obj": "e7383c73cff290396eb48a7d6e46e6ebc8575cd45ea43f6abbdb42c0c6cb6221",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-450.obj": "95103ed11bc7dc5eedf61cf098d1b5e232039e627b82af60c1cedb9d6256e92a",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-460.obj": "55d59b72db9463c42063978adf5cd1ea2e790d8015c21a861804962651b26af7",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-470.obj": "72c7425cdc62451762cc10593b995d8738a56c94fde81dc735f4bcee54efd8a2",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-480.obj": "929c79d187aea89ef86d95ba13691dc09a93efa869d4d839e915aa5bb3be3c53",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-490.obj": "8df47fcae7183814deb9bc662b0f396bc05e2de8e7b0d90a4b3d8a764b7a6612",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-50.obj": "95dee6a1d5dc18710a64b616e51545135afa477a8f538b144166e8ffd8968a19",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-500.obj": "f6e160a73e65bea3213e544a2ceffb9a44687e8309b5a92c109cac9edf4d4fc7",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-510.obj": "1823190725bd20134513133da5ab0b583b04c6c38282175674de8d0ad7090137",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-520.obj": "8c2bf152f3fe1ebd889bc582b48789bd979d6c8d742bb4b2224565f78dd977d6",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-530.obj": "c6ca2a283fbb92bddfd2edb04096eabae3ca0600018240bce36977140e4e458d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-540.obj": "394afa1ba439e8aba7d5ad30c0b2f46867a0309195929ae799de054c491362a0",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-550.obj": "e4a622c181a3a50978d132ddc3a05467455fd7802cd0bc3d3da3d7c7d455fd3e",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-560.obj": "f737e2e4e44d3dc64943019b3988dc20315ac1af82ada3dbe66742afc5291295",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-570.obj": "f5f6e685bf04b7175bf2952c1cf1183168bb58e86f0962e47fc2d3f16263bed8",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-580.obj": "d5a3d1adcac99532b810fa0c937914f942cb479e00bccce250bf9c56bb9f6264",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-590.obj": "7597aeb1f9f5a18aaf500136aa2355b90306cbca94f2268203f5c55178ce836b",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-60.obj": "991df45573f510bb2394033f542068e426a8a9e0d52088b16f6ed810a6108d7d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-600.obj": "e520a7e7dad35550dd736825e76a2b3f6ca04a2f28090c3e84017015dec58aa1",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-610.obj": "743824773aaa4c130a0a47aa8d448a6b289cc787122f6f524c633c4de511f091",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-620.obj": "e52a1c9cc7d56d0661cc013e2eaf9345da55539de3537536dd98be86a4b71fa3",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-630.obj": "c8547060175dd3758b320745ccb19ff67549037f6bdf01cfb3cd0dc0a7bab82a",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-640.obj": "cad4b205fd3bfd534476d16cf05588d711f783c70dec0b0334e2edca474e2444",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-650.obj": "e4a9a91b58d22ce59a52ef0f71d1806e2da8e81e2da8d3e2104fb4aa0700567a",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-660.obj": "ccd68941b8b37ebbffdf4524d48acf364fbf85ddb8553f8be7eb73bfa6925002",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-670.obj": "c749a788b2707ad7a81bddf7d073c2630eb77c3655ff0da7fb99d586d5722875",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-680.obj": "f88f11b0ff9db37e105638ae375470502c64b6bfe2c25ba6c5dfb328446883e6",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-690.obj": "5824d379c32d2e27c3b358e780a07af36924a617c48ee8540f7c86cea7a5465a",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-70.obj": "eb9267fa3cf36742c3b451fd3aa3c95a6e41e852f39f0d9f216f596afdf82046",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-700.obj": "694514119b7ffadad14a6ccf0f0473edb7376102694de249e53fc2d768e2d1b5",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-710.obj": "f4b059ceb40da363f52782adf4b6536f1002f21d647765acbbb606a8dc5d3872",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-720.obj": "cb2f12edf3f203540ceeb9117953b1c33a04b8c1a32127ac04bb75bc959a3290",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-80.obj": "61706bc3e2798080c8aed6a5453c748ea343bec6108e1ebd8d5546ddb70353cd",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-90.obj": "3dbacbb46330bdb615ba355d7011c9c7d27e7cdb3cd6dd2daf013b410a89ebef",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-r1-peak.obj": "d9300365d8999fc87c0ce28b7a1fb7241072c56fc1ea20dc76d2489907051881",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-r2-peak.obj": "d9300365d8999fc87c0ce28b7a1fb7241072c56fc1ea20dc76d2489907051881",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96.obj": "cb2f12edf3f203540ceeb9117953b1c33a04b8c1a32127ac04bb75bc959a3290",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96.log": "a89932166ca71c119023cddfce3bf0df3ef8655aa3cf48df8f11300fd6025a08",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-fruits.csv": "9932961656e0abd3333e42324e94ef62c65858ba8db439070edbadde05ebe32f",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-peaks.csv": "b71873d7c44aa41c14a94cfddacd7ab4b1596f071555861a9f87304c44d6188d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96.exit": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+  },
+  "status": "TERMINAL_AUDITED",
+  "auditor_exit_codes": {
+    "full_drop": 1,
+    "additional_geometry": 0
+  },
+  "all_seven_frozen_physics_hashes_verified": true,
+  "immutable_inputs_verified_after_audits": true,
+  "finished_unix": 1790695635.388733,
+  "loaded_drop_audit": "/Users/home/numi-solver/build/loaded-drop-investigation-terminal-audit/96-loaded-drop-audit.json",
+  "all_saved_geometry_audit": "/Users/home/numi-solver/build/loaded-drop-investigation-terminal-audit/96-all-saved-geometry.json",
+  "all_complete_saved_geometry_pass": true,
+  "qualified_authored_cpu_drop": false,
+  "cloth_center_descent_m": 1.7538293139705317,
+  "first_saved_cloth_floor_contact_time_s": 4.416666666666667,
+  "final_floor_contact_node_count": 31,
+  "released_fruits": [
+    10
+  ],
+  "released_fruits_landed_on_floor": [
+    10
+  ],
+  "copied_complete_evidence_sha256": {
+    "docs/assets/loaded-drop-corrected-96-complete-audit.json": "68594a7b96962f77440cb667c92b5dfec6ac1e60a8d3d06f82559d388c5728e4",
+    "docs/assets/loaded-drop-corrected-96-complete-geometry.json": "ba99f0d0f67c4ffdf849373332918bec258d4310637350abdef684cc5c842848",
+    "docs/assets/loaded-drop-corrected-96-complete.log": "a89932166ca71c119023cddfce3bf0df3ef8655aa3cf48df8f11300fd6025a08",
+    "docs/assets/loaded-drop-corrected-complete-comparison.json": "f3e4c537b12792f651b17c7e8f9a48429c7793ba3d3d3b5cb201406f24fa3830",
+    "docs/assets/loaded-drop-corrected-complete-comparator.py": "8dfba0771167f5149953acb7493b229e443bbf6a6d3dd73102110fb2e8447bb3",
+    "docs/assets/loaded-drop-corrected-complete-comparison.exit": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    "docs/assets/loaded-drop-corrected-96-area-audit.json": "0f38d6b866e704aa02e06247be99721634cb62e0e45a2879ad6ac368297d89c0",
+    "docs/assets/loaded-drop-corrected-96-area-auditor.py": "fb7f8c0a8811f714243e1104817d38e7e3e81816779ffabbd034abc7a2c24837",
+    "docs/assets/loaded-drop-corrected-96-area-audit.log": "3d7d4012bf15b562d3b8aaf66d460bfa69fc63ca135142235a64b9b4f5c01b47",
+    "docs/assets/loaded-drop-corrected-96-area-states.csv": "d34ab53d589538d1b34b4328f1e5315242aa3383a0e7d93f2971efcbcbea12d8",
+    "docs/assets/loaded-drop-corrected-96-area-witness.obj": "e52a1c9cc7d56d0661cc013e2eaf9345da55539de3537536dd98be86a4b71fa3"
+  },
+  "compressed_full_fruit_replays": {
+    "48": {
+      "path": "docs/assets/loaded-drop-corrected-48-complete-fruits.csv.gz",
+      "sha256": "69869862266744a0a5557c5e66c24602dbbc95ba8e29a9b495d3dece49f9d13c",
+      "decompressed_original_sha256": "b8c66fbad328f17c1406abe238e8957ea82ce5d4cc3b32cd6254d378919e28a2",
+      "decompressed_bytes": 4352629,
+      "bytes": 1708403
+    },
+    "96": {
+      "path": "docs/assets/loaded-drop-corrected-96-complete-fruits.csv.gz",
+      "sha256": "0206dfe8fe37218d60f76a39528e3886a56b66e5630cc7e4bd2d8a03edac667c",
+      "decompressed_original_sha256": "9932961656e0abd3333e42324e94ef62c65858ba8db439070edbadde05ebe32f",
+      "decompressed_bytes": 4340581,
+      "bytes": 1697743
+    }
+  },
+  "observed_metrics": {
+    "maximum_frame_end_dynamic_speed_m_s": 27.111061838350643,
+    "maximum_speed_frame": 528,
+    "maximum_speed_node": 1456,
+    "reported_minimum_frame_end_render_triangle_area_m2": 6e-09,
+    "minimum_area_gate_m2": 1e-08,
+    "minimum_area_gate_pass": false,
+    "area_log_precision": "Rounded to nine decimal places; independent Decimal60 saved-state witness confirms failure including serialization uncertainty.",
+    "gate_boundary": "Retained triangle area failure is independently confirmed. This is the sole definite numeric failure visible in the rounded log, not proof every unexported runtime predicate passed. The exact all720-frame area minimum witness and all substep minima are not retained; no claim of absent transient failures, inversion, solver-operator attribution or physical energy closure. No simulation or GPU work.",
+    "independent_saved_area_witness": {
+      "path": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-620.obj",
+      "sha256": "e52a1c9cc7d56d0661cc013e2eaf9345da55539de3537536dd98be86a4b71fa3",
+      "minimum_serialized_area_m2": "5.828993541E-9",
+      "triangle_zero_based": 2813,
+      "nodes_zero_based": [
+        1433,
+        1444,
+        1445
+      ],
+      "positions_m": [
+        [
+          "1.16101556",
+          "0.0760072691",
+          "-0.746"
+        ],
+        [
+          "1.20152346",
+          "0.0937930199",
+          "-0.746"
+        ],
+        [
+          "1.23756547",
+          "0.109618226",
+          "-0.746"
+        ]
+      ],
+      "possible_unserialized_witness_area_m2": [
+        "5.18623056543134225928917461458630990826211929121728487255006E-9",
+        "6.47175651656865774071082538541369009173788070878271512744994E-9"
+      ],
+      "serialization_area_error_bound_m2": "6.42762975568657740710825385413690091737880708782715127449931E-10",
+      "minimum_gram_area_m2": "5.82899354100E-9",
+      "triangle_count": 2880,
+      "serialized_faces_at_or_below_gate": [
+        2813
+      ],
+      "witness_robustly_fails_gate": true
+    },
+    "area_metric_semantics": {
+      "source_area_update_lines": [
+        4954,
+        4961
+      ],
+      "source_frame_end_call_line": 6024,
+      "substep_loop_ends_line": 5992,
+      "updated_at": "each of720 frame ends, after all96 substeps; not each substep",
+      "minimum_witness_instrumented": false,
+      "saved_regular_cadence_frames": 10
+    }
+  },
+  "boundary": "Actual exit1 retained failure. Exact complete fruit replays and76saved-state contact audits do not qualify the whole case, continuous substep contact, calibrated material, energy/work closure or timestep agreement."
+}

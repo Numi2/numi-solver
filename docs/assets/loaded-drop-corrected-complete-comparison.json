@@ -1,0 +1,834 @@
+{
+  "schema": "numi.loaded-drop.matched-complete-CPU-timestep-sensitivity.v1",
+  "actual_terminal_cases": {
+    "48": {
+      "actual_solver_exit": 0,
+      "actual_solver_result": "PASS",
+      "qualified_authored_cpu_drop": true,
+      "solver_reports_both_ordered_721_frame_replays_match": true,
+      "serialized_fruit_replay_exact": true,
+      "complete_saved_snapshot_count": 76,
+      "all_saved_geometry_pass": true,
+      "cloth_center_descent_m": 1.7041330098058936,
+      "first_saved_cloth_floor_contact_time_s": 4.416666666666667,
+      "final_floor_contact_node_count": 33,
+      "released_fruits": [],
+      "released_fruits_landed_on_floor": []
+    },
+    "96": {
+      "actual_solver_exit": 1,
+      "actual_solver_result": "FAIL",
+      "qualified_authored_cpu_drop": false,
+      "solver_reports_both_ordered_721_frame_replays_match": true,
+      "serialized_fruit_replay_exact": true,
+      "complete_saved_snapshot_count": 76,
+      "all_saved_geometry_pass": true,
+      "cloth_center_descent_m": 1.7538293139705317,
+      "first_saved_cloth_floor_contact_time_s": 4.416666666666667,
+      "final_floor_contact_node_count": 31,
+      "released_fruits": [
+        10
+      ],
+      "released_fruits_landed_on_floor": [
+        10
+      ]
+    }
+  },
+  "all_seven_frozen_physics_hashes_verified": true,
+  "normalized_launch_commands_match": true,
+  "only_command_differences": "Substeps48/96 and four unique output paths.",
+  "frames_per_fruit_replay": 721,
+  "saved_cloth_comparison_frames": 73,
+  "duration_s": 6,
+  "first_release_bit_difference_frame": 537,
+  "maximum_corresponding_fruit_position_difference": {
+    "metres": 1.6745322724121194,
+    "frame": 720,
+    "fruit": 10
+  },
+  "maximum_corresponding_fruit_velocity_difference": {
+    "metres_per_second": 6.4174482005386295,
+    "frame": 526,
+    "fruit": 10
+  },
+  "maximum_corresponding_saved_cloth_position_difference": {
+    "metres": 0.3158953967726199,
+    "frame": 660,
+    "node": 1018
+  },
+  "maximum_mass_weighted_saved_cloth_rms_difference": {
+    "metres": 0.21584313014584922,
+    "frame": 660
+  },
+  "maximum_saved_cloth_mass_center_difference": {
+    "metres": 0.17557093963536566,
+    "frame": 720
+  },
+  "per_saved_frame_cloth_comparison": [
+    {
+      "frame": 0,
+      "time_s": 0.0,
+      "maximum_corresponding_cloth_position_difference_m": 0.0,
+      "cloth_node": 0,
+      "mass_weighted_rms_position_difference_m": 0.0,
+      "cloth_mass_center_difference_m": 0.0
+    },
+    {
+      "frame": 10,
+      "time_s": 0.08333333333333333,
+      "maximum_corresponding_cloth_position_difference_m": 0.019010379192530572,
+      "cloth_node": 34,
+      "mass_weighted_rms_position_difference_m": 0.006358433982082726,
+      "cloth_mass_center_difference_m": 0.0035609353178057144
+    },
+    {
+      "frame": 20,
+      "time_s": 0.16666666666666666,
+      "maximum_corresponding_cloth_position_difference_m": 0.03236630393513419,
+      "cloth_node": 54,
+      "mass_weighted_rms_position_difference_m": 0.012092185140720607,
+      "cloth_mass_center_difference_m": 0.005085638638264148
+    },
+    {
+      "frame": 30,
+      "time_s": 0.25,
+      "maximum_corresponding_cloth_position_difference_m": 0.0611631453613957,
+      "cloth_node": 524,
+      "mass_weighted_rms_position_difference_m": 0.01967472288264672,
+      "cloth_mass_center_difference_m": 0.011262986319242994
+    },
+    {
+      "frame": 40,
+      "time_s": 0.3333333333333333,
+      "maximum_corresponding_cloth_position_difference_m": 0.06894900813874663,
+      "cloth_node": 995,
+      "mass_weighted_rms_position_difference_m": 0.025338583585823384,
+      "cloth_mass_center_difference_m": 0.014014967228481348
+    },
+    {
+      "frame": 50,
+      "time_s": 0.4166666666666667,
+      "maximum_corresponding_cloth_position_difference_m": 0.11214152714138563,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.033644748210041264,
+      "cloth_mass_center_difference_m": 0.01739265639169483
+    },
+    {
+      "frame": 60,
+      "time_s": 0.5,
+      "maximum_corresponding_cloth_position_difference_m": 0.13964770092530324,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.04287691043868119,
+      "cloth_mass_center_difference_m": 0.02761463187463776
+    },
+    {
+      "frame": 70,
+      "time_s": 0.5833333333333334,
+      "maximum_corresponding_cloth_position_difference_m": 0.1428181012713773,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.04735939619030641,
+      "cloth_mass_center_difference_m": 0.03170144459164453
+    },
+    {
+      "frame": 80,
+      "time_s": 0.6666666666666666,
+      "maximum_corresponding_cloth_position_difference_m": 0.14121531509054516,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.04288526185210567,
+      "cloth_mass_center_difference_m": 0.026909995286249565
+    },
+    {
+      "frame": 90,
+      "time_s": 0.75,
+      "maximum_corresponding_cloth_position_difference_m": 0.14558798131359124,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.043105103904120305,
+      "cloth_mass_center_difference_m": 0.026519586047551117
+    },
+    {
+      "frame": 100,
+      "time_s": 0.8333333333333334,
+      "maximum_corresponding_cloth_position_difference_m": 0.1503676352409347,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.0457513142677859,
+      "cloth_mass_center_difference_m": 0.028188555140014736
+    },
+    {
+      "frame": 110,
+      "time_s": 0.9166666666666666,
+      "maximum_corresponding_cloth_position_difference_m": 0.14260773882154476,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.04371261267038538,
+      "cloth_mass_center_difference_m": 0.02611769692905277
+    },
+    {
+      "frame": 120,
+      "time_s": 1.0,
+      "maximum_corresponding_cloth_position_difference_m": 0.13668868479356086,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.045620489385092694,
+      "cloth_mass_center_difference_m": 0.027956851826609706
+    },
+    {
+      "frame": 130,
+      "time_s": 1.0833333333333333,
+      "maximum_corresponding_cloth_position_difference_m": 0.13302198984198563,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.05244115290409683,
+      "cloth_mass_center_difference_m": 0.03511878052115488
+    },
+    {
+      "frame": 140,
+      "time_s": 1.1666666666666667,
+      "maximum_corresponding_cloth_position_difference_m": 0.13276995731104727,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.060989942615825216,
+      "cloth_mass_center_difference_m": 0.043527149262267445
+    },
+    {
+      "frame": 150,
+      "time_s": 1.25,
+      "maximum_corresponding_cloth_position_difference_m": 0.13131678242698114,
+      "cloth_node": 466,
+      "mass_weighted_rms_position_difference_m": 0.06870099176994357,
+      "cloth_mass_center_difference_m": 0.05138594369892758
+    },
+    {
+      "frame": 160,
+      "time_s": 1.3333333333333333,
+      "maximum_corresponding_cloth_position_difference_m": 0.1301299408768663,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.06863815663889335,
+      "cloth_mass_center_difference_m": 0.05165953025145356
+    },
+    {
+      "frame": 170,
+      "time_s": 1.4166666666666667,
+      "maximum_corresponding_cloth_position_difference_m": 0.13463133533160823,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.06131255227676789,
+      "cloth_mass_center_difference_m": 0.04406111831675774
+    },
+    {
+      "frame": 180,
+      "time_s": 1.5,
+      "maximum_corresponding_cloth_position_difference_m": 0.14321360184908546,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.053442167282299016,
+      "cloth_mass_center_difference_m": 0.035371201777500715
+    },
+    {
+      "frame": 190,
+      "time_s": 1.5833333333333333,
+      "maximum_corresponding_cloth_position_difference_m": 0.13274852204416254,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.040414064831316765,
+      "cloth_mass_center_difference_m": 0.021197756384132113
+    },
+    {
+      "frame": 200,
+      "time_s": 1.6666666666666667,
+      "maximum_corresponding_cloth_position_difference_m": 0.13624380517984175,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.04615146936667253,
+      "cloth_mass_center_difference_m": 0.02812656825972953
+    },
+    {
+      "frame": 210,
+      "time_s": 1.75,
+      "maximum_corresponding_cloth_position_difference_m": 0.13369030451672576,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.05843722341433424,
+      "cloth_mass_center_difference_m": 0.039998680975027526
+    },
+    {
+      "frame": 220,
+      "time_s": 1.8333333333333333,
+      "maximum_corresponding_cloth_position_difference_m": 0.1358576206881011,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.07045109379675475,
+      "cloth_mass_center_difference_m": 0.05146941639893291
+    },
+    {
+      "frame": 230,
+      "time_s": 1.9166666666666667,
+      "maximum_corresponding_cloth_position_difference_m": 0.142916923359397,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.07693604670890328,
+      "cloth_mass_center_difference_m": 0.0576885532152281
+    },
+    {
+      "frame": 240,
+      "time_s": 2.0,
+      "maximum_corresponding_cloth_position_difference_m": 0.14557047168170198,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.07138299166835908,
+      "cloth_mass_center_difference_m": 0.05242751446636114
+    },
+    {
+      "frame": 250,
+      "time_s": 2.0833333333333335,
+      "maximum_corresponding_cloth_position_difference_m": 0.14657472378651076,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.061206118015172284,
+      "cloth_mass_center_difference_m": 0.04315329637036032
+    },
+    {
+      "frame": 260,
+      "time_s": 2.1666666666666665,
+      "maximum_corresponding_cloth_position_difference_m": 0.1415301964526465,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.04751825103135129,
+      "cloth_mass_center_difference_m": 0.029731537919862
+    },
+    {
+      "frame": 270,
+      "time_s": 2.25,
+      "maximum_corresponding_cloth_position_difference_m": 0.1318148619240331,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.04279256018403832,
+      "cloth_mass_center_difference_m": 0.025256630591783936
+    },
+    {
+      "frame": 280,
+      "time_s": 2.3333333333333335,
+      "maximum_corresponding_cloth_position_difference_m": 0.12964065922494478,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.05490147391232757,
+      "cloth_mass_center_difference_m": 0.03643197292488698
+    },
+    {
+      "frame": 290,
+      "time_s": 2.4166666666666665,
+      "maximum_corresponding_cloth_position_difference_m": 0.14862360734096022,
+      "cloth_node": 418,
+      "mass_weighted_rms_position_difference_m": 0.06994427241035692,
+      "cloth_mass_center_difference_m": 0.04995154765211746
+    },
+    {
+      "frame": 300,
+      "time_s": 2.5,
+      "maximum_corresponding_cloth_position_difference_m": 0.16139783976374772,
+      "cloth_node": 418,
+      "mass_weighted_rms_position_difference_m": 0.08109216110024214,
+      "cloth_mass_center_difference_m": 0.05921254490466811
+    },
+    {
+      "frame": 310,
+      "time_s": 2.5833333333333335,
+      "maximum_corresponding_cloth_position_difference_m": 0.16269158021769065,
+      "cloth_node": 418,
+      "mass_weighted_rms_position_difference_m": 0.08315755863299014,
+      "cloth_mass_center_difference_m": 0.06177932202643113
+    },
+    {
+      "frame": 320,
+      "time_s": 2.6666666666666665,
+      "maximum_corresponding_cloth_position_difference_m": 0.14614108818906807,
+      "cloth_node": 418,
+      "mass_weighted_rms_position_difference_m": 0.07794087621516455,
+      "cloth_mass_center_difference_m": 0.05703118868051231
+    },
+    {
+      "frame": 330,
+      "time_s": 2.75,
+      "maximum_corresponding_cloth_position_difference_m": 0.1408108879249391,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.06745706324398885,
+      "cloth_mass_center_difference_m": 0.04495363980849022
+    },
+    {
+      "frame": 340,
+      "time_s": 2.8333333333333335,
+      "maximum_corresponding_cloth_position_difference_m": 0.14138130000184648,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.05259181229548614,
+      "cloth_mass_center_difference_m": 0.024281385619952554
+    },
+    {
+      "frame": 350,
+      "time_s": 2.9166666666666665,
+      "maximum_corresponding_cloth_position_difference_m": 0.14186281565182307,
+      "cloth_node": 775,
+      "mass_weighted_rms_position_difference_m": 0.04789699994458905,
+      "cloth_mass_center_difference_m": 0.022345828006072932
+    },
+    {
+      "frame": 360,
+      "time_s": 3.0,
+      "maximum_corresponding_cloth_position_difference_m": 0.15094734681202923,
+      "cloth_node": 823,
+      "mass_weighted_rms_position_difference_m": 0.060607485497699135,
+      "cloth_mass_center_difference_m": 0.03916693127793463
+    },
+    {
+      "frame": 370,
+      "time_s": 3.0833333333333335,
+      "maximum_corresponding_cloth_position_difference_m": 0.1441578966614121,
+      "cloth_node": 823,
+      "mass_weighted_rms_position_difference_m": 0.06936871677458202,
+      "cloth_mass_center_difference_m": 0.04841586218638689
+    },
+    {
+      "frame": 380,
+      "time_s": 3.1666666666666665,
+      "maximum_corresponding_cloth_position_difference_m": 0.14289028155730513,
+      "cloth_node": 871,
+      "mass_weighted_rms_position_difference_m": 0.0731838455609649,
+      "cloth_mass_center_difference_m": 0.04875740235445545
+    },
+    {
+      "frame": 390,
+      "time_s": 3.25,
+      "maximum_corresponding_cloth_position_difference_m": 0.13185680080252268,
+      "cloth_node": 871,
+      "mass_weighted_rms_position_difference_m": 0.060960620248623885,
+      "cloth_mass_center_difference_m": 0.036983484743498704
+    },
+    {
+      "frame": 400,
+      "time_s": 3.3333333333333335,
+      "maximum_corresponding_cloth_position_difference_m": 0.12301868548673796,
+      "cloth_node": 871,
+      "mass_weighted_rms_position_difference_m": 0.05448119244897644,
+      "cloth_mass_center_difference_m": 0.03270649543638515
+    },
+    {
+      "frame": 410,
+      "time_s": 3.4166666666666665,
+      "maximum_corresponding_cloth_position_difference_m": 0.11998612699308098,
+      "cloth_node": 659,
+      "mass_weighted_rms_position_difference_m": 0.05669008761826274,
+      "cloth_mass_center_difference_m": 0.04029978966189321
+    },
+    {
+      "frame": 420,
+      "time_s": 3.5,
+      "maximum_corresponding_cloth_position_difference_m": 0.13812618341609673,
+      "cloth_node": 466,
+      "mass_weighted_rms_position_difference_m": 0.0708977373168763,
+      "cloth_mass_center_difference_m": 0.05642270024521358
+    },
+    {
+      "frame": 430,
+      "time_s": 3.5833333333333335,
+      "maximum_corresponding_cloth_position_difference_m": 0.164878979010407,
+      "cloth_node": 22,
+      "mass_weighted_rms_position_difference_m": 0.08932459807740045,
+      "cloth_mass_center_difference_m": 0.07285430927394922
+    },
+    {
+      "frame": 440,
+      "time_s": 3.6666666666666665,
+      "maximum_corresponding_cloth_position_difference_m": 0.18287765777877604,
+      "cloth_node": 22,
+      "mass_weighted_rms_position_difference_m": 0.0987828661657969,
+      "cloth_mass_center_difference_m": 0.08085717052105777
+    },
+    {
+      "frame": 450,
+      "time_s": 3.75,
+      "maximum_corresponding_cloth_position_difference_m": 0.17284112944583152,
+      "cloth_node": 466,
+      "mass_weighted_rms_position_difference_m": 0.09694679254477384,
+      "cloth_mass_center_difference_m": 0.07950960581330417
+    },
+    {
+      "frame": 460,
+      "time_s": 3.8333333333333335,
+      "maximum_corresponding_cloth_position_difference_m": 0.18644103928453865,
+      "cloth_node": 418,
+      "mass_weighted_rms_position_difference_m": 0.0956437625533074,
+      "cloth_mass_center_difference_m": 0.07811733105420712
+    },
+    {
+      "frame": 470,
+      "time_s": 3.9166666666666665,
+      "maximum_corresponding_cloth_position_difference_m": 0.18937583771862412,
+      "cloth_node": 418,
+      "mass_weighted_rms_position_difference_m": 0.09179463351440384,
+      "cloth_mass_center_difference_m": 0.071370464452033
+    },
+    {
+      "frame": 480,
+      "time_s": 4.0,
+      "maximum_corresponding_cloth_position_difference_m": 0.19157066612981946,
+      "cloth_node": 418,
+      "mass_weighted_rms_position_difference_m": 0.09663695370060231,
+      "cloth_mass_center_difference_m": 0.06880282362816265
+    },
+    {
+      "frame": 490,
+      "time_s": 4.083333333333333,
+      "maximum_corresponding_cloth_position_difference_m": 0.18548628319106575,
+      "cloth_node": 946,
+      "mass_weighted_rms_position_difference_m": 0.09716690267264819,
+      "cloth_mass_center_difference_m": 0.06066815741617666
+    },
+    {
+      "frame": 500,
+      "time_s": 4.166666666666667,
+      "maximum_corresponding_cloth_position_difference_m": 0.17023361316760835,
+      "cloth_node": 946,
+      "mass_weighted_rms_position_difference_m": 0.0989760504072786,
+      "cloth_mass_center_difference_m": 0.061279607081794404
+    },
+    {
+      "frame": 510,
+      "time_s": 4.25,
+      "maximum_corresponding_cloth_position_difference_m": 0.15858737661076255,
+      "cloth_node": 946,
+      "mass_weighted_rms_position_difference_m": 0.0953638859396087,
+      "cloth_mass_center_difference_m": 0.051787308131892265
+    },
+    {
+      "frame": 520,
+      "time_s": 4.333333333333333,
+      "maximum_corresponding_cloth_position_difference_m": 0.1510044475968926,
+      "cloth_node": 871,
+      "mass_weighted_rms_position_difference_m": 0.09746312522954503,
+      "cloth_mass_center_difference_m": 0.04860831074385158
+    },
+    {
+      "frame": 530,
+      "time_s": 4.416666666666667,
+      "maximum_corresponding_cloth_position_difference_m": 0.21947520196685735,
+      "cloth_node": 1065,
+      "mass_weighted_rms_position_difference_m": 0.11310207559019858,
+      "cloth_mass_center_difference_m": 0.04646824497815648
+    },
+    {
+      "frame": 540,
+      "time_s": 4.5,
+      "maximum_corresponding_cloth_position_difference_m": 0.18554566600870717,
+      "cloth_node": 1071,
+      "mass_weighted_rms_position_difference_m": 0.11591264718312475,
+      "cloth_mass_center_difference_m": 0.04179636618167956
+    },
+    {
+      "frame": 550,
+      "time_s": 4.583333333333333,
+      "maximum_corresponding_cloth_position_difference_m": 0.20761645081626284,
+      "cloth_node": 57,
+      "mass_weighted_rms_position_difference_m": 0.1350866260323172,
+      "cloth_mass_center_difference_m": 0.06402579768818237
+    },
+    {
+      "frame": 560,
+      "time_s": 4.666666666666667,
+      "maximum_corresponding_cloth_position_difference_m": 0.23752812015461644,
+      "cloth_node": 57,
+      "mass_weighted_rms_position_difference_m": 0.14989319394913783,
+      "cloth_mass_center_difference_m": 0.08432693722741753
+    },
+    {
+      "frame": 570,
+      "time_s": 4.75,
+      "maximum_corresponding_cloth_position_difference_m": 0.25580391715729905,
+      "cloth_node": 57,
+      "mass_weighted_rms_position_difference_m": 0.16084181492406507,
+      "cloth_mass_center_difference_m": 0.1105910426562215
+    },
+    {
+      "frame": 580,
+      "time_s": 4.833333333333333,
+      "maximum_corresponding_cloth_position_difference_m": 0.27336801275341344,
+      "cloth_node": 57,
+      "mass_weighted_rms_position_difference_m": 0.1754371636279114,
+      "cloth_mass_center_difference_m": 0.1241495246565386
+    },
+    {
+      "frame": 590,
+      "time_s": 4.916666666666667,
+      "maximum_corresponding_cloth_position_difference_m": 0.27969796533913455,
+      "cloth_node": 57,
+      "mass_weighted_rms_position_difference_m": 0.18437883822154708,
+      "cloth_mass_center_difference_m": 0.1362974631229454
+    },
+    {
+      "frame": 600,
+      "time_s": 5.0,
+      "maximum_corresponding_cloth_position_difference_m": 0.2852843879785942,
+      "cloth_node": 1018,
+      "mass_weighted_rms_position_difference_m": 0.19192318795074706,
+      "cloth_mass_center_difference_m": 0.1475647794703492
+    },
+    {
+      "frame": 610,
+      "time_s": 5.083333333333333,
+      "maximum_corresponding_cloth_position_difference_m": 0.30097234464936606,
+      "cloth_node": 1018,
+      "mass_weighted_rms_position_difference_m": 0.20306736090644287,
+      "cloth_mass_center_difference_m": 0.15938120713311438
+    },
+    {
+      "frame": 620,
+      "time_s": 5.166666666666667,
+      "maximum_corresponding_cloth_position_difference_m": 0.3095187735778393,
+      "cloth_node": 1018,
+      "mass_weighted_rms_position_difference_m": 0.20990633531575698,
+      "cloth_mass_center_difference_m": 0.16612744401175963
+    },
+    {
+      "frame": 630,
+      "time_s": 5.25,
+      "maximum_corresponding_cloth_position_difference_m": 0.31172562192183706,
+      "cloth_node": 1018,
+      "mass_weighted_rms_position_difference_m": 0.21239574241893056,
+      "cloth_mass_center_difference_m": 0.169286496017127
+    },
+    {
+      "frame": 640,
+      "time_s": 5.333333333333333,
+      "maximum_corresponding_cloth_position_difference_m": 0.3144197897363847,
+      "cloth_node": 1018,
+      "mass_weighted_rms_position_difference_m": 0.21398464157556668,
+      "cloth_mass_center_difference_m": 0.1717104175926993
+    },
+    {
+      "frame": 650,
+      "time_s": 5.416666666666667,
+      "maximum_corresponding_cloth_position_difference_m": 0.315192283359181,
+      "cloth_node": 1018,
+      "mass_weighted_rms_position_difference_m": 0.21530456801524492,
+      "cloth_mass_center_difference_m": 0.17323950729094814
+    },
+    {
+      "frame": 660,
+      "time_s": 5.5,
+      "maximum_corresponding_cloth_position_difference_m": 0.3158953967726199,
+      "cloth_node": 1018,
+      "mass_weighted_rms_position_difference_m": 0.21584313014584922,
+      "cloth_mass_center_difference_m": 0.1744609500316982
+    },
+    {
+      "frame": 670,
+      "time_s": 5.583333333333333,
+      "maximum_corresponding_cloth_position_difference_m": 0.31449831599302086,
+      "cloth_node": 1018,
+      "mass_weighted_rms_position_difference_m": 0.21492808713144837,
+      "cloth_mass_center_difference_m": 0.17439544637788065
+    },
+    {
+      "frame": 680,
+      "time_s": 5.666666666666667,
+      "maximum_corresponding_cloth_position_difference_m": 0.31335492738208565,
+      "cloth_node": 1018,
+      "mass_weighted_rms_position_difference_m": 0.21432893979450424,
+      "cloth_mass_center_difference_m": 0.17422412908721066
+    },
+    {
+      "frame": 690,
+      "time_s": 5.75,
+      "maximum_corresponding_cloth_position_difference_m": 0.31415803287821337,
+      "cloth_node": 1018,
+      "mass_weighted_rms_position_difference_m": 0.21464190674509412,
+      "cloth_mass_center_difference_m": 0.17444446478897443
+    },
+    {
+      "frame": 700,
+      "time_s": 5.833333333333333,
+      "maximum_corresponding_cloth_position_difference_m": 0.31551560711154225,
+      "cloth_node": 1018,
+      "mass_weighted_rms_position_difference_m": 0.21537488079620687,
+      "cloth_mass_center_difference_m": 0.17506097322136294
+    },
+    {
+      "frame": 710,
+      "time_s": 5.916666666666667,
+      "maximum_corresponding_cloth_position_difference_m": 0.3155034690804677,
+      "cloth_node": 1018,
+      "mass_weighted_rms_position_difference_m": 0.2154787920435333,
+      "cloth_mass_center_difference_m": 0.17536745170357113
+    },
+    {
+      "frame": 720,
+      "time_s": 6.0,
+      "maximum_corresponding_cloth_position_difference_m": 0.3153899893144081,
+      "cloth_node": 1018,
+      "mass_weighted_rms_position_difference_m": 0.2153603197945543,
+      "cloth_mass_center_difference_m": 0.17557093963536566
+    }
+  ],
+  "release_outcome_timestep_convergence": "FAIL; complete released sets differ.",
+  "both_authored_cases_qualified": false,
+  "source_and_terminal_inputs_sha256": {
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-launch/manifest.json": "2bf2787ce59663de0d03178545d3c09a48f33cd2842efa5d06bcfb46ac8c0710",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-launch/include/numi/cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-launch/include/numi/grip_trajectory.h": "a9d6aaaee91c5665bcdd8e760633db20459080f07511e5ba978b8cf1b0b7eeb4",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-launch/include/numi/finite_bench_geometry.h": "033ba7670f87a4769942df0ae0aab8f89d264ab03477d69392991a84307e4ade",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-launch/cloth_bag.cpp": "d575b0154af35b2a110b21fc091c9913955b0ee62637ef67ba3c09cb0b623f9b",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-launch/numi-solver-cloth-bag": "1c6d90eb01d8ad49394c426433b2b19e7ade2dc5395fc4ab675336cdd3c19458",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-launch/finite-bench-loaded-drop.csv": "1313ab661da38fe49c764209391e489050aef5e35399230561d3be7a8c62afd1",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-launch/working-source.patch": "c193bc6c3da348cf59124a8bdfca590c8072d925ca4b9f0b705579f2eeaf4968",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-terminal-audit/status.json": "0e7eb57fcd0cbf3c32def44d6397015c7cd0a1045734abb8e9b06eb5f0b10264",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-0.obj": "21483357b0deb815b8cb071e40c171b46f05bd285425d0ed4661e2c0d68b3122",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-10.obj": "a9bb2c7734ec883a9400d4b4065717f2e41d49af939130720532285883759efb",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-100.obj": "13e6ee89d623fe8eff6edb7ebd85f5a71edb289a0dc67dc7b8c97ee11b8ab158",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-110.obj": "6315f9439260937d9eaeb67b2ebb3a8e8c560d82cc8bfec11933173199b73d0f",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-120.obj": "3c88d66088e96683d2fc50d00f09cbe053638ba6a6bfb2097725d176e81960d9",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-130.obj": "7f9d37c1bf9b392909987e893e01af92115a0a1955ca0a537147195e469ac153",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-140.obj": "26e2d39501c8deb2267726cb5d0a2ec004dcce0391f57279381a9dd973bc0a1d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-150.obj": "f007fa2f3b2088966d89e84570dfac5bc8864fe1f033cd973f5ab853676aaf30",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-160.obj": "2ca3a1bcf5ea2fe40f157bdae6b5fc615583c610e9a909c74ccd1848405a3e2c",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-170.obj": "4cd6f47b59aaaba5e3c6d03689f42997ec3a5af57b102ac18f0daba400978e75",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-180.obj": "00fdc39c90ea78537ade73189ed998dd02680914764f311723b582e61a14c93e",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-190.obj": "eefbb96603ba8b7b6220c8d30940d6512cad6564abdb8c27892cc204909e9d10",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-20.obj": "4869cb975a98f6fb1c1d61d36d37e7f2d7c9bb60a321ccf2fbcf024eca93cf6c",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-200.obj": "db6fa6e705ddf825156c9f0ef7b21a89c23fc0dedef08e216fbcb4ed97265806",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-210.obj": "3a4474d5b8b40a6dc03eec75086a66c4d72e8adeb5ab05e8072aee3c89cb42dc",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-220.obj": "c24371bc246b4c35c939b6fbb87e7f2681e4185fddf48a97546ba16fd0303471",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-230.obj": "aa2f1b2690539d8490b06a87ac40ced345bcdc88ba8bc0259191496ab4b01534",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-240.obj": "5c00184038585540de3b25b558379e6fffd31e7d8f83b5d1ef151d1c10f9a267",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-250.obj": "477086709c5012c5fe5c2b194ca2b7abebd45a800473129b7751ac69ec1f0a03",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-260.obj": "43eb2ef3e89171a0a17632bc413672a2de490782b47e163eaa2a3be2c0107f01",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-270.obj": "0737ee27f1060dcd28ca42e34167b841728784a87ec4aa6a531e409ba0344afd",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-280.obj": "392f2924263a7cf48f42ec3ab22d20fed1caa63f5c984ffd3aecef159576a2f0",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-290.obj": "a345ada08cf93a9ce84597464d5c80444d5dc98531787bc82a496ae5e6e5552a",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-30.obj": "5a5617e3e03d39b96580d32a2b00008da52d4872a54344fa485c5e8213554aae",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-300.obj": "195cebe29932895c2aca7c6b4067abcf4f803b3e0dfffe0a088bffae6e43f066",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-310.obj": "142f885add1677fb1b0243a170aa245905f2761d177196f7115e8c8063691991",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-320.obj": "be0e14643571428ed87471b5e23d28bf49ad259cb5772ecbc333a471f5aa4f8e",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-330.obj": "adca697f41a35ddd798d62aa63c433e6143b00e84b090378bee5ffd2ce9a9339",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-340.obj": "6e329d4a5f50f61693d3d13c4387ffb7e1ad9a670856ff6b3f8e696d8cca76b6",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-350.obj": "b05aa81836579617897a625deaffdbd6510bdb8e04d8941863257d67a681d5d1",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-360.obj": "df117882b9bffec9bf4a29f6eb09f6ca00705a539faacfd408110e3fdb4cd8cf",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-370.obj": "6dd3d923b5d91dc2b08e6bfe8e1de8ae40d3f2a6642ff84ccbffb964bfdad442",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-380.obj": "b001e9274e0097a3f86c1525411287196ee30e585de71ef0beada525fa467b71",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-390.obj": "e60d95530b107eb52432a8f3758afee5cd1416fff58f92708bcc93a3c3b937d1",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-40.obj": "46e50a6ab2d25437575d197672ef5b1d77df6a5fb7dce2f99c5e92e3e7a3aed3",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-400.obj": "e8f162c77eae8af8755a75f31f191f47ffea37a26f8b73d29657f784f4421963",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-410.obj": "d604d8bb766e788bc88f734c0a3a01ec274aa9acb6c591323535569316038a30",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-420.obj": "085eaa0cd073fa69591b77753ffe8694b695bf7f40741625522f2702352976f6",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-430.obj": "5a8ffaa5e6954c9438a3dbdfbdf2e2a60c95db3d96e42e77ad4449e639df92d4",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-440.obj": "fb5cb8521e990a38b18d8a9bdf9c25bf8ea84be7db8c27fd02b28f6fbf6241f5",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-450.obj": "e4104baefc6f9cec4b6d3a861c47fb07a9ee0f74748468f3a346f13d669f92a9",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-460.obj": "363de8ceb52311ef3963afd7431e0ff8f751cd4778e07d9f85d3a2322d4ef5a5",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-470.obj": "60818585b163109be920a387387829a8c5c230428829df350b710114b9fa2d1d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-480.obj": "734e02030116dca266df4922621e60e5e4184ed0c00d6006a241bd9f2934fd3b",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-490.obj": "5bd486da579628abcc38e3745d1245b4f1c873ef9a8fc735e09c2b62962bb24d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-50.obj": "a0ad24428961b380f96a1a19b5f23f259ea56a497d978904cd4d6da178a68f5d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-500.obj": "eba2aa48448f021927d81da8e06dbe52927a77732b4a8cc3d774150012962b5e",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-510.obj": "ce03000a3c30d4f32e0defba86404886c61399c8f17591a8e8906fe84bd3b5d1",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-520.obj": "fd00bc2d1cacf5fcda5f1da79ce80778d71d2cc90937d9662fac1abf32b84b49",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-530.obj": "17cfbc5536764dbf40d40b538d4e525e0c02a364172ddfc13c75a5910b1becf6",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-540.obj": "81d26d3195e3582cde8248df7ad577344c80ecc64d906680c340b47f836b347b",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-550.obj": "4f4caf28bffad38f0bdf06ecf11a5892e8fe5941ffc794297bc7d4e89434f85d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-560.obj": "38f7392040187df8a910e59e40516264d78e34374afed533e7898abe235beea5",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-570.obj": "792b79213179ac90044c4b82e3c92722b2a0e9eb95021443b2025d89e6cc18e2",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-580.obj": "1302353462b2e18764086dbd5eef082a7d3676c8538f19f4e9b1e2c4e136d911",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-590.obj": "bf56eb8950ede3281a7dfc98b9a76efb35f349573b805f7638f15f3a256a1b50",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-60.obj": "8b6fb6495b2b42f3d7551f10e8b94431e8cfa055cba4f8754ebc494487a0b4da",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-600.obj": "0f37a3f5dd4fca1734f086d496ec5edad2659fe3e9801d1d2db54a5e67718c7d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-610.obj": "959907e05bbae2828daa28fe04a3302ca93442bc36f3b9079742d70a3cd1678d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-620.obj": "17c9b0bea9eeabea87477544cc1a010424663ecdb8de0654d9ddad9f1f7f8b0f",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-630.obj": "63b1d15396885ea1ca0afdb9b85b594cc82f29ac2f10c0586695d8ae6dc3e755",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-640.obj": "a46c7098abb670a222d6c47eaa18257ff9ce3b861e50336669693f54e511ad32",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-650.obj": "0acaf7809fda9ea2468d5bfadf273840d675af13ad7a48215a8c0c3cd26d3dc9",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-660.obj": "bb8a27ee754ecddfd66fd83c9c9719610ed6757cbeda49ac7cd6b97f7135d0a4",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-670.obj": "8b28a66d53ae9e09153feab72002145365245324e05f5127b9fb5ee809a0bc1d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-680.obj": "440d6a74c09886071b38f80dce86aed56cc0f3ea025ba3240e67815ac6fd9539",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-690.obj": "9003e39dea26fe4944377e2204286b108ccb171a4761d26cebbd530b4cc179db",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-70.obj": "daef8c6a0bbeb6bb9720fb45ca38ceceff52be6b52b358c02a609423af9dbf0b",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-700.obj": "0f742ada9e3cdfde3ddcd9865ac401702e4a1aa7e621e7e30348daa331a2216d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-710.obj": "7515d9ed68bcfb3168f851fe5865d2d1fa22c303a8b078211748af0aa99178a6",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-720.obj": "8bc45ad477c75ef022353786447d7ff6e6ef2eef6a01f0a79e43c77c34f43b87",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-80.obj": "a4e4d1d9e2c8c6bfe1e45b9e2100715a1f3eee6c1039d6f3ff71a5191d5747f3",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-90.obj": "61af467d250cc2bae8c46d1c8112aa6eff8ec9607e740b34484e9a1f7e78343a",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-r1-peak.obj": "48199a9ff19086b447b09e2c1702ffff4f0a02e94e37031493996e5f628297f5",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-r2-peak.obj": "48199a9ff19086b447b09e2c1702ffff4f0a02e94e37031493996e5f628297f5",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48.obj": "8bc45ad477c75ef022353786447d7ff6e6ef2eef6a01f0a79e43c77c34f43b87",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48.log": "f3bb1405c3b6341158be79256931fd5acd46f4c5bbc44cbf7b77e6461bef339d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-fruits.csv": "b8c66fbad328f17c1406abe238e8957ea82ce5d4cc3b32cd6254d378919e28a2",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-peaks.csv": "fd67dedbdf060ac39d43a7555afdce6b7ca50baf7f9693206e6f00aafead361e",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48.launch.json": "ce8dd16ac9281308a390770f842dff113bc902dd68b1af689f1472f8b35ac37b",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-terminal-audit/48-loaded-drop-audit.json": "38aadbf52264e3a0fb26842fe2f062bf7441ddc08a6d41627816766fd33714c8",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-terminal-audit/48-all-saved-geometry.json": "060219d06a75094beffd83c2a940d742f3279ba3aaef4679f0642ffbc61ff36b",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-0.obj": "21483357b0deb815b8cb071e40c171b46f05bd285425d0ed4661e2c0d68b3122",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-10.obj": "0666278b7495d431a709c88b4ef28799e5e2c721e8d105af1f20bc8ae4164a09",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-100.obj": "3cdc41409b9761856a664847bf2ca5ff246da1c8703b58ff6b898a801cf989c8",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-110.obj": "9dd5026215a776f7d8f23a75551fdb43ab82e0c3c133990b074bd02e4514fd55",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-120.obj": "7988f91bd13363094e909399c78268d9d094ccea6139b221e094cbd6b2e6b785",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-130.obj": "c71b9648aa10dbbb4234ad8187fdc6aac883769cba495e815fa2f9aa3e8aca3c",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-140.obj": "80b0f2fbd6bef95cd6bc4eef4a30e5f15254d021bd80d8c460495ebe1d50dfbf",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-150.obj": "f2ebc255db66437e89413141ee0f50e0919211f998fbbc91b9e35241fbb655d8",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-160.obj": "a09d446eda743a7591ca22a0d862dfa9013154c556f7aac18bf30c93dd9ccb49",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-170.obj": "6ff53309c67f1d9eecb7da64de1396ea1b07e442bd13d04ace007cac4d3041c4",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-180.obj": "60ca322e8a2f0743b1fc87b620ca6f3bc7e4303de8796de2acda2936800803be",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-190.obj": "a04f0f02d7cc849984c4c4cf3dd9857c907e0ecdf4129990e0b330c3795f9563",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-20.obj": "4ad232b73ed0c931c416333fb278dca6422533d1d0a88fa4459996450878ce34",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-200.obj": "964b80e4b872808f02e8bc7458c41cc49471acdb87f92b912a3142ac3a39a2af",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-210.obj": "cb602a6e77565719ef14792cf5bd2cce65a5fe32b93b18d157ae010fe2ff7c7d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-220.obj": "c21f6f946ff3aa10c4e1a80982706711c537c4468eb662b1820b539365de5444",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-230.obj": "30198aed09a61bba4196c3794f6a63197327e5bb058b68c57d5ad9b48e873ddb",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-240.obj": "7f540a649d98d0641560631f43c9bb8314383b06f2085ffb2a4a8a22273981c2",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-250.obj": "a333dc701dcbf42cec272c9ca9e3cd62ed3e3955af9e6ca4daa70626a2c30979",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-260.obj": "94da804f4018e266a96c3491858fa8effcfa03f5b1d8762618fbb4eb101217f4",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-270.obj": "ed4b931dc7104827e49387f1955c1b1006dc1b6828ec10bb9b3ae7228f03e81c",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-280.obj": "f4d43a44e46e7ae592916b48e047269e55001dfb6901fbadc57786faf2f2276a",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-290.obj": "ed7cad25b99bf492bd03d8c439e8d409795d7a2f0d62ed19759b11cacaa8ea8e",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-30.obj": "af16e1a3144186ebe0a9dfaf741a9750dd3a106917c7b5c5d627fbd40e5d64bc",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-300.obj": "679898b586e9f411c2e568a4407383573e9d1cc699a08ac0f7b292cfe3a88492",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-310.obj": "e7d7366c3ddfc4b40d9210fd706f28b869dd1f2a246807e647bcd9b7c697abcd",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-320.obj": "317326d735d84ed11326e9a941372d017fbed7547e39184160bda6cd7362e34a",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-330.obj": "77990088a7dfa1b2f7cf0f93bc1d3cf6652c1028442e53fe085c1a63be6eab8d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-340.obj": "39770aa25de99ca204548e4a1e2cc91e5f95ce0584a5e7c3233ed4b8479c7732",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-350.obj": "52e1a7370051612130d071af46c3e1ace720b6dd66bfcbaa11eae144bf65cc8e",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-360.obj": "cb55b6ce2f78cfdb4966855c3be706a3dff8aa92d2b6680ab63559904c591917",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-370.obj": "03c3c63c83737ad4d50af6eca35b4f6416ca0aaf90f92a74fcbc41c5e2a382ce",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-380.obj": "d1e25c372d897c8f03ab2368d8a5dae01abe2143edfe1d9d8437cfcea7f85f28",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-390.obj": "cc99b2af93aee5d20d77e9a06c885b1ea58faaad12919bd48f57071110672485",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-40.obj": "0cb63d409ee9d35207223336bddcd3b0788cb4617c3125b4744d3bf8b32b5a17",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-400.obj": "ea8fb712f2306c96f291e6383ee0f88329e0e6d72c8f9359afd515f371d1df3e",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-410.obj": "75c259b5e9b528a76f23b2a99528a43e7b5376cd191c7336f0030dba2eb96a5d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-420.obj": "0deec37e8266cc93b2358857e2fe3008275b58024faa5dfa6faca05811d50675",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-430.obj": "d51c68b31da0036889db7c84f7f2e4816c9f743c46ceeebf4bc68cece6477831",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-440.obj": "e7383c73cff290396eb48a7d6e46e6ebc8575cd45ea43f6abbdb42c0c6cb6221",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-450.obj": "95103ed11bc7dc5eedf61cf098d1b5e232039e627b82af60c1cedb9d6256e92a",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-460.obj": "55d59b72db9463c42063978adf5cd1ea2e790d8015c21a861804962651b26af7",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-470.obj": "72c7425cdc62451762cc10593b995d8738a56c94fde81dc735f4bcee54efd8a2",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-480.obj": "929c79d187aea89ef86d95ba13691dc09a93efa869d4d839e915aa5bb3be3c53",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-490.obj": "8df47fcae7183814deb9bc662b0f396bc05e2de8e7b0d90a4b3d8a764b7a6612",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-50.obj": "95dee6a1d5dc18710a64b616e51545135afa477a8f538b144166e8ffd8968a19",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-500.obj": "f6e160a73e65bea3213e544a2ceffb9a44687e8309b5a92c109cac9edf4d4fc7",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-510.obj": "1823190725bd20134513133da5ab0b583b04c6c38282175674de8d0ad7090137",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-520.obj": "8c2bf152f3fe1ebd889bc582b48789bd979d6c8d742bb4b2224565f78dd977d6",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-530.obj": "c6ca2a283fbb92bddfd2edb04096eabae3ca0600018240bce36977140e4e458d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-540.obj": "394afa1ba439e8aba7d5ad30c0b2f46867a0309195929ae799de054c491362a0",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-550.obj": "e4a622c181a3a50978d132ddc3a05467455fd7802cd0bc3d3da3d7c7d455fd3e",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-560.obj": "f737e2e4e44d3dc64943019b3988dc20315ac1af82ada3dbe66742afc5291295",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-570.obj": "f5f6e685bf04b7175bf2952c1cf1183168bb58e86f0962e47fc2d3f16263bed8",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-580.obj": "d5a3d1adcac99532b810fa0c937914f942cb479e00bccce250bf9c56bb9f6264",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-590.obj": "7597aeb1f9f5a18aaf500136aa2355b90306cbca94f2268203f5c55178ce836b",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-60.obj": "991df45573f510bb2394033f542068e426a8a9e0d52088b16f6ed810a6108d7d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-600.obj": "e520a7e7dad35550dd736825e76a2b3f6ca04a2f28090c3e84017015dec58aa1",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-610.obj": "743824773aaa4c130a0a47aa8d448a6b289cc787122f6f524c633c4de511f091",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-620.obj": "e52a1c9cc7d56d0661cc013e2eaf9345da55539de3537536dd98be86a4b71fa3",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-630.obj": "c8547060175dd3758b320745ccb19ff67549037f6bdf01cfb3cd0dc0a7bab82a",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-640.obj": "cad4b205fd3bfd534476d16cf05588d711f783c70dec0b0334e2edca474e2444",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-650.obj": "e4a9a91b58d22ce59a52ef0f71d1806e2da8e81e2da8d3e2104fb4aa0700567a",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-660.obj": "ccd68941b8b37ebbffdf4524d48acf364fbf85ddb8553f8be7eb73bfa6925002",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-670.obj": "c749a788b2707ad7a81bddf7d073c2630eb77c3655ff0da7fb99d586d5722875",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-680.obj": "f88f11b0ff9db37e105638ae375470502c64b6bfe2c25ba6c5dfb328446883e6",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-690.obj": "5824d379c32d2e27c3b358e780a07af36924a617c48ee8540f7c86cea7a5465a",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-70.obj": "eb9267fa3cf36742c3b451fd3aa3c95a6e41e852f39f0d9f216f596afdf82046",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-700.obj": "694514119b7ffadad14a6ccf0f0473edb7376102694de249e53fc2d768e2d1b5",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-710.obj": "f4b059ceb40da363f52782adf4b6536f1002f21d647765acbbb606a8dc5d3872",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-720.obj": "cb2f12edf3f203540ceeb9117953b1c33a04b8c1a32127ac04bb75bc959a3290",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-80.obj": "61706bc3e2798080c8aed6a5453c748ea343bec6108e1ebd8d5546ddb70353cd",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-90.obj": "3dbacbb46330bdb615ba355d7011c9c7d27e7cdb3cd6dd2daf013b410a89ebef",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-r1-peak.obj": "d9300365d8999fc87c0ce28b7a1fb7241072c56fc1ea20dc76d2489907051881",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-r2-peak.obj": "d9300365d8999fc87c0ce28b7a1fb7241072c56fc1ea20dc76d2489907051881",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96.obj": "cb2f12edf3f203540ceeb9117953b1c33a04b8c1a32127ac04bb75bc959a3290",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96.log": "a89932166ca71c119023cddfce3bf0df3ef8655aa3cf48df8f11300fd6025a08",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-fruits.csv": "9932961656e0abd3333e42324e94ef62c65858ba8db439070edbadde05ebe32f",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96-peaks.csv": "b71873d7c44aa41c14a94cfddacd7ab4b1596f071555861a9f87304c44d6188d",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96.exit": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-96.launch.json": "d322cb45fa25e1f479f6fe8a60ea662b5a3f8539a3f43f563c90fab7de83cddf",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-terminal-audit/96-loaded-drop-audit.json": "68594a7b96962f77440cb667c92b5dfec6ac1e60a8d3d06f82559d388c5728e4",
+    "/Users/home/numi-solver/build/loaded-drop-investigation-terminal-audit/96-all-saved-geometry.json": "ba99f0d0f67c4ffdf849373332918bec258d4310637350abdef684cc5c842848"
+  },
+  "comparator_sha256": "8dfba0771167f5149953acb7493b229e443bbf6a6d3dd73102110fb2e8447bb3",
+  "boundary": "Complete terminal replay and saved-state comparison only. CPU96 is a retained failed case, not an accepted finer solution. Cloth positions are serialized first-replay captures every10frames; intervening cloth motion is not reconstructed. Fruit differences are over every frame after exact full replay comparison. No calibrated material, energy/work closure, native or asymptotic convergence claim."
+}

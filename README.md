@@ -84,14 +84,19 @@ Native spill qualification remains open.
 [Native finite-bench response and qualification boundary](docs/NATIVE_FINITE_BENCH.md).
 
 The CPU impact/departure repair now passes **16 exact replay cases**, removing
-pre-impact velocity reconstruction and stale friction after separation. Its
-new complete six-second CPU96 drop is running against the unchanged gates.
-The matched repaired runs have completed their first fruit replays: 48
-substeps release none, while 96 release fruit 10. Corresponding fruit positions
-differ by up to **1.6745 m**, so release-outcome timestep convergence fails.
+pre-impact velocity reconstruction and stale friction after separation. The
+new complete six-second CPU96 drop finishes **FAIL**: its speed is now
+**27.11 m/s**, below the unchanged limit, but a bottom cloth triangle reaches
+approximately **6 × 10⁻⁹ m²**, below the unchanged **10⁻⁸ m²** area gate.
+Both complete fruit replays match and all **76 retained contact states** pass.
+Fruit 10 reaches the lower floor; cloth descends 1.7538 m, with 31 floor nodes.
+The matched repaired runs release different sets: 48 substeps release none,
+while 96 release fruit 10. Corresponding fruit positions differ by **1.6745 m**
+and saved cloth nodes by **315.9 mm**. Release-outcome timestep convergence fails.
 The repaired 48-substep run now completes both replays and all saved contact
-audits, with 1.704 m of cloth descent and 33 floor-contact nodes. The 96-substep
-second replay and terminal audits remain pending.
+audits, with 1.704 m of cloth descent and 33 floor-contact nodes.
+[Actual CPU96 failure and complete audits](docs/assets/loaded-drop-corrected-96-terminal-evidence.json) ·
+[Complete matched comparison](docs/assets/loaded-drop-corrected-complete-comparison.json).
 [Impact/departure repair and frozen evidence](docs/CPU_IMPACT_DEPARTURE.md).
 
 
