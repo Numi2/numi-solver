@@ -130,6 +130,31 @@ target_include_directories(
         "$<INSTALL_INTERFACE:include>"
 )
 
+# Keep volumetric development in a separate library so frozen cloth replay
+# binaries and their metallib fingerprints remain meaningful.
+set(NUMI_DEFORMABLE_TET_METALLIB "${NUMI_SOLVER_SHADER_DIR}/NumiDeformableTet.metallib")
+add_custom_command(
+    OUTPUT "${NUMI_DEFORMABLE_TET_METALLIB}"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${NUMI_SOLVER_SHADER_DIR}"
+    COMMAND "${XCRUN_EXECUTABLE}" -sdk macosx metal -std=metal4.0 -O3 -fno-fast-math
+        -I "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        -c "${CMAKE_CURRENT_SOURCE_DIR}/src/metal/DeformableTet.metal"
+        -o "${NUMI_SOLVER_SHADER_DIR}/NumiDeformableTet.air"
+    COMMAND "${XCRUN_EXECUTABLE}" -sdk macosx metallib
+        "${NUMI_SOLVER_SHADER_DIR}/NumiDeformableTet.air" -o "${NUMI_DEFORMABLE_TET_METALLIB}"
+    DEPENDS src/metal/DeformableTet.metal include/numi/deformable_tet.h include/metalrobo/gpu_types.h
+    VERBATIM
+)
+add_custom_target(numi_deformable_tet DEPENDS "${NUMI_DEFORMABLE_TET_METALLIB}")
+add_executable(numi-solver-deformable-tet tools/deformable_tet.mm)
+add_dependencies(numi-solver-deformable-tet numi_deformable_tet)
+target_link_libraries(numi-solver-deformable-tet PRIVATE numi_temporal_cone_abi
+    "${FOUNDATION_FRAMEWORK}" "${METAL_FRAMEWORK}")
+target_compile_features(numi-solver-deformable-tet PRIVATE cxx_std_23)
+target_compile_options(numi-solver-deformable-tet PRIVATE -fobjc-arc -Wall -Wextra -Wpedantic)
+target_compile_definitions(numi-solver-deformable-tet PRIVATE
+    NUMI_DEFORMABLE_TET_METALLIB="${NUMI_DEFORMABLE_TET_METALLIB}")
+
 add_executable(numi-solver-math tools/temporal_cone_math.mm)
 add_dependencies(numi-solver-math numi_temporal_cone)
 target_link_libraries(
@@ -363,6 +388,8 @@ target_compile_definitions(
 
 include(CTest)
 if(BUILD_TESTING)
+    add_test(NAME deformable_tet.constitutive COMMAND $<TARGET_FILE:numi-solver-deformable-tet>)
+    set_tests_properties(deformable_tet.constitutive PROPERTIES LABELS "metal;physics;deformable" TIMEOUT 30)
     add_test(
         NAME temporal_cone.math
         COMMAND $<TARGET_FILE:numi-solver-math>
@@ -898,10 +925,12 @@ if(BUILD_TESTING)
 endif()
 
 install(FILES "${NUMI_SOLVER_METALLIB}" DESTINATION lib/numi-solver)
+install(FILES "${NUMI_DEFORMABLE_TET_METALLIB}" DESTINATION lib/numi-solver)
 install(DIRECTORY include/ DESTINATION include)
 install(
     TARGETS
         numi-solver-math
+        numi-solver-deformable-tet
         numi-solver-islands
         numi-solver-assembly
         numi-solver-rigid

@@ -103,6 +103,16 @@ from those selected indices rather than a fixed rendering location.
 |:--:|:--:|:--:|:--:|:--:|
 | ![Grounded woven bag before the Metal seam lift](docs/assets/cloth-metal-pickup-0.png) | ![Metal cloth bag hanging from the highlighted top cuff](docs/assets/cloth-metal-pickup-60.png) | ![Fruit crossing the open 48-knot mouth in the Metal replay](docs/assets/cloth-metal-pickup-160.png) | ![Released fruit descending while the Metal handle becomes stationary](docs/assets/cloth-metal-pickup-240.png) | ![Two released fruit physically grounded after the fixed-handle settling tail](docs/assets/cloth-metal-pickup-480.png) |
 
+## Growing toward coupled deformable volumes
+
+The next simulation target adds soft fruit with evolving nodal shape and
+volumetric stress to the woven bag. The new native
+[`numi-solver-deformable-tet`](docs/DEFORMABLE_VOLUMES.md) foundation already
+advances three nonlinear elastic tetrahedra for 0.5 seconds on Apple Metal.
+It records up to 31.97 mm of relative shape change, 38.77 µm of timestep
+refinement difference, and exact replay at all 51 captured nodal states.
+Shared-node fruit meshes and two-way cloth/bench contact are the next gate.
+
 ## Grounded cloth produce-bag replay
 
 ![The complete Metal cloth produce bag after one second of free gravity, cloth, fruit, and plane contact](docs/assets/cloth-metal-grounded-120.png)

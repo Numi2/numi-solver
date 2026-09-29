@@ -1,0 +1,9 @@
+device=Apple M4 backend=Apple_Metal
+valid_elements=25 rejected_elements=6 replay_exact=1
+maximum_force_gradient_error_N=2.41871474742e-05 maximum_energy_error_J=1.72811326853e-07 maximum_net_force_N=8.04662704468e-07 maximum_torque_Nm=4.10488641358e-08
+dynamic_elements=3 simulated_seconds=.5 steps=5000 refined_steps=10000 captured_frames=51 dynamic_replay_exact=1
+maximum_mechanical_energy_drift_J=0.000890632443356 maximum_COM_free_fall_error_m=3.48966705166e-06 minimum_sampled_volume_ratio=0.886141657829 maximum_relative_shape_change_m=0.0319662513913
+maximum_relative_shape_refinement_difference_m=3.87744936924e-05
+all_advanced_candidates_valid=1
+rejected_advance_state_exact=1 deformable_dynamics_qualified=1
+deformable_constitutive_qualified=1 deformable_qualified=1

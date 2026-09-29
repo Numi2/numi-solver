@@ -1,0 +1,532 @@
+{
+  "schema_version": 1,
+  "device": "Apple M4",
+  "backend": "Apple Metal",
+  "source_parent_commit": "eebb923e448aa65aa323023fd2fba697da637f3a",
+  "source_identity": "Exact file fingerprints below; this receipt is created before the scoped source commit.",
+  "commands": [
+    "cmake --build build --target numi-solver-deformable-tet -j2",
+    "./build/numi-solver-deformable-tet --trajectory build/deformable-tet-native",
+    "ctest --test-dir build -R \"^deformable_tet.constitutive$\" --output-on-failure",
+    "python3 tools/audit_deformable_tet_trajectory.py build/deformable-tet-native --output build/deformable-tet-artifact-audit.json"
+  ],
+  "qualification_exit_code": 0,
+  "ctest_passed": true,
+  "metrics": {
+    "valid_elements": 25.0,
+    "rejected_elements": 6.0,
+    "replay_exact": 1.0,
+    "maximum_force_gradient_error_N": 2.41871474742e-05,
+    "maximum_energy_error_J": 1.72811326853e-07,
+    "maximum_net_force_N": 8.04662704468e-07,
+    "maximum_torque_Nm": 4.10488641358e-08,
+    "dynamic_elements": 3.0,
+    "simulated_seconds": 0.5,
+    "steps": 5000.0,
+    "refined_steps": 10000.0,
+    "captured_frames": 51.0,
+    "dynamic_replay_exact": 1.0,
+    "maximum_mechanical_energy_drift_J": 0.000890632443356,
+    "maximum_COM_free_fall_error_m": 3.48966705166e-06,
+    "minimum_sampled_volume_ratio": 0.886141657829,
+    "maximum_relative_shape_change_m": 0.0319662513913,
+    "maximum_relative_shape_refinement_difference_m": 3.87744936924e-05,
+    "all_advanced_candidates_valid": 1.0,
+    "rejected_advance_state_exact": 1.0,
+    "deformable_dynamics_qualified": 1.0,
+    "deformable_constitutive_qualified": 1.0,
+    "deformable_qualified": 1.0
+  },
+  "sha256": {
+    "include/numi/deformable_tet.h": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0",
+    "include/metalrobo/gpu_types.h": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8",
+    "src/metal/DeformableTet.metal": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072",
+    "tools/deformable_tet.mm": "8d8c0196d3abe8fb8d7a80ddb1d6fa647064294868fa0cff38f848e06909c9df",
+    "tools/audit_deformable_tet_trajectory.py": "1b6baa9f1f3687107a5ae493266dbe25ebc12744d751cd9cf7210bf620c16b80",
+    "CMakeLists.txt": "34b5ad5da3bae315d7b7ce18ae5357c0ea54cb348922ea9396853bed5345145c",
+    "build/numi-solver-deformable-tet": "cebc82b50f7519c66c460c2841d4d642945d5f9439f179129f312ff3c776f40a",
+    "build/shaders/NumiDeformableTet.metallib": "b53b96b42b94b0016e2f71d472989f9ec18b958f9f8a41a21f027a90bffed922",
+    "build/deformable-tet-qualification.log": "51722b736ac2b92f42ea23c01d7a397ee443e097c1cf692cb9553044fec44578",
+    "build/deformable-tet-native.csv": "f4d88f31ef45975a579ff6310fe846c3506dd8fe4366dd4abe58c50e0b4f3387"
+  },
+  "exported_state_audit": {
+    "trace_sha256": "f4d88f31ef45975a579ff6310fe846c3506dd8fe4366dd4abe58c50e0b4f3387",
+    "captured_frames": 51,
+    "elements": 3,
+    "rows": 612,
+    "simulated_seconds": 0.5,
+    "OBJ_CSV_positions_exact": true,
+    "all_sampled_volumes_positive": true,
+    "minimum_sampled_volume_m3": 0.00017281781109984508,
+    "evidence_boundary": "Exported states only; does not independently verify intervening GPU steps, contact, material calibration or replay.",
+    "snapshots": [
+      {
+        "frame": 0,
+        "sha256": "c202e4066e174fc37956e9648458d2f855bd3798b39d9920baff04f793fcba80",
+        "signed_volumes_m3": [
+          0.00019499980978850368,
+          0.00018018005681925706,
+          0.00019499973714522556
+        ]
+      },
+      {
+        "frame": 1,
+        "sha256": "fa89f2c73d62aa7861a7e4934dc3a0ad363b7d30e1eeeebe33baf38f76d1b6be",
+        "signed_volumes_m3": [
+          0.0001949998238618896,
+          0.00020207138642295514,
+          0.00019107771453845263
+        ]
+      },
+      {
+        "frame": 2,
+        "sha256": "44bb0aa1ffcc75ff5c72d092f9eab286e08e5d28e617426424b6e9ea4d6338a6",
+        "signed_volumes_m3": [
+          0.00019500087165197488,
+          0.00021622702379192388,
+          0.00018552145569661587
+        ]
+      },
+      {
+        "frame": 3,
+        "sha256": "bf9882d7af6e91f962e1dc77a1e931401f5dd3c8d81dd610898de82a9b044dba",
+        "signed_volumes_m3": [
+          0.0001949995177073525,
+          0.00018842303093255912,
+          0.00019016940176296848
+        ]
+      },
+      {
+        "frame": 4,
+        "sha256": "efa60846bc3705c5ea6ffdd1e31363c43c8fa834cb57e2276a315216abdfbb1f",
+        "signed_volumes_m3": [
+          0.0001949998286426126,
+          0.00017281781109984508,
+          0.00020499589782607894
+        ]
+      },
+      {
+        "frame": 5,
+        "sha256": "f836416b2ac495e31a6a0ec3088d78bd413c9604454d7ddb486b481f31b4b7cf",
+        "signed_volumes_m3": [
+          0.00019499964794026888,
+          0.00019650203318266805,
+          0.00021082401313870627
+        ]
+      },
+      {
+        "frame": 6,
+        "sha256": "a1239038c54d68c883a43df18d451b9b5d0aeb92670e19ee0cc5fc258ddfc52b",
+        "signed_volumes_m3": [
+          0.00019500031542393236,
+          0.00021087554454716356,
+          0.00019847529649001314
+        ]
+      },
+      {
+        "frame": 7,
+        "sha256": "1b6102eba94831ff554c4d14b96daf93d735c7c510471459f5eb314203ba35b9",
+        "signed_volumes_m3": [
+          0.00019499950190728606,
+          0.0001925839147041004,
+          0.0001883460675185453
+        ]
+      },
+      {
+        "frame": 8,
+        "sha256": "5e80c5052d797aeb16245aac508eddd2ddc219be3378f98de56458cc52eb66fc",
+        "signed_volumes_m3": [
+          0.00019500015537321445,
+          0.00018537219065692712,
+          0.00019653202968596267
+        ]
+      },
+      {
+        "frame": 9,
+        "sha256": "8e194e4332109a6688bbb7fd4c48edd42cc1d0326b3289385a4d899d957fa6f5",
+        "signed_volumes_m3": [
+          0.00019500049053078835,
+          0.0002057183959236266,
+          0.0002051551435098768
+        ]
+      },
+      {
+        "frame": 10,
+        "sha256": "b4434ddb4e5e0f5db0fd04547147aa2bbdc76a1e79742b4f7bb6342ea8cb5f8c",
+        "signed_volumes_m3": [
+          0.00019500038252403865,
+          0.00020690022407692549,
+          0.00019475396713557606
+        ]
+      },
+      {
+        "frame": 11,
+        "sha256": "6af94a397cfe3bc30b22da70298a8b67a222d50bb9355bd2eba261fcc191af63",
+        "signed_volumes_m3": [
+          0.00019499984020611397,
+          0.00018609102852421022,
+          0.0001802322462627255
+        ]
+      },
+      {
+        "frame": 12,
+        "sha256": "3f195d8f2e61c029181d7a61c4e80be98ed802ff55749da53fdc51a93e6842f6",
+        "signed_volumes_m3": [
+          0.00019500028390974017,
+          0.00018707974781913413,
+          0.00018563759613635444
+        ]
+      },
+      {
+        "frame": 13,
+        "sha256": "37f36625d22c9df14e5808054b6ebc8555a3fd84aeb142006cbd3769a27cdc28",
+        "signed_volumes_m3": [
+          0.00019499993235021828,
+          0.0001997984681106709,
+          0.000202921961281071
+        ]
+      },
+      {
+        "frame": 14,
+        "sha256": "5b27799317d2924647ff1f46132abeceb4216188ccc3a26d5b57a9a8d4ba0c88",
+        "signed_volumes_m3": [
+          0.00019500012969816003,
+          0.00019272641439915719,
+          0.0002028977860155572
+        ]
+      },
+      {
+        "frame": 15,
+        "sha256": "1f53198ab932590b242fd4cc62908233477d871531f96e2de2212e9bfb44c503",
+        "signed_volumes_m3": [
+          0.00019500004720054019,
+          0.00018781834843586387,
+          0.00018580100490966909
+        ]
+      },
+      {
+        "frame": 16,
+        "sha256": "d8213e64f6b9f00600e5042a618e0f3c4729a6b67ea8a41da29a1620d175aa2b",
+        "signed_volumes_m3": [
+          0.00019499973843113458,
+          0.00020368303215711884,
+          0.0001838766413157953
+        ]
+      },
+      {
+        "frame": 17,
+        "sha256": "ed32699573a7c03196f52cd907d7961864f21c483f82214c883a6b7c491c4c95",
+        "signed_volumes_m3": [
+          0.00019499969286324826,
+          0.0002079349359981063,
+          0.00020380266727267464
+        ]
+      },
+      {
+        "frame": 18,
+        "sha256": "7377a9b2efe3bca3799a6c4622b16f1934d847d0fce494996a8d49c9f5c1c6cf",
+        "signed_volumes_m3": [
+          0.00019499984653178058,
+          0.00019130802815739745,
+          0.00021315573433712404
+        ]
+      },
+      {
+        "frame": 19,
+        "sha256": "01e196aa83bcbcbfe2669e2d33b4506645bc77dcd59204a659df27086ddb6dd5",
+        "signed_volumes_m3": [
+          0.00019500015440069684,
+          0.00018746204785377737,
+          0.00019743497645818703
+        ]
+      },
+      {
+        "frame": 20,
+        "sha256": "fabb19938a36cb9e2a2aabde251428f55ad40975710cb5ddcadbc7d708e3c25a",
+        "signed_volumes_m3": [
+          0.00019500002453958764,
+          0.00019894362007599279,
+          0.0001853649390142526
+        ]
+      },
+      {
+        "frame": 21,
+        "sha256": "ae308700046dab09534888666e20f1982d0303181b2ec39b355a20371a5a92da",
+        "signed_volumes_m3": [
+          0.0001949998881668138,
+          0.00019520554746261574,
+          0.00019704936758892312
+        ]
+      },
+      {
+        "frame": 22,
+        "sha256": "815d403664393ead90bd6d1495adb584c5bd7e232a8b75d52daeba8558943697",
+        "signed_volumes_m3": [
+          0.00019500027968447444,
+          0.0001824763016187985,
+          0.00020886193719030365
+        ]
+      },
+      {
+        "frame": 23,
+        "sha256": "f45edb4924c02f5d0c8fff77bae16cdccff838c5242d955bb2b07febd1a4cb41",
+        "signed_volumes_m3": [
+          0.00019500046076343397,
+          0.00019330471321684194,
+          0.00019704935031375528
+        ]
+      },
+      {
+        "frame": 24,
+        "sha256": "c775d285e6753cde7d7ba92fcf046782206476eb5c99503c6906ee386a45bbef",
+        "signed_volumes_m3": [
+          0.00019499999549394306,
+          0.0002107305598260719,
+          0.00017833992684826143
+        ]
+      },
+      {
+        "frame": 25,
+        "sha256": "28debc921179ff687458ce0abf1cfff3211853da562467f8789d42d745648507",
+        "signed_volumes_m3": [
+          0.0001949995725630428,
+          0.00019995175574159175,
+          0.00018028495679527065
+        ]
+      },
+      {
+        "frame": 26,
+        "sha256": "eb22f54aa67e2fd30e7956b633e148b906ab0b9e22a85181dd5ecdbe3de5fe40",
+        "signed_volumes_m3": [
+          0.00019499992210453952,
+          0.00018686094301273142,
+          0.00019806997910043307
+        ]
+      },
+      {
+        "frame": 27,
+        "sha256": "6e11c26d1d490bc709a7d7ba948fed7a839e54304e02bc37e7853a486f99ab0e",
+        "signed_volumes_m3": [
+          0.0001950006030583596,
+          0.0001983071601417752,
+          0.00020427834961104954
+        ]
+      },
+      {
+        "frame": 28,
+        "sha256": "b86450c0e9a5c173d73cc41ce5a0391d30ce05f5b56ffe33adac47f313fb26ce",
+        "signed_volumes_m3": [
+          0.0001950006370333462,
+          0.00020179127440435245,
+          0.00019269668385397606
+        ]
+      },
+      {
+        "frame": 29,
+        "sha256": "82a68a59241427965755d3a2c9af9f8ed241e2273deebfad6f4eff93bdfcf865",
+        "signed_volumes_m3": [
+          0.0001950000507247386,
+          0.00018683998977913341,
+          0.00018806125215369774
+        ]
+      },
+      {
+        "frame": 30,
+        "sha256": "80e2dc95162424a3b10b0499dada3a7f4daa73f5fc40d6e32feec8b535e5e89d",
+        "signed_volumes_m3": [
+          0.0001949995537468348,
+          0.00018654689057172273,
+          0.0002035792026827479
+        ]
+      },
+      {
+        "frame": 31,
+        "sha256": "dff43644be60acc0f0fd1ead671ce525e89b7cb2d149c3595a956dde6b708a81",
+        "signed_volumes_m3": [
+          0.00019500028649448446,
+          0.00020111531382102199,
+          0.00021488190271803833
+        ]
+      },
+      {
+        "frame": 32,
+        "sha256": "682efcecd60b25ffc444275ea18336f1df9ac68f08b090a416086eb93729ef6e",
+        "signed_volumes_m3": [
+          0.0001950006878269386,
+          0.00019986213877280833,
+          0.0002011179617070079
+        ]
+      },
+      {
+        "frame": 33,
+        "sha256": "817c8f5c5ce68267b505da8f7ac26052dd57e729a8fb9368dcfb960f420ed475",
+        "signed_volumes_m3": [
+          0.00019500013189879058,
+          0.00018996132022931092,
+          0.00018339579034027916
+        ]
+      },
+      {
+        "frame": 34,
+        "sha256": "7504e756bddc516e0bdcd3d7418222eabbad64de95e8529d0a18b50f4f36a695",
+        "signed_volumes_m3": [
+          0.00019499922032975502,
+          0.0001984507713816599,
+          0.00018751256915055907
+        ]
+      },
+      {
+        "frame": 35,
+        "sha256": "e206e78831248f5ee61b67f4dfcc6c62346cbeb09ecdea97cea2809fc81a7567",
+        "signed_volumes_m3": [
+          0.00019499915635772655,
+          0.00020652880135235493,
+          0.0002007209543064452
+        ]
+      },
+      {
+        "frame": 36,
+        "sha256": "bb5d8209d7de663de15d5d673329551635ac991f45b63f8412a7c32356a04817",
+        "signed_volumes_m3": [
+          0.00019500008752342576,
+          0.0001894665715273246,
+          0.00019750300185699527
+        ]
+      },
+      {
+        "frame": 37,
+        "sha256": "8dfe69d1972862975529f95793f1e9f4d84d13a8cf6889a09211281f114860cd",
+        "signed_volumes_m3": [
+          0.00019500063204851552,
+          0.00017872442618735646,
+          0.00018322840640516065
+        ]
+      },
+      {
+        "frame": 38,
+        "sha256": "269699efe0690f6b1fe76c7e38368b91412f12da8cae7a4dacf77ae39de25ec2",
+        "signed_volumes_m3": [
+          0.00019500068679762558,
+          0.00019943971787004044,
+          0.00018299281314720854
+        ]
+      },
+      {
+        "frame": 39,
+        "sha256": "1e137891b8281c471db3b6781aec4fbe954c522b57f0ad99e14e1f47f2dcd92d",
+        "signed_volumes_m3": [
+          0.00019500035918883305,
+          0.00020839421502742415,
+          0.0001995668942982065
+        ]
+      },
+      {
+        "frame": 40,
+        "sha256": "e6869a60e50f9101c0af3d7de51b338f7a772e68b6bee74a8000b4c681da5b5c",
+        "signed_volumes_m3": [
+          0.00019499984582744593,
+          0.0001872308736029408,
+          0.00020811758024932595
+        ]
+      },
+      {
+        "frame": 41,
+        "sha256": "cf9e3ce7c17da901b3995cfed5f22a60e3a320e30678b93fffa01a6ab8fa8784",
+        "signed_volumes_m3": [
+          0.00019499971570308532,
+          0.0001877480456266847,
+          0.0001967921501048833
+        ]
+      },
+      {
+        "frame": 42,
+        "sha256": "190b1067ef32d714c4f683e5e324c642c399dd80063699eefe3b816ab933a4fa",
+        "signed_volumes_m3": [
+          0.00019499995339255808,
+          0.0002146249183436773,
+          0.00018762076164840916
+        ]
+      },
+      {
+        "frame": 43,
+        "sha256": "7a223055f6484299d39def51c86aa81871e2dc85e209974c32546e0de0f8fc9d",
+        "signed_volumes_m3": [
+          0.00019500026393656474,
+          0.00020911904519196195,
+          0.00019731867262722628
+        ]
+      },
+      {
+        "frame": 44,
+        "sha256": "dca009a8ad32eb968239dc8f4bbdbff9b5e29da6183b318c79c7ffcf2f8e7276",
+        "signed_volumes_m3": [
+          0.0001950002173434522,
+          0.0001789895239900861,
+          0.00020861979482997444
+        ]
+      },
+      {
+        "frame": 45,
+        "sha256": "788d7f3ad28616ba11565a88ce75a592b6c3c1110298bbd2b21634e862b9aeb4",
+        "signed_volumes_m3": [
+          0.0001949990685676487,
+          0.00018082449959363927,
+          0.00020240697311583642
+        ]
+      },
+      {
+        "frame": 46,
+        "sha256": "86f62719748d9c05a5a4920badde831c2149630afcaf8e13185f4fa27038bdf4",
+        "signed_volumes_m3": [
+          0.00019499873360207136,
+          0.00020542535686972132,
+          0.00018862584426388706
+        ]
+      },
+      {
+        "frame": 47,
+        "sha256": "88a8552614256aab62f74fad516898bb85fa7aef9b2ebd8923f38132b1157357",
+        "signed_volumes_m3": [
+          0.00019499951189907948,
+          0.00020101888128910145,
+          0.0001861782359965858
+        ]
+      },
+      {
+        "frame": 48,
+        "sha256": "d99e3370722f8ee0aa4fa39e158bfa1bde0778551859667efc03bc0ea4e5a33f",
+        "signed_volumes_m3": [
+          0.00019500062582642134,
+          0.00017925307359628747,
+          0.00019421441828357136
+        ]
+      },
+      {
+        "frame": 49,
+        "sha256": "65c9b54d6e5323d85d48bcdf4355190e8668afb7b97da96b3a9f17ff20ed38ee",
+        "signed_volumes_m3": [
+          0.00019500017490404946,
+          0.0001933788580038806,
+          0.00019781854326657332
+        ]
+      },
+      {
+        "frame": 50,
+        "sha256": "5e960f111478b8858cfd3b0872a21da382bedf388bb036d9b1f7a23795ac3887",
+        "signed_volumes_m3": [
+          0.00019499931330983682,
+          0.00021765051778093649,
+          0.00019049754089193723
+        ]
+      }
+    ]
+  },
+  "qualification_scope": "25 constitutive cases, six malformed cases, three independent elastic tetrahedra in gravity for 0.5 seconds. Two complete native runs and a half-timestep run; no contact surface or shared nodes. All intermediate candidate failures are retained cumulatively, and the runs record zero failures.",
+  "unmet_gates": [
+    "shared-node volumetric fruit meshes",
+    "two-way cloth and bench contact",
+    "compression and recovery in contact",
+    "coupled full-scene replay and refinement",
+    "measured fruit material and impact calibration"
+  ]
+}
