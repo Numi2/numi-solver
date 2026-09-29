@@ -52,6 +52,13 @@ changed source. A new 480-frame, two-replay run is in progress; it must be
 inspected before replacing the historical evidence or claiming the complete
 spill is fixed.
 
+The corrected two-second CPU FP64 pickup has completed two exact replays at
+48 substeps and 32 iterations (`state_hash=0x513295fd7b0ff042`). Its release
+mask is `3073`: fruits 0, 10, and 11 all end at their contact radii. Published
+fruit/yarn penetration, ground penetration, and final strain violation are
+zero; maximum published nonlocal yarn overlap is `0.746 um`. This is an
+independent FP64 outcome, separate from the still-running Metal qualification.
+
 Each exported Metal trajectory now also writes `PREFIX-fruits.csv`, with every
 frame's fruit center, radius, linear/angular velocity, last-substep ground
 impulse, and latched release bit. OBJ fruit comments include linear velocity.
@@ -59,6 +66,32 @@ These expose descent and landing even between the sparse rendered frames.
 The renderer projects the z=0 support plane and individual fruit shadows from
 the same world coordinates. Its displayed grid is presentation geometry;
 the collision model remains an unbounded inelastic plane, without bench edges.
+
+Audit the full native fruit trace without hiding a released fruit behind an
+aggregate landing count:
+
+```sh
+python3 tools/audit_fruit_trace.py build/fruit-pickup-fruits.csv --expected-frames 480
+```
+
+It reports each fruit's release, first observed support after release, maximum
+downward speed, and final clearance and velocity. A partial trace returns
+status 2, including when a concurrent copy ends inside a frame. A complete
+trace report does not replace collision, force-balance, or replay qualification.
+
+For a fixed camera that includes every exported fruit throughout the replay,
+write the complete ordered set of OBJ paths to a text file (relative paths are
+resolved beside that file), then use the same framing list for every image:
+
+```sh
+swift tools/render_cloth_obj.swift build/fruit-pickup-480.obj build/fruit-pickup-480.png \
+  trajectory --framing-list build/fruit-pickup-framing.txt
+```
+
+The camera fits the entire state set once rather than following or zooming with
+the bag. Rendering a state outside that fixed framing is rejected. This fixes
+the earlier `pickup-wide` camera cropping a landed fruit in the corrected FP64
+state; the new surface/shadows and camera do not change any solver state.
 
 Material calibration, finite bench geometry and edge collisions, impact
 restitution calibrated to fruit/surface materials, and complete corrected

@@ -80,6 +80,48 @@ private let bottomGrid = 13
 private let bottomInterior = bottomGrid - 2
 private let expectedVertices = around * levels + bottomInterior * bottomInterior
 private let clothRadiusMeters = 0.004
+private let cameraYaw = -0.62
+private let cameraPitch = 0.19
+
+private struct ViewBounds {
+    var minimumX = Double.infinity
+    var maximumX = -Double.infinity
+    var minimumY = Double.infinity
+    var maximumY = -Double.infinity
+
+    mutating func include(_ point: Vec3, radius: Double) {
+        let transformed = camera(point, yaw: cameraYaw, pitch: cameraPitch)
+        minimumX = min(minimumX, transformed.x - radius)
+        maximumX = max(maximumX, transformed.x + radius)
+        minimumY = min(minimumY, transformed.y - radius)
+        maximumY = max(maximumY, transformed.y + radius)
+    }
+}
+
+private func trajectoryBounds(listPath: String) throws -> ViewBounds {
+    let listURL = URL(fileURLWithPath: listPath)
+    let lines = try String(contentsOf: listURL, encoding: .utf8)
+        .split(separator: "\n").map(String.init)
+    guard !lines.isEmpty else {
+        throw NSError(domain: "NumiClothRenderer", code: 6,
+                      userInfo: [NSLocalizedDescriptionKey: "framing list is empty"])
+    }
+    var bounds = ViewBounds()
+    for line in lines {
+        let path = line.hasPrefix("/") ? line :
+            listURL.deletingLastPathComponent().appendingPathComponent(line).path
+        let (vertices, fruits, grip) = try parseOBJ(at: path)
+        for vertex in vertices { bounds.include(vertex, radius: clothRadiusMeters) }
+        for fruit in fruits {
+            bounds.include(fruit.center, radius: fruit.radius)
+            bounds.include(Vec3(x: fruit.center.x, y: fruit.center.y, z: 0),
+                           radius: fruit.radius * 1.1 +
+                               0.08 * max(0, fruit.center.z - fruit.radius))
+        }
+        if let grip { bounds.include(grip.center, radius: 0.03) }
+    }
+    return bounds
+}
 
 private func parseOBJ(at path: String) throws -> ([Vec3], [Fruit], Grip?) {
     let source = try String(contentsOfFile: path, encoding: .utf8)
@@ -272,14 +314,15 @@ private func render(
     fruits: [Fruit],
     grip: Grip?,
     cameraProfile: String,
+    framing: ViewBounds?,
     output: String
 ) throws {
     let pickupCamera = cameraProfile == "pickup" ||
-        cameraProfile == "pickup-wide"
+        cameraProfile == "pickup-wide" || cameraProfile == "trajectory"
     let width = pickupCamera ? 960 : (grip == nil ? 1200 : 800)
     let height = 800
-    let yaw = -0.62
-    let pitch = 0.19
+    let yaw = cameraYaw
+    let pitch = cameraPitch
     let transformed = vertices.map { camera($0, yaw: yaw, pitch: pitch) }
     var minimumX = transformed.map(\.x).min()!
     var maximumX = transformed.map(\.x).max()!
@@ -295,7 +338,20 @@ private func render(
     let scale: Double
     let centerX: Double
     let centerY: Double
-    if cameraProfile == "pickup-wide" {
+    if let framing {
+        guard minimumX >= framing.minimumX && maximumX <= framing.maximumX &&
+              minimumY >= framing.minimumY && maximumY <= framing.maximumY else {
+            throw NSError(domain: "NumiClothRenderer", code: 7,
+                          userInfo: [NSLocalizedDescriptionKey:
+                              "state lies outside the fixed trajectory framing list"])
+        }
+        scale = min(Double(width - 120) / (framing.maximumX - framing.minimumX),
+                    Double(height - 120) / (framing.maximumY - framing.minimumY))
+        centerX = Double(width) * 0.5 -
+            (framing.minimumX + framing.maximumX) * 0.5 * scale
+        centerY = Double(height) * 0.5 -
+            (framing.minimumY + framing.maximumY) * 0.5 * scale
+    } else if cameraProfile == "pickup-wide" {
         scale = 400.0
         centerX = Double(width) * 0.5
         centerY = 100.0
@@ -690,35 +746,43 @@ private func render(
     try data.write(to: URL(fileURLWithPath: output))
 }
 
-guard CommandLine.arguments.count == 3 || CommandLine.arguments.count == 4 else {
+guard [3, 4, 6].contains(CommandLine.arguments.count) else {
     fputs(
         "usage: render_cloth_obj.swift INPUT.obj OUTPUT.png " +
-        "[pickup|pickup-wide]\n",
+        "[pickup|pickup-wide|trajectory --framing-list FILE]\n",
         stderr
     )
     exit(2)
 }
 
-let cameraProfile = CommandLine.arguments.count == 4
+let cameraProfile = CommandLine.arguments.count >= 4
     ? CommandLine.arguments[3]
     : "automatic"
 guard cameraProfile == "automatic" || cameraProfile == "pickup" ||
-      cameraProfile == "pickup-wide" else {
+      cameraProfile == "pickup-wide" || cameraProfile == "trajectory" else {
     fputs(
         "render_cloth_obj.swift: camera profile must be pickup or " +
-        "pickup-wide\n",
+        "pickup-wide or trajectory\n",
         stderr
     )
+    exit(2)
+}
+guard (cameraProfile == "trajectory") == (CommandLine.arguments.count == 6),
+      CommandLine.arguments.count != 6 || CommandLine.arguments[4] == "--framing-list" else {
+    fputs("render_cloth_obj.swift: trajectory requires --framing-list FILE\n", stderr)
     exit(2)
 }
 
 do {
     let (vertices, fruits, grip) = try parseOBJ(at: CommandLine.arguments[1])
+    let framing = cameraProfile == "trajectory"
+        ? try trajectoryBounds(listPath: CommandLine.arguments[5]) : nil
     try render(
         vertices: vertices,
         fruits: fruits,
         grip: grip,
         cameraProfile: cameraProfile,
+        framing: framing,
         output: CommandLine.arguments[2]
     )
     print("rendered vertices=\(vertices.count) fruits=\(fruits.count) grip=\(grip != nil) camera=\(cameraProfile) output=\(CommandLine.arguments[2])")

@@ -5424,7 +5424,9 @@ void dumpOBJ(const std::string& path, const SimulationResult& result) {
                << ball.orientation.z
                << " angular_velocity " << ball.angularVelocity.x << ' '
                << ball.angularVelocity.y << ' '
-               << ball.angularVelocity.z << '\n';
+               << ball.angularVelocity.z
+               << " linear_velocity " << ball.velocity.x << ' '
+               << ball.velocity.y << ' ' << ball.velocity.z << '\n';
     }
 }
 
