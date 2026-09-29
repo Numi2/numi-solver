@@ -1,0 +1,64 @@
+[
+  {
+    "label": "full-audit",
+    "argv": [
+      "python3",
+      "build/elastic-yarn-fem-pack-independent-review/audit.py"
+    ],
+    "actual_exit": 0,
+    "expected_exit": 0,
+    "timeout_s": 30,
+    "timed_out": false,
+    "elapsed_s": 2.1746626663953066,
+    "source_sha256": "fd2d6cf800f555269c7a138f23b913769b5f86d520869c64a399aa9ac1ec9f4d",
+    "log_sha256": "ecf37c47b13e474926eda41db18aa3f06734243f67069ac231e8c6e50e2c74ee"
+  },
+  {
+    "label": "negative-mass",
+    "argv": [
+      "python3",
+      "build/elastic-yarn-fem-pack-independent-review/audit.py",
+      "--negative",
+      "mass"
+    ],
+    "actual_exit": 1,
+    "expected_exit": 1,
+    "timeout_s": 30,
+    "timed_out": false,
+    "elapsed_s": 0.05679399985820055,
+    "source_sha256": "fd2d6cf800f555269c7a138f23b913769b5f86d520869c64a399aa9ac1ec9f4d",
+    "log_sha256": "4034904ef600c27fa2137da18fd199d839750c360bd8635a63e119f89704b17a"
+  },
+  {
+    "label": "negative-inverse-shear",
+    "argv": [
+      "python3",
+      "build/elastic-yarn-fem-pack-independent-review/audit.py",
+      "--negative",
+      "inverse-shear"
+    ],
+    "actual_exit": 1,
+    "expected_exit": 1,
+    "timeout_s": 30,
+    "timed_out": false,
+    "elapsed_s": 0.05730816721916199,
+    "source_sha256": "fd2d6cf800f555269c7a138f23b913769b5f86d520869c64a399aa9ac1ec9f4d",
+    "log_sha256": "06ad9efe0c766875f02a6eced76f23bd8bcc395448b6a46c67f5c0be4f1b1e49"
+  },
+  {
+    "label": "negative-truncate",
+    "argv": [
+      "python3",
+      "build/elastic-yarn-fem-pack-independent-review/audit.py",
+      "--negative",
+      "truncate"
+    ],
+    "actual_exit": 1,
+    "expected_exit": 1,
+    "timeout_s": 30,
+    "timed_out": false,
+    "elapsed_s": 0.0578280845656991,
+    "source_sha256": "fd2d6cf800f555269c7a138f23b913769b5f86d520869c64a399aa9ac1ec9f4d",
+    "log_sha256": "5f2c7f4880eb9646511c777851602b3743e1ac1113de416ff4babdbe19c293aa"
+  }
+]

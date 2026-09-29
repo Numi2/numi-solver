@@ -1,0 +1,146 @@
+{
+  "schema": "numi.elastic-yarn.complete-fem-preparation-evidence.v1",
+  "actual_preparation_result": "PASS",
+  "physics_source_revision": "69736313414d3afd81f3b181116870143c13966e",
+  "source_manifest_sha256": "cbebb0fead12f5e3407a5ade8bfd52747bffa6433b7e20e20163f44e8650c492",
+  "prepare_script_sha256": "7d460294118af6f2788ee52091c1233a55a9900ee1e21d8ddbb747719b4072e4",
+  "input_sha256": {
+    "/Users/home/numi-solver/docs/assets/elastic-yarn-fem-frame38-provenance.json": "1c7da0b0410abdbf3b1f8c614c8803830fe272a4c355057ce4b035cebdb0b26d",
+    "/Users/home/numi-solver/docs/assets/deformable-support-10240-trajectory.csv": "2c0c0c5f45c821acdd026e88d6a9d259fd78f9d245c8617f98a742aa2075c434",
+    "/Users/home/numi-solver/build/support-verlet-terminal/build/support-verlet-level3-38.obj": "a7e4ec9f71f287c9eeee8c82952d14315064def6ae3b7f5411e1410f1e4c804e",
+    "/Users/home/numi-solver/docs/assets/deformable-support-10240-topology.csv": "528bf55f329ad3b702c39047b16f39e08c6d1f13c58cec4afc2e4acc593aa3f1",
+    "/Users/home/numi-solver/include/numi/cloth_material.h": "ce4aeaa04a911f5b742bd2ec6d0b481b4cdf9754475ff3ed8cac155cd9a8d4fd",
+    "/Users/home/numi-solver/docs/assets/deformable-support-verlet-level3.log": "938bd591186e9c2c8fe86e1166821c2dd00260f87e1109402647ff529137c4b9",
+    "/Users/home/numi-solver/docs/assets/deformable-support-verlet-level3.csv": "13b9152c0a19be88b31ba643de04d562dde07449e258849007b14a34dea23eef",
+    "/Users/home/numi-solver/docs/assets/deformable-support-10240-geometry.json": "6d92574d6318516949017adfedbcebfb8ade123cde3550c47a9f75c6686900aa",
+    "/Users/home/numi-solver/docs/assets/deformable-support-evidence.json": "295968f028dde470364782e50ef5d33794b67375a9fc6e6e9f9074c54065e2d2",
+    "/Users/home/numi-solver/docs/assets/elastic-yarn-fem-frame38-five-nodes.txt": "32038aadbb5d786a52ef5ff2da2a88cf788cac332ddd070496f42590cb09c69d"
+  },
+  "outputs_sha256": {
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/body.json": "7eda877b63f31f70661dea103c98fbec97cd4adb5e322ddc4222f4e6e2da7ceb",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/positions-frame38.f32x4.bin": "944d0a8fd0926c6e935ec7d6e2d06e01b96ab82dbf5d0d2f8c1620f12a5fac5e",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/velocity-mass-frame38.f32x4.bin": "d6e016e2cbe356218df603b11ee6661444aef2dfc099121acb92d74785bf33dc",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/rest-positions.f32x4.bin": "8a54fed28edb4999b7986d9dec21d0a0ad3863d73b47d923fdab665a36760b53",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/elements.abi1.bin": "8d6e28059e05b2e00a98c9dad3801c3a5efdabe90c2adbe8ad3ec082d96bb118",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/boundary-faces.u32x3.bin": "97cdb90f320dfb30ad8d0f87068860971075ef16f79693adaae2393ab0b1bf35",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/incidence-offsets.u32.bin": "1689c8322ab13cc9167c1a6b8b51728c33ecf5f887f4776bd8cd82d50a87c122",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/incidence.u32x4.bin": "6b56a0983015c852197ee98d117f233f0df8493c6d4b1c964d826b4ab1025250",
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/detF-frame38.csv": "aa81946b881fae90c0d17a48da9cacc075d17dc8c277f19b139a676ddc316463"
+  },
+  "nodes": 2057,
+  "elements": 10240,
+  "boundary_triangles": 1280,
+  "incidence_entries": 40960,
+  "frame": 38,
+  "recorded_time_s": 0.19,
+  "represented_FP32_states_uniquely_recovered_from_precision12_trace_fields": 28798,
+  "all_generated_rest_positions_and_masses_bit_exact_to_trace": true,
+  "all_generated_connectivity_volumes_material_bit_exact_to_topology": true,
+  "owning_authoring_extracted_without_formula_edits": true,
+  "all_authoring_output_buffers_bit_identical_contraction_off_on_fast": true,
+  "inverse_rest_binding": "Reconstructed by the exact frozen owning makeMesh function; all output buffers identical across off/on/fast contraction builds. All rest, volume, mass and topology buffers match retained trace bits. Original uploaded inverse-rest buffer was not separately exported, so this is source-bound deterministic reconstruction rather than a direct historical buffer hash.",
+  "total_lumped_mass_kg": 0.3170188445583335,
+  "total_represented_rest_volume_m3": 0.00031701884416079906,
+  "total_geometric_rest_volume_m3_FP64": 0.00031701884228615827,
+  "lumped_mass_minus_density_times_represented_volume_kg": 3.9753444980306085e-10,
+  "maximum_node_mass_difference_owning_FP32_contribution_vs_FP64_volume_sum_kg": 6.608047442568932e-12,
+  "mass_binding_arithmetic": "FP32(1000*represented_volume)/4 contribution accumulated inFP64, then owning nodal mass cast toFP32; matches every trace mass bit.",
+  "selected_face_owner": [
+    {
+      "element": 8768,
+      "oriented_nodes": [
+        5,
+        1814,
+        1347
+      ]
+    }
+  ],
+  "selected_face_three_nodal_states": [
+    {
+      "node": 5,
+      "position": [
+        0.0003836003306787461,
+        -0.02660437673330307,
+        0.0477684922516346
+      ],
+      "velocity": [
+        -0.10720565170049667,
+        -0.049092549830675125,
+        0.0884351059794426
+      ],
+      "mass": 3.869861029670574e-05,
+      "all_seven_fields_bit_exact": true
+    },
+    {
+      "node": 1814,
+      "position": [
+        0.00036456913221627474,
+        -0.020548366010189056,
+        0.046177417039871216
+      ],
+      "velocity": [
+        0.0396241657435894,
+        0.19635559618473053,
+        0.5212326645851135
+      ],
+      "mass": 7.739722786936909e-05,
+      "all_seven_fields_bit_exact": true
+    },
+    {
+      "node": 1347,
+      "position": [
+        -0.0050077238120138645,
+        -0.02401074953377247,
+        0.045249130576848984
+      ],
+      "velocity": [
+        -0.19038380682468414,
+        0.13790608942508698,
+        0.5741511583328247
+      ],
+      "mass": 6.191778084030375e-05,
+      "all_seven_fields_bit_exact": true
+    }
+  ],
+  "minimum_detF_FP64_source_reconstructed_inverse": 0.42433703402994905,
+  "maximum_detF_FP64_source_reconstructed_inverse": 1.7175678723338395,
+  "minimum_detF_witness": {
+    "element": 7296,
+    "nodes": [
+      7,
+      1249,
+      1251,
+      1687
+    ],
+    "detF_FP64": 0.42433703402994905,
+    "geometric_current_over_rest_determinant": 0.4243370090893506,
+    "serialized_volume_ratio": 0.42433701942210816
+  },
+  "maximum_FP64_J_difference_source_inverse_vs_geometric_rest": 2.1934274530011066e-07,
+  "maximum_inverse_row_difference_F32_vs_independent_FP64": 1.5238322816912842e-05,
+  "maximum_rest_consistency_error_FP64": 2.4104842444305774e-07,
+  "frozen_native_limits": {
+    "detF_strictly_greater_than": 9.999999974752427e-07,
+    "rest_consistency_abs_error_at_most": 0.00019999999494757503,
+    "native_all_5000_steps_minimum_accepted_detF_reported": 0.21475289762,
+    "frame38_native_elementwise_detF_exported": false
+  },
+  "retained_frame38_serialized_geometric_volume_ratio_minimum": 0.4243370194221083,
+  "independently_reproduced_serialized_volume_ratio_minimum": 0.42433701942210816,
+  "frame38_all_elements_pass_reconstructed_native_detF_and_rest_limits": true,
+  "accepted_steps_at_captured_frame": 1900,
+  "rejected_steps_at_captured_frame": 0,
+  "native_elapsed_timestep_product_s": 0.18999999520019628,
+  "binary_layout": {
+    "byte_order": "little",
+    "positions_and_velocity_mass": "2057 records of4 float32; position.w reserved0; velocity.w owning mass",
+    "element": "10240 96-byte NumiDeformableMeshElement records ABI1; nodes uint4,3 inverse float4 rows(volume in row0.w),material float4,control uint4",
+    "incidence": "40960 uint4(element,localCorner,owningNode,0);2058 uint offsets"
+  },
+  "gaps": [
+    "No direct historical inverse-rest-buffer dump/hash; exact owning-source reconstruction is supplied and independently cross-bound to all retained authoring outputs.",
+    "No captured per-element native frame38 detF values; FP64 results are compared to unchanged native limits and retained geometric ratio instead.",
+    "No full cumulative native status/work checkpoint; this pack contains complete physical owners/material/topology for a new coupled CPU step."
+  ],
+  "boundary": "Preparation only. No toy tetrahedron, invented material/state, GPU/new trajectory/production edit, elastic advance, yarn-FEM coupled step, contact-work closure or full scene qualification."
+}

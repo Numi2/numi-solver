@@ -1,0 +1,169 @@
+{
+  "schema": "numi.elastic-yarn.full-fem-pack.independent-audit.v1",
+  "source_commit": "69736313414d3afd81f3b181116870143c13966e",
+  "source_binding": {
+    "tools/deformable_mesh.mm": {
+      "git_blob_sha256": "ad289c243c3ab4c3e251cb420fc4be74d8d1713007c3603265cc3c90ab73d87c",
+      "frozen_sha256": "ad289c243c3ab4c3e251cb420fc4be74d8d1713007c3603265cc3c90ab73d87c",
+      "recorded_sha256": "ad289c243c3ab4c3e251cb420fc4be74d8d1713007c3603265cc3c90ab73d87c"
+    },
+    "include/numi/deformable_mesh.h": {
+      "git_blob_sha256": "a0150503c14f4fd2fe622f5d7262ced435e9ee807048c54e76420acc8154205b",
+      "frozen_sha256": "a0150503c14f4fd2fe622f5d7262ced435e9ee807048c54e76420acc8154205b",
+      "recorded_sha256": "a0150503c14f4fd2fe622f5d7262ced435e9ee807048c54e76420acc8154205b"
+    },
+    "include/numi/deformable_tet.h": {
+      "git_blob_sha256": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0",
+      "frozen_sha256": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0",
+      "recorded_sha256": "f1c0bf1235151ee6ebf32d579b472162dac209bace6a29b95941d0892a5e0bf0"
+    },
+    "include/metalrobo/gpu_types.h": {
+      "git_blob_sha256": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8",
+      "frozen_sha256": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8",
+      "recorded_sha256": "55777caa42851b167780255c76e02c40e2285ee43cc6dda77063d8639f6728d8"
+    },
+    "src/metal/DeformableMesh.metal": {
+      "git_blob_sha256": "1d4c4cd80c956b3ac45877af6af3a155db5bd3728eb3ae06766809069d33887c",
+      "frozen_sha256": "1d4c4cd80c956b3ac45877af6af3a155db5bd3728eb3ae06766809069d33887c",
+      "recorded_sha256": "1d4c4cd80c956b3ac45877af6af3a155db5bd3728eb3ae06766809069d33887c"
+    },
+    "src/metal/DeformableTet.metal": {
+      "git_blob_sha256": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072",
+      "frozen_sha256": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072",
+      "recorded_sha256": "a9248126431af3affa84ceacc3e3311561c443e3c493db4f867f0374ba2fe072"
+    },
+    "CMakeLists.txt": {
+      "git_blob_sha256": "6cbcced7a175e1de1574d19a38e572a61cbf43d00c3ad792809e33e36e88e738",
+      "frozen_sha256": "6cbcced7a175e1de1574d19a38e572a61cbf43d00c3ad792809e33e36e88e738",
+      "recorded_sha256": "6cbcced7a175e1de1574d19a38e572a61cbf43d00c3ad792809e33e36e88e738"
+    }
+  },
+  "receipt_bindings_verified": {
+    "build/elastic-yarn-fem-step-preparation/source-manifest.json": true,
+    "build/elastic-yarn-fem-step-preparation/authoring.cpp": true,
+    "build/elastic-yarn-fem-step-preparation/authoring-runs.json": true,
+    "build/elastic-yarn-fem-step-preparation/prepare.py": true,
+    "build/elastic-yarn-fem-step-preparation/prepare.log": true,
+    "build/elastic-yarn-fem-step-preparation/prepare.exit": true,
+    "build/elastic-yarn-fem-step-preparation/evidence.json": true,
+    "build/elastic-yarn-fem-step-preparation/README.md": true,
+    "build/elastic-yarn-fem-step-preparation/initial-mass-assumption-failure.json": true,
+    "build/elastic-yarn-fem-step-preparation/authoring-off": true,
+    "build/elastic-yarn-fem-step-preparation/authoring-off.log": true,
+    "build/elastic-yarn-fem-step-preparation/authoring-off.exit": true,
+    "build/elastic-yarn-fem-step-preparation/authoring-on": true,
+    "build/elastic-yarn-fem-step-preparation/authoring-on.log": true,
+    "build/elastic-yarn-fem-step-preparation/authoring-on.exit": true,
+    "build/elastic-yarn-fem-step-preparation/authoring-fast": true,
+    "build/elastic-yarn-fem-step-preparation/authoring-fast.log": true,
+    "build/elastic-yarn-fem-step-preparation/authoring-fast.exit": true
+  },
+  "retained_input_bindings_verified": {
+    "/Users/home/numi-solver/docs/assets/elastic-yarn-fem-frame38-provenance.json": true,
+    "/Users/home/numi-solver/docs/assets/deformable-support-10240-trajectory.csv": true,
+    "/Users/home/numi-solver/build/support-verlet-terminal/build/support-verlet-level3-38.obj": true,
+    "/Users/home/numi-solver/docs/assets/deformable-support-10240-topology.csv": true,
+    "/Users/home/numi-solver/include/numi/cloth_material.h": true,
+    "/Users/home/numi-solver/docs/assets/deformable-support-verlet-level3.log": true,
+    "/Users/home/numi-solver/docs/assets/deformable-support-verlet-level3.csv": true,
+    "/Users/home/numi-solver/docs/assets/deformable-support-10240-geometry.json": true,
+    "/Users/home/numi-solver/docs/assets/deformable-support-evidence.json": true,
+    "/Users/home/numi-solver/docs/assets/elastic-yarn-fem-frame38-five-nodes.txt": true
+  },
+  "prepared_output_bindings_verified": {
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/body.json": true,
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/positions-frame38.f32x4.bin": true,
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/velocity-mass-frame38.f32x4.bin": true,
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/rest-positions.f32x4.bin": true,
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/elements.abi1.bin": true,
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/boundary-faces.u32x3.bin": true,
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/incidence-offsets.u32.bin": true,
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/incidence.u32x4.bin": true,
+    "/Users/home/numi-solver/build/elastic-yarn-fem-step-preparation/detF-frame38.csv": true
+  },
+  "node_count": 2057,
+  "tet_count": 10240,
+  "boundary_faces": 1280,
+  "boundary_nodes": 642,
+  "boundary_edges": 1920,
+  "boundary_euler_characteristic": 2,
+  "volume_graph_connected_nodes": 2057,
+  "tet_faces_unique": 21120,
+  "tet_face_adjacency_connected_elements": 10240,
+  "raw_layout_bytes": {
+    "positions-frame38.f32x4.bin": 32912,
+    "velocity-mass-frame38.f32x4.bin": 32912,
+    "rest-positions.f32x4.bin": 32912,
+    "elements.abi1.bin": 983040,
+    "boundary-faces.u32x3.bin": 15360,
+    "incidence-offsets.u32.bin": 8232,
+    "incidence.u32x4.bin": 655360
+  },
+  "incidence_entries": 40960,
+  "represented_trace_fields_uniquely_recovered": 28798,
+  "raw_JSON_and_trace_fields_bit_exact": true,
+  "owning_mass_reconstruction_bit_exact": true,
+  "total_lumped_mass_kg": 0.3170188445583335,
+  "represented_rest_volume_m3": 0.00031701884416079906,
+  "exact_geometric_rest_volume_m3": "36792217319433559865833/116056878683004400771792896",
+  "geometric_rest_volume_m3_FP64": 0.0003170188422861788,
+  "boundary_volume_exactly_matches_all_tetrahedra": true,
+  "mass_minus_density_times_represented_volume_kg": 3.9753444980306085e-10,
+  "minimum_detF": 0.424337034029949,
+  "maximum_detF": 1.7175678723338395,
+  "minimum_detF_witness": {
+    "element": 7296,
+    "nodes": [
+      7,
+      1249,
+      1251,
+      1687
+    ],
+    "exact_detF": "75704256593616886005179604764779916734756955/178405961588244985132285746181186892047843328",
+    "detF_FP64": 0.424337034029949,
+    "geometric_J_FP64": 0.4243370090893506
+  },
+  "maximum_exact_rest_matrix_inverse_residual": 2.5629844202512686e-07,
+  "maximum_exact_rest_volume_inverse_determinant_consistency_error": 2.41048424571176e-07,
+  "maximum_independent_FP64_LU_vs_exact_detF_error": 4.440892098500626e-16,
+  "maximum_source_inverse_vs_exact_geometric_J_difference": 2.193427450150535e-07,
+  "minimum_serialized_volume_ratio": 0.42433701942210816,
+  "selected_face": [
+    5,
+    1814,
+    1347
+  ],
+  "selected_face_owner": 8768,
+  "selected_nodal_masses_kg": [
+    3.869861029670574e-05,
+    7.739722786936909e-05,
+    6.191778084030375e-05
+  ],
+  "material": {
+    "mu_Pa": 3000.0,
+    "lambda_Pa": 6000.0,
+    "density_kg_m3": 1000.0,
+    "small_strain_Young_modulus_Pa": 8000.0,
+    "small_strain_Poisson_ratio": 0.3333333333333333,
+    "bulk_modulus_Pa": 8000.0,
+    "compressional_wave_speed_m_s": 3.4641016151377544,
+    "shear_wave_speed_m_s": 1.7320508075688772,
+    "calibrated": false
+  },
+  "captured_frame": 38,
+  "nominal_recorded_time_s": 0.19,
+  "represented_timestep_product_s": 0.18999999520019628,
+  "accepted_steps": 1900,
+  "rejected_steps": 0,
+  "integrator": "support_verlet",
+  "capture_limits": [
+    "Historical uploaded inverse-rest element buffer has no retained raw dump/hash; this is reconstructed frozen-source data.",
+    "Native frame38 per-element detF/forces/stress/energy outputs were not exported.",
+    "Frame38 current/cumulative failure bits, support-impulse/minJ/net-force status entries and full96-byte native status were not exported.",
+    "Previous/free/candidate element outputs and buffers are not a bit-exact continuation checkpoint."
+  ],
+  "no_step_advance": true,
+  "no_gpu": true,
+  "full_scene_qualified": false,
+  "elapsed_s": 2.0740134166553617
+}

@@ -1,0 +1,31 @@
+{
+  "schema": "numi.elastic-yarn.complete-fem-step-preparation-receipt.v1",
+  "actual_prepare_exit": 0,
+  "sha256": {
+    "build/elastic-yarn-fem-step-preparation/source-manifest.json": "cbebb0fead12f5e3407a5ade8bfd52747bffa6433b7e20e20163f44e8650c492",
+    "build/elastic-yarn-fem-step-preparation/authoring.cpp": "d2a8334f7753b044a1414a929f8b28fd3be27bdb406f24e4a0391fc213ac91b2",
+    "build/elastic-yarn-fem-step-preparation/authoring-runs.json": "caa5b4f05ea686267e4cf80a08e0eb9c73a9b0058b7f3dd8051b5742fe251892",
+    "build/elastic-yarn-fem-step-preparation/prepare.py": "7d460294118af6f2788ee52091c1233a55a9900ee1e21d8ddbb747719b4072e4",
+    "build/elastic-yarn-fem-step-preparation/prepare.log": "59122496f21e080eb5e33b046e12cfc9752aa332741e27f95339169577ea46cc",
+    "build/elastic-yarn-fem-step-preparation/prepare.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "build/elastic-yarn-fem-step-preparation/evidence.json": "f364c6c0b183192db47b891069bb354e07441c6ec504ed32954c9210e4bb2781",
+    "build/elastic-yarn-fem-step-preparation/README.md": "141933581f8f3d1c5b718ce0b55458937b0746016f04fdd87c64afc0894ad8ef",
+    "build/elastic-yarn-fem-step-preparation/initial-mass-assumption-failure.json": "f381c406bafc961c75b1bf5e65ee4f35920ebfe378c747f4b2067585eca389c8",
+    "build/elastic-yarn-fem-step-preparation/authoring-off": "06920a341a6b128d6c55ac5d0c671bd0f7293e06c607fae6047c795c2bee8f3e",
+    "build/elastic-yarn-fem-step-preparation/authoring-off.log": "026ff3803be09e8edb4acb0db9edd327864d909c9834ea0cbc01a4842eddc5e6",
+    "build/elastic-yarn-fem-step-preparation/authoring-off.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "build/elastic-yarn-fem-step-preparation/authoring-on": "08f417b41d6c0272cff6769d51334fb274639591662ad751e50c77be98a1a0c3",
+    "build/elastic-yarn-fem-step-preparation/authoring-on.log": "026ff3803be09e8edb4acb0db9edd327864d909c9834ea0cbc01a4842eddc5e6",
+    "build/elastic-yarn-fem-step-preparation/authoring-on.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "build/elastic-yarn-fem-step-preparation/authoring-fast": "3edf5abfb20d9767853d25c4933b9bd6f44adfa9e82a8b0398cc18dba0d6b315",
+    "build/elastic-yarn-fem-step-preparation/authoring-fast.log": "026ff3803be09e8edb4acb0db9edd327864d909c9834ea0cbc01a4842eddc5e6",
+    "build/elastic-yarn-fem-step-preparation/authoring-fast.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+  },
+  "compiler": "Apple clang version 21.0.0 (clang-2100.0.123.102)",
+  "compile_commands": [
+    "clang++ -std=c++23 -O3 -Wall -Wextra -Wpedantic -ffp-contract=off -Ifrozen/include authoring.cpp -o authoring-off",
+    "clang++ -std=c++23 -O3 -Wall -Wextra -Wpedantic -ffp-contract=on -Ifrozen/include authoring.cpp -o authoring-on",
+    "clang++ -std=c++23 -O3 -Wall -Wextra -Wpedantic -ffp-contract=fast -Ifrozen/include authoring.cpp -o authoring-fast"
+  ],
+  "no_gpu_or_trajectory": true
+}

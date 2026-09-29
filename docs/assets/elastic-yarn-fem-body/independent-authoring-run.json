@@ -1,0 +1,42 @@
+{
+  "source_sha256": "d2a8334f7753b044a1414a929f8b28fd3be27bdb406f24e4a0391fc213ac91b2",
+  "binary_sha256": "4c8e92ef97d75c4a50efe525bc50905a81312aa4ca6e9e57835d8b9b7504ecfa",
+  "compile_argv": [
+    "xcrun",
+    "clang++",
+    "-std=c++23",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-fno-fast-math",
+    "-ffp-contract=off",
+    "-Ibuild/elastic-yarn-fem-pack-independent-review/frozen/include",
+    "build/elastic-yarn-fem-pack-independent-review/authoring.cpp",
+    "-o",
+    "build/elastic-yarn-fem-pack-independent-review/audit-authoring"
+  ],
+  "run_argv": [
+    "build/elastic-yarn-fem-pack-independent-review/audit-authoring",
+    "build/elastic-yarn-fem-pack-independent-review/regenerated-authoring"
+  ],
+  "actual_exit": 0,
+  "timeout_s": 10,
+  "elapsed_s": 0.3981559993699193,
+  "all_regenerated_authoring_outputs_match_existing": {
+    "rest-velocity-mass.f32x4.bin": true,
+    "rest-positions.f32x4.bin": true,
+    "incidence.u32x4.bin": true,
+    "boundary-faces.u32x3.bin": true,
+    "incidence-offsets.u32.bin": true,
+    "elements.abi1.bin": true
+  },
+  "outputs_sha256": {
+    "rest-velocity-mass.f32x4.bin": "5ccb48df2413285fcec79a35233433e9cb70f79e0f4e4e515a977fd41cd6e8ae",
+    "rest-positions.f32x4.bin": "8a54fed28edb4999b7986d9dec21d0a0ad3863d73b47d923fdab665a36760b53",
+    "incidence.u32x4.bin": "6b56a0983015c852197ee98d117f233f0df8493c6d4b1c964d826b4ab1025250",
+    "boundary-faces.u32x3.bin": "97cdb90f320dfb30ad8d0f87068860971075ef16f79693adaae2393ab0b1bf35",
+    "incidence-offsets.u32.bin": "1689c8322ab13cc9167c1a6b8b51728c33ecf5f887f4776bd8cd82d50a87c122",
+    "elements.abi1.bin": "8d6e28059e05b2e00a98c9dad3801c3a5efdabe90c2adbe8ad3ec082d96bb118"
+  }
+}

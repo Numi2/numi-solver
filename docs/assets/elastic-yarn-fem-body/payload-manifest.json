@@ -1,0 +1,79 @@
+{
+  "schema": "numi.elastic-yarn.full-fem-body.public-payload.v1",
+  "physics_source_revision": "69736313414d3afd81f3b181116870143c13966e",
+  "payloads": {
+    "body.json": {
+      "source": "build/elastic-yarn-fem-step-preparation/body.json",
+      "sha256": "7eda877b63f31f70661dea103c98fbec97cd4adb5e322ddc4222f4e6e2da7ceb",
+      "bytes": 4541542,
+      "compressed_file": "body.json.gz",
+      "compressed_sha256": "24043a522ec007c98b04d9d64e8602f98d45682b3a2247b528bd0cd0655fd5c9",
+      "compressed_bytes": 588277
+    },
+    "positions-frame38.f32x4.bin": {
+      "source": "build/elastic-yarn-fem-step-preparation/positions-frame38.f32x4.bin",
+      "sha256": "944d0a8fd0926c6e935ec7d6e2d06e01b96ab82dbf5d0d2f8c1620f12a5fac5e",
+      "bytes": 32912,
+      "compressed_file": "positions-frame38.f32x4.bin.gz",
+      "compressed_sha256": "faacbf540005f55497bbe032b5aee9895ad97f2acf17d4e2679e95949cca621f",
+      "compressed_bytes": 24199
+    },
+    "velocity-mass-frame38.f32x4.bin": {
+      "source": "build/elastic-yarn-fem-step-preparation/velocity-mass-frame38.f32x4.bin",
+      "sha256": "d6e016e2cbe356218df603b11ee6661444aef2dfc099121acb92d74785bf33dc",
+      "bytes": 32912,
+      "compressed_file": "velocity-mass-frame38.f32x4.bin.gz",
+      "compressed_sha256": "0c26dbc75a7217c2b963de873a0eb70116aabcad5e99c179fc40b362d0fcc53b",
+      "compressed_bytes": 27303
+    },
+    "rest-positions.f32x4.bin": {
+      "source": "build/elastic-yarn-fem-step-preparation/rest-positions.f32x4.bin",
+      "sha256": "8a54fed28edb4999b7986d9dec21d0a0ad3863d73b47d923fdab665a36760b53",
+      "bytes": 32912,
+      "compressed_file": "rest-positions.f32x4.bin.gz",
+      "compressed_sha256": "8ffa36223516efec17c6555492a68aeca53cd43ecd844d6d9c3847ca825701fa",
+      "compressed_bytes": 7769
+    },
+    "elements.abi1.bin": {
+      "source": "build/elastic-yarn-fem-step-preparation/elements.abi1.bin",
+      "sha256": "8d6e28059e05b2e00a98c9dad3801c3a5efdabe90c2adbe8ad3ec082d96bb118",
+      "bytes": 983040,
+      "compressed_file": "elements.abi1.bin.gz",
+      "compressed_sha256": "8e1677057bb698ad23c27c4fec94965a5a5d5fe9fbe1c179d013feb38f60d17e",
+      "compressed_bytes": 200710
+    },
+    "boundary-faces.u32x3.bin": {
+      "source": "build/elastic-yarn-fem-step-preparation/boundary-faces.u32x3.bin",
+      "sha256": "97cdb90f320dfb30ad8d0f87068860971075ef16f79693adaae2393ab0b1bf35",
+      "bytes": 15360,
+      "compressed_file": "boundary-faces.u32x3.bin.gz",
+      "compressed_sha256": "69d24704f62dff32eb95f5c92de767216627d198309b1b9c70161611161dd3d3",
+      "compressed_bytes": 5006
+    },
+    "incidence-offsets.u32.bin": {
+      "source": "build/elastic-yarn-fem-step-preparation/incidence-offsets.u32.bin",
+      "sha256": "1689c8322ab13cc9167c1a6b8b51728c33ecf5f887f4776bd8cd82d50a87c122",
+      "bytes": 8232,
+      "compressed_file": "incidence-offsets.u32.bin.gz",
+      "compressed_sha256": "f6268c5b318cde814939768fe8950e0fda681d34bb4d42381f81d4b042e69578",
+      "compressed_bytes": 2964
+    },
+    "incidence.u32x4.bin": {
+      "source": "build/elastic-yarn-fem-step-preparation/incidence.u32x4.bin",
+      "sha256": "6b56a0983015c852197ee98d117f233f0df8493c6d4b1c964d826b4ab1025250",
+      "bytes": 655360,
+      "compressed_file": "incidence.u32x4.bin.gz",
+      "compressed_sha256": "00d2770900d4bebfdd6147e315a9bd64475af8423908f040dfe5620d5cade819",
+      "compressed_bytes": 109353
+    },
+    "detF-frame38.csv": {
+      "source": "build/elastic-yarn-fem-step-preparation/detF-frame38.csv",
+      "sha256": "aa81946b881fae90c0d17a48da9cacc075d17dc8c277f19b139a676ddc316463",
+      "bytes": 1050061,
+      "compressed_file": "detF-frame38.csv.gz",
+      "compressed_sha256": "1cc1582cee57f7afcd62ba22131ab87c2e8b1a1fe18dc229e5bf81bfe257eb71",
+      "compressed_bytes": 377548
+    }
+  },
+  "boundary": "Complete physical owners/material/topology for a newCPU step. Source-reconstructed inverse arrays; no historical uploaded buffer hash or cumulative native status/work checkpoint."
+}

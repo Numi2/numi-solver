@@ -1,0 +1,9 @@
+{
+  "actual_exit": 1,
+  "cause": "Independent audit initially summed density*represented volume/4 entirely inFP64. Frozen owning source performs1000*float volume/4 inFP32 before accumulation into double lumped masses. Direct generated masses already match retained trace bits; this is an audit arithmetic error, not a physical result failure.",
+  "sha256": {
+    "initial-mass-assumption-failed-prepare.py": "d747ecf9ff4bfe82a1a014b79cc167c63dc02fc71892a1305d2f6da5f1862462",
+    "initial-mass-assumption-failed-prepare.log": "bcfbe7269dc820f51f7712f1074d0a823dae597bbe77b5ecbbbadc3023f2dc9f",
+    "initial-mass-assumption-failed-prepare.exit": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+  }
+}

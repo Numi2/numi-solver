@@ -65,6 +65,13 @@ material coordinates. General rotation and incoming normal support remain open.
 Stress advancement and
 thickness-offset frictional torque remain coupled simulation gates.
 
+The [complete captured FEM body](ELASTIC_YARN_FEM_BODY.md) now supplies all
+2,057 physical owners and 10,240 source elements for the common CPU step.
+Independent exact-rational checks pass every element and rest matrix; all
+retained nodal fields and regenerated authoring buffers match. Historical
+uploaded inverse-buffer identity and cumulative native status/work checkpoint
+remain unavailable. Preparing this input does not claim a new coupled advance.
+
 [Whole-yarn CPU geometry and velocity evidence](WHOLE_YARN_STATIC_MATH.md)
 records all 1,299 seeded sweeps resolved, four extreme-length unresolved
 controls and separate normal/friction energy regressions. Those helper checks do not establish

@@ -1,0 +1,5 @@
+prepared_complete_fem_body=PASS nodes=2057 elements=10240 boundary_faces=1280 incidence=40960
+total_mass_kg=0.3170188445583335 represented_rest_volume_m3=0.00031701884416079906
+frame38_minimum_detF_FP64=0.42433703402994905 maximum=1.7175678723338395 rest_consistency_max=2.4104842444305774e-07
+selected_face=(5, 1814, 1347) owner=[{'element': 8768, 'oriented_nodes': (5, 1814, 1347)}] all_three_nodal_states_bit_exact=1
+all_authoring_buffers_contraction_modes_exact=1 historical_inverse_buffer_dump=ABSENT no_step_advance=1 no_gpu=1

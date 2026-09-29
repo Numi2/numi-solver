@@ -1,0 +1,16 @@
+{
+  "schema": "numi.elastic-yarn.full-fem-body.public-extraction.v1",
+  "payload_manifest_sha256": "3b5e2ee5ba843d44509051d295090e456560dbc493d203c8edde6d6b56312279",
+  "unpacker_sha256": "7393224cf2e5f93e0c371f095ea1a918c2621400e95bf166b108c3543d3503f1",
+  "payloads_verified": 9,
+  "output_directory": "/Users/home/numi-solver/build/full-fem-body-public-m0csct_b",
+  "nodes": 2057,
+  "tetrahedra": 10240,
+  "boundary_faces": 1280,
+  "source_revision": "69736313414d3afd81f3b181116870143c13966e",
+  "recorded_frame": 38,
+  "inverse_rows_are_source_reconstructed": true,
+  "historical_native_checkpoint_identity_claimed": false,
+  "FEM_step_executed": false,
+  "GPU_execution": false
+}

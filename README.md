@@ -53,6 +53,10 @@ incoming normal motion. FEM advancement and full native bag coupling remain open
 [Elastic contact mechanics and qualification boundary](docs/ELASTIC_YARN_CONTACT.md).
 [Moving geometry and retained counterexamples](docs/ELASTIC_YARN_MOVING_CCD.md).
 [Exact grazing support, independent proof checks and public reproducer](docs/ELASTIC_YARN_EXACT_SUPPORT.md).
+The complete captured **2,057-node / 10,240-tet** FEM body is now available as
+a reviewed input pack for coupled steps, including all physical owners,
+material and source-reconstructed rest data.
+[Full body, independent audit and historical checkpoint limits](docs/ELASTIC_YARN_FEM_BODY.md).
 
 
 ### Newest loaded release · finite tabletop and lower floor · September 29, 2026
