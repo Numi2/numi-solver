@@ -59,6 +59,7 @@ set(
     include/numi/temporal_cone_probe.h
     include/numi/braided_bag.h
     include/numi/cloth_bag_gpu.h
+    include/numi/cloth_gpu_dispatch_guards.h
     include/numi/static_contact_geometry.h
 )
 
@@ -304,6 +305,9 @@ add_executable(numi-solver-static-velocity tools/static_velocity_contact.cpp)
 target_include_directories(numi-solver-static-velocity PRIVATE include)
 target_compile_features(numi-solver-static-velocity PRIVATE cxx_std_23)
 target_compile_options(numi-solver-static-velocity PRIVATE -Wall -Wextra -Wpedantic -fno-fast-math -ffp-contract=off)
+add_executable(numi-solver-cloth-dispatch-guard tests/dispatch_guard_host.cpp)
+target_include_directories(numi-solver-cloth-dispatch-guard PRIVATE include)
+target_compile_features(numi-solver-cloth-dispatch-guard PRIVATE cxx_std_20)
 add_executable(numi-solver-transactional-substep tools/transactional_substep.cpp)
 target_include_directories(numi-solver-transactional-substep PRIVATE include)
 target_compile_features(numi-solver-transactional-substep PRIVATE cxx_std_23)
@@ -465,6 +469,8 @@ if(BUILD_TESTING)
     add_test(NAME static_contact.whole_yarn_host COMMAND $<TARGET_FILE:numi-solver-static-segment>)
     set_tests_properties(static_contact.whole_yarn_host PROPERTIES LABELS "cpu;physics;contact;finite_bench;ccd" TIMEOUT 60)
     add_test(NAME static_contact.velocity_slack_host COMMAND $<TARGET_FILE:numi-solver-static-velocity>)
+    add_test(NAME cloth_bag.dispatch_guard_host COMMAND $<TARGET_FILE:numi-solver-cloth-dispatch-guard>)
+    set_tests_properties(cloth_bag.dispatch_guard_host PROPERTIES LABELS "cpu;physics;cloth;capacity" TIMEOUT 30)
     set_tests_properties(static_contact.velocity_slack_host PROPERTIES LABELS "cpu;physics;contact;finite_bench;energy;friction" TIMEOUT 30)
     add_test(NAME static_contact.transactional_substep_host COMMAND $<TARGET_FILE:numi-solver-transactional-substep>)
     set_tests_properties(static_contact.transactional_substep_host PROPERTIES LABELS "cpu;physics;contact;finite_bench;rollback" TIMEOUT 30)

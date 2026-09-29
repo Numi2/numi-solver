@@ -2,6 +2,7 @@
 #import <Metal/Metal.h>
 
 #include "numi/cloth_bag_gpu.h"
+#include "numi/cloth_gpu_dispatch_guards.h"
 #include "numi/cloth_material.h"
 #include "numi/grip_trajectory.h"
 #include "numi/finite_bench_geometry.h"
@@ -4214,7 +4215,11 @@ GPUResult runGPU(
         std::numeric_limits<std::uint32_t>::max()) {
         throw std::logic_error("Metal cloth trajectory is too long");
     }
+    numi::cloth::requireSelfCellCapacity(
+        initial.distances.size(), initial.config.control.z);
     for (const NumiClothBagGPUConfig& config : trajectoryConfigs) {
+        numi::cloth::requireFixedLocalContactCounts(
+            config.localContactCounts, initial.config.localContactCounts);
         if (config.control.x != NUMI_CLOTH_BAG_GPU_ABI_VERSION ||
             config.control.y != initial.config.control.y ||
             config.control.z != initial.config.control.z ||
