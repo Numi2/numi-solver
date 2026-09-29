@@ -1,0 +1,219 @@
+{
+  "schema": "numi.loaded-drop.complete-first-fruit-replay.v1",
+  "prefix": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48",
+  "replay": 1,
+  "frames": 721,
+  "row_count": 8652,
+  "simulated_seconds": 6,
+  "immutable_complete_first_replay_trace": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-48-r1-complete-fruits.csv",
+  "trace_sha256": "6944d547ce17dd5687d1ffd728305fc1a7a320acc42a8362ac0c54bd9f20ae04",
+  "frozen_manifest": "/Users/home/numi-solver/build/loaded-drop-investigation-corrected-launch/manifest.json",
+  "frozen_manifest_sha256": "2bf2787ce59663de0d03178545d3c09a48f33cd2842efa5d06bcfb46ac8c0710",
+  "all_seven_frozen_hashes_verified": true,
+  "minimum_independent_static_gap_m": 0.003792913149148369,
+  "maximum_exported_gap_discrepancy_m": 2.220446049250313e-16,
+  "independent_geometry_pass": true,
+  "maximum_saved_fruit_speed_m_s": 5.122732975696878,
+  "released_fruits": [],
+  "released_fruits_landed_on_floor": [],
+  "fruits": [
+    {
+      "fruit": 0,
+      "first_release_frame": null,
+      "first_release_time_s": null,
+      "first_saved_floor_contact_frame_after_release": null,
+      "first_saved_floor_contact_time_s_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_center_m": [
+        1.3379125425574296,
+        0.024715818651576696,
+        -0.6722798728486107
+      ],
+      "final_floor_gap_m": 0.007720127151389311,
+      "final_vertical_velocity_m_s": -0.0007702416509146498,
+      "final_lower_floor_contact": false
+    },
+    {
+      "fruit": 1,
+      "first_release_frame": null,
+      "first_release_time_s": null,
+      "first_saved_floor_contact_frame_after_release": null,
+      "first_saved_floor_contact_time_s_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_center_m": [
+        1.3391366146896038,
+        -0.11020618606319571,
+        -0.6767018962529161
+      ],
+      "final_floor_gap_m": 0.008298103747083896,
+      "final_vertical_velocity_m_s": -0.0022342527316764815,
+      "final_lower_floor_contact": false
+    },
+    {
+      "fruit": 2,
+      "first_release_frame": null,
+      "first_release_time_s": null,
+      "first_saved_floor_contact_frame_after_release": null,
+      "first_saved_floor_contact_time_s_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_center_m": [
+        1.1287831694249522,
+        0.17269743747886201,
+        -0.6695968417661461
+      ],
+      "final_floor_gap_m": 0.005403158233853914,
+      "final_vertical_velocity_m_s": 2.0809095783074543e-05,
+      "final_lower_floor_contact": false
+    },
+    {
+      "fruit": 3,
+      "first_release_frame": null,
+      "first_release_time_s": null,
+      "first_saved_floor_contact_frame_after_release": null,
+      "first_saved_floor_contact_time_s_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_center_m": [
+        0.9793259332957485,
+        -0.03981918745156511,
+        -0.6824150521889697
+      ],
+      "final_floor_gap_m": 0.007584947811030307,
+      "final_vertical_velocity_m_s": 0.00028316520052914927,
+      "final_lower_floor_contact": false
+    },
+    {
+      "fruit": 4,
+      "first_release_frame": null,
+      "first_release_time_s": null,
+      "first_saved_floor_contact_frame_after_release": null,
+      "first_saved_floor_contact_time_s_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_center_m": [
+        1.0028789192333027,
+        -0.1652884540306399,
+        -0.6731026949792586
+      ],
+      "final_floor_gap_m": 0.00889730502074143,
+      "final_vertical_velocity_m_s": -0.0014661718008065422,
+      "final_lower_floor_contact": false
+    },
+    {
+      "fruit": 5,
+      "first_release_frame": null,
+      "first_release_time_s": null,
+      "first_saved_floor_contact_frame_after_release": null,
+      "first_saved_floor_contact_time_s_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_center_m": [
+        1.1278304293782306,
+        -0.22834433084427927,
+        -0.6697745556188835
+      ],
+      "final_floor_gap_m": 0.008225444381116456,
+      "final_vertical_velocity_m_s": 0.0025106418859881397,
+      "final_lower_floor_contact": false
+    },
+    {
+      "fruit": 6,
+      "first_release_frame": null,
+      "first_release_time_s": null,
+      "first_saved_floor_contact_frame_after_release": null,
+      "first_saved_floor_contact_time_s_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_center_m": [
+        1.2004250139825914,
+        -0.11452887738193199,
+        -0.6708091405546744
+      ],
+      "final_floor_gap_m": 0.016190859445325556,
+      "final_vertical_velocity_m_s": 0.0005040663807829631,
+      "final_lower_floor_contact": false
+    },
+    {
+      "fruit": 7,
+      "first_release_frame": null,
+      "first_release_time_s": null,
+      "first_saved_floor_contact_frame_after_release": null,
+      "first_saved_floor_contact_time_s_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_center_m": [
+        1.1030269779651887,
+        -0.016715217830542535,
+        -0.6760701200187936
+      ],
+      "final_floor_gap_m": 0.007929879981206367,
+      "final_vertical_velocity_m_s": 0.0001730478814612169,
+      "final_lower_floor_contact": false
+    },
+    {
+      "fruit": 8,
+      "first_release_frame": null,
+      "first_release_time_s": null,
+      "first_saved_floor_contact_frame_after_release": null,
+      "first_saved_floor_contact_time_s_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_center_m": [
+        1.271781470232246,
+        -0.22903181633686673,
+        -0.6660833226618617
+      ],
+      "final_floor_gap_m": 0.011916677338138351,
+      "final_vertical_velocity_m_s": 0.0004865046754205037,
+      "final_lower_floor_contact": false
+    },
+    {
+      "fruit": 9,
+      "first_release_frame": null,
+      "first_release_time_s": null,
+      "first_saved_floor_contact_frame_after_release": null,
+      "first_saved_floor_contact_time_s_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_center_m": [
+        1.2085517246803053,
+        0.05918218929646534,
+        -0.6780977842181398
+      ],
+      "final_floor_gap_m": 0.007902215781860178,
+      "final_vertical_velocity_m_s": 0.00023814177997450594,
+      "final_lower_floor_contact": false
+    },
+    {
+      "fruit": 10,
+      "first_release_frame": null,
+      "first_release_time_s": null,
+      "first_saved_floor_contact_frame_after_release": null,
+      "first_saved_floor_contact_time_s_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_center_m": [
+        1.013138447289593,
+        0.08525206753642453,
+        -0.6717428887182951
+      ],
+      "final_floor_gap_m": 0.008257111281704865,
+      "final_vertical_velocity_m_s": -0.00030527087148162955,
+      "final_lower_floor_contact": false
+    },
+    {
+      "fruit": 11,
+      "first_release_frame": null,
+      "first_release_time_s": null,
+      "first_saved_floor_contact_frame_after_release": null,
+      "first_saved_floor_contact_time_s_after_release": null,
+      "maximum_downward_speed_after_release_m_s": 0.0,
+      "final_center_m": [
+        1.0984788006951973,
+        -0.11820051103114733,
+        -0.590226952862007
+      ],
+      "final_floor_gap_m": 0.092773047137993,
+      "final_vertical_velocity_m_s": 0.001175118139894343,
+      "final_lower_floor_contact": false
+    }
+  ],
+  "auditor_sha256": {
+    "/Users/home/numi-solver/build/loaded-drop-investigation-audit-first-fruit-replay.py": "eec4d241ae83e21ee27c8d329c117c8937be6d35aa9e3093019791b437ec68ef",
+    "/Users/home/numi-solver/tools/audit_cloth_snapshot.py": "465e30940458a80a42d47bcb4575b39940a037b0aa8b2e01aa80ff84235dbb3e",
+    "/Users/home/numi-solver/tools/audit_replayed_finite_fruit_trace.py": "4ceee6a669b99a4ff7d8885ceed6927cd42822e551d592db9eb21d95f02c999b"
+  },
+  "qualification": "PENDING. One complete fruit replay only; no two-replay equality, whole-cloth geometry, terminal gate, energy/work closure, calibrated material or timestep convergence claim. Floor support is an observed radius/vertical-velocity match, not a support reaction audit."
+}

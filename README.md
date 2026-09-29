@@ -80,6 +80,10 @@ Native spill qualification remains open.
 The CPU impact/departure repair now passes **16 exact replay cases**, removing
 pre-impact velocity reconstruction and stale friction after separation. Its
 new complete six-second CPU96 drop is running against the unchanged gates.
+The matched repaired runs have completed their first fruit replays: 48
+substeps release none, while 96 release fruit 10. Corresponding fruit positions
+differ by up to **1.6745 m**, so release-outcome timestep convergence fails.
+The second replays and full cloth audits remain pending.
 [Impact/departure repair and frozen evidence](docs/CPU_IMPACT_DEPARTURE.md).
 
 

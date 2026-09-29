@@ -28,6 +28,22 @@ against the unchanged 30 m/s target; focused controls do not establish that
 this defect caused that full-scene peak. Peak speed frame, body and a complete
 cloth velocity snapshot are now retained whenever that unchanged gate fails.
 
+The repaired 48- and 96-substep runs have now each completed their first full
+six-second fruit replay. Identical frozen source, binary, controller and gates
+give **different release outcomes**: no fruit is released at 48 substeps;
+fruit 10 is released at 96, with a saved floor contact at 4.8 seconds. Their
+maximum corresponding fruit position difference is **1.6745 m**. Release bits
+first differ at frame 537. This is a **timestep-convergence failure**, even
+though both saved fruit traces pass independent static geometry checks.
+
+[Exact first-replay comparison](assets/loaded-drop-corrected-first-replay-comparison.json) ·
+[48-substep fruit trace](assets/loaded-drop-corrected-48-r1-fruits.csv) ·
+[96-substep fruit trace](assets/loaded-drop-corrected-96-r1-fruits.csv).
+Both solver invocations still need their actual terminal exits, second-replay
+equality and full cloth/peak geometry audits. The floor observation is a saved
+radius and vertical-velocity match; it does not qualify reaction or energy
+closure. No new full-scene video is qualified by these partial results.
+
 This is CPU FP64 contact bookkeeping. Full native finite-bench spill,
 continuous whole-yarn contact through every accepted substep, reciprocal
 elastic-fruit/bag coupling, material calibration, temporal/spatial convergence
