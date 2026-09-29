@@ -1,0 +1,32 @@
+{
+  "spatial_target_m": 0.001,
+  "comparison": [
+    {
+      "coarse_nodes": 2057,
+      "fine_nodes": 14993,
+      "coarse_tetrahedra": 10240,
+      "fine_tetrahedra": 81920,
+      "total_mass_difference_kg": 2.9194098249973877e-09,
+      "maximum_matched_node_difference_m": 0.009340864644828101,
+      "maximum_difference_frame": 98,
+      "maximum_difference_time_s": 0.49,
+      "maximum_difference_node": 11,
+      "maximum_pre_captured_impact_node_difference_m": 4.927289189884899e-07,
+      "coarse_first_captured_impact_frame": 33,
+      "fine_first_captured_impact_frame": 33,
+      "coarse_normal_kinetic_loss_J": 0.0337415039539,
+      "fine_normal_kinetic_loss_J": 0.0198202989995,
+      "integrator": "support-verlet",
+      "accepted_steps": 20000,
+      "maximum_COM_difference_m": 0.001965306710154164,
+      "maximum_height_difference_m": 0.004083927720400005,
+      "within_spatial_target": false,
+      "coarse_trace_sha256": "4c6189c28e7df1b0ea8b54e20b73b37675f70669d8015fdedb1f2dbebc6f0523",
+      "fine_trace_sha256": "18cb297d2cbe6bd3cd6305d3b0b3931718c75f01f20ebeeb32c565df04b2e25a",
+      "coarse_energy_ledger_sha256": "5699c203f91dcbcd1fca779a6e6800610e4eda705c728698c0eab4d5b27ece07",
+      "fine_energy_ledger_sha256": "511cdf4844627ca8535eff392c468ad0af91fa5dcc549e3a6cdbdfd59537b384"
+    }
+  ],
+  "finest_pair_within_spatial_target": false,
+  "evidence_boundary": "Matched owning-node positions at equal exported times for the same piecewise-flat rest body, authored material and volume-derived masses. Each complete trajectory is independently checked for topology, geometry and mass. Owning energy ledgers bind equal integrators and accepted step grids, and both meshes start stationary. Captured impact times delimit the observed pre-impact region; they are not exact continuous impact times. Timestep convergence does not imply spatial convergence. This comparison does not calibrate fruit properties or close intervening contact work."
+}

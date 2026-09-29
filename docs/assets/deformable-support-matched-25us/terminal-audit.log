@@ -1,0 +1,3 @@
+{"case": "primary", "captured_states": 101, "geometry_pass": true, "energy_accounting_result": "PASS", "one_percent_numerical_budget_pass": true, "numerical_bound_fraction": 0.001518077665262941, "maximum_energy_accounting_residual_J": 3.117989933812404e-07}
+{"case": "half", "captured_states": 101, "geometry_pass": true, "energy_accounting_result": "PASS", "one_percent_numerical_budget_pass": true, "numerical_bound_fraction": 0.000934536469700039, "maximum_energy_accounting_residual_J": 2.1295538647075896e-07}
+{"case": "matched-spatial", "within_1mm_target": false, "maximum_matched_node_difference_m": 0.009340864644828101}

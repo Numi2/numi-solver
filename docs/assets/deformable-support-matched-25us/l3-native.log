@@ -1,0 +1,34 @@
+mesh_progress phase=primary captured=20/100 accepted_steps=4000 rejected_steps=0 minimum_volume_ratio=0.999924
+mesh_progress phase=primary captured=40/100 accepted_steps=8000 rejected_steps=0 minimum_volume_ratio=0.315219
+mesh_progress phase=primary captured=60/100 accepted_steps=12000 rejected_steps=0 minimum_volume_ratio=0.315219
+mesh_progress phase=primary captured=80/100 accepted_steps=16000 rejected_steps=0 minimum_volume_ratio=0.315219
+mesh_progress phase=primary captured=100/100 accepted_steps=20000 rejected_steps=0 minimum_volume_ratio=0.225232
+mesh_progress phase=replay captured=20/100 accepted_steps=4000 rejected_steps=0 minimum_volume_ratio=0.999924
+mesh_progress phase=replay captured=40/100 accepted_steps=8000 rejected_steps=0 minimum_volume_ratio=0.315219
+mesh_progress phase=replay captured=60/100 accepted_steps=12000 rejected_steps=0 minimum_volume_ratio=0.315219
+mesh_progress phase=replay captured=80/100 accepted_steps=16000 rejected_steps=0 minimum_volume_ratio=0.315219
+mesh_progress phase=replay captured=100/100 accepted_steps=20000 rejected_steps=0 minimum_volume_ratio=0.225232
+mesh_progress phase=half_timestep captured=20/100 accepted_steps=8000 rejected_steps=0 minimum_volume_ratio=0.999885
+mesh_progress phase=half_timestep captured=40/100 accepted_steps=16000 rejected_steps=0 minimum_volume_ratio=0.315184
+mesh_progress phase=half_timestep captured=60/100 accepted_steps=24000 rejected_steps=0 minimum_volume_ratio=0.315184
+mesh_progress phase=half_timestep captured=80/100 accepted_steps=32000 rejected_steps=0 minimum_volume_ratio=0.315184
+mesh_progress phase=half_timestep captured=100/100 accepted_steps=40000 rejected_steps=0 minimum_volume_ratio=0.225851
+device=Apple M4 Pro backend=Apple_Metal
+shared_nodes=2057 tetrahedra=10240 boundary_triangles=1280 mesh_refinement=3 density_kg_m3=1000 mass_kg=0.317018844558
+simulated_seconds=.5 steps=20000 refined_steps=40000 timestep_s=2.49999993684e-05 captured_frames=101 replay_exact=1 all_candidates_valid=1
+maximum_nodal_refinement_difference_m=2.45339651622e-05 maximum_relative_shape_change_m=0.0255931300457
+initial_height_m=0.0850650817156 minimum_height_m=0.0478102378547 final_height_m=0.0706405490637
+minimum_clearance_m=0 minimum_all_step_volume_ratio=0.225232169032 maximum_internal_net_force_N=4.43636167802e-07
+bench_normal_impulse_Ns=1.7518748045 removed_normal_kinetic_energy_J=0.0337415039539 maximum_momentum_balance_error_Ns=3.02250095641e-06
+maximum_mechanical_energy_increase_J=1.83743769422e-07 maximum_elastic_energy_J=0.38578874095 maximum_free_fall_COM_error_m=1.34325470531e-07
+rejected_cases=6 rejected_mesh_state_and_ledger_exact=1
+mesh_ABI=3 integrator=support_verlet projection_work_probe_pass=1 projection_work_probe_maximum_error_J=2.42199982292e-10
+resting_support_probe_pass=1 resting_support_impulse_Ns=5.78747119562e-07 resting_support_kinetic_loss_J=0 resting_support_position_work_J=0
+contact_elastic_change_J=3.32284253091e-05 contact_gravity_change_J=6.50324955132e-06 contact_mechanical_change_J=-0.0337381958961 maximum_positive_contact_step_J=0
+free_integration_change_J=-1.81075665751e-06 absolute_free_integration_change_J=0.000195418557269 maximum_absolute_free_step_J=2.36815367316e-07 elastic_force_work_J=0.147740438581
+half_step_free_integration_change_J=-1.65212918546e-06 half_step_absolute_free_integration_change_J=0.000187576530152 half_step_contact_mechanical_change_J=-0.0337360911071
+absolute_position_projection_work_J=0.000309685245156 half_step_absolute_position_projection_work_J=0.000156898167916 positive_contact_work_J=0
+contact_kinetic_change_J=-0.0337779298425 contact_force_response_change_J=-3.64336301573e-05 absolute_contact_force_response_change_J=0.00029749222449
+maximum_independent_energy_accounting_error_J=3.13120375517e-07 maximum_contact_component_sum_error_J=1.92333118321e-08 energy_accounting_valid=1
+energy_defect_qualification=OPEN spatial_convergence=OPEN material_calibration=OPEN
+deformable_mesh_drop_qualified=1

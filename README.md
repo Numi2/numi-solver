@@ -269,9 +269,21 @@ The [earlier 10,240-tetrahedron video](docs/assets/deformable-support-10240.mp4)
 and [energy comparison](docs/DEFORMABLE_ENERGY.md) remain available. That mesh
 passed the 1% numerical budget at 100 µs, but its 1,280-to-10,240-element
 spatial comparison differed by 14.93 mm against the unchanged 1 mm target.
-The same-timestep 10,240-to-81,920-element comparison is pending. Spatial
-convergence, measured material, reciprocal cloth/fruit coupling and complete
-physical work closure remain open.
+The completed same-25-µs 10,240-to-81,920-element comparison differs by
+**9.34 mm** at matched owning nodes, so the unchanged 1 mm spatial target
+still **fails** ([source-bound report](docs/assets/deformable-support-matched-25us/spatial.json)).
+Its two native traces and captured-state audits pass; the difference develops
+after contact. Spatial convergence, measured material, reciprocal cloth/fruit
+coupling and complete physical work closure remain open.
+
+The [reviewed two-endpoint normal block](docs/assets/elastic-yarn-fem-normal-block/README.md)
+now advances the complete 10,240-element body and two authored yarn owners
+through a bounded 1 µs CPU step. It removes a measured 0.0679 m/s local closing
+mode left by the earlier centroid response; its positive 5.315 nJ physical
+energy residual and full-scene gates remain open. The separate
+[preventive triangle-area study](docs/ELASTIC_YARN_AREA_ADMISSION.md)
+certifies represented area paths in CPU fixtures, while the full finer-step
+bag drop still fails its strict area gate.
 
 The [independent-element foundation](docs/DEFORMABLE_VOLUMES.md) separately
 qualifies the nonlinear elastic forces. Coupling these volumes to the woven

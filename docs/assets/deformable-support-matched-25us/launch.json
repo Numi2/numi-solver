@@ -1,0 +1,17 @@
+{
+  "wrapper_pid": 87509,
+  "status": "LAUNCHED_CPU_ONLY",
+  "python": "/Applications/Xcode-26.6.0.app/Contents/Developer/usr/bin/python3",
+  "native_L3_actual_exit": 0,
+  "source_sha256": {
+    "wrapper.py": "5dbff32f8850291c4f7584dd04571998c0903e5598943a14d3c71253ca88b9d8",
+    "audit_deformable_mesh_trajectory.py": "1dc1e0377848ad244027526b4c8d7a7c18bd620caf45576e9966d493f810facf",
+    "audit_deformable_mesh_refinement.py": "2f9a4831400d99885aadf1c19ae8c3e227369a891710a1fd1fea61f98a72d25a",
+    "audit_deformable_mesh_energy.py": "17333aaaa1b428a92a8853d1f89b53cf12872a5967347d4cee2e46c23483e9e0",
+    "launch.py": "19a2bf44dcd8df81bb80f394373eae8b71c5b213c7f9631f485f17741c321bae",
+    "driver.py": "bf25594b537700eefabb6f3c4d705602c80a5ea49f5dcb09424ef12297f7e503"
+  },
+  "matched_L3_L4_spatial_target_m": 0.001,
+  "no_new_GPU_work": true,
+  "launched_epoch_s": 1790701245.69166
+}
