@@ -48,7 +48,7 @@ A [six-second loaded-bag drop](docs/DEFORMABLE_STRESS.md) now runs a harder
 carry, seam rotation, grip release and whole-cloth floor impact case; its
 original complete run shows 1.74 m of free cloth descent and final floor
 contact, but fails contact, strain and motion limits. Its repair requires a
-fresh complete run.
+fresh complete run. [Watch the labeled stress-test video](docs/assets/finite-bench-loaded-drop-diagnostic.mp4).
 
 ### Earlier ground-support CPU48 replay
 

@@ -56,6 +56,28 @@
   "boundary": "Completed authored stress case. Cloth descent and floor geometry do not close failed whole-scene gates. Retain actual FAIL; do not label the diagnostic video as qualified or as a calibrated fruit/bag simulation.",
   "artifacts_sha256": {
     "finite-bench-loaded-drop-48.log": "1cd6616b7b079f84eea0aa569906ad6327f6cca3498e86f5e727a4b465a783cc",
-    "finite-bench-loaded-drop-48-audit.json": "3732eb83d7a7bdbab5d15d43804d637a24957f600fc31602eeba4d632231a4d4"
+    "finite-bench-loaded-drop-48-audit.json": "3732eb83d7a7bdbab5d15d43804d637a24957f600fc31602eeba4d632231a4d4",
+    "finite-bench-loaded-drop-diagnostic.mp4": "abb9afe9c47af0945fb3016b249b006cd163d55d2d6f971d0b54faf8772bca00",
+    "finite-bench-loaded-drop-start.png": "41d7f8940c6e7e30fe244295e9e57f022d7855552e7aa63bbb98b1846e89ba32",
+    "finite-bench-loaded-drop-floor-impact.png": "e4acc23896e7c11ecc64dcc554332ab3ec8b4b0dc90dd67ebe11f7272e29a6a7",
+    "finite-bench-loaded-drop-final.png": "ffd2630b09afe29303eb47e1b1d694dc0d98bf33d4f43a93ffe5ee8f16322592"
+  },
+  "diagnostic_media": {
+    "video": "finite-bench-loaded-drop-diagnostic.mp4",
+    "frame_count": 73,
+    "frame_rate": 12,
+    "width": 960,
+    "height": 800,
+    "simulated_seconds": 6,
+    "playback_seconds": 6.083333333333333,
+    "persistent_label": "STRESS TEST - CONTACT AND MOTION LIMITS FAILED",
+    "fixed_camera": true,
+    "renderer_source_commit": "d961606",
+    "renderer_source_sha256": "cccc99f1ffb8eea96d7436a08acb045a5b48568652cf526df65cd867481a1e55",
+    "renderer_binary_sha256": "cbfb8c40cc93b6e3e8e259e5bef45d8b86563e49785ab419c0e000b0bc373c9e",
+    "framing_list_sha256": "41caf085b1fecb0e994e4b8113aa5b0c3a169c06cf2f539d666c21c3cba68699",
+    "warning_banner_source_sha256": "5d18fe6fcc61197e332a37c514515552137a8643e3d0523d1213b782531679f1",
+    "warning_banner_png_sha256": "97416c88a0a1864f7329b7a72ea46021db9a3ed0038c342a79e2104c98eeb9a7",
+    "note": "Exact 73 exported dynamic states. No geometry smoothing, body posing or extra forces. Painted fruit appearance retains rigid sphere collision geometry. A Cocoa warning banner is overlaid at the top of every frame."
   }
 }

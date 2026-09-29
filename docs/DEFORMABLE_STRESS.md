@@ -1,5 +1,10 @@
 # Six-second loaded-bag drop
 
+[![Unqualified stress replay: loaded cloth lands on the lower floor](assets/finite-bench-loaded-drop-floor-impact.png)](assets/finite-bench-loaded-drop-diagnostic.mp4)
+
+**Diagnostic replay: contact, strain and motion gates fail.**
+The video shows the complete six-second dynamic trajectory with a fixed camera.
+
 This synthetic stress input increases the scene beyond fruit falling from a
 held bag. The loaded deformable bag is carried past the finite tabletop edge,
 the compliant seam grip turns 180 degrees, and the grip releases at 3.8 s.
@@ -71,8 +76,8 @@ The geometric drop outcome passes; full physical qualification does not.
 [Terminal log](assets/finite-bench-loaded-drop-48.log),
 [complete independent audit](assets/finite-bench-loaded-drop-48-audit.json), and
 [source-bound failure receipt](assets/finite-bench-loaded-drop-48-evidence.json)
-retain these results. A fresh full run using the support-aware response and
-blocked-load friction repair is required.
+retain these results. A fresh full run from `6f1e450`, using the support-aware response and
+blocked-load friction repair, is running from frozen source and binary.
 
 Whole-scene physical gates, the ordered hash of every accepted frame, all
 73 exported contact audits and the final inactive grip must pass. The loaded
