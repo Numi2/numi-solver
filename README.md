@@ -16,8 +16,7 @@ application scene.
 [![Five released fruits reach the lower floor after leaving the deformable bag](docs/assets/coupled-bench-pickup-96-poster.png)](docs/assets/coupled-bench-pickup-96.mp4)
 
 The new full four-second CPU FP64 pickup passes both 96-substep replays.
-All **five released fruits** finish on the lower floor with zero vertical
-velocity. Both complete 481-frame fruit sequences match, and all **51 saved
+All **five released fruits** settle at their support radii on the lower floor. Both complete 481-frame fruit sequences match, and all **51 saved
 states**, including both peak-contact snapshots, pass independent audits.
 Simultaneous fruit/yarn response lowers worst accepted fruit/yarn overlap from
 the previous finer run's **56.7 µm failure to 0.080 µm**. Maximum speed is

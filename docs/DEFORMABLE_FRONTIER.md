@@ -23,7 +23,7 @@ barrier formulation is not the only research direction to compare. Its authors'
 RTX 5090 performance and robot results require separate reproduction; they are
 not measurements of this code.
 
-[No Free Slide (2024 publication, 2023 preprint)](https://arxiv.org/abs/2308.01696)
+[No Free Slide](https://arxiv.org/abs/2308.01696)
 and [Geometric Contact Potential](https://arxiv.org/abs/2402.00719) motivate an
 additional audit: contact should not produce unrequested tangential resistance
 or depend incorrectly on surface tessellation. These papers are comparison

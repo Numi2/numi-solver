@@ -368,5 +368,6 @@
       }
     ]
   },
-  "evidence_boundary": "Full authored cloth/rigid-sphere CPU96 pickup qualification under existing gates. Not same-source temporal convergence, native full-scene qualification, fruit deformation, calibrated material, elastic-volume/cloth coupling, or whole-scene energy/reaction closure. Published contacts observe accepted states; saved-state audits do not certify all intervening substeps."
+  "evidence_boundary": "Full authored cloth/rigid-sphere CPU96 pickup qualification under existing gates. Not same-source temporal convergence, native full-scene qualification, fruit deformation, calibrated material, elastic-volume/cloth coupling, or whole-scene energy/reaction closure. Published contacts observe accepted states; saved-state audits do not certify all intervening substeps.",
+  "maximum_released_final_vertical_speed_m_s": 5.491540382152049e-13
 }
