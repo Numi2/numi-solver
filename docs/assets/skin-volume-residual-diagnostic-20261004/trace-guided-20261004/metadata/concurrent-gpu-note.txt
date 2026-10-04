@@ -1,0 +1,1 @@
+2026-10-04: The run was launched after the user said the host was ready. Pre-run inspection still found cardiac Metal PID 46480, so execution overlapped that separate process; do not use its wall/GPU timing as isolated performance evidence.

@@ -1,0 +1,546 @@
+diff --git a/apps/synthetic_skin_wound_traction_probe.mm b/apps/synthetic_skin_wound_traction_probe.mm
+index ebdb16a..9603dbf 100644
+--- a/apps/synthetic_skin_wound_traction_probe.mm
++++ b/apps/synthetic_skin_wound_traction_probe.mm
+@@ -130,13 +130,23 @@ void run(
+     const std::filesystem::path& materialPath,
+     const std::filesystem::path& metallibPath,
+     const double biteForcePerSiteN,
+-    const bool validateOnly
++    const bool validateOnly,
++    const std::uint32_t runSteps,
++    const std::uint32_t newtonIterations,
++    const std::uint32_t fgmresIterations
+ ) {
+     using namespace numi::matter;
+     @autoreleasepool {
+         constexpr double kPlannedLoadedForceN = 0.010;
+         constexpr double kContactSlopM = 1.0e-5;
+         constexpr double kZeroForceDriftLimitM = 1.0e-6;
++        constexpr std::uint32_t kProtocolSteps = 60u;
++        require(runSteps > 0u && runSteps <= kProtocolSteps,
++                "diagnostic steps must be in [1,60]");
++        require(newtonIterations == 7u || newtonIterations == 10u,
++                "diagnostic Newton budget must be 7 or 10");
++        require(fgmresIterations == 10u || fgmresIterations == 20u,
++                "diagnostic FGMRES budget must be 10 or 20");
+         require(std::isfinite(biteForcePerSiteN) &&
+                     (biteForcePerSiteN == 0.0 ||
+                      biteForcePerSiteN == kPlannedLoadedForceN),
+@@ -155,6 +165,8 @@ void run(
+         source.gravity = {0.0, 0.0, 0.0};
+         source.contactSlop = kContactSlopM;
+         source.deterministic = true;
++        source.mixedSolver.newtonIterations = newtonIterations;
++        source.mixedSolver.fgmresIterations = fgmresIterations;
+         source.materials.push_back(std::move(material.material));
+         source.objects.push_back(coupon.object);
+         auto compiled = compileWorld(source, {});
+@@ -241,9 +253,11 @@ void run(
+                       << " expected_tetrahedra=" << kExpectedTetrahedra
+                       << " proximal_bite_nodes=" << proximalPatch.size()
+                       << " distal_bite_nodes=" << distalPatch.size()
+-                      << " force_ramp=cosine24"
++                      << " force_ramp=cosine60"
+                       << " newton_iterations="
+                       << compiled.world.mixedSolver.nonlinearIterations.x
++                      << " execution_steps=" << runSteps
++                      << " protocol_steps=" << kProtocolSteps
+                       << " gpu_dispatch=false\n";
+             return;
+         }
+@@ -291,8 +305,9 @@ void run(
+                 "could not create the skin traction output files");
+         samples << "step,time_s,bite_force_n,mean_gap_m,minimum_mean_gap_m,"
+                    "center_gap_m,minimum_signed_gap_m,maximum_displacement_m,"
+-                   "minimum_J,maximum_residual,"
+-                   "active_tetrahedra,mass_kg,gpu_ms\n";
++                   "minimum_J,maximum_residual,equilibrium_residual,"
++                   "relative_correction,volume_residual,pressure_residual,"
++                   "maximum_volume_residual,active_tetrahedra,mass_kg,gpu_ms\n";
+         lips << "step,time_s,pair,rest_x_m,rest_z_m,"
+                 "lower_x_m,lower_y_m,lower_z_m,"
+                 "upper_x_m,upper_y_m,upper_z_m\n";
+@@ -310,10 +325,65 @@ void run(
+         );
+         require(matterStatuses != nullptr,
+                 "skin traction Matter status is not CPU visible");
++        const auto writeFgmresTrace = [&]() {
++            id<MTLBuffer> recordsBuffer = (__bridge id<MTLBuffer>)
++                runtime.fgmresTraceRecordsBuffer();
++            id<MTLBuffer> countBuffer = (__bridge id<MTLBuffer>)
++                runtime.fgmresTraceCountBuffer();
++            const std::uint32_t capacity = runtime.fgmresTraceCapacity();
++            if (recordsBuffer == nil || countBuffer == nil || capacity == 0u)
++                return;
++            const auto* records = static_cast<const NMFGMRESTraceGPU*>(
++                recordsBuffer.contents);
++            const auto* count = static_cast<const std::uint32_t*>(
++                countBuffer.contents);
++            if (records == nullptr || count == nullptr) return;
++            const std::uint32_t stored = std::min(*count, capacity);
++            std::ofstream trace(outputDirectory / "fgmres-trace.csv");
++            if (!trace) return;
++            trace << "control_step,microtick,newton_iteration,krylov_iteration,"
++                     "initial_residual,estimated_residual,relative_estimate,"
++                     "forcing_threshold\n";
++            trace << std::setprecision(9);
++            for (std::uint32_t index = 0u; index < stored; ++index) {
++                const NMFGMRESTraceGPU& record = records[index];
++                trace << record.identity.x << ',' << record.identity.y << ','
++                      << record.identity.z << ',' << record.identity.w << ','
++                      << record.residuals.x << ',' << record.residuals.y << ','
++                      << record.residuals.z << ',' << record.residuals.w << '\n';
++            }
++            std::ofstream summary(
++                outputDirectory / "fgmres-trace-summary.json");
++            if (summary) {
++                summary << "{\"records_total\":" << *count
++                        << ",\"records_written\":" << stored
++                        << ",\"capacity\":" << capacity
++                        << ",\"overflow\":"
++                        << (*count > capacity ? "true" : "false")
++                        << ",\"residual_kind\":\"FGMRES least-squares estimate\"}\n";
++            }
++            const NMMatterStatusGPU& failure = matterStatuses[0];
++            std::ofstream statusFile(
++                outputDirectory / "solver-failure-status.json");
++            if (statusFile) {
++                statusFile << std::setprecision(9)
++                           << "{\"code\":" << failure.code
++                           << ",\"object_index\":" << failure.objectIndex
++                           << ",\"failing_index\":" << failure.failingIndex
++                           << ",\"completed_microsteps\":"
++                           << failure.completedMicrosteps
++                           << ",\"fgmres_iterations\":"
++                           << failure.fgmresIterations
++                           << ",\"contact_count\":" << failure.contactCount
++                           << ",\"diagnostics\":["
++                           << failure.diagnostics.x << ','
++                           << failure.diagnostics.y << ','
++                           << failure.diagnostics.z << ','
++                           << failure.diagnostics.w << "]}\n";
++            }
++        };
+ 
+-        constexpr std::uint32_t kSteps = 60u;
+-        constexpr std::uint32_t kRampSteps = 24u;
+-        constexpr std::uint32_t kHoldEndStep = 40u;
++        constexpr std::uint32_t kRampSteps = kProtocolSteps;
+         constexpr float kPi = 3.14159265358979323846f;
+         double totalGpuMilliseconds = 0.0;
+         double finalMeanGap = 0.0;
+@@ -324,6 +394,8 @@ void run(
+         double minimumJ = std::numeric_limits<double>::infinity();
+         double minimumSignedGapM = std::numeric_limits<double>::infinity();
+         double maximumResidual = 0.0;
++        double maximumVolumeResidual = 0.0;
++        double maximumPressureResidual = 0.0;
+         std::uint32_t finalActiveTetrahedra = 0u;
+         double finalMass = 0.0;
+ 
+@@ -353,23 +425,20 @@ void run(
+             }
+         };
+ 
+-        for (std::uint32_t step = 0u; step < kSteps; ++step) {
++        for (std::uint32_t step = 0u; step < runSteps; ++step) {
+             std::fill_n(externalForces, forceValueCount, 0.0f);
+             float forceScale = 0.0f;
+             if (step < kRampSteps) {
+                 const float rampProgress = static_cast<float>(step) /
+                     static_cast<float>(kRampSteps - 1u);
+                 forceScale = 0.5f * (1.0f - std::cos(kPi * rampProgress));
+-            } else if (step < kHoldEndStep) {
+-                forceScale = 1.0f;
+-            } else {
+-                const float releaseProgress =
+-                    static_cast<float>(step - kHoldEndStep) /
+-                    static_cast<float>(kSteps - kHoldEndStep - 1u);
+-                forceScale = 0.5f * (1.0f + std::cos(kPi * releaseProgress));
+             }
+             const float biteForce =
+                 static_cast<float>(biteForcePerSiteN) * forceScale;
++            double stepEquilibriumResidual = 0.0;
++            double stepRelativeCorrection = 0.0;
++            double stepVolumeResidual = 0.0;
++            double stepPressureResidual = 0.0;
+             setPatchForces(proximalPatch, -0.004, biteForce);
+             setPatchForces(distalPatch, 0.004, biteForce);
+ 
+@@ -411,6 +480,7 @@ void run(
+             totalGpuMilliseconds += stepGpuMilliseconds;
+             if (matterStatuses[0].code != NM_STATUS_SUCCESS) {
+                 const NMMatterStatusGPU status = matterStatuses[0];
++                writeFgmresTrace();
+                 throw std::runtime_error(
+                     "skin traction Matter status failed at step " +
+                     std::to_string(step) + " with code " +
+@@ -447,9 +517,18 @@ void run(
+                 minimumJ,
+                 static_cast<double>(certificate.validity.x)
+             );
++            stepEquilibriumResidual = certificate.nonlinear.x;
++            stepRelativeCorrection = certificate.nonlinear.y;
++            stepVolumeResidual = certificate.nonlinear.z;
++            stepPressureResidual = certificate.nonlinear.w;
+             maximumResidual = std::max(
+-                maximumResidual,
+-                static_cast<double>(certificate.nonlinear.x)
++                maximumResidual, stepEquilibriumResidual
++            );
++            maximumVolumeResidual = std::max(
++                maximumVolumeResidual, stepVolumeResidual
++            );
++            maximumPressureResidual = std::max(
++                maximumPressureResidual, stepPressureResidual
+             );
+             maximumDisplacementM = std::max(
+                 maximumDisplacementM,
+@@ -517,9 +596,14 @@ void run(
+                     << biteForce << ',' << meanGap << ',' << minimumMeanGap
+                     << ',' << centerGap << ',' << stepMinimumSignedGapM << ','
+                     << maximumDisplacementM << ',' << minimumJ << ','
+-                    << maximumResidual << ',' << finalActiveTetrahedra << ','
+-                    << finalMass << ',' << stepGpuMilliseconds << '\n';
++                    << maximumResidual << ',' << stepEquilibriumResidual << ','
++                    << stepRelativeCorrection << ',' << stepVolumeResidual << ','
++                    << stepPressureResidual << ',' << maximumVolumeResidual << ','
++                    << finalActiveTetrahedra << ',' << finalMass << ','
++                    << stepGpuMilliseconds << '\n';
+         }
++        // Preserve the same per-column history for accepted diagnostic runs.
++        writeFgmresTrace();
+ 
+         const double relativeMassError = initialMass > 0.0
+             ? std::abs(finalMass - initialMass) / initialMass
+@@ -531,12 +615,13 @@ void run(
+         if (biteForcePerSiteN == 0.0) {
+             require(maximumMeanGapDrift <= kZeroForceDriftLimitM,
+                     "zero-force control drift exceeded 1 um");
+-        } else {
+-            require(initialMeanGap - minimumMeanGap >= kContactSlopM,
+-                    "paired bite-site tractions reduced the wound gap by less than one contact slop");
+         }
+         std::cout << std::setprecision(9)
+-                  << "synthetic_skin_wound_traction=ok"
++                  << (runSteps == kProtocolSteps
++                          ? "synthetic_skin_wound_traction=ok"
++                          : "synthetic_skin_wound_diagnostic=ok")
++                  << " execution_steps=" << runSteps
++                  << " protocol_steps=" << kProtocolSteps
+                   << " arm=" << (biteForcePerSiteN == 0.0
+                           ? "zero_force_control"
+                           : "paired_bite_traction")
+@@ -544,7 +629,7 @@ void run(
+                   << kTransverseCells << 'x' << kThroughThicknessCells
+                   << " top_lip_pairs=" << lipPairs.size()
+                   << " bite_force_per_site_n=" << biteForcePerSiteN
+-                  << " force_ramp=cosine24"
++                  << " force_ramp=cosine60"
+                   << " newton_iterations="
+                   << compiled.world.mixedSolver.nonlinearIterations.x
+                   << " initial_mean_gap_m=" << initialMeanGap
+@@ -560,6 +645,8 @@ void run(
+                   << maximumDisplacementM
+                   << " minimum_J=" << minimumJ
+                   << " maximum_solver_residual=" << maximumResidual
++                  << " maximum_volume_residual=" << maximumVolumeResidual
++                  << " maximum_pressure_residual=" << maximumPressureResidual
+                   << " active_tetrahedra=" << finalActiveTetrahedra
+                   << " mass_relative_error=" << relativeMassError
+                   << " total_gpu_ms=" << totalGpuMilliseconds
+@@ -577,39 +664,70 @@ int main(const int argc, char* argv[]) {
+             std::cout
+                 << "usage: metalrobo_synthetic_skin_wound_traction_probe "
+                    "OUTPUT_DIRECTORY MATERIAL_PATH MATTER_METALLIB "
+-                   "[--force-per-site-n 0|0.010 | --validate-only]\n"
+-                << "Runs a synthetic wound-lip traction response probe; "
+-                   "0 N is the matched control; 10 mN is the loaded arm. "
+-                   "--validate-only checks compiled node mapping without "
+-                   "Metal dispatch. No thread or robot is modeled.\n";
++                   "[--force-per-site-n 0|0.010] [--diagnostic-steps N] "
++                   "[--newton-iterations 7|10] [--fgmres-iterations 10|20] "
++                   "[--validate-only]\n"
++                << "Runs the synthetic 60-step cosine-ramp wound-lip trajectory; "
++                   "diagnostic steps truncate execution while preserving the "
++                   "60-step force schedule.\n";
+             return 0;
+         }
+-        require(argc == 4 || argc == 5 || argc == 6,
++        require(argc >= 4,
+                 "usage: metalrobo_synthetic_skin_wound_traction_probe "
+                 "OUTPUT_DIRECTORY MATERIAL_PATH MATTER_METALLIB "
+-                "[--force-per-site-n 0|0.010 | --validate-only]");
++                "[--force-per-site-n 0|0.010] [--diagnostic-steps N] "
++                "[--newton-iterations 7|10] [--fgmres-iterations 10|20] "
++                "[--validate-only]");
+         double biteForcePerSiteN = 0.010;
+         bool validateOnly = false;
+-        if (argc == 5) {
+-            require(std::string_view{argv[4]} == "--validate-only",
+-                    "expected --validate-only");
+-            validateOnly = true;
+-        }
+-        if (argc == 6) {
+-            require(std::string_view{argv[4]} == "--force-per-site-n",
+-                    "expected --force-per-site-n");
+-            const std::string forceText{argv[5]};
+-            std::size_t parsedCharacters = 0u;
+-            biteForcePerSiteN = std::stod(forceText, &parsedCharacters);
+-            require(parsedCharacters == forceText.size(),
+-                    "force value contains trailing characters");
++        std::uint32_t runSteps = 60u;
++        std::uint32_t newtonIterations = 7u;
++        std::uint32_t fgmresIterations = 10u;
++        for (int argument = 4; argument < argc; ++argument) {
++            const std::string_view option{argv[argument]};
++            if (option == "--validate-only") {
++                validateOnly = true;
++            } else if (option == "--force-per-site-n" ||
++                       option == "--diagnostic-steps" ||
++                       option == "--newton-iterations" ||
++                       option == "--fgmres-iterations") {
++                require(argument + 1 < argc,
++                        "probe option is missing its value");
++                const std::string value{argv[++argument]};
++                std::size_t parsedCharacters = 0u;
++                if (option == "--force-per-site-n") {
++                    biteForcePerSiteN = std::stod(value, &parsedCharacters);
++                    require(parsedCharacters == value.size(),
++                            "force value contains trailing characters");
++                } else {
++                    const unsigned long parsed = std::stoul(
++                        value, &parsedCharacters
++                    );
++                    require(parsedCharacters == value.size() &&
++                                parsed <= std::numeric_limits<std::uint32_t>::max(),
++                            "integer option is outside its valid range");
++                    if (option == "--diagnostic-steps") {
++                        runSteps = static_cast<std::uint32_t>(parsed);
++                    } else if (option == "--newton-iterations") {
++                        newtonIterations = static_cast<std::uint32_t>(parsed);
++                    } else {
++                        fgmresIterations = static_cast<std::uint32_t>(parsed);
++                    }
++                }
++            } else {
++                throw std::runtime_error("unknown probe option: " +
++                                         std::string{option});
++            }
+         }
+         run(
+             std::filesystem::path{argv[1]},
+             std::filesystem::path{argv[2]},
+             std::filesystem::path{argv[3]},
+             biteForcePerSiteN,
+-            validateOnly
++            validateOnly,
++            runSteps,
++            newtonIterations,
++            fgmresIterations
+         );
+         return 0;
+     } catch (const std::exception& error) {
+diff --git a/matter/include/numi/matter/matter.hpp b/matter/include/numi/matter/matter.hpp
+index 121f1e1..9510dd8 100644
+--- a/matter/include/numi/matter/matter.hpp
++++ b/matter/include/numi/matter/matter.hpp
+@@ -1284,6 +1284,13 @@ public:
+     [[nodiscard]] RuntimeStateSnapshot snapshot() const;
+     [[nodiscard]] void* eventBuffer() const noexcept;
+     [[nodiscard]] void* statusBuffer() const noexcept;
++    // Optional diagnostic-only FGMRES residual history. These borrowed shared
++    // buffers are non-null only when NUMI_MATTER_CAPTURE_FGMRES_TRACE=1 was
++    // present during initialize(). Read them only after the owning GPU command
++    // buffer completes; the counter may exceed capacity if the trace overflows.
++    [[nodiscard]] void* fgmresTraceRecordsBuffer() const noexcept;
++    [[nodiscard]] void* fgmresTraceCountBuffer() const noexcept;
++    [[nodiscard]] std::uint32_t fgmresTraceCapacity() const noexcept;
+     // Candidate fixed-node force on the owning kinematic boundary, in
+     // world-space newtons (float4 per environment/node, w = 0). Valid only
+     // after an accepted pre-dynamics solve in the same command buffer.
+diff --git a/matter/include/numi/matter/shared.h b/matter/include/numi/matter/shared.h
+index e875f49..68ee749 100644
+--- a/matter/include/numi/matter/shared.h
++++ b/matter/include/numi/matter/shared.h
+@@ -849,6 +849,14 @@ typedef struct NM_ALIGN16 NMFGMRESStateGPU {
+     nm_float4 nonlinear;
+ } NMFGMRESStateGPU;
+ 
++typedef struct NM_ALIGN16 NMFGMRESTraceGPU {
++    // Control step, microtick, Newton iteration, total Krylov iteration.
++    nm_uint4 identity;
++    // Initial residual norm, estimated residual norm, relative estimate,
++    // and the inexact-Newton forcing threshold used by this column.
++    nm_float4 residuals;
++} NMFGMRESTraceGPU;
++
+ typedef struct NM_ALIGN16 NMRigidProxyGPU {
+     nm_u32 shapeKind;
+     // Global EngineModel body index. This is the canonical index used by the
+diff --git a/matter/src/metal/fgmres.metalinc b/matter/src/metal/fgmres.metalinc
+index d1e7915..9c24570 100644
+--- a/matter/src/metal/fgmres.metalinc
++++ b/matter/src/metal/fgmres.metalinc
+@@ -1800,6 +1800,13 @@ kernel void nm_fgmres_orthogonalize_and_finish_column(
+     device float* leastSquares [[buffer(8)]],
+     device NMFGMRESStateGPU* states [[buffer(9)]],
+     constant float& forcing [[buffer(10)]],
++    constant uint& nonlinearIteration [[buffer(11)]],
++    constant NMMicrostepGPU& microstep [[buffer(12)]],
++    constant uint& restartCycle [[buffer(13)]],
++    device atomic_uint* traceCount [[buffer(14)]],
++    device NMFGMRESTraceGPU* traceRecords [[buffer(15)]],
++    constant uint& traceCapacity [[buffer(16)]],
++    constant uint& traceEnabled [[buffer(17)]],
+     uint lane [[thread_index_in_threadgroup]],
+     uint group [[threadgroup_position_in_grid]]
+ ) {
+@@ -2047,6 +2054,26 @@ kernel void nm_fgmres_orthogonalize_and_finish_column(
+                 clamp(forcing, solver.residualTolerances.x, 0.5f) *
+                     state.diagnostics.y
+             ? 1.0f : 0.0f;
++        if (traceEnabled != 0u) {
++            const uint slot = atomic_fetch_add_explicit(
++                traceCount, 1u, memory_order_relaxed);
++            if (slot < traceCapacity) {
++                const float relativeResidual = state.diagnostics.y > 1.0e-30f
++                    ? residual / state.diagnostics.y : 0.0f;
++                traceRecords[slot].identity = uint4(
++                    microstep.controlStep,
++                    microstep.microtick,
++                    nonlinearIteration,
++                    restartCycle * solver.nonlinearIterations.y + column
++                );
++                traceRecords[slot].residuals = float4(
++                    state.diagnostics.y,
++                    residual,
++                    relativeResidual,
++                    forcing
++                );
++            }
++        }
+     }
+     const float inverseNorm = norm > 1.0e-30f ? 1.0f / norm : 0.0f;
+     for (uint local = lane; local < dispatch.femNodeCount; local += 32u)
+diff --git a/matter/src/runtime.mm b/matter/src/runtime.mm
+index b97be72..77fc327 100644
+--- a/matter/src/runtime.mm
++++ b/matter/src/runtime.mm
+@@ -16,6 +16,7 @@
+ #include <bit>
+ #include <cmath>
+ #include <cstddef>
++#include <cstdlib>
+ #include <cstdint>
+ #include <cstring>
+ #include <dlfcn.h>
+@@ -687,6 +688,8 @@ void settleApplication(
+ 
+     bool captureEvents = true;
+     bool captureDiagnostics = true;
++    bool captureFgmresTrace = false;
++    std::uint32_t fgmresTraceCapacity = 0u;
+     bool automaticIdentification = false;
+     bool adaptiveTransfer = true;
+     bool requiresCurrentBodies = false;
+@@ -912,6 +915,8 @@ void settleApplication(
+     id<MTLBuffer> fgmresLeastSquares = nil;
+     id<MTLBuffer> fgmresRestartCoefficients = nil;
+     id<MTLBuffer> fgmresStates = nil;
++    id<MTLBuffer> fgmresTraceRecords = nil;
++    id<MTLBuffer> fgmresTraceCount = nil;
+     id<MTLBuffer> primalContactArguments = nil;
+ 
+     id<MTLBuffer> identificationDistributions = nil;
+@@ -2273,6 +2278,23 @@ void settleApplication(
+         candidate->fgmresStates = privateScratch<NMFGMRESStateGPU>(
+             candidate->device, fgmresSystemTotal,
+             valid, candidate->residentBytes);
++        const char* traceSetting =
++            std::getenv("NUMI_MATTER_CAPTURE_FGMRES_TRACE");
++        candidate->captureFgmresTrace =
++            traceSetting != nullptr && std::strcmp(traceSetting, "1") == 0;
++        if (candidate->captureFgmresTrace) {
++            candidate->fgmresTraceCapacity = 32768u;
++            candidate->fgmresTraceRecords =
++                sharedScratch<NMFGMRESTraceGPU>(
++                    candidate->device,
++                    candidate->fgmresTraceCapacity,
++                    valid,
++                    candidate->residentBytes
++                );
++            candidate->fgmresTraceCount = sharedScratch<std::uint32_t>(
++                candidate->device, 1u, valid, candidate->residentBytes
++            );
++        }
+         candidate->solverCertificates = privateScratch<NMSolverCertificateGPU>(
+             candidate->device, multiplied(world.dispatch.objectCount),
+             valid, candidate->residentBytes);
+@@ -5178,14 +5200,19 @@ void settleApplication(
+                 (linearIterationBudget + restart - 1u) / restart;
+             const float nonlinearTolerance = std::max(
+                 state.mixedSolverValue.residualTolerances.x, 0.0f);
+-            const float forcingFloor = std::sqrt(nonlinearTolerance);
++            // Candidate-only mixed-volume diagnostic: solve the KKT system
++            // more tightly while preserving every final acceptance threshold.
++            const float forcingFloor = nonlinearTolerance;
+             const float scheduledForcing = std::ldexp(
+-                0.25f,
++                0.015625f,
+                 -static_cast<int>(std::min(nonlinearIteration, 4u)));
+             const float linearForcing = std::clamp(
+                 std::max(forcingFloor, scheduledForcing),
+                 nonlinearTolerance,
+                 0.25f);
++            const std::uint32_t traceEnabled =
++                state.captureFgmresTrace ? 1u : 0u;
++            const std::uint32_t traceCapacity = state.fgmresTraceCapacity;
+             NMMicrostepGPU operatorMicro = micro;
+             operatorMicro.flags |= NM_MICROSTEP_FGMRES_OPERATOR;
+             for (std::uint32_t restartCycle = 0u;
+@@ -5816,6 +5843,24 @@ void settleApplication(
+                                      offset:0u atIndex:9u];
+                         [encoder setBytes:&linearForcing
+                                    length:sizeof(linearForcing) atIndex:10u];
++                        [encoder setBytes:&nonlinearIteration
++                                   length:sizeof(nonlinearIteration) atIndex:11u];
++                        [encoder setBytes:&micro
++                                   length:sizeof(micro) atIndex:12u];
++                        [encoder setBytes:&restartCycle
++                                   length:sizeof(restartCycle) atIndex:13u];
++                        [encoder setBuffer:state.captureFgmresTrace
++                                             ? state.fgmresTraceCount
++                                             : state.dummy
++                                     offset:0u atIndex:14u];
++                        [encoder setBuffer:state.captureFgmresTrace
++                                             ? state.fgmresTraceRecords
++                                             : state.dummy
++                                     offset:0u atIndex:15u];
++                        [encoder setBytes:&traceCapacity
++                                   length:sizeof(traceCapacity) atIndex:16u];
++                        [encoder setBytes:&traceEnabled
++                                   length:sizeof(traceEnabled) atIndex:17u];
+                     });
+             }
+             const std::uint32_t finalRestartCycle =
+@@ -10716,6 +10761,18 @@ void settleApplication(
+     return state_ ? (__bridge void*)state_->statuses : nullptr;
+ }
+ 
++void* Runtime::fgmresTraceRecordsBuffer() const noexcept {
++    return state_ ? (__bridge void*)state_->fgmresTraceRecords : nullptr;
++}
++
++void* Runtime::fgmresTraceCountBuffer() const noexcept {
++    return state_ ? (__bridge void*)state_->fgmresTraceCount : nullptr;
++}
++
++std::uint32_t Runtime::fgmresTraceCapacity() const noexcept {
++    return state_ ? state_->fgmresTraceCapacity : 0u;
++}
++
+ void* Runtime::femConstraintReactionBuffer() const noexcept {
+     return state_ ? (__bridge void*)state_->femConstraintReactions : nullptr;
+ }

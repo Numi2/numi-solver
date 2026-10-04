@@ -1,0 +1,1 @@
+synthetic_skin_wound_traction_preflight=ok source_nodes=711 state_node_capacity=775 source_tetrahedra=2304 state_tetrahedron_capacity=2432 top_lip_pairs=12 mapped_lip_nodes=24 expected_tetrahedra=2304 proximal_bite_nodes=3 distal_bite_nodes=3 force_ramp=cosine60 newton_iterations=7 execution_steps=60 protocol_steps=60 gpu_dispatch=false

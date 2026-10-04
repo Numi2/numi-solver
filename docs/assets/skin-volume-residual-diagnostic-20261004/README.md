@@ -65,7 +65,10 @@ qualification or material-realism improvement; both clips remain inconclusive.
 - The v5 run and its model limits are described in the public
   [Numi Lab media source record](https://numi-lab-research.vercel.app/media/SOURCES.md).
 
-Next solver work should instrument the failing microstep's nonlinear and
-Krylov residual history and examine mixed-field coupling/line search under the
-existing gates before another loaded trajectory. This diagnostic does not
-support a 100× performance claim.
+The follow-up residual trace and one preregistered tighter-forcing candidate
+are archived in [`trace-guided-20261004/`](trace-guided-20261004/README.md).
+That candidate accepted seven states and passed the unchanged `1e-4` volume
+gate, but missed its stricter `5e-5` prediction; it remains a short traction
+prefix, not wound closure. The per-column values are least-squares estimates,
+not recomputed true residuals. These diagnostics do not support a 100×
+performance claim.

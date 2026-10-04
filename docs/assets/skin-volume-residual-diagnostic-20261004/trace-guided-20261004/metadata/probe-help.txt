@@ -1,0 +1,2 @@
+usage: metalrobo_synthetic_skin_wound_traction_probe OUTPUT_DIRECTORY MATERIAL_PATH MATTER_METALLIB [--force-per-site-n 0|0.010] [--diagnostic-steps N] [--newton-iterations 7|10] [--fgmres-iterations 10|20] [--validate-only]
+Runs the synthetic 60-step cosine-ramp wound-lip trajectory; diagnostic steps truncate execution while preserving the 60-step force schedule.

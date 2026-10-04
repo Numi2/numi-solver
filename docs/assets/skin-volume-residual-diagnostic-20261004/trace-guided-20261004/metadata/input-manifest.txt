@@ -1,0 +1,9 @@
+2026-10-04T07:36:54Z
+eed22b54e93db18ff8d2bf36b5c454a52efdab79
+57a0a4a770b2e328c0ffea9739ba3d6de61a1351b5d4a369323f394ac341bfbb  -
+8159410328927225c500bdfe9fe96f266c73ad5d009912ce73afa353209f1391  /Users/n/numi-skin-suture-perf-100x/runs/goal-volume-residual-trace-guided-20261004/build/bin/metalrobo_synthetic_skin_wound_traction_probe
+d876d41e605c49b6f35ca7e9fd9ec267276e3f9c41037af82bbff1ca390f5a6b  /Users/n/numi-skin-suture-perf-100x/runs/goal-volume-residual-trace-guided-20261004/build/lib/libmetalrobo.dylib
+3919a27db155d54ca54c3e6622172decec5b3dfd26dad2088b044d496165648a  /Users/n/numi-skin-suture-perf-100x/runs/goal-volume-residual-trace-guided-20261004/build/matter/shaders/NumiMatter.metallib
+379945f593f12396b44c7148026f0250344a86278e01b7b26cb5f6d823a51e35  /Users/n/numi-skin-suture-perf-100x/runs/goal-volume-residual-trace-guided-20261004/source/matter/materials/synthetic_skin_wound.nmatter
+5a189b76dc540e7bdaa164d110e19b8f1fd3a89955a7f9a41000d268f5cad762  /Users/n/numi-skin-suture-perf-100x/runs/goal-volume-residual-trace-guided-20261004/metadata/trace-guided-candidate-plan.md
+c3ef9ab632501619bbfeeb9487fb7ff4ded8b3f2054f3832335c9dbe24098628  /Users/n/numi-skin-suture-perf-100x/runs/goal-volume-residual-trace-guided-20261004/metadata/trace-guided-run-command.txt

@@ -1,0 +1,19 @@
+synthetic_skin_wound_diagnostic=ok execution_steps=7 protocol_steps=60 arm=paired_bite_traction mesh=24x8x2 top_lip_pairs=12 bite_force_per_site_n=0.01 force_ramp=cosine60 newton_iterations=7 initial_mean_gap_m=0.000600000028 minimum_mean_gap_m=0.000588743268 final_mean_gap_m=0.000588743268 maximum_mean_gap_drift_m=1.12567602e-05 minimum_signed_gap_m=0.00058498123 peak_gap_reduction_fraction=0.018761266 maximum_tissue_displacement_m=8.82510012e-06 minimum_J=0.999600232 maximum_solver_residual=3.39923713e-06 maximum_volume_residual=8.59546635e-05 maximum_pressure_residual=3.39923713e-06 active_tetrahedra=2304 mass_relative_error=6.23223519e-08 total_gpu_ms=81064.1093 physical_calibration=none thread_present=false robot_execution=false
+       82.82 real         1.34 user         0.32 sys
+           884867072  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               55396  page reclaims
+                   5  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   0  voluntary context switches
+                4659  involuntary context switches
+         35509978935  instructions retired
+          6674219693  cycles elapsed
+          1260536960  peak memory footprint

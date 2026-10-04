@@ -331,18 +331,24 @@ remain the next gates.
 
 ## Medical deformables: synthetic wound-lip traction
 
-[![Six accepted frames from the stricter KKT skin-traction candidate; step 6 is rejected at the unchanged volume gate](docs/assets/skin-volume-residual-diagnostic-20261004/fgmres-followup-20261004/stricter-kkt-accepted-prefix-inconclusive-poster.png)](docs/assets/skin-volume-residual-diagnostic-20261004/fgmres-followup-20261004/stricter-kkt-accepted-prefix-inconclusive.mp4)
+[![Seven accepted states of synthetic wound-lip traction; the seven-step window is clearly distinguished from the 60-step protocol](docs/assets/skin-volume-residual-diagnostic-20261004/trace-guided-20261004/synthetic-skin-traction-7step-poster.png)](docs/assets/skin-volume-residual-diagnostic-20261004/trace-guided-20261004/synthetic-skin-traction-7step.mp4)
 
-A native Apple Metal probe applies paired traction to a 2,304-tetrahedron
-synthetic coupon. Its 60-step, 10 mN per-bite-force ramp accepted six samples
-before the unchanged mixed-FEM volume-residual gate rejected step 6. The newer
-stricter KKT candidate changed accepted gap response to 13.06 µm from 5.78 µm
-in the matched control, but it hit the same step-6 gate; that difference is a
-solver-sensitivity result, not a physical-accuracy claim. The result remains
-inconclusive and shows no wound closure. It has no measured skin fit, needle
-pass, thread, Franka arm, or clinical qualification. The
-[registered plan, raw samples, logs, source snapshots, videos, and checksums](docs/assets/skin-volume-residual-diagnostic-20261004/README.md)
-are retained alongside the [Numi Lab public showcase](https://numi-lab-research.vercel.app/#synthetic-skin-traction).
+The newest native Apple Metal clip shows **seven accepted states** from the
+first seven steps of a 60-step paired-traction protocol on one 2,304-tetrahedron
+synthetic coupon. In this trace-guided run, peak mixed-volume residual was
+`8.5955e-5`, below the unchanged `1e-4` acceptance gate. The separately
+preregistered `5e-5` target was **missed**. Mean wound-lip gap changed from
+0.600000 mm to 0.588743 mm (11.26 µm); maximum displacement was 8.83 µm, and
+the applied bite force had reached only 0.253 mN per site of the planned 10 mN.
+This is a short accepted traction prefix, not wound closure or a full protocol.
+
+The native synthetic model has no measured tissue fit, needle passage, suture
+thread, Franka execution, healing, or clinical qualification. The source-bound
+[run archive, trace, raw samples, video, and checksums](docs/assets/skin-volume-residual-diagnostic-20261004/trace-guided-20261004/README.md)
+preserve the preregistered miss. Earlier rejected runs and the stricter-KKT
+solver-sensitivity experiment remain in the parent
+[diagnostic archive](docs/assets/skin-volume-residual-diagnostic-20261004/README.md).
+The same clip is in the [Numi Lab public showcase](https://numi-lab-research.vercel.app/#synthetic-skin-traction).
 
 ## Grounded cloth produce-bag replay
 
