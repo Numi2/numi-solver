@@ -45,6 +45,12 @@ This partial change is not an endpoint, wound closure, or independent
 replicate. The coupon has no measured skin fit, needle pass, suture thread,
 Franka manipulation, tissue healing, or clinical qualification.
 
+The next [stricter KKT follow-up](fgmres-followup-20261004/README.md) changes
+the six-frame video and solver inputs. It records 13.06 µm of accepted gap
+change versus 5.78 µm in the matched 7-Newton control, but still stops at step
+6 on the same volume gate. The larger difference is solver sensitivity, not a
+qualification or material-realism improvement; both clips remain inconclusive.
+
 ## Reproduction record
 
 - Registered prediction and stop rule: [`plan.md`](plan.md).

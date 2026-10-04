@@ -331,16 +331,17 @@ remain the next gates.
 
 ## Medical deformables: synthetic wound-lip traction
 
-[![Six accepted states from an inconclusive synthetic skin-traction run](docs/assets/skin-volume-residual-diagnostic-20261004/accepted-prefix-inconclusive-poster.png)](docs/assets/skin-volume-residual-diagnostic-20261004/accepted-prefix-inconclusive.mp4)
+[![Six accepted frames from the stricter KKT skin-traction candidate; step 6 is rejected at the unchanged volume gate](docs/assets/skin-volume-residual-diagnostic-20261004/fgmres-followup-20261004/stricter-kkt-accepted-prefix-inconclusive-poster.png)](docs/assets/skin-volume-residual-diagnostic-20261004/fgmres-followup-20261004/stricter-kkt-accepted-prefix-inconclusive.mp4)
 
 A native Apple Metal probe applies paired traction to a 2,304-tetrahedron
 synthetic coupon. Its 60-step, 10 mN per-bite-force ramp accepted six samples
-before the unchanged mixed-FEM volume-residual gate rejected step 6. A paired
-7-versus-10 Newton-iteration diagnosis reproduced the same failure and
-identical accepted lip geometry; the higher budget cost 33% more elapsed time.
-The result is inconclusive and does not show wound closure. It has no measured
-skin fit, needle pass, thread, Franka arm, or clinical qualification. The
-[video, registered plan, raw samples, logs, and checksums](docs/assets/skin-volume-residual-diagnostic-20261004/README.md)
+before the unchanged mixed-FEM volume-residual gate rejected step 6. The newer
+stricter KKT candidate changed accepted gap response to 13.06 µm from 5.78 µm
+in the matched control, but it hit the same step-6 gate; that difference is a
+solver-sensitivity result, not a physical-accuracy claim. The result remains
+inconclusive and shows no wound closure. It has no measured skin fit, needle
+pass, thread, Franka arm, or clinical qualification. The
+[registered plan, raw samples, logs, source snapshots, videos, and checksums](docs/assets/skin-volume-residual-diagnostic-20261004/README.md)
 are retained alongside the [Numi Lab public showcase](https://numi-lab-research.vercel.app/#synthetic-skin-traction).
 
 ## Grounded cloth produce-bag replay
