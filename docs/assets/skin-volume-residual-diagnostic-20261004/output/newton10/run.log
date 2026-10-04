@@ -1,0 +1,21 @@
+synthetic_skin_wound_traction=failed reason="skin traction Matter status failed at step 6 with code 10 object=0 failing_index=4294967295 completed_microsteps=43 fgmres_iterations=8 contact_count=0 diagnostics=0.000003,0.000000,0.000100,0.000003"
+real 36.55
+user 0.91
+sys 0.19
+           671088640  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               42365  page reclaims
+                   5  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   0  voluntary context switches
+                 404  involuntary context switches
+         26421033692  instructions retired
+          4921322785  cycles elapsed
+          1029129248  peak memory footprint

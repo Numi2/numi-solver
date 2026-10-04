@@ -329,6 +329,20 @@ qualifies the nonlinear elastic forces. Coupling these volumes to the woven
 bag, frictional surface contact, spatial convergence, and measured fruit properties
 remain the next gates.
 
+## Medical deformables: synthetic wound-lip traction
+
+[![Six accepted states from an inconclusive synthetic skin-traction run](docs/assets/skin-volume-residual-diagnostic-20261004/accepted-prefix-inconclusive-poster.png)](docs/assets/skin-volume-residual-diagnostic-20261004/accepted-prefix-inconclusive.mp4)
+
+A native Apple Metal probe applies paired traction to a 2,304-tetrahedron
+synthetic coupon. Its 60-step, 10 mN per-bite-force ramp accepted six samples
+before the unchanged mixed-FEM volume-residual gate rejected step 6. A paired
+7-versus-10 Newton-iteration diagnosis reproduced the same failure and
+identical accepted lip geometry; the higher budget cost 33% more elapsed time.
+The result is inconclusive and does not show wound closure. It has no measured
+skin fit, needle pass, thread, Franka arm, or clinical qualification. The
+[video, registered plan, raw samples, logs, and checksums](docs/assets/skin-volume-residual-diagnostic-20261004/README.md)
+are retained alongside the [Numi Lab public showcase](https://numi-lab-research.vercel.app/#synthetic-skin-traction).
+
 ## Grounded cloth produce-bag replay
 
 ![The complete Metal cloth produce bag after one second of free gravity, cloth, fruit, and plane contact](docs/assets/cloth-metal-grounded-120.png)
