@@ -313,6 +313,60 @@ bool runStaticYarnEnergyRegressions(id<MTLDevice> device, id<MTLCommandQueue> qu
     return passed;
 }
 
+// A later color may not rewind an earlier color's committed endpoint response.
+bool runStaticYarnEventOwnershipRegression(id<MTLDevice> device, id<MTLCommandQueue> queue,
+                                           const Pipelines& pipelines) {
+    bool passed=true;
+    for (unsigned mutation=0;mutation<2;++mutation) {
+        NumiClothBagGPUConfig config{};
+        config.control=u4(NUMI_CLOTH_BAG_GPU_ABI_VERSION,2,1,0);
+        config.constraintCounts=u4(0,0,2,0);
+        config.gravityAndTimestep=f4(0,0,0,.01f);
+        config.clothMaterial=f4(.004f,0,0,0);
+        std::array<NumiClothBagGPUParticle,2> initial{};
+        initial[0].previousAndMass=f4(0,0,.1f,1);
+        initial[1].previousAndMass=f4(2,0,-.05f,1);
+        initial[0].positionAndInverseMass=f4(0,0,.004f,1);
+        initial[1].positionAndInverseMass=f4(2,0,.01f,1);
+        initial[0].staticFreePredictionAndValidity=f4(0,0,-.1f,1);
+        initial[1].staticFreePredictionAndValidity=f4(2,0,.01f,1);
+        initial[0].staticFreePredictionVelocity=f4(0,0,-20,0);
+        initial[1].staticFreePredictionVelocity=f4(0,0,6,0);
+        initial[0].staticPredictionVelocity=f4(0,0,0,0);
+        initial[1].staticPredictionVelocity=f4(0,0,6,0);
+        if(mutation==0) initial[0].positionAndInverseMass.x=.001f;
+        else initial[0].staticPredictionVelocity.x=.1f;
+        NumiClothBagGPUDistance edge{};edge.particlesAndColor=u4(0,1,0,0);
+        NumiClothBagGPUStaticYarnContact contact{};
+        NumiClothBagGPUFrictionStatus friction{};std::uint32_t failure=0;
+        const auto bytes=[device](const void* data,NSUInteger size) {
+            id<MTLBuffer> b=[device newBufferWithBytes:data length:size options:MTLResourceStorageModeShared];
+            if(b==nil)throw std::runtime_error("event ownership regression buffer failed");return b;
+        };
+        auto cfg=bytes(&config,sizeof(config)),particle=bytes(initial.data(),sizeof(initial));
+        auto distance=bytes(&edge,sizeof(edge)),state=bytes(&contact,sizeof(contact));
+        auto fail=bytes(&failure,sizeof(failure)),frictionBuffer=bytes(&friction,sizeof(friction));
+        id<MTLCommandBuffer> command=[queue commandBuffer];
+        id<MTLComputeCommandEncoder> encoder=[command computeCommandEncoder];
+        if(command==nil||encoder==nil)throw std::runtime_error("event ownership encoder failed");
+        [encoder setBuffer:cfg offset:0 atIndex:0];[encoder setBuffer:particle offset:0 atIndex:1];
+        [encoder setBuffer:distance offset:0 atIndex:2];[encoder setBuffer:state offset:0 atIndex:3];
+        NumiClothBagGPUBatch batch{u4(0,1,0,1)};
+        [encoder setBytes:&batch length:sizeof(batch) atIndex:4];
+        [encoder setBuffer:fail offset:0 atIndex:5];[encoder setBuffer:frictionBuffer offset:0 atIndex:6];
+        dispatch(encoder,pipelines.staticYarn,1);[encoder endEncoding];[command commit];[command waitUntilCompleted];
+        if(command.status!=MTLCommandBufferStatusCompleted)throw std::runtime_error("event ownership command failed");
+        std::memcpy(&failure,fail.contents,sizeof(failure));
+        const bool unchanged=std::memcmp(particle.contents,initial.data(),sizeof(initial))==0&&
+            std::memcmp(state.contents,&contact,sizeof(contact))==0;
+        const bool valid=unchanged&&failure==(NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN|NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_ADVANCE);
+        passed&=valid;
+        std::cout<<"static_yarn_event_owner_mutation="<<(mutation==0?"position":"velocity")
+                 <<" failure_flags="<<failure<<" state_unchanged="<<unchanged<<" passed="<<valid<<'\n';
+    }
+    return passed;
+}
+
 // Focused production-kernel qualification; no rendered geometry is substituted.
 int runStaticYarnProbe(id<MTLDevice> device, id<MTLCommandQueue> queue,
                        const Pipelines& pipelines) {
@@ -324,7 +378,7 @@ int runStaticYarnProbe(id<MTLDevice> device, id<MTLCommandQueue> queue,
         bool requireImpact, requireEndpointOnlyMiss, requireFreeDeparture;
         bool requireUnresolvedReject = false;
     };
-    const std::array<Case, 9> cases{{
+    const std::array<Case, 11> cases{{
         {"bridge_top_equal", {-.9,0,.024},{.9,0,.024},{0,0,-4},{0,0,-4},{},1,1,.01f,0,1,true,true,false},
         {"bridge_top_unequal", {-.9,0,.024},{.9,0,.024},{0,0,-4},{0,0,-4},{},1,3,.01f,0,1,true,true,false},
         {"bridge_side", {.774,0,-.2},{.774,0,.12},{-4,0,0},{-4,0,0},{},1,2,.01f,0,1,true,true,false},
@@ -334,6 +388,8 @@ int runStaticYarnProbe(id<MTLDevice> device, id<MTLCommandQueue> queue,
         {"unsupported_departure", {-.9,0,.004},{.9,0,.004},{0,2,2},{0,2,2},{},1,2,.01f,.5f,1,false,false,true},
         {"sustained_bridge", {-.9,0,.004},{.9,0,.004},{0,1,0},{0,1,0},{0,0,-9.81},1,2,.001f,.5f,64,true,false,false},
         {"endpoint_clip_obscures_earlier_interior", {0,0,.1},{2,0,-.05},{0,0,-20},{0,0,6},{},1,1,.01f,0,1,false,false,false,true},
+        {"endpoint_clip_unequal_mass", {0,0,.1},{2,0,-.05},{0,0,-20},{0,0,6},{},1,3,.01f,0,1,false,false,false,true},
+        {"endpoint_clip_reversed_order", {2,0,-.05},{0,0,.1},{0,0,6},{0,0,-20},{},1,1,.01f,0,1,false,false,false,true},
     }};
     bool passed = true;
     double worstGap = 0, maximumEnergyIncrease = 0;
@@ -383,7 +439,25 @@ int runStaticYarnProbe(id<MTLDevice> device, id<MTLCommandQueue> queue,
                       << " explicit_rejection_passed=" << valid << '\n';
             if(gAdaptiveStaticContact) {
                 NativeTransactionReport firstReport,replayReport;
-                const auto refined=runGPUTransactional(device,queue,pipelines,initial,0,0,configs,firstReport);
+                double pathGap = 0;
+                unsigned commonEvents = 0;
+                const auto auditPath = [&](const GPUResult& leaf) {
+                const auto& event = leaf.staticYarnContacts[0];
+                if (event.commonEventSecond.w == 1) {
+                    ++commonEvents;
+                    const auto startA=d3(leaf.particles[0].previousAndMass);
+                    const auto startB=d3(leaf.particles[1].previousAndMass);
+                    const auto eventA=d3(event.commonEventFirst),eventB=d3(event.commonEventSecond);
+                    const auto endA=d3(leaf.particles[0].positionAndInverseMass);
+                    const auto endB=d3(leaf.particles[1].positionAndInverseMass);
+                    for (unsigned i=0;i<=4096;++i) {
+                        const double u=double(i)/4096;
+                        pathGap=std::min(pathGap,independentStaticYarnGap(startA+(eventA-startA)*u,startB+(eventB-startB)*u,.004f));
+                        pathGap=std::min(pathGap,independentStaticYarnGap(eventA+(endA-eventA)*u,eventB+(endB-eventB)*u,.004f));
+                    }
+                }
+                };
+                const auto refined=runGPUTransactional(device,queue,pipelines,initial,0,0,configs,firstReport,{},auditPath);
                 const auto refinedReplay=runGPUTransactional(device,queue,pipelines,initial,0,0,configs,replayReport);
                 const double refinedGap=independentStaticYarnGap(d3(refined.particles[0].positionAndInverseMass),
                     d3(refined.particles[1].positionAndInverseMass),.004f);
@@ -396,7 +470,7 @@ int runStaticYarnProbe(id<MTLDevice> device, id<MTLCommandQueue> queue,
                     refined.failure==0&&refinedReplay.failure==0&&refinedExact&&
                     firstReport.committedSeconds==static_cast<double>(c.timestep)&&
                     firstReport.rejectedAttempts>0&&firstReport.maximumDepth>0&&
-                    refinedGap>=-2e-6&&std::isfinite(deltaK)&&deltaK<=1e-4;
+                    refinedGap>=-2e-6&&pathGap>=-2e-6&&commonEvents>0&&std::isfinite(deltaK)&&deltaK<=1e-4;
                 if (!refinedValid && !firstReport.attempts.empty()) {
                     const auto& last=firstReport.attempts.back();
                     std::cout << "static_yarn_adaptive_last_attempt begin=" << last.step.beginFraction
@@ -408,7 +482,8 @@ int runStaticYarnProbe(id<MTLDevice> device, id<MTLCommandQueue> queue,
                 std::cout<<"static_yarn_adaptive_case="<<c.name<<" complete="<<firstReport.complete
                          <<" committed_time_s="<<firstReport.committedSeconds<<" rejected_attempts="<<firstReport.rejectedAttempts
                          <<" accepted_leaves="<<firstReport.acceptedLeaves<<" maximum_depth="<<firstReport.maximumDepth
-                         <<" independent_final_gap_m="<<refinedGap<<" kinetic_change_J="<<deltaK
+                         <<" independent_final_gap_m="<<refinedGap<<" independent_common_path_gap_m="<<pathGap
+                         <<" common_events="<<commonEvents<<" kinetic_change_J="<<deltaK
                          <<" failure_flags="<<refined.failure<<" grid_and_state_replay_exact="<<refinedExact
                          <<" passed="<<refinedValid<<'\n';
             }
@@ -442,6 +517,7 @@ int runStaticYarnProbe(id<MTLDevice> device, id<MTLCommandQueue> queue,
                   << " failure_flags=" << first.failure << " replay_exact=" << exact
                   << " passed=" << valid << '\n';
     }
+    passed &= runStaticYarnEventOwnershipRegression(device,queue,pipelines);
     passed &= runStaticYarnEnergyRegressions(device,queue,pipelines);
     passed &= runStaticYarnCoupledVelocityRegression(device,queue,pipelines);
     std::cout << "static_yarn_cases=" << cases.size() << " static_yarn_energy_cases=2 minimum_independent_gap_m=" << worstGap

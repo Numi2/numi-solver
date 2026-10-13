@@ -156,12 +156,12 @@ kernel void numi_cloth_bag_solve_static_yarn(
     if (batch.control.w <= 1u) {
         // Endpoint sphere sweeps cannot detect an interior yarn/bench impact.
         // This bound covers every axial point during endpoint-linear motion.
-        const float3 acceptedFirst = batch.control.w == 1u ? first.previousAndMass.xyz : contact.acceptedFirst.xyz;
-        const float3 acceptedSecond = batch.control.w == 1u ? second.previousAndMass.xyz : contact.acceptedSecond.xyz;
+        float3 acceptedFirst = batch.control.w == 1u ? first.previousAndMass.xyz : contact.acceptedFirst.xyz;
+        float3 acceptedSecond = batch.control.w == 1u ? second.previousAndMass.xyz : contact.acceptedSecond.xyz;
         if (batch.control.w == 0u && (contact.acceptedFirst.w != 1 || contact.acceptedSecond.w != 1)) {
             recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return;
         }
-        const auto hit = numiStaticSegmentSceneCast(
+        auto hit = numiStaticSegmentSceneCast(
             staticVector(acceptedFirst), staticVector(acceptedSecond),
             staticVector(first.positionAndInverseMass.xyz), staticVector(second.positionAndInverseMass.xyz), radius);
         if (!hit.valid) {
@@ -181,11 +181,68 @@ kernel void numi_cloth_bag_solve_static_yarn(
             }
             if (raw.contact && raw.parameter > 1e-5f && raw.parameter < 1-1e-5f &&
                 (!hit.contact || hit.time > raw.time+1e-5f)) {
-                // A point sweep or earlier color erased an earlier interior
-                // impact. Resolving this requires a common earliest event or
-                // transactional subdivision, not the altered endpoint chord.
-                recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN |
-                              NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_ADVANCE); return;
+                // Do not overwrite an earlier graph color's accepted response.
+                // Reproduce the point-only prediction, including its velocity,
+                // and recover a common event only while that state still owns
+                // these endpoints. Coupled unresolved colors remain retryable.
+                float3 pointFirst = first.staticFreePredictionAndValidity.xyz;
+                float3 pointSecond = second.staticFreePredictionAndValidity.xyz;
+                float3 pointVelocityFirst = first.staticFreePredictionVelocity.xyz;
+                float3 pointVelocitySecond = second.staticFreePredictionVelocity.xyz;
+                float4 supportFirst = float4(0), supportSecond = float4(0);
+                nativeStaticSweep(acceptedFirst, pointFirst, radius, supportFirst, pointVelocityFirst, failure);
+                nativeStaticSweep(acceptedSecond, pointSecond, radius, supportSecond, pointVelocitySecond, failure);
+                if (any(pointFirst != first.positionAndInverseMass.xyz) ||
+                    any(pointSecond != second.positionAndInverseMass.xyz) ||
+                    any(pointVelocityFirst != first.staticPredictionVelocity.xyz) ||
+                    any(pointVelocitySecond != second.staticPredictionVelocity.xyz)) {
+                    recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN |
+                                  NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_ADVANCE); return;
+                }
+                // Rewind the endpoint-only prediction to the common yarn
+                // event. A later endpoint clip must not choose the trajectory
+                // on which this earlier interior impact is resolved.
+                const float3 eventFirst = fma(first.staticFreePredictionAndValidity.xyz - acceptedFirst,
+                                              float3(raw.time), acceptedFirst);
+                const float3 eventSecond = fma(second.staticFreePredictionAndValidity.xyz - acceptedSecond,
+                                               float3(raw.time), acceptedSecond);
+                first.positionAndInverseMass.xyz = eventFirst;
+                second.positionAndInverseMass.xyz = eventSecond;
+                if (!projectStaticYarn(first, second, contact, radius, false, failure)) return;
+                const float3 normal = staticVector(raw.normal);
+                const NumiStaticVelocityBody bodyA{staticVector(first.positionAndInverseMass.xyz),
+                    staticVector(first.staticFreePredictionVelocity.xyz), first.positionAndInverseMass.w, radius};
+                const NumiStaticVelocityBody bodyB{staticVector(second.positionAndInverseMass.xyz),
+                    staticVector(second.staticFreePredictionVelocity.xyz), second.positionAndInverseMass.w, radius};
+                const auto response = numiStaticResolveVelocityPair(bodyA, bodyB,
+                    staticVector(normal * (1-raw.parameter)), staticVector(normal * raw.parameter), 0, true);
+                if (!response.valid) {
+                    recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return;
+                }
+                first.staticPredictionVelocity.xyz = staticVector(response.firstVelocity);
+                second.staticPredictionVelocity.xyz = staticVector(response.secondVelocity);
+                contact.normalImpulse += float4(normal * response.impulse, response.impulse);
+                first.staticNormalAndBlockedReaction.w += response.firstSupportImpulse * config.gravityAndTimestep.w;
+                second.staticNormalAndBlockedReaction.w += response.secondSupportImpulse * config.gravityAndTimestep.w;
+                acceptedFirst = first.positionAndInverseMass.xyz;
+                acceptedSecond = second.positionAndInverseMass.xyz;
+                contact.commonEventFirst = float4(acceptedFirst, raw.time);
+                contact.commonEventSecond = float4(acceptedSecond, 1);
+                const float remaining = config.gravityAndTimestep.w * (1-raw.time);
+                first.positionAndInverseMass.xyz = fma(first.staticPredictionVelocity.xyz,
+                    float3(remaining), first.positionAndInverseMass.xyz);
+                second.positionAndInverseMass.xyz = fma(second.staticPredictionVelocity.xyz,
+                    float3(remaining), second.positionAndInverseMass.xyz);
+                // The remaining common chord is independently cast below.
+                // Endpoint and whole-yarn projections cannot erase another
+                // earlier event: unresolved paths still reject transactionally.
+                hit = numiStaticSegmentSceneCast(staticVector(acceptedFirst), staticVector(acceptedSecond),
+                    staticVector(first.positionAndInverseMass.xyz), staticVector(second.positionAndInverseMass.xyz), radius);
+                if (!hit.valid) {
+                    recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN |
+                                  NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_ADVANCE); return;
+                }
+
             }
         }
         if (hit.contact) {

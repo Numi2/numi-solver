@@ -1,0 +1,63 @@
+[ 33%] Built target numi_temporal_cone
+[ 66%] Building OBJCXX object CMakeFiles/numi-solver-cloth-metal.dir/tools/cloth_bag_metal.mm.o
+[100%] Linking OBJCXX executable numi-solver-cloth-metal
+[100%] Built target numi-solver-cloth-metal
+[ 50%] Building CXX object CMakeFiles/numi-solver-static-geometry.dir/tools/static_contact_geometry.cpp.o
+[100%] Linking CXX executable numi-solver-static-geometry
+[100%] Built target numi-solver-static-geometry
+[100%] Built target numi-solver-static-segment
+[100%] Built target numi-solver-static-velocity
+[100%] Built target numi-solver-transactional-substep
+Test project /Users/n/numi-solver-reconcile-20261013/build
+    Start 1: static_contact.host
+1/5 Test #1: static_contact.host .........................   Passed    0.36 sec
+    Start 2: static_contact.whole_yarn_host
+2/5 Test #2: static_contact.whole_yarn_host ..............   Passed    0.41 sec
+    Start 3: static_contact.velocity_slack_host
+3/5 Test #3: static_contact.velocity_slack_host ..........   Passed    0.01 sec
+    Start 5: cloth_bag.static_yarn_native
+4/5 Test #5: cloth_bag.static_yarn_native ................   Passed    1.54 sec
+    Start 6: static_contact.transactional_substep_host
+5/5 Test #6: static_contact.transactional_substep_host ...   Passed    0.01 sec
+
+100% tests passed out of 5
+
+Label Time Summary:
+ccd             =   0.41 sec*proc (1 test)
+cloth           =   1.54 sec*proc (1 test)
+contact         =   2.33 sec*proc (5 tests)
+cpu             =   0.79 sec*proc (4 tests)
+energy          =   1.55 sec*proc (2 tests)
+finite_bench    =   0.79 sec*proc (4 tests)
+friction        =   0.01 sec*proc (1 test)
+metal           =   1.54 sec*proc (1 test)
+physics         =   2.33 sec*proc (5 tests)
+replay          =   1.54 sec*proc (1 test)
+rollback        =   0.01 sec*proc (1 test)
+
+Total Test time (real) =   2.34 sec
+trajectory_static_contact=finite_bench box_min_m=-.75,-.5,-.08 box_max_m=.75,.5,0 room_floor_height_m=-.75 native_ABI=17
+initial_geometry backend=host_authored_float_tables fruit_yarn_overlap_m=0 fruit_pair_overlap_m=0 nonlocal_yarn_overlap_m=0 local_node_overlap_m=0 local_node_pairs=5754 local_node_batches=12 ground_overlap_m=0 passed=1
+static_yarn_case=bridge_top_equal gap_m=9.99671e-08 normal_impulse_Ns=8.59123 friction_impulse_Ns=0 kinetic_change_J=-15.7867 failure_flags=0 replay_exact=1 passed=1
+static_yarn_case=bridge_top_unequal gap_m=9.95954e-08 normal_impulse_Ns=17.0826 friction_impulse_Ns=0 kinetic_change_J=-30.204 failure_flags=0 replay_exact=1 passed=1
+static_yarn_case=bridge_side gap_m=1.13261e-07 normal_impulse_Ns=11.5076 friction_impulse_Ns=0 kinetic_change_J=-18.7003 failure_flags=0 replay_exact=1 passed=1
+static_yarn_case=through_entire_bench gap_m=1.00351e-07 normal_impulse_Ns=379.503 friction_impulse_Ns=0 kinetic_change_J=-37649.4 failure_flags=0 replay_exact=1 passed=1
+static_yarn_case=rotating_bridge gap_m=9.98983e-08 normal_impulse_Ns=11.6061 friction_impulse_Ns=0 kinetic_change_J=-21.2209 failure_flags=0 replay_exact=1 passed=1
+static_yarn_case=friction_free_bridge gap_m=9.97982e-08 normal_impulse_Ns=12.8347 friction_impulse_Ns=0 kinetic_change_J=-23.471 failure_flags=0 replay_exact=1 passed=1
+static_yarn_case=unsupported_departure gap_m=0.02 normal_impulse_Ns=0 friction_impulse_Ns=0 kinetic_change_J=0 failure_flags=0 replay_exact=1 passed=1
+static_yarn_case=sustained_bridge gap_m=9.96127e-08 normal_impulse_Ns=0.0290011 friction_impulse_Ns=0.0145005 kinetic_change_J=-0.777348 failure_flags=0 replay_exact=1 passed=1
+static_yarn_unresolved_case=endpoint_clip_obscures_earlier_interior endpoint_clipped_piecewise_gap_m=-0.00938218 clipped_final_gap_m=0 failure_flags=384 replay_exact=1 explicit_rejection_passed=1
+static_yarn_adaptive_case=endpoint_clip_obscures_earlier_interior complete=1 committed_time_s=0.01 rejected_attempts=2 accepted_leaves=2 maximum_depth=1 independent_final_gap_m=4.65661e-10 independent_common_path_gap_m=0 common_events=1 kinetic_change_J=-130.3 failure_flags=0 grid_and_state_replay_exact=1 passed=1
+static_yarn_unresolved_case=endpoint_clip_unequal_mass endpoint_clipped_piecewise_gap_m=-0.00938218 clipped_final_gap_m=0 failure_flags=384 replay_exact=1 explicit_rejection_passed=1
+static_yarn_adaptive_case=endpoint_clip_unequal_mass complete=1 committed_time_s=0.01 rejected_attempts=2 accepted_leaves=2 maximum_depth=1 independent_final_gap_m=4.65661e-10 independent_common_path_gap_m=0 common_events=1 kinetic_change_J=-134.314 failure_flags=0 grid_and_state_replay_exact=1 passed=1
+static_yarn_unresolved_case=endpoint_clip_reversed_order endpoint_clipped_piecewise_gap_m=-0.00938218 clipped_final_gap_m=0 failure_flags=384 replay_exact=1 explicit_rejection_passed=1
+static_yarn_adaptive_case=endpoint_clip_reversed_order complete=1 committed_time_s=0.01 rejected_attempts=2 accepted_leaves=2 maximum_depth=1 independent_final_gap_m=0 independent_common_path_gap_m=0 common_events=1 kinetic_change_J=-130.3 failure_flags=0 grid_and_state_replay_exact=1 passed=1
+static_yarn_event_owner_mutation=position failure_flags=384 state_unchanged=1 passed=1
+static_yarn_event_owner_mutation=velocity failure_flags=384 state_unchanged=1 passed=1
+static_yarn_energy_case=normal_slack kinetic_change_J=-0.0159233 outward_endpoint_velocity_m_s=93.6307 outward_endpoint_support_Ns=0 normal_impulse_Ns=0.0016232 friction_impulse_Ns=0 failure_flags=0 replay_exact=1 passed=1
+static_yarn_energy_case=friction_slack kinetic_change_J=-0.0157823 outward_endpoint_velocity_m_s=93.4445 outward_endpoint_support_Ns=0 normal_impulse_Ns=0.01 friction_impulse_Ns=0.00154054 failure_flags=0 replay_exact=1 passed=1
+static_yarn_coupled_velocity_case=two_pinned_yarns color_sweeps=96 minimum_independent_normal_velocity_m_s=-9.1354e-07 insufficient_three_sweeps_residual_m_s=-0.209297 insufficient_failure_flags=256 failure_flags=0 replay_exact=1 passed=1
+static_yarn_coupled_friction_control=mu_zero residual_slip_y_m_s=1 failure_flags=0 replay_exact=1 passed=1
+static_yarn_coupled_friction_case=two_pinned_yarns mu=0.5 residual_slip_y_m_s=0.0745797 minimum_independent_normal_velocity_m_s=-9.03881e-07 independent_cone_a_capacity_Ns=0.630073 independent_cone_a_used_Ns=0.630073 independent_cone_b_capacity_Ns=0.633555 independent_cone_b_used_Ns=0.633555 kinetic_change_J=-0.997219 failure_flags=0 replay_exact=1 passed=1
+static_yarn_coupled_friction_case=two_pinned_yarns mu=1.2 residual_slip_y_m_s=0 minimum_independent_normal_velocity_m_s=-2.67913e-10 independent_cone_a_capacity_Ns=0.741753 independent_cone_a_used_Ns=0.724015 independent_cone_b_capacity_Ns=0.762641 independent_cone_b_used_Ns=0.754169 kinetic_change_J=-1 failure_flags=0 replay_exact=1 passed=1
+static_yarn_cases=11 static_yarn_energy_cases=2 minimum_independent_gap_m=0 maximum_unforced_kinetic_increase_J=0 static_yarn_probe_passed=1

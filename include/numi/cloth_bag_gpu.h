@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 16u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 17u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
 #define NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY 4096u
 #define NUMI_CLOTH_BAG_GPU_MOUTH_RIM_CAPACITY 64u
@@ -108,6 +108,10 @@ typedef struct MR_ALIGN16 NumiClothBagGPUStaticYarnContact {
     // guards iterative constraint displacements, not only free prediction.
     mr_float4 acceptedFirst;
     mr_float4 acceptedSecond;
+    // Common prediction event, retained for independent path auditing. First
+    // w is the event fraction; second w is 1 only when rewinding was required.
+    mr_float4 commonEventFirst;
+    mr_float4 commonEventSecond;
 } NumiClothBagGPUStaticYarnContact;
 
 typedef struct MR_ALIGN16 NumiClothBagGPUGrip {
@@ -246,7 +250,7 @@ typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
 static_assert(sizeof(NumiClothBagGPUConfig) == 240);
 static_assert(sizeof(NumiClothBagGPUParticle) == 128);
 static_assert(sizeof(NumiClothBagGPUDistance) == 32);
-static_assert(sizeof(NumiClothBagGPUStaticYarnContact) == 96);
+static_assert(sizeof(NumiClothBagGPUStaticYarnContact) == 128);
 static_assert(sizeof(NumiClothBagGPUGrip) == 48);
 static_assert(sizeof(NumiClothBagGPUKnot) == 48);
 static_assert(sizeof(NumiClothBagGPUBend) == 32);

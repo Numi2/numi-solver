@@ -5110,7 +5110,8 @@ GPUResult runGPUTransactional(
     id<MTLDevice> device,id<MTLCommandQueue> queue,const Pipelines& pipelines,
     const InitialState& initial,unsigned iterations,unsigned strainSweeps,
     const std::vector<NumiClothBagGPUConfig>& configs,NativeTransactionReport& report,
-    const std::function<NumiClothBagGPUConfig(std::size_t,double)>& sampleConfig = {}
+    const std::function<NumiClothBagGPUConfig(std::size_t,double)>& sampleConfig = {},
+    const std::function<void(const GPUResult&)>& auditAcceptedLeaf = {}
 ) {
     report={};
     if(configs.empty() || initial.config.constraintCounts.z!=2u)
@@ -5118,6 +5119,7 @@ GPUResult runGPUTransactional(
     const auto fast=runGPU(device,queue,pipelines,initial,iterations,strainSweeps,configs);
     report.gpuSeconds=fast.seconds;
     if(fast.failure==0) {
+        if (auditAcceptedLeaf) auditAcceptedLeaf(fast);
         report.complete=true;report.originalBatchAccepted=true;
         report.acceptedLeaves=static_cast<unsigned>(configs.size());
         for(std::size_t i=0;i<configs.size();++i) {
@@ -5155,6 +5157,7 @@ GPUResult runGPUTransactional(
                 const auto first=candidate.final.firstFailure?candidate.final.firstFailure:candidate.final.failure;
                 report.attempts.push_back({i,step,first,candidate.final.failure});
                 if((first|candidate.final.failure)==0) {
+                    if (auditAcceptedLeaf) auditAcceptedLeaf(candidate.final);
                     mergeAcceptedNativeDiagnostics(candidate.acceptedDiagnostics,candidate.final);
                     candidate.final.selfStatus=candidate.acceptedDiagnostics.selfStatus;
                     candidate.final.frictionStatus=candidate.acceptedDiagnostics.frictionStatus;
