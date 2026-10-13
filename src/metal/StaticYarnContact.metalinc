@@ -1,0 +1,319 @@
+// Included by ClothBag.metal so endpoint and whole-yarn contacts use identical
+// static geometry, support response, failure reporting and graph-color order.
+inline bool publishStaticYarnWitness(
+    thread NumiClothBagGPUStaticYarnContact& contact,
+    float3 first, float3 second, float radius,
+    device atomic_uint* failure
+) {
+    const auto sample = numiStaticSegmentSceneSample(
+        staticVector(first), staticVector(second), radius);
+    if (!sample.valid) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN);
+        return false;
+    }
+    contact.normalAndGap = float4(staticVector(sample.normal), sample.gap);
+    contact.witness.x = sample.parameter;
+    contact.witness.z = sample.gap <= numiStaticTolerance(
+        staticVector(first), staticVector(second)) ? 1.0f : 0.0f;
+    return true;
+}
+
+inline bool projectStaticYarn(
+    thread NumiClothBagGPUParticle& first,
+    thread NumiClothBagGPUParticle& second,
+    thread NumiClothBagGPUStaticYarnContact& contact,
+    float radius, bool constraintCorrection, device atomic_uint* failure
+) {
+    // Each correction uses the whole-segment SDF minimum and its gradient.
+    // Recompute the witness: a face interval, rounded edge or corner can move
+    // along the segment after a mass-weighted correction.
+    for (uint pass = 0; pass < 24; ++pass) {
+        if (!publishStaticYarnWitness(contact, first.positionAndInverseMass.xyz,
+                                     second.positionAndInverseMass.xyz, radius, failure)) return false;
+        if (contact.normalAndGap.w >= -1.0e-7f) return true;
+        const float weightSecond = contact.witness.x;
+        const float weightFirst = 1.0f - weightSecond;
+        const float3 normal = contact.normalAndGap.xyz;
+        const float3 firstFree = normal * (weightFirst * first.positionAndInverseMass.w);
+        const float3 secondFree = normal * (weightSecond * second.positionAndInverseMass.w);
+        const float3 firstResponse = nativeStaticResponse(first.positionAndInverseMass.xyz,
+                                                        radius, firstFree, failure);
+        const float3 secondResponse = nativeStaticResponse(second.positionAndInverseMass.xyz,
+                                                         radius, secondFree, failure);
+        const float denominator = dot(normal,
+            weightFirst * firstResponse + weightSecond * secondResponse);
+        if (!(denominator > 1.0e-20f) || !isfinite(denominator)) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return false;
+        }
+        // A 0.1 micrometre guard absorbs FP32 representation error; the scene's
+        // independent 2 micrometre contact budget is unchanged.
+        const float lambda = (1.0e-7f - contact.normalAndGap.w) / denominator;
+        const float fraction = min(
+            nativeStaticArrival(first.positionAndInverseMass.xyz, radius, firstResponse * lambda, failure),
+            nativeStaticArrival(second.positionAndInverseMass.xyz, radius, secondResponse * lambda, failure));
+        const float applied = lambda * fraction;
+        if (!(applied > 0) || !isfinite(applied)) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return false;
+        }
+        first.positionAndInverseMass.xyz += firstResponse * applied;
+        second.positionAndInverseMass.xyz += secondResponse * applied;
+        if (constraintCorrection) {
+            contact.positionReaction += float4(normal * applied, applied);
+            first.staticNormalAndBlockedReaction.w += nativeBlockedReaction(firstFree, firstResponse, first.positionAndInverseMass.w, applied);
+            second.staticNormalAndBlockedReaction.w += nativeBlockedReaction(secondFree, secondResponse, second.positionAndInverseMass.w, applied);
+        }
+        nativeStaticProject(first.positionAndInverseMass, radius, first.staticNormalAndBlockedReaction, failure);
+        nativeStaticProject(second.positionAndInverseMass, radius, second.staticNormalAndBlockedReaction, failure);
+    }
+    publishStaticYarnWitness(contact, first.positionAndInverseMass.xyz,
+                            second.positionAndInverseMass.xyz, radius, failure);
+    if (contact.normalAndGap.w < -1.0e-7f) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return false;
+    }
+    return true;
+}
+
+kernel void numi_cloth_bag_solve_static_yarn(
+    constant NumiClothBagGPUConfig& config [[buffer(0)]],
+    device NumiClothBagGPUParticle* particles [[buffer(1)]],
+    device const NumiClothBagGPUDistance* distances [[buffer(2)]],
+    device NumiClothBagGPUStaticYarnContact* contacts [[buffer(3)]],
+    constant NumiClothBagGPUBatch& batch [[buffer(4)]],
+    device atomic_uint* failure [[buffer(5)]],
+    device atomic_uint* frictionStatus [[buffer(6)]],
+    uint localIndex [[thread_position_in_grid]]
+) {
+    if (!validConfig(config, failure) || config.constraintCounts.z != 2u ||
+        localIndex >= batch.control.y) return;
+    const uint index = batch.control.x + localIndex;
+    if (index >= config.control.z || batch.control.w > 5u) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE); return;
+    }
+    const auto edge = distances[index];
+    const uint firstIndex = edge.particlesAndColor.x;
+    const uint secondIndex = edge.particlesAndColor.y;
+    if (firstIndex >= config.control.y || secondIndex >= config.control.y || firstIndex == secondIndex) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_RANGE); return;
+    }
+    if (edge.particlesAndColor.z != batch.control.z) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_BATCH); return;
+    }
+    auto first = particles[firstIndex]; auto second = particles[secondIndex];
+    auto contact = contacts[index];
+    const float radius = config.clothMaterial.x;
+    if (!(radius > 0) || !all(isfinite(first.positionAndInverseMass)) ||
+        !all(isfinite(second.positionAndInverseMass)) || first.positionAndInverseMass.w < 0 ||
+        second.positionAndInverseMass.w < 0) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE); return;
+    }
+    if (batch.control.w >= 4u) {
+        // Read-only certificate after all graph colors. Later edges may move
+        // a shared endpoint back into an earlier edge's contact manifold.
+        const auto sample = numiStaticSegmentSceneSample(staticVector(first.positionAndInverseMass.xyz),
+            staticVector(second.positionAndInverseMass.xyz), radius);
+        if (!sample.valid || sample.gap < -1.0e-7f) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return;
+        }
+        if (batch.control.w == 5u) {
+            const auto witness = numiStaticSegmentSceneVelocitySample(
+                staticVector(first.positionAndInverseMass.xyz), staticVector(second.positionAndInverseMass.xyz),
+                staticVector(first.velocity.xyz), staticVector(second.velocity.xyz), radius,
+                numiStaticTolerance(staticVector(first.positionAndInverseMass.xyz), staticVector(second.positionAndInverseMass.xyz)));
+            if (!witness.valid) {
+                recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return;
+            }
+            if (witness.feature != 0) {
+                const auto velocity = numiStaticAdd(
+                    numiStaticScale(staticVector(first.velocity.xyz), 1-witness.parameter),
+                    numiStaticScale(staticVector(second.velocity.xyz), witness.parameter));
+                if (!numiStaticFinite3(velocity) || numiStaticDot(velocity,witness.normal) < -1.0e-6f) {
+                    recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return;
+                }
+            }
+            // A rotated/final manifold cannot reuse friction capacity from a
+            // former contact normal. Reject a cone that does not close here.
+            const float capacity = sample.gap <= numiStaticTolerance(
+                staticVector(first.positionAndInverseMass.xyz), staticVector(second.positionAndInverseMass.xyz)) ?
+                max(0.0f, dot(contact.normalImpulse.xyz + contact.positionReaction.xyz/config.gravityAndTimestep.w,
+                             staticVector(sample.normal))) * config.clothMaterial.z : 0;
+            if (!isfinite(capacity) || !isfinite(contact.witness.w) ||
+                contact.witness.w < 0 || contact.witness.w > capacity * (1.0f + 1.0e-5f)) {
+                recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return;
+            }
+            if (capacity > 0 && contact.witness.w < capacity*(1.0f-1.0e-5f)) {
+                const float3 normal=staticVector(sample.normal);
+                const float3 velocity=(1-sample.parameter)*first.velocity.xyz+sample.parameter*second.velocity.xyz;
+                const float3 tangent=velocity-normal*(dot(velocity,normal)/dot(normal,normal));
+                if (!all(isfinite(tangent)) || length(tangent)>1.0e-6f) {
+                    // Sliding with unused Coulomb capacity is not a closed
+                    // friction solve even when the cone inequality holds.
+                    recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return;
+                }
+            }
+        }
+        return;
+    }
+    if (batch.control.w <= 1u) {
+        // Endpoint sphere sweeps cannot detect an interior yarn/bench impact.
+        // This bound covers every axial point during endpoint-linear motion.
+        const float3 acceptedFirst = batch.control.w == 1u ? first.previousAndMass.xyz : contact.acceptedFirst.xyz;
+        const float3 acceptedSecond = batch.control.w == 1u ? second.previousAndMass.xyz : contact.acceptedSecond.xyz;
+        if (batch.control.w == 0u && (contact.acceptedFirst.w != 1 || contact.acceptedSecond.w != 1)) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return;
+        }
+        const auto hit = numiStaticSegmentSceneCast(
+            staticVector(acceptedFirst), staticVector(acceptedSecond),
+            staticVector(first.positionAndInverseMass.xyz), staticVector(second.positionAndInverseMass.xyz), radius);
+        if (!hit.valid) {
+            recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN |
+                                  NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_ADVANCE); return;
+        }
+        if (batch.control.w == 1u) {
+            if (first.staticFreePredictionAndValidity.w != 1 || second.staticFreePredictionAndValidity.w != 1) {
+                recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return;
+            }
+            const auto raw = numiStaticSegmentSceneCast(staticVector(acceptedFirst),staticVector(acceptedSecond),
+                staticVector(first.staticFreePredictionAndValidity.xyz),
+                staticVector(second.staticFreePredictionAndValidity.xyz),radius);
+            if (!raw.valid) {
+                recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN |
+                              NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_ADVANCE); return;
+            }
+            if (raw.contact && raw.parameter > 1e-5f && raw.parameter < 1-1e-5f &&
+                (!hit.contact || hit.time > raw.time+1e-5f)) {
+                // A point sweep or earlier color erased an earlier interior
+                // impact. Resolving this requires a common earliest event or
+                // transactional subdivision, not the altered endpoint chord.
+                recordFailure(failure,NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN |
+                              NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_ADVANCE); return;
+            }
+        }
+        if (hit.contact) {
+            const float wa = 1.0f - hit.parameter, wb = hit.parameter;
+            const float3 normal = staticVector(hit.normal);
+            const float3 firstFree = normal * (wa * first.positionAndInverseMass.w);
+            const float3 secondFree = normal * (wb * second.positionAndInverseMass.w);
+            const float3 firstResponse = nativeStaticResponse(first.positionAndInverseMass.xyz,
+                radius, firstFree, failure);
+            const float3 secondResponse = nativeStaticResponse(second.positionAndInverseMass.xyz,
+                radius, secondFree, failure);
+            const float denominator = dot(normal, wa * firstResponse + wb * secondResponse);
+            const float3 motion = wa * (first.positionAndInverseMass.xyz - acceptedFirst) +
+                                  wb * (second.positionAndInverseMass.xyz - acceptedSecond);
+            const float removed = max(0.0f, -dot(motion, normal) * (1.0f - hit.time));
+            const float incoming = batch.control.w == 1u ? dot(wa * first.staticPredictionVelocity.xyz +
+                                       wb * second.staticPredictionVelocity.xyz, normal) : 0;
+            if ((removed > 1.0e-7f || incoming < -1.0e-7f) && !(denominator > 1.0e-20f)) {
+                recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return;
+            }
+            if (denominator > 1.0e-20f) {
+                const float lambda = removed / denominator;
+                const float fraction = min(
+                    nativeStaticArrival(first.positionAndInverseMass.xyz, radius, firstResponse * lambda, failure),
+                    nativeStaticArrival(second.positionAndInverseMass.xyz, radius, secondResponse * lambda, failure));
+                first.positionAndInverseMass.xyz += firstResponse * (lambda * fraction);
+                second.positionAndInverseMass.xyz += secondResponse * (lambda * fraction);
+                if (batch.control.w == 0u) {
+                    contact.positionReaction += float4(normal * (lambda * fraction), lambda * fraction);
+                    first.staticNormalAndBlockedReaction.w += nativeBlockedReaction(firstFree, firstResponse, first.positionAndInverseMass.w, lambda * fraction);
+                    second.staticNormalAndBlockedReaction.w += nativeBlockedReaction(secondFree, secondResponse, second.positionAndInverseMass.w, lambda * fraction);
+                }
+                if (batch.control.w == 1u) {
+                    const NumiStaticVelocityBody bodyA{staticVector(first.positionAndInverseMass.xyz),
+                        staticVector(first.staticPredictionVelocity.xyz), first.positionAndInverseMass.w, radius};
+                    const NumiStaticVelocityBody bodyB{staticVector(second.positionAndInverseMass.xyz),
+                        staticVector(second.staticPredictionVelocity.xyz), second.positionAndInverseMass.w, radius};
+                    const auto response = numiStaticResolveVelocityPair(bodyA, bodyB,
+                        staticVector(normal * wa), staticVector(normal * wb), 0, true);
+                    if (!response.valid) {recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return;}
+                    first.staticPredictionVelocity.xyz = staticVector(response.firstVelocity);
+                    second.staticPredictionVelocity.xyz = staticVector(response.secondVelocity);
+                    contact.normalImpulse += float4(normal * response.impulse, response.impulse);
+                    first.staticNormalAndBlockedReaction.w += response.firstSupportImpulse * config.gravityAndTimestep.w;
+                    second.staticNormalAndBlockedReaction.w += response.secondSupportImpulse * config.gravityAndTimestep.w;
+                }
+            }
+            contact.witness.y = hit.time;
+        }
+    }
+    if (batch.control.w <= 1u) {
+        if (!projectStaticYarn(first, second, contact, radius, batch.control.w == 0u, failure)) return;
+        contact.acceptedFirst = float4(first.positionAndInverseMass.xyz, 1);
+        contact.acceptedSecond = float4(second.positionAndInverseMass.xyz, 1);
+        if (batch.control.w == 1u) {
+            // Keep the inelastic velocity and post-impact rounded prediction.
+            // Constraint reconstruction must not use the pre-impact chord.
+            first.staticPredictionAndValidity = float4(first.positionAndInverseMass.xyz, 1);
+            second.staticPredictionAndValidity = float4(second.positionAndInverseMass.xyz, 1);
+        }
+    } else {
+        if (!publishStaticYarnWitness(contact, first.positionAndInverseMass.xyz,
+                                     second.positionAndInverseMass.xyz, radius, failure)) return;
+        if (contact.witness.z != 0) {
+            const float wa = 1.0f - contact.witness.x, wb = contact.witness.x;
+            const float3 normal = contact.normalAndGap.xyz;
+            const float3 witnessVelocity = wa * first.velocity.xyz + wb * second.velocity.xyz;
+            if (batch.control.w == 2u) {
+              for (uint pass = 0; pass < 16; ++pass) {
+                const auto velocityWitness = numiStaticSegmentSceneVelocitySample(
+                    staticVector(first.positionAndInverseMass.xyz), staticVector(second.positionAndInverseMass.xyz),
+                    staticVector(first.velocity.xyz), staticVector(second.velocity.xyz), radius,
+                    numiStaticTolerance(staticVector(first.positionAndInverseMass.xyz), staticVector(second.positionAndInverseMass.xyz)));
+                if (!velocityWitness.valid) {
+                    recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return;
+                }
+                if (velocityWitness.feature == 0) break;
+                const float wa = 1.0f - velocityWitness.parameter, wb = velocityWitness.parameter;
+                const float3 normal = staticVector(velocityWitness.normal);
+                const float3 witnessVelocity = wa * first.velocity.xyz + wb * second.velocity.xyz;
+                const float incoming = dot(witnessVelocity, normal);
+                // The final independent whole-yarn normal certificate uses
+                // the same 1 micrometre/second bound. Avoid re-solving a
+                // represented residual already within that bound.
+                if (!(incoming < -1.0e-6f)) break;
+                const NumiStaticVelocityBody bodyA{staticVector(first.positionAndInverseMass.xyz),
+                    staticVector(first.velocity.xyz), first.positionAndInverseMass.w, radius};
+                const NumiStaticVelocityBody bodyB{staticVector(second.positionAndInverseMass.xyz),
+                    staticVector(second.velocity.xyz), second.positionAndInverseMass.w, radius};
+                const auto response = numiStaticResolveVelocityPair(bodyA, bodyB,
+                    staticVector(normal * wa), staticVector(normal * wb), 0, true);
+                if (!response.valid) {recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return;}
+                first.velocity.xyz = staticVector(response.firstVelocity);
+                second.velocity.xyz = staticVector(response.secondVelocity);
+                first.velocity.w += response.firstSupportImpulse;
+                second.velocity.w += response.secondSupportImpulse;
+                contact.normalImpulse += float4(normal * response.impulse, response.impulse);
+                if (response.impulse == 0) break;
+              }
+            } else {
+                const float3 tangent = witnessVelocity - normal * (dot(witnessVelocity, normal) / dot(normal, normal));
+                const float slip = length(tangent);
+                const float normalCapacity = max(0.0f, dot(contact.normalImpulse.xyz +
+                    contact.positionReaction.xyz / config.gravityAndTimestep.w, normal));
+                if (slip > 1.0e-10f && normalCapacity > 0 && config.clothMaterial.z > 0) {
+                    const float3 direction = -tangent / slip;
+                    const float limit = max(0.0f, normalCapacity * config.clothMaterial.z - contact.witness.w);
+                    const NumiStaticVelocityBody bodyA{staticVector(first.positionAndInverseMass.xyz),
+                        staticVector(first.velocity.xyz), first.positionAndInverseMass.w, radius};
+                    const NumiStaticVelocityBody bodyB{staticVector(second.positionAndInverseMass.xyz),
+                        staticVector(second.velocity.xyz), second.positionAndInverseMass.w, radius};
+                    const auto response = numiStaticResolveVelocityPair(bodyA, bodyB,
+                        staticVector(direction * wa), staticVector(direction * wb), limit, false);
+                    if (!response.valid) {recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN); return;}
+                    first.velocity.xyz = staticVector(response.firstVelocity);
+                    second.velocity.xyz = staticVector(response.secondVelocity);
+                    first.velocity.w += response.firstSupportImpulse;
+                    second.velocity.w += response.secondSupportImpulse;
+                    contact.witness.w += response.impulse;
+                    recordFrictionStatus(frictionStatus, 2u, response.impulse, limit);
+                }
+            }
+        }
+    }
+    if (!all(isfinite(first.positionAndInverseMass)) || !all(isfinite(second.positionAndInverseMass)) ||
+        !all(isfinite(first.velocity)) || !all(isfinite(second.velocity)) ||
+        !all(isfinite(contact.normalImpulse)) || !all(isfinite(contact.positionReaction))) {
+        recordFailure(failure, NUMI_CLOTH_BAG_GPU_FAILURE_NONFINITE); return;
+    }
+    particles[firstIndex] = first; particles[secondIndex] = second; contacts[index] = contact;
+}

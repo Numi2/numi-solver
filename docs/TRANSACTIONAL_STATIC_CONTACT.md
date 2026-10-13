@@ -28,15 +28,32 @@ State copies must own their storage; callbacks and controller samplers must
 not mutate external physical state. This is a driver contract, not a guarantee
 for aliased buffers or a stateful external callback.
 
-The native finite-bench candidate compiles with an opt-in adaptive host path,
-an authoritative grip-trajectory sampler, a retained attempt grid, exact replay
-hashing of that grid and full-frame rollback. Its focused obscured-interior
-yarn-impact test has **not executed on Metal**. Native continuous contact,
-successful full bag replay, throughput, reciprocal elastic fruit contact and
-complete work/reaction closure remain open. The active and queued GPU jobs
-use their existing immutable binaries.
+The native whole-yarn finite-bench contact path now executes on Apple M4 Pro.
+The focused Metal probe checks nine geometry cases, two retained kinetic-energy
+counterexamples, coupled normal/sliding/sticking contact, frictionless controls,
+and exact state/contact replay. The fixed-step obscured-interior impact is
+explicitly rejected instead of admitting its endpoint-clear but penetrated path.
+All accepted unforced cases retain nonincreasing kinetic energy.
+
+The optional adaptive driver remains an **unqualified experiment**. On the
+obscured-interior case its depth-8 run rejects 38 attempts, reaches 32 provisional
+leaves, and rolls the complete requested interval back with zero committed time.
+A depth-16 diagnostic also fails; increasing the retry budget is not a fix.
+The production retry policy remains depth 8 and 512 attempts. The retained
+failure and the last attempted interval are reported by the probe. This does
+not establish successful adaptive native impact, complete bag spill, throughput,
+reciprocal elastic fruit contact, or complete work/reaction closure.
 
 ```sh
 cmake --build build --target numi-solver-transactional-substep
 ctest --test-dir build -R '^static_contact.transactional_substep_host$' --output-on-failure
 ```
+
+For the executed whole-yarn gate:
+
+```sh
+cmake --build build --target numi-solver-cloth-metal
+ctest --test-dir build -R '^cloth_bag.static_yarn_native$' --output-on-failure
+```
+
+[Native source/binary receipt](assets/static-yarn-native-m4pro-20261013/receipt.json) and [executed gate](assets/static-yarn-native-m4pro-20261013/solver-final-native-gate.log). The retained [depth-8 failure](assets/static-yarn-native-m4pro-20261013/solver-adaptive-static-yarn-validation.log) and [depth-16 diagnostic failure](assets/static-yarn-native-m4pro-20261013/solver-refined-adaptive-validation.log) remain qualification failures.

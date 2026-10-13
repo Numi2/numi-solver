@@ -6,6 +6,7 @@
 #include "numi/cloth_material.h"
 #include "numi/grip_trajectory.h"
 #include "numi/finite_bench_geometry.h"
+#include "numi/transactional_substep.h"
 
 #include <algorithm>
 #include <array>
@@ -15,6 +16,7 @@
 #include <cstdint>
 #include <cstring>
 #include <fstream>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -49,10 +51,12 @@ constexpr std::uint32_t kFruitYarnCount = kFruitCount * kDistanceCount;
 constexpr std::uint32_t kReconciliationPasses = 8u;
 constexpr std::uint32_t kFinalContactPasses = 2u;
 constexpr std::uint32_t kCertificatePasses = 8u;
+constexpr std::uint32_t kStaticYarnVelocitySweeps = 96u;
 numi::ClothMaterialArtifact gClothMaterial{};
 bool gFiniteBench = false;
 bool gDiagnoseFailure = false;
 bool gObserveThisRun = false;
+bool gAdaptiveStaticContact = false;
 id<MTLComputePipelineState> gFailureObserver = nil;
 id<MTLBuffer> gObservedFailureBuffer = nil;
 id<MTLBuffer> gFirstFailureTraceBuffer = nil;
@@ -4118,6 +4122,7 @@ void dispatch(
 }
 
 struct GPUResult {
+    std::vector<NumiClothBagGPUStaticYarnContact> staticYarnContacts;
     std::vector<NumiClothBagGPUParticle> particles;
     std::vector<NumiClothBagGPUDistance> distances;
     std::vector<NumiClothBagGPUGrip> grips;
@@ -4132,6 +4137,7 @@ struct GPUResult {
     NumiClothBagGPUReleaseStatus releaseStatus{};
     std::vector<std::uint32_t> maximumMouthClearanceBits;
     std::uint32_t failure{};
+    std::uint32_t firstFailure{};
     double seconds{};
 };
 
@@ -4152,6 +4158,7 @@ struct Pipelines {
     id<MTLComputePipelineState> grip;
     id<MTLComputePipelineState> fruitPair;
     id<MTLComputePipelineState> ground;
+    id<MTLComputePipelineState> staticYarn;
     id<MTLComputePipelineState> strain;
     id<MTLComputePipelineState> yarnSolve;
     id<MTLComputePipelineState> yarnContacts;
@@ -4276,6 +4283,7 @@ GPUResult runGPU(
     id<MTLBuffer> fruitBuffer = makeBytes(initial.fruits);
     id<MTLBuffer> fruitPairBuffer = makeBytes(initial.fruitPairs);
     id<MTLBuffer> yarnContactBuffer = makeBytes(initial.yarnContacts);
+    id<MTLBuffer> staticYarnContactBuffer = makeZeroed(initial.distances.size() * sizeof(NumiClothBagGPUStaticYarnContact));
     id<MTLBuffer> yarnAerodynamicForceBuffer = makeZeroed(
         initial.particles.size() * sizeof(mr_float4)
     );
@@ -4355,7 +4363,7 @@ GPUResult runGPU(
         distanceBuffer == nil || gripBuffer == nil ||
         knotBuffer == nil || bendBuffer == nil ||
         fruitBuffer == nil || fruitPairBuffer == nil ||
-        yarnContactBuffer == nil || yarnAerodynamicForceBuffer == nil ||
+        yarnContactBuffer == nil || staticYarnContactBuffer == nil || yarnAerodynamicForceBuffer == nil ||
         yarnAerodynamicReductionBuffer == nil ||
         selfPairBuffer == nil || selfBatchBuffer == nil ||
         selfPairLookupBuffer == nil || mouthRimBuffer == nil ||
@@ -4376,7 +4384,7 @@ GPUResult runGPU(
         throw std::runtime_error("failed to allocate Metal cloth buffers");
     }
 
-    gObserveThisRun = gDiagnoseFailure && initial.config.constraintCounts.z == 2u;
+    gObserveThisRun = (gDiagnoseFailure || gAdaptiveStaticContact) && initial.config.constraintCounts.z == 2u;
     if (gObserveThisRun) {
         gObservedFailureBuffer = failureBuffer;
         gFirstFailureTraceBuffer = makeZeroed(2 * sizeof(std::uint32_t));
@@ -4418,6 +4426,7 @@ GPUResult runGPU(
     [encoder setBuffer:fruitPairBuffer offset:0 atIndex:7];
     [encoder setBuffer:failureBuffer offset:0 atIndex:8];
     [encoder setBuffer:yarnContactBuffer offset:0 atIndex:9];
+    [encoder setBuffer:staticYarnContactBuffer offset:0 atIndex:10];
     dispatch(
         encoder,
         pipelines.begin,
@@ -4506,6 +4515,23 @@ GPUResult runGPU(
         std::max(initial.particles.size(), initial.fruits.size())
     );
 
+    const auto solveStaticYarn = [&](const std::uint32_t mode) {
+        if (initial.config.constraintCounts.z != 2u) return;
+        for (auto batch : initial.distanceBatches) {
+            batch.control.w = mode;
+            [encoder setComputePipelineState:pipelines.staticYarn];
+            [encoder setBuffer:configBuffer offset:0 atIndex:0];
+            [encoder setBuffer:particleBuffer offset:0 atIndex:1];
+            [encoder setBuffer:distanceBuffer offset:0 atIndex:2];
+            [encoder setBuffer:staticYarnContactBuffer offset:0 atIndex:3];
+            [encoder setBytes:&batch length:sizeof(batch) atIndex:4];
+            [encoder setBuffer:failureBuffer offset:0 atIndex:5];
+            [encoder setBuffer:frictionStatusBuffer offset:0 atIndex:6];
+            dispatch(encoder, pipelines.staticYarn, batch.control.y);
+        }
+    };
+    solveStaticYarn(1u);
+    solveStaticYarn(4u);
     const auto buildYarnContacts = [&] {
         [encoder setComputePipelineState:pipelines.yarnContacts];
         [encoder setBuffer:configBuffer offset:0 atIndex:0];
@@ -4711,6 +4737,8 @@ GPUResult runGPU(
                 pipelines.ground,
                 std::max(initial.particles.size(), initial.fruits.size())
             );
+            solveStaticYarn(0u);
+            solveStaticYarn(4u);
         }
     }
     const auto solveFruitPairs = [&] {
@@ -4738,6 +4766,8 @@ GPUResult runGPU(
             pipelines.ground,
             std::max(initial.particles.size(), initial.fruits.size())
         );
+        solveStaticYarn(0u);
+        solveStaticYarn(4u);
     };
     const auto solveStrainLimits = [&] {
         for (std::uint32_t sweep = 0u; sweep < strainSweeps; ++sweep) {
@@ -4839,6 +4869,8 @@ GPUResult runGPU(
     [encoder setBuffer:fruitBuffer offset:0 atIndex:1];
     [encoder setBuffer:failureBuffer offset:0 atIndex:2];
     dispatch(encoder, pipelines.finalizeFruit, initial.fruits.size());
+    solveStaticYarn(4u);
+    solveStaticYarn(2u);
     [encoder setComputePipelineState:pipelines.clothGroundFriction];
     [encoder setBuffer:configBuffer offset:0 atIndex:0];
     [encoder setBuffer:particleBuffer offset:0 atIndex:1];
@@ -4892,6 +4924,16 @@ GPUResult runGPU(
     dispatch(
         encoder, pipelines.fruitGroundFriction, initial.fruits.size()
     );
+    solveStaticYarn(2u);
+    solveStaticYarn(3u);
+    // Coupled contacts sharing nodes require complete color sweeps. A final
+    // read-only certificate rejects any unresolved velocity/position/cone.
+    for (std::uint32_t sweep=0; sweep<kStaticYarnVelocitySweeps; ++sweep) {
+        solveStaticYarn(2u);
+        solveStaticYarn(3u);
+    }
+    solveStaticYarn(2u);
+    solveStaticYarn(5u);
     [encoder setComputePipelineState:pipelines.fruitOrientation];
     [encoder setBuffer:configBuffer offset:0 atIndex:0];
     [encoder setBuffer:fruitBuffer offset:0 atIndex:1];
@@ -4931,6 +4973,8 @@ GPUResult runGPU(
     assign(result.fruits, fruitBuffer, initial.fruits);
     assign(result.fruitPairs, fruitPairBuffer, initial.fruitPairs);
     assign(result.yarnContacts, yarnContactBuffer, initial.yarnContacts);
+    const auto* staticContacts = static_cast<const NumiClothBagGPUStaticYarnContact*>(staticYarnContactBuffer.contents);
+    result.staticYarnContacts.assign(staticContacts, staticContacts + initial.distances.size());
     result.selfStatus = *static_cast<const NumiClothBagGPUSelfStatus*>(
         selfStatusBuffer.contents
     );
@@ -4958,8 +5002,9 @@ GPUResult runGPU(
     if (gObserveThisRun) {
         const auto* trace = static_cast<const std::uint32_t*>(gFirstFailureTraceBuffer.contents);
         if (trace[0] != 0 && trace[0] <= gObservedStages.size()) {
+            result.firstFailure = trace[1];
             const auto& stage = gObservedStages[trace[0] - 1];
-            std::cout << "native_first_failure dispatch=" << trace[0] << " kernel=" << stage.first
+            if (gDiagnoseFailure) std::cout << "native_first_failure dispatch=" << trace[0] << " kernel=" << stage.first
                       << " substep=" << stage.second << " first_flags=" << trace[1]
                       << " final_flags=" << result.failure << std::endl;
         }
@@ -4991,6 +5036,152 @@ InitialState continuedInitialState(
     return next;
 }
 
+struct NativeTransactionAttempt {
+    std::size_t requestedSubstep{};
+    numi::TransactionStep step;
+    std::uint32_t firstFailure{}, finalFailure{};
+};
+struct NativeTransactionReport {
+    bool complete{};
+    bool originalBatchAccepted{};
+    unsigned rejectedAttempts{}, acceptedLeaves{}, maximumDepth{};
+    double committedSeconds{}, gpuSeconds{};
+    std::vector<NativeTransactionAttempt> attempts;
+};
+
+std::uint64_t hashNativeTransaction(const NativeTransactionReport& report) {
+    std::uint64_t hash=1469598103934665603ull;
+    const auto append=[&](const auto& value) {
+        const auto* bytes=reinterpret_cast<const unsigned char*>(&value);
+        for(std::size_t i=0;i<sizeof(value);++i){hash^=bytes[i];hash*=1099511628211ull;}
+    };
+    append(report.complete);append(report.originalBatchAccepted);
+    append(report.rejectedAttempts);append(report.acceptedLeaves);append(report.maximumDepth);
+    append(report.committedSeconds);
+    for(const auto& attempt:report.attempts) {
+        append(attempt.requestedSubstep);append(attempt.step.beginFraction);append(attempt.step.endFraction);
+        append(attempt.step.timestep);append(attempt.step.depth);
+        append(attempt.firstFailure);append(attempt.finalFailure);
+    }
+    return hash;
+}
+
+GPUResult nativeSnapshot(const InitialState& state) {
+    GPUResult result;
+    result.particles=state.particles; result.distances=state.distances; result.grips=state.grips;
+    result.knots=state.knots; result.bends=state.bends; result.fruits=state.fruits;
+    result.fruitPairs=state.fruitPairs; result.yarnContacts=state.yarnContacts;
+    result.staticYarnContacts.resize(state.distances.size());
+    result.releaseStatus.masks.x=state.initialMouthCandidateMask;
+    result.releaseStatus.masks.y=state.initialReleasedMask;
+    result.maximumMouthClearanceBits.resize(state.fruits.size());
+    return result;
+}
+
+void mergeAcceptedNativeDiagnostics(GPUResult& total,const GPUResult& leaf) {
+    const auto sum=[](std::uint32_t a,std::uint32_t b) {
+        const auto value=static_cast<std::uint64_t>(a)+b;
+        if(value>std::numeric_limits<std::uint32_t>::max())
+            throw std::overflow_error("accepted native contact diagnostic counter overflow");
+        return static_cast<std::uint32_t>(value);
+    };
+    auto& s=total.selfStatus.counters;const auto& t=leaf.selfStatus.counters;
+    s.x=sum(s.x,t.x);s.y=sum(s.y,t.y);s.z=std::max(s.z,t.z);s.w|=t.w;
+    auto& f=total.frictionStatus;const auto& g=leaf.frictionStatus;
+    f.counters=u4(sum(f.counters.x,g.counters.x),sum(f.counters.y,g.counters.y),
+                  sum(f.counters.z,g.counters.z),sum(f.counters.w,g.counters.w));
+    f.metrics=u4(std::max(f.metrics.x,g.metrics.x),std::max(f.metrics.y,g.metrics.y),
+                 sum(f.metrics.z,g.metrics.z),sum(f.metrics.w,g.metrics.w));
+    auto& a=total.aerodynamicsStatus.metrics;const auto& b=leaf.aerodynamicsStatus.metrics;
+    a=u4(std::max(a.x,b.x),std::max(a.y,b.y),std::max(a.z,b.z),a.w|b.w);
+    if(total.maximumMouthClearanceBits.empty())total.maximumMouthClearanceBits=leaf.maximumMouthClearanceBits;
+    else {
+        if(total.maximumMouthClearanceBits.size()!=leaf.maximumMouthClearanceBits.size())
+            throw std::logic_error("native mouth diagnostic topology changed during subdivision");
+        for(std::size_t i=0;i<total.maximumMouthClearanceBits.size();++i)
+            total.maximumMouthClearanceBits[i]=std::max(total.maximumMouthClearanceBits[i],leaf.maximumMouthClearanceBits[i]);
+    }
+}
+
+// Preserve the fast whole-frame path. On rejection, rerun from the original
+// owned state with bounded dyadic subdivisions. All failed GPU buffers are
+// private proposals. A later failed branch rolls back the entire caller batch.
+GPUResult runGPUTransactional(
+    id<MTLDevice> device,id<MTLCommandQueue> queue,const Pipelines& pipelines,
+    const InitialState& initial,unsigned iterations,unsigned strainSweeps,
+    const std::vector<NumiClothBagGPUConfig>& configs,NativeTransactionReport& report,
+    const std::function<NumiClothBagGPUConfig(std::size_t,double)>& sampleConfig = {}
+) {
+    report={};
+    if(configs.empty() || initial.config.constraintCounts.z!=2u)
+        throw std::logic_error("transactional static contact needs a finite scene and nonempty intervals");
+    const auto fast=runGPU(device,queue,pipelines,initial,iterations,strainSweeps,configs);
+    report.gpuSeconds=fast.seconds;
+    if(fast.failure==0) {
+        report.complete=true;report.originalBatchAccepted=true;
+        report.acceptedLeaves=static_cast<unsigned>(configs.size());
+        for(std::size_t i=0;i<configs.size();++i) {
+            report.committedSeconds+=configs[i].gravityAndTimestep.w;
+            report.attempts.push_back({i,{0,1,configs[i].gravityAndTimestep.w,0},0,0});
+        }
+        return fast;
+    }
+    constexpr auto retryMask=NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN | NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_ADVANCE;
+    const auto firstFailure=fast.firstFailure?fast.firstFailure:fast.failure;
+    ++report.rejectedAttempts;
+    report.attempts.push_back({configs.size(),{0,1,0,0},firstFailure,fast.failure});
+    auto original=nativeSnapshot(initial);
+    original.failure=fast.failure;original.firstFailure=firstFailure;
+    if(((firstFailure|fast.failure) & ~retryMask)!=0) {original.seconds=report.gpuSeconds;return original;}
+    struct State { InitialState initial;GPUResult final,acceptedDiagnostics; };
+    State privateState{initial,nativeSnapshot(initial),{}};
+    for(std::size_t i=0;i<configs.size();++i) {
+        const auto transaction=numi::advanceTransactional(privateState,configs[i].gravityAndTimestep.w,
+            numi::TransactionPolicy{retryMask,8,512},[&](State& candidate,const numi::TransactionStep& step) {
+                auto config=sampleConfig?sampleConfig(i,step.endFraction):configs[i];
+                config.gravityAndTimestep.w=step.timestep;
+                // Without an authoritative controller sampler, a changed
+                // active pose/generation cannot be invented at a midpoint.
+                if(!sampleConfig && step.depth>0 &&
+                   (candidate.initial.config.gripTargetAndActive.w>0 || config.gripTargetAndActive.w>0) &&
+                   (std::memcmp(&candidate.initial.config.gripTargetAndActive,&config.gripTargetAndActive,sizeof(mr_float4))!=0 ||
+                    std::memcmp(&candidate.initial.config.gripOrientation,&config.gripOrientation,sizeof(mr_float4))!=0 ||
+                    candidate.initial.config.gripControl.x!=config.gripControl.x))
+                    throw std::logic_error("subdivision of moving grips needs the authoritative pose sampler");
+                @autoreleasepool {
+                    candidate.final=runGPU(device,queue,pipelines,candidate.initial,iterations,strainSweeps,{config});
+                }
+                report.gpuSeconds+=candidate.final.seconds;
+                const auto first=candidate.final.firstFailure?candidate.final.firstFailure:candidate.final.failure;
+                report.attempts.push_back({i,step,first,candidate.final.failure});
+                if((first|candidate.final.failure)==0) {
+                    mergeAcceptedNativeDiagnostics(candidate.acceptedDiagnostics,candidate.final);
+                    candidate.final.selfStatus=candidate.acceptedDiagnostics.selfStatus;
+                    candidate.final.frictionStatus=candidate.acceptedDiagnostics.frictionStatus;
+                    candidate.final.aerodynamicsStatus=candidate.acceptedDiagnostics.aerodynamicsStatus;
+                    candidate.final.maximumMouthClearanceBits=candidate.acceptedDiagnostics.maximumMouthClearanceBits;
+                }
+                candidate.initial=continuedInitialState(candidate.initial,candidate.final,config);
+                return first|candidate.final.failure;
+            });
+        report.rejectedAttempts+=transaction.ledger.rejectedAttempts;
+        report.acceptedLeaves+=transaction.ledger.provisionalAcceptedLeaves;
+        report.maximumDepth=std::max(report.maximumDepth,transaction.ledger.maximumDepth);
+        if(!transaction.accepted()) {
+            original.failure=transaction.ledger.terminalFailure?transaction.ledger.terminalFailure:retryMask;
+            original.firstFailure=original.failure;original.seconds=report.gpuSeconds;
+            // No caller time or state is committed when any interval fails.
+            report.committedSeconds=0;
+            return original;
+        }
+        privateState=transaction.state;
+    }
+    report.complete=true;
+    for(const auto& config:configs)report.committedSeconds+=config.gravityAndTimestep.w;
+    privateState.final.seconds=report.gpuSeconds;
+    return privateState.final;
+}
+
 bool bitwiseEqualPhysicalState(
     const GPUResult& first,
     const GPUResult& second
@@ -5011,6 +5202,7 @@ bool bitwiseEqualPhysicalState(
         equal(first.fruits, second.fruits) &&
         equal(first.fruitPairs, second.fruitPairs) &&
         equal(first.yarnContacts, second.yarnContacts) &&
+        equal(first.staticYarnContacts, second.staticYarnContacts) &&
         first.releaseStatus.masks.x == second.releaseStatus.masks.x &&
         first.releaseStatus.masks.y == second.releaseStatus.masks.y;
 }
@@ -5048,6 +5240,7 @@ std::uint64_t hashGPUResult(const GPUResult& result) {
     append(result.fruits);
     append(result.fruitPairs);
     append(result.yarnContacts);
+    append(result.staticYarnContacts);
     const std::array<NumiClothBagGPUSelfStatus, 1> selfStatus{{
         result.selfStatus
     }};
@@ -5176,6 +5369,8 @@ struct TrajectoryReplay {
     double gpuSeconds{};
     double maximumHandleLag{};
     double maximumLocalNodePenetration{};
+    double committedSeconds{};
+    unsigned rejectedStaticAttempts{}, maximumSubdivisionDepth{};
 };
 
 const char* trajectoryName(const TrajectoryScenario scenario) {
@@ -5311,7 +5506,7 @@ TrajectoryReplay runTrajectoryReplay(
     }
     TrajectoryReplay replay;
     replay.frameHashes.reserve(steps);
-    std::ofstream fruitTrace, combinedTrace;
+    std::ofstream fruitTrace, combinedTrace, transactionTrace;
     const bool finiteBench = state.config.constraintCounts.z == 2u;
     if (!dumpPrefix.empty()) {
         fruitTrace.open(dumpPrefix + "-r" + std::to_string(replayIndex) + "-fruits.csv");
@@ -5330,6 +5525,11 @@ TrajectoryReplay runTrajectoryReplay(
         };
         header(fruitTrace);
         if (combinedTrace.is_open() && replayIndex == 1u) header(combinedTrace);
+        if(gAdaptiveStaticContact) {
+            transactionTrace.open(dumpPrefix+"-r"+std::to_string(replayIndex)+"-static-transactions.csv");
+            if(!transactionTrace)throw std::runtime_error("failed to open static transaction trace");
+            transactionTrace<<"replay,requested_frame,attempt,kind,requested_substep,begin_fraction,end_fraction,dt_s,depth,first_failure,final_failure,batch_complete,committed_dt_s\n";
+        }
     }
     const auto traceFruits = [&](const std::uint32_t frame, const auto& fruits,
                                   const std::uint32_t releasedMask) {
@@ -5339,8 +5539,8 @@ TrajectoryReplay runTrajectoryReplay(
             for (std::size_t index = 0; index < fruits.size(); ++index) {
                 const auto& fruit = fruits[index];
                 if (finiteBench) output << replayIndex << ',';
-                output << frame << ',' << static_cast<double>(frame) *
-                        kPickupSubstepsPerFrame * kTimestep << ',' << index << ','
+                output << frame << ',' << (gAdaptiveStaticContact?replay.committedSeconds:
+                        static_cast<double>(frame)*kPickupSubstepsPerFrame*kTimestep) << ',' << index << ','
                     << fruit.positionAndInverseMass.x << ',' << fruit.positionAndInverseMass.y << ','
                     << fruit.positionAndInverseMass.z << ',' << fruit.previousAndRadius.w << ','
                     << fruit.velocityAndGroundImpulse.x << ',' << fruit.velocityAndGroundImpulse.y << ','
@@ -5404,16 +5604,50 @@ TrajectoryReplay runTrajectoryReplay(
                 ? 1u
                 : 0u;
         }
+        NativeTransactionReport transaction;
         @autoreleasepool {
-            replay.final = runGPU(
-                device,
-                queue,
-                pipelines,
-                state,
-                iterations,
-                strainSweeps,
-                configs
-            );
+            if(gAdaptiveStaticContact) {
+                const auto sampler=[&](std::size_t substep,double endFraction) {
+                    auto config=configs.at(substep);
+                    const double time=(static_cast<double>(step)*kPickupSubstepsPerFrame+
+                                       static_cast<double>(substep)+endFraction)*kTimestep;
+                    const auto pose=trajectoryGripPose(scenario,time,trajectory);
+                    config.gripTargetAndActive=f4(pose.target.x,pose.target.y,pose.target.z,pose.active?1.f:0.f);
+                    config.gripOrientation=gripQuaternion4(pose.orientation);
+                    config.gripControl.x=pose.attachmentGeneration;
+                    return config;
+                };
+                replay.final=runGPUTransactional(device,queue,pipelines,state,iterations,strainSweeps,configs,transaction,sampler);
+            } else replay.final=runGPU(device,queue,pipelines,state,iterations,strainSweeps,configs);
+        }
+        if(gAdaptiveStaticContact) {
+            replay.rejectedStaticAttempts+=transaction.rejectedAttempts;
+            replay.maximumSubdivisionDepth=std::max(replay.maximumSubdivisionDepth,transaction.maximumDepth);
+            if(transactionTrace.is_open()) {
+                transactionTrace<<std::setprecision(17);
+                for(std::size_t i=0;i<transaction.attempts.size();++i) {
+                    const auto& a=transaction.attempts[i];
+                    transactionTrace<<replayIndex<<','<<step+1<<','<<i<<','
+                        <<(a.requestedSubstep==configs.size()?"batch":"substep")<<','<<a.requestedSubstep<<','
+                        <<a.step.beginFraction<<','<<a.step.endFraction<<','<<a.step.timestep<<','<<a.step.depth<<','
+                        <<a.firstFailure<<','<<a.finalFailure<<','<<transaction.complete<<','<<transaction.committedSeconds<<'\n';
+                }
+                transactionTrace.flush();
+                if(!transactionTrace)throw std::runtime_error("failed to write static transaction trace");
+            }
+            if(!transaction.complete) {
+                replay.failureFree=false;replay.gpuSeconds+=replay.final.seconds;
+                if(!snapshotPrefix.empty())dumpGPUOBJ(snapshotPrefix+"-rejected-frame-"+std::to_string(step+1)+"-rollback.obj",
+                    state.particles,state.fruits,state.grips,state.config);
+                std::cout<<"static_transaction_rejected scenario="<<trajectoryName(scenario)<<" replay="<<replayIndex
+                         <<" requested_frame="<<step+1<<" completed_frames="<<replay.frameHashes.size()
+                         <<" committed_time_s="<<replay.committedSeconds<<" failure_flags="<<replay.final.failure<<std::endl;
+                break;
+            }
+            const double requestedSeconds=static_cast<double>(kPickupSubstepsPerFrame)*kTimestep;
+            if(transaction.committedSeconds!=requestedSeconds)
+                throw std::logic_error("accepted static transaction changed the frame duration");
+            replay.committedSeconds+=transaction.committedSeconds;
         }
         replay.failureFree = replay.failureFree &&
             replay.final.failure == NUMI_CLOTH_BAG_GPU_FAILURE_NONE;
@@ -5421,7 +5655,9 @@ TrajectoryReplay runTrajectoryReplay(
             maximumLocalNodePenetration(replay.final.particles, state.localNodePairs,
                 state.config.clothMaterial.x));
         replay.gpuSeconds += replay.final.seconds;
-        replay.frameHashes.push_back(hashGPUResult(replay.final));
+        const auto physicalHash=hashGPUResult(replay.final);
+        replay.frameHashes.push_back(gAdaptiveStaticContact?
+            (physicalHash^hashNativeTransaction(transaction))*1099511628211ull:physicalHash);
         if (scenario != TrajectoryScenario::grounded &&
             configs.back().gripTargetAndActive.w > 0.0f) {
             for (const NumiClothBagGPUGrip& grip : replay.final.grips) {
@@ -5468,6 +5704,8 @@ TrajectoryReplay runTrajectoryReplay(
                       << replay.final.releaseStatus.masks.y
                       << " max_local_node_overlap_m=" << replay.maximumLocalNodePenetration
                       << " failure_flags=" << replay.final.failure
+                      << " static_rejected_attempts=" << replay.rejectedStaticAttempts
+                      << " maximum_subdivision_depth=" << replay.maximumSubdivisionDepth
                       << " gpu_seconds=" << replay.gpuSeconds << std::endl;
         }
         if (!replay.failureFree) {
@@ -6164,9 +6402,12 @@ int runLocalNodeProbe(
     return passed ? 0 : 1;
 }
 
+#include "static_yarn_probe.mm.inc"
+
 int run(const int argc, const char* const* argv) {
     bool localNodeProbe = false;
     bool finiteBenchProbe = false;
+    bool staticYarnProbe = false;
     bool fruitFlightProbe = false;
     bool initialStateProbe = false;
     std::uint32_t replays = 2u;
@@ -6194,6 +6435,10 @@ int run(const int argc, const char* const* argv) {
             gFiniteBench = true;
         } else if (value == "--diagnose-failure") {
             gDiagnoseFailure = true;
+        } else if (value == "--adaptive-static-contact") {
+            gAdaptiveStaticContact = true;
+        } else if (value == "--static-yarn-probe") {
+            staticYarnProbe = true;
         } else if (value == "--finite-bench-probe") {
             finiteBenchProbe = true;
         } else if (value == "--local-node-probe") {
@@ -6287,7 +6532,8 @@ int run(const int argc, const char* const* argv) {
                    "[--pickup-steps N] [--pickup-dump-every N] "
                    "[--pickup-fruit-mass-scale POSITIVE] "
                    "[--fruit-flight-probe] [--initial-state-probe] [--finite-bench] "
-                   "[--finite-bench-probe] [--diagnose-failure]\n";
+                   "[--finite-bench-probe] [--static-yarn-probe] [--diagnose-failure] "
+                   "[--adaptive-static-contact]\n";
             return 0;
         } else {
             throw std::runtime_error(
@@ -6295,6 +6541,8 @@ int run(const int argc, const char* const* argv) {
             );
         }
     }
+    if (gAdaptiveStaticContact && !gFiniteBench)
+        throw std::runtime_error("adaptive static contact requires --finite-bench");
     if (gFiniteBench) {
         std::cout << "trajectory_static_contact=finite_bench box_min_m=-.75,-.5,-.08 "
                      "box_max_m=.75,.5,0 room_floor_height_m=-.75 native_ABI="
@@ -6481,6 +6729,7 @@ int run(const int argc, const char* const* argv) {
         makePipeline(device, library, @"numi_cloth_bag_solve_grip"),
         makePipeline(device, library, @"numi_cloth_bag_solve_fruit_pair"),
         makePipeline(device, library, @"numi_cloth_bag_solve_ground"),
+        makePipeline(device, library, @"numi_cloth_bag_solve_static_yarn"),
         makePipeline(device, library, @"numi_cloth_bag_limit_strain"),
         makePipeline(device, library, @"numi_cloth_bag_solve_yarn_batch"),
         makePipeline(device, library, @"numi_cloth_bag_build_yarn_contacts"),
@@ -6522,9 +6771,10 @@ int run(const int argc, const char* const* argv) {
         ),
     };
 
-    if (gDiagnoseFailure) {
+    if (gDiagnoseFailure || gAdaptiveStaticContact) {
         gFailureObserver = makePipeline(device, library, @"numi_cloth_bag_observe_first_failure");
     }
+    if (staticYarnProbe) return runStaticYarnProbe(device, queue, pipelines);
     if (finiteBenchProbe) {
         return runFiniteBenchProbe(device, queue, pipelines);
     }

@@ -61,6 +61,9 @@ set(
     include/numi/cloth_bag_gpu.h
     include/numi/cloth_gpu_dispatch_guards.h
     include/numi/static_contact_geometry.h
+    include/numi/static_segment_geometry.h
+    include/numi/static_velocity_contact.h
+    src/metal/StaticYarnContact.metalinc
 )
 
 add_custom_command(
@@ -470,6 +473,8 @@ if(BUILD_TESTING)
     set_tests_properties(static_contact.whole_yarn_host PROPERTIES LABELS "cpu;physics;contact;finite_bench;ccd" TIMEOUT 60)
     add_test(NAME static_contact.velocity_slack_host COMMAND $<TARGET_FILE:numi-solver-static-velocity>)
     add_test(NAME cloth_bag.dispatch_guard_host COMMAND $<TARGET_FILE:numi-solver-cloth-dispatch-guard>)
+    add_test(NAME cloth_bag.static_yarn_native COMMAND $<TARGET_FILE:numi-solver-cloth-metal> --finite-bench --static-yarn-probe)
+    set_tests_properties(cloth_bag.static_yarn_native PROPERTIES LABELS "metal;physics;cloth;contact;replay;energy" TIMEOUT 120)
     set_tests_properties(cloth_bag.dispatch_guard_host PROPERTIES LABELS "cpu;physics;cloth;capacity" TIMEOUT 30)
     set_tests_properties(static_contact.velocity_slack_host PROPERTIES LABELS "cpu;physics;contact;finite_bench;energy;friction" TIMEOUT 30)
     add_test(NAME static_contact.transactional_substep_host COMMAND $<TARGET_FILE:numi-solver-transactional-substep>)
