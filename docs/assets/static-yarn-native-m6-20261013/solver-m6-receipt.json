@@ -1,0 +1,26 @@
+{
+  "hardware": "Apple M6",
+  "host": "numi",
+  "macOS": "27.0 (26A425)",
+  "architecture": "arm64",
+  "source_commit": "be0d8ee9d657fdffc90fc859be90b28c0fe92d28",
+  "compiler_host": "macmini Apple M4 Pro",
+  "device_selection": "MTLCreateSystemDefaultDevice; host exposes Apple M6 GPU",
+  "native_fixed_step_gate": "passed; static_yarn_probe_passed=1",
+  "static_yarn_cases": 9,
+  "static_yarn_energy_cases": 2,
+  "maximum_unforced_kinetic_increase_J": 0,
+  "binary_sha256": "309f62592f736741e1df18435b33d93d7033d218741cea2e8f70045b41ed7190",
+  "metallib_sha256": "7aa386eb324c2d2ff3eebd6db4917d85acf798bdf333683535f17a96db2b8b71",
+  "command": "build/numi-solver-cloth-metal --metallib build/shaders/NumiTemporalCone.metallib --finite-bench --static-yarn-probe",
+  "qualification_limits": [
+    "No M6 build qualification; Metal compiler remains unavailable",
+    "No throughput or cross-device speedup claim",
+    "Adaptive whole-interval contact still fails; full bag behavior unqualified"
+  ],
+  "evidence_sha256": {
+    "solver-m6-native-gate.log": "9f0ac8656279732a0e7c0b3410bcc34cb2d0ecaf608c0cb443effba8bb7db73c",
+    "solver-m6-host-identity.log": "2a38e7f3ad49b00532e4f28c986fade7d16c61c2c4a6634c050da023673238ad",
+    "solver-m6-runtime-staging.log": "b1447e2b5de7b1640ca2471f90ca20184fc3d0f9afd08351af2d48f7bbb828f5"
+  }
+}

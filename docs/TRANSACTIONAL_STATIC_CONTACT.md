@@ -57,3 +57,11 @@ ctest --test-dir build -R '^cloth_bag.static_yarn_native$' --output-on-failure
 ```
 
 [Native source/binary receipt](assets/static-yarn-native-m4pro-20261013/receipt.json) and [executed gate](assets/static-yarn-native-m4pro-20261013/solver-final-native-gate.log). The retained [depth-8 failure](assets/static-yarn-native-m4pro-20261013/solver-adaptive-static-yarn-validation.log) and [depth-16 diagnostic failure](assets/static-yarn-native-m4pro-20261013/solver-refined-adaptive-validation.log) remain qualification failures.
+
+The same executable and shader library also passed this focused gate on Apple
+M6 (macOS 27.0, arm64). Their hashes match the M4 Pro build. This verifies native
+Metal execution with the transferred artifacts; it does not qualify building
+on M6, adaptive contact, or a performance improvement. The M6 host lacks the
+Metal compiler. See the [M6 receipt](assets/static-yarn-native-m6-20261013/solver-m6-receipt.json),
+[executed gate](assets/static-yarn-native-m6-20261013/solver-m6-native-gate.log), and
+[host identity](assets/static-yarn-native-m6-20261013/solver-m6-host-identity.log).
