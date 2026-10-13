@@ -5707,6 +5707,7 @@ TrajectoryReplay runTrajectoryReplay(
                       << replay.final.releaseStatus.masks.y
                       << " max_local_node_overlap_m=" << replay.maximumLocalNodePenetration
                       << " failure_flags=" << replay.final.failure
+                      << " state_hash=" << physicalHash
                       << " static_rejected_attempts=" << replay.rejectedStaticAttempts
                       << " maximum_subdivision_depth=" << replay.maximumSubdivisionDepth
                       << " gpu_seconds=" << replay.gpuSeconds << std::endl;
