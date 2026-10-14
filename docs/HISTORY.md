@@ -23,6 +23,15 @@ The release additionally preserves five old source/run copies and an embedded
 `1e6517d544296d40eedec2bcef78b3ab90e5496caa19fbcb44934b5ff4aeb314`.
 A fresh extraction verified every file before retirement.
 
+The same release contains `legacy-local-bag-worktrees.tar.gz`: two retired
+local diagnostic worktrees, with a verified 1,700-file manifest and SHA-256
+`d68968c95921e860c9421cb0ce75a92008d5782c220d8731cbbf28920f018e8d`.
+Their source is also preserved under
+[`archive/fruit9-flight-local-20261014`](https://github.com/Numi2/numi-solver/tree/archive/fruit9-flight-local-20261014)
+and [`archive/triple-fruit-local-20261014`](https://github.com/Numi2/numi-solver/tree/archive/triple-fruit-local-20261014).
+Both archives were downloaded from GitHub and their complete hashes checked
+before the original directories were removed.
+
 Two small archived geometries also serve as active regression-test inputs in
 `tests/fixtures/`; they contain no run logs or media. Historical successes are
 bound to their recorded source. They do not qualify later source revisions.
