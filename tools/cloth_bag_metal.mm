@@ -1,5 +1,7 @@
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
+#include <CommonCrypto/CommonDigest.h>
+#include <mach-o/dyld.h>
 
 #include "numi/cloth_bag_gpu.h"
 #include "numi/cloth_material.h"
@@ -13,11 +15,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
 #include <numbers>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -50,6 +54,7 @@ constexpr std::uint32_t kFinalContactPasses = 2u;
 constexpr std::uint32_t kCertificatePasses = 8u;
 numi::ClothMaterialArtifact gClothMaterial{};
 bool gFiniteBench = false;
+bool gFullYarnContactReset = false;
 bool gDiagnoseFailure = false;
 bool gObserveThisRun = false;
 id<MTLComputePipelineState> gFailureObserver = nil;
@@ -4424,6 +4429,7 @@ GPUResult runGPU(
             initial.bends.size(),
             initial.fruits.size(),
             initial.fruitPairs.size(),
+            gFullYarnContactReset ? initial.yarnContacts.size() : 0u,
         })
     );
     [encoder setComputePipelineState:pipelines.updateGripAttachment];
@@ -4983,6 +4989,574 @@ InitialState continuedInitialState(
     next.initialMouthCandidateMask = result.releaseStatus.masks.x;
     next.initialReleasedMask = result.releaseStatus.masks.y;
     return next;
+}
+
+bool bitwiseEqualPhysicalState(const GPUResult& first, const GPUResult& second);
+std::uint64_t hashGPUResult(const GPUResult& result);
+TrajectoryGripPose trajectoryGripPose(
+    TrajectoryScenario scenario, double time,
+    const numi::GripTrajectory* trajectory
+);
+InitialState makeTrajectoryInitialState(
+    const InitialState& initial, TrajectoryScenario scenario,
+    const numi::GripTrajectory* trajectory
+);
+void dumpGPUOBJ(
+    const std::string& path,
+    const std::vector<NumiClothBagGPUParticle>& particles,
+    const std::vector<NumiClothBagGPUFruit>& fruits,
+    const std::vector<NumiClothBagGPUGrip>& grips,
+    const NumiClothBagGPUConfig& config
+);
+
+using CheckpointHash = std::array<unsigned char, CC_SHA256_DIGEST_LENGTH>;
+
+CheckpointHash sha256Bytes(const void* bytes, const std::size_t size) {
+    CheckpointHash hash{};
+    CC_SHA256(bytes, static_cast<CC_LONG>(size), hash.data());
+    return hash;
+}
+
+CheckpointHash sha256File(const std::string& path) {
+    std::ifstream input(path, std::ios::binary);
+    if (!input) throw std::runtime_error("checkpoint identity file missing: " + path);
+    CC_SHA256_CTX context{};
+    CC_SHA256_Init(&context);
+    std::array<char, 65536> chunk{};
+    while (input.read(chunk.data(), chunk.size()) || input.gcount() > 0) {
+        CC_SHA256_Update(&context, chunk.data(),
+                         static_cast<CC_LONG>(input.gcount()));
+    }
+    if (!input.eof()) throw std::runtime_error("checkpoint identity read failed: " + path);
+    CheckpointHash hash{};
+    CC_SHA256_Final(hash.data(), &context);
+    return hash;
+}
+
+std::string runningExecutablePath() {
+    std::array<char, 4096> path{};
+    std::uint32_t size = path.size();
+    if (_NSGetExecutablePath(path.data(), &size) != 0) {
+        throw std::runtime_error("checkpoint executable path exceeds buffer");
+    }
+    return path.data();
+}
+
+CheckpointHash authoredTopologyHash(const InitialState& authored) {
+    CC_SHA256_CTX context{};
+    CC_SHA256_Init(&context);
+    const auto append = [&context](const auto& values) {
+        using Value = typename std::decay_t<decltype(values)>::value_type;
+        const std::uint64_t count = values.size();
+        CC_SHA256_Update(&context, &count, sizeof(count));
+        if (!values.empty()) {
+            CC_SHA256_Update(&context, values.data(),
+                static_cast<CC_LONG>(values.size() * sizeof(Value)));
+        }
+    };
+    CC_SHA256_Update(&context, &authored.config, sizeof(authored.config));
+    append(authored.particles);
+    append(authored.distances);
+    append(authored.grips);
+    append(authored.knots);
+    append(authored.bends);
+    append(authored.fruits);
+    append(authored.fruitPairs);
+    append(authored.yarnContacts);
+    append(authored.selfPairs);
+    append(authored.localNodePairs);
+    append(authored.selfPairLookup);
+    append(authored.mouthRimParticles);
+    append(authored.cuffParticles);
+    append(authored.distanceBatches);
+    append(authored.knotBatches);
+    append(authored.bendBatches);
+    append(authored.fruitPairBatches);
+    append(authored.selfBatches);
+    append(authored.localNodeBatches);
+    CC_SHA256_Update(&context, &authored.maximumSelfBatchSize,
+                     sizeof(authored.maximumSelfBatchSize));
+    CheckpointHash hash{};
+    CC_SHA256_Final(hash.data(), &context);
+    return hash;
+}
+
+struct Fruit9CheckpointHeader {
+    std::array<char, 16> magic{};
+    std::uint32_t formatVersion{};
+    std::uint32_t abiVersion{};
+    std::uint32_t completedFrames{};
+    std::uint32_t iterations{};
+    std::uint32_t strainSweeps{};
+    std::uint32_t completeYarnContactReset{};
+    std::uint64_t payloadBytes{};
+    CheckpointHash sourceHash{};
+    CheckpointHash executableHash{};
+    CheckpointHash metallibHash{};
+    CheckpointHash authoredTopologyHash{};
+    CheckpointHash payloadHash{};
+    CheckpointHash headerHash{};
+};
+
+std::vector<std::uint8_t> checkpointPayload(const InitialState& state) {
+    std::vector<std::uint8_t> payload;
+    const auto appendRaw = [&payload](const void* bytes, const std::size_t size) {
+        const auto* first = static_cast<const std::uint8_t*>(bytes);
+        payload.insert(payload.end(), first, first + size);
+    };
+    const auto append = [&appendRaw](const auto& values) {
+        using Value = typename std::decay_t<decltype(values)>::value_type;
+        const std::uint64_t count = values.size();
+        appendRaw(&count, sizeof(count));
+        if (!values.empty()) appendRaw(values.data(), values.size() * sizeof(Value));
+    };
+    appendRaw(&state.config, sizeof(state.config));
+    append(state.particles);
+    append(state.distances);
+    append(state.grips);
+    append(state.knots);
+    append(state.bends);
+    append(state.fruits);
+    append(state.fruitPairs);
+    append(state.yarnContacts);
+    appendRaw(&state.initialMouthCandidateMask,
+              sizeof(state.initialMouthCandidateMask));
+    appendRaw(&state.initialReleasedMask, sizeof(state.initialReleasedMask));
+    return payload;
+}
+
+std::string checkpointHex(const CheckpointHash& hash) {
+    std::ostringstream output;
+    output << std::hex << std::setfill('0');
+    for (const unsigned char byte : hash) output << std::setw(2) << unsigned(byte);
+    return output.str();
+}
+
+void saveFruit9Checkpoint(
+    const std::string& path,
+    const InitialState& authored,
+    const InitialState& state,
+    const std::uint32_t completedFrames,
+    const std::string& metallibPath
+) {
+    if (!gFullYarnContactReset) {
+        throw std::runtime_error("checkpoint requires corrected complete yarn-contact reset");
+    }
+    if (completedFrames == 0u || completedFrames > kPickupQualificationFrames) {
+        throw std::runtime_error("checkpoint completed frame out of range");
+    }
+    const std::vector<std::uint8_t> payload = checkpointPayload(state);
+    Fruit9CheckpointHeader header{};
+    std::memcpy(header.magic.data(), "NUMIF9STATEv2", 13u);
+    header.formatVersion = 2u;
+    header.abiVersion = NUMI_CLOTH_BAG_GPU_ABI_VERSION;
+    header.completedFrames = completedFrames;
+    header.iterations = 32u;
+    header.strainSweeps = 3u;
+    header.completeYarnContactReset = 1u;
+    header.payloadBytes = payload.size();
+    header.sourceHash = sha256File(__FILE__);
+    header.executableHash = sha256File(runningExecutablePath());
+    header.metallibHash = sha256File(metallibPath);
+    header.authoredTopologyHash = authoredTopologyHash(authored);
+    header.payloadHash = sha256Bytes(payload.data(), payload.size());
+    header.headerHash = sha256Bytes(
+        &header, offsetof(Fruit9CheckpointHeader, headerHash)
+    );
+    const std::string partialPath = path + ".partial";
+    std::ofstream output(partialPath, std::ios::binary | std::ios::trunc);
+    if (!output) throw std::runtime_error("checkpoint output open failed: " + partialPath);
+    output.write(reinterpret_cast<const char*>(&header), sizeof(header));
+    output.write(reinterpret_cast<const char*>(payload.data()), payload.size());
+    output.flush();
+    if (!output) throw std::runtime_error("checkpoint output write failed: " + partialPath);
+    output.close();
+    if (!output) throw std::runtime_error("checkpoint output close failed: " + partialPath);
+    std::filesystem::rename(partialPath, path);
+    std::cout << "fruit9_checkpoint_saved frame=" << completedFrames
+              << " payload_bytes=" << payload.size()
+              << " source_sha256=" << checkpointHex(header.sourceHash)
+              << " executable_sha256=" << checkpointHex(header.executableHash)
+              << " metallib_sha256=" << checkpointHex(header.metallibHash)
+              << " topology_sha256=" << checkpointHex(header.authoredTopologyHash)
+              << " payload_sha256=" << checkpointHex(header.payloadHash)
+              << " header_sha256=" << checkpointHex(header.headerHash)
+              << " complete_yarn_contact_reset=1"
+              << " path=" << path << '\n';
+}
+
+std::pair<InitialState, std::uint32_t> loadFruit9Checkpoint(
+    const std::string& path,
+    const InitialState& authored,
+    const std::string& metallibPath
+) {
+    if (!gFullYarnContactReset) {
+        throw std::runtime_error("checkpoint load requires corrected complete yarn-contact reset");
+    }
+    std::ifstream input(path, std::ios::binary | std::ios::ate);
+    if (!input) throw std::runtime_error("checkpoint input open failed: " + path);
+    const std::streamoff fileBytes = input.tellg();
+    if (fileBytes < static_cast<std::streamoff>(sizeof(Fruit9CheckpointHeader)) ||
+        fileBytes > 64 * 1024 * 1024) {
+        throw std::runtime_error("checkpoint file size out of range");
+    }
+    input.seekg(0);
+    Fruit9CheckpointHeader header{};
+    input.read(reinterpret_cast<char*>(&header), sizeof(header));
+    if (!input || std::memcmp(header.magic.data(), "NUMIF9STATEv2", 13u) != 0 ||
+        header.formatVersion != 2u ||
+        header.abiVersion != NUMI_CLOTH_BAG_GPU_ABI_VERSION ||
+        header.completeYarnContactReset != 1u ||
+        header.completedFrames == 0u ||
+        header.completedFrames > kPickupQualificationFrames ||
+        header.iterations != 32u || header.strainSweeps != 3u ||
+        header.payloadBytes !=
+            static_cast<std::uint64_t>(fileBytes - sizeof(header))) {
+        throw std::runtime_error("checkpoint header mismatch");
+    }
+    if (sha256Bytes(&header,
+            offsetof(Fruit9CheckpointHeader, headerHash)) != header.headerHash) {
+        throw std::runtime_error("checkpoint header hash mismatch");
+    }
+    if (header.sourceHash != sha256File(__FILE__) ||
+        header.executableHash != sha256File(runningExecutablePath()) ||
+        header.metallibHash != sha256File(metallibPath) ||
+        header.authoredTopologyHash != authoredTopologyHash(authored)) {
+        throw std::runtime_error("checkpoint source, binary, metallib or topology mismatch");
+    }
+    std::vector<std::uint8_t> payload(header.payloadBytes);
+    input.read(reinterpret_cast<char*>(payload.data()), payload.size());
+    if (!input || sha256Bytes(payload.data(), payload.size()) != header.payloadHash) {
+        throw std::runtime_error("checkpoint payload hash mismatch");
+    }
+    std::size_t offset = 0u;
+    const auto readRaw = [&payload, &offset](void* destination,
+                                            const std::size_t bytes) {
+        if (bytes > payload.size() - offset) {
+            throw std::runtime_error("checkpoint payload truncated");
+        }
+        std::memcpy(destination, payload.data() + offset, bytes);
+        offset += bytes;
+    };
+    const auto readVector = [&readRaw](auto& values) {
+        using Value = typename std::decay_t<decltype(values)>::value_type;
+        std::uint64_t count{};
+        readRaw(&count, sizeof(count));
+        if (count != values.size()) {
+            throw std::runtime_error("checkpoint dynamic vector size mismatch");
+        }
+        if (!values.empty()) readRaw(values.data(), values.size() * sizeof(Value));
+    };
+    InitialState state = authored;
+    readRaw(&state.config, sizeof(state.config));
+    readVector(state.particles);
+    readVector(state.distances);
+    readVector(state.grips);
+    readVector(state.knots);
+    readVector(state.bends);
+    readVector(state.fruits);
+    readVector(state.fruitPairs);
+    readVector(state.yarnContacts);
+    readRaw(&state.initialMouthCandidateMask,
+            sizeof(state.initialMouthCandidateMask));
+    readRaw(&state.initialReleasedMask, sizeof(state.initialReleasedMask));
+    if (offset != payload.size()) {
+        throw std::runtime_error("checkpoint payload has trailing bytes");
+    }
+    NumiClothBagGPUConfig expected = authored.config;
+    expected.gripTargetAndActive = state.config.gripTargetAndActive;
+    expected.gripOrientation = state.config.gripOrientation;
+    expected.gripControl.x = state.config.gripControl.x;
+    expected.gripControl.y = state.config.gripControl.y;
+    if (std::memcmp(&expected, &state.config, sizeof(expected)) != 0 ||
+        state.config.constraintCounts.z != 2u) {
+        throw std::runtime_error("checkpoint config differs from authored pickup");
+    }
+    const std::uint32_t validFruitMask =
+        (1u << static_cast<std::uint32_t>(state.fruits.size())) - 1u;
+    if ((state.initialMouthCandidateMask & ~validFruitMask) != 0u ||
+        (state.initialReleasedMask & ~validFruitMask) != 0u) {
+        throw std::runtime_error("checkpoint replay mask exceeds fruit count");
+    }
+    for (std::size_t index = 0u; index < state.particles.size(); ++index) {
+        if (state.particles[index].positionAndInverseMass.w !=
+                authored.particles[index].positionAndInverseMass.w ||
+            state.particles[index].previousAndMass.w !=
+                authored.particles[index].previousAndMass.w) {
+            throw std::runtime_error("checkpoint particle mass changed");
+        }
+    }
+    for (std::size_t index = 0u; index < state.distances.size(); ++index) {
+        if (std::memcmp(&state.distances[index].particlesAndColor,
+                        &authored.distances[index].particlesAndColor,
+                        sizeof(state.distances[index].particlesAndColor)) != 0 ||
+            state.distances[index].material.x != authored.distances[index].material.x ||
+            state.distances[index].material.y != authored.distances[index].material.y ||
+            state.distances[index].material.w != authored.distances[index].material.w) {
+            throw std::runtime_error("checkpoint distance topology changed");
+        }
+    }
+    for (std::size_t index = 0u; index < state.grips.size(); ++index) {
+        if (state.grips[index].particle.x != authored.grips[index].particle.x ||
+            std::memcmp(&state.grips[index].targetOffsetAndCompliance,
+                        &authored.grips[index].targetOffsetAndCompliance,
+                        sizeof(state.grips[index].targetOffsetAndCompliance)) != 0) {
+            throw std::runtime_error("checkpoint grip topology changed");
+        }
+    }
+    for (std::size_t index = 0u; index < state.knots.size(); ++index) {
+        if (std::memcmp(&state.knots[index].particles,
+                        &authored.knots[index].particles,
+                        sizeof(state.knots[index].particles)) != 0) {
+            throw std::runtime_error("checkpoint knot topology changed");
+        }
+    }
+    for (std::size_t index = 0u; index < state.bends.size(); ++index) {
+        if (std::memcmp(&state.bends[index].particlesAndColor,
+                        &authored.bends[index].particlesAndColor,
+                        sizeof(state.bends[index].particlesAndColor)) != 0) {
+            throw std::runtime_error("checkpoint bend topology changed");
+        }
+    }
+    for (std::size_t index = 0u; index < state.fruits.size(); ++index) {
+        if (state.fruits[index].positionAndInverseMass.w !=
+                authored.fruits[index].positionAndInverseMass.w ||
+            state.fruits[index].previousAndRadius.w !=
+                authored.fruits[index].previousAndRadius.w ||
+            std::memcmp(&state.fruits[index].identity,
+                        &authored.fruits[index].identity,
+                        sizeof(state.fruits[index].identity)) != 0) {
+            throw std::runtime_error("checkpoint fruit identity changed");
+        }
+    }
+    for (std::size_t index = 0u; index < state.fruitPairs.size(); ++index) {
+        if (std::memcmp(&state.fruitPairs[index].fruitsAndColor,
+                        &authored.fruitPairs[index].fruitsAndColor,
+                        sizeof(state.fruitPairs[index].fruitsAndColor)) != 0) {
+            throw std::runtime_error("checkpoint fruit-pair topology changed");
+        }
+    }
+    for (std::size_t index = 0u; index < state.yarnContacts.size(); ++index) {
+        if (std::memcmp(&state.yarnContacts[index].identity,
+                        &authored.yarnContacts[index].identity,
+                        sizeof(state.yarnContacts[index].identity)) != 0) {
+            throw std::runtime_error("checkpoint yarn-contact identity changed");
+        }
+    }
+    std::cout << "fruit9_checkpoint_loaded frame=" << header.completedFrames
+              << " payload_bytes=" << payload.size()
+              << " payload_sha256=" << checkpointHex(header.payloadHash)
+              << " header_sha256=" << checkpointHex(header.headerHash)
+              << " complete_yarn_contact_reset=1"
+              << " path=" << path << '\n';
+    return {std::move(state), header.completedFrames};
+}
+
+std::vector<NumiClothBagGPUConfig> fruit9PickupFrameConfigs(
+    const InitialState& state,
+    const std::uint32_t zeroBasedFrame
+) {
+    std::vector<NumiClothBagGPUConfig> configs(
+        kPickupSubstepsPerFrame, state.config
+    );
+    for (std::uint32_t substep = 0u;
+         substep < kPickupSubstepsPerFrame; ++substep) {
+        const std::uint64_t completed =
+            static_cast<std::uint64_t>(zeroBasedFrame) *
+                kPickupSubstepsPerFrame + substep + 1u;
+        const TrajectoryGripPose pose = trajectoryGripPose(
+            TrajectoryScenario::pickup,
+            static_cast<double>(completed) * kTimestep,
+            nullptr
+        );
+        configs[substep].gripTargetAndActive = f4(
+            static_cast<float>(pose.target.x),
+            static_cast<float>(pose.target.y),
+            static_cast<float>(pose.target.z),
+            pose.active ? 1.0f : 0.0f
+        );
+        configs[substep].gripOrientation = gripQuaternion4(pose.orientation);
+        configs[substep].gripControl.x = pose.attachmentGeneration;
+        configs[substep].gripControl.y = 0u;
+    }
+    return configs;
+}
+
+int runFruit9CheckpointCapture(
+    id<MTLDevice> device,
+    id<MTLCommandQueue> queue,
+    const Pipelines& pipelines,
+    const InitialState& authored,
+    const std::uint32_t completedFrames,
+    const std::string& checkpointPath,
+    const std::string& metallibPath
+) {
+    if (!gFiniteBench || completedFrames == 0u ||
+        completedFrames > kPickupQualificationFrames) {
+        throw std::runtime_error("checkpoint capture requires finite bench and 1..480 frames");
+    }
+    InitialState canonical = makeTrajectoryInitialState(
+        authored, TrajectoryScenario::pickup, nullptr
+    );
+    InitialState state = canonical;
+    for (std::uint32_t frame = 0u; frame < completedFrames; ++frame) {
+        const auto configs = fruit9PickupFrameConfigs(state, frame);
+        gFullYarnContactReset = true;
+        GPUResult result;
+        @autoreleasepool {
+            result = runGPU(
+                device, queue, pipelines, state, 32u, 3u, configs
+            );
+        }
+        if (result.failure != 0u) {
+            throw std::runtime_error("checkpoint capture native failure");
+        }
+        state = continuedInitialState(state, result, configs.back());
+        if ((frame + 1u) % 10u == 0u || frame + 1u == completedFrames) {
+            std::cout << "fruit9_checkpoint_capture_progress frame="
+                      << frame + 1u << " state_hash="
+                      << hashGPUResult(result) << " fruit9_z_m="
+                      << result.fruits[9].positionAndInverseMass.z
+                      << " fruit9_vz_m_s="
+                      << result.fruits[9].velocityAndGroundImpulse.z
+                      << '\n' << std::flush;
+        }
+    }
+    saveFruit9Checkpoint(
+        checkpointPath, canonical, state, completedFrames, metallibPath
+    );
+    dumpGPUOBJ(
+        checkpointPath + ".obj", state.particles,
+        state.fruits, state.grips, state.config
+    );
+    return 0;
+}
+
+int runFruit9CheckpointSelftest(
+    id<MTLDevice> device,
+    id<MTLCommandQueue> queue,
+    const Pipelines& pipelines,
+    const InitialState& authored,
+    const std::string& checkpointPath,
+    const std::string& metallibPath
+) {
+    if (!gFiniteBench) {
+        throw std::runtime_error("checkpoint selftest requires finite bench");
+    }
+    InitialState canonical = makeTrajectoryInitialState(
+        authored, TrajectoryScenario::pickup, nullptr
+    );
+    const auto firstConfigs = fruit9PickupFrameConfigs(canonical, 0u);
+    gFullYarnContactReset = true;
+    const GPUResult first = runGPU(
+        device, queue, pipelines, canonical, 32u, 3u, firstConfigs
+    );
+    if (first.failure != 0u) return 1;
+    InitialState uninterrupted = continuedInitialState(
+        canonical, first, firstConfigs.back()
+    );
+    saveFruit9Checkpoint(
+        checkpointPath, canonical, uninterrupted, 1u, metallibPath
+    );
+    const auto [resumed, completedFrames] = loadFruit9Checkpoint(
+        checkpointPath, canonical, metallibPath
+    );
+    const bool serializedExact =
+        checkpointPayload(uninterrupted) == checkpointPayload(resumed);
+    const auto secondConfigs = fruit9PickupFrameConfigs(uninterrupted, 1u);
+    const GPUResult secondUninterrupted = runGPU(
+        device, queue, pipelines, uninterrupted, 32u, 3u, secondConfigs
+    );
+    const GPUResult secondResumed = runGPU(
+        device, queue, pipelines, resumed, 32u, 3u, secondConfigs
+    );
+    const bool physicalExact = bitwiseEqualPhysicalState(
+        secondUninterrupted, secondResumed
+    );
+    const bool passed = completedFrames == 1u && serializedExact &&
+        physicalExact && secondUninterrupted.failure == 0u &&
+        secondResumed.failure == 0u;
+    std::cout << "fruit9_checkpoint_selftest"
+              << " frame1_hash=" << hashGPUResult(first)
+              << " uninterrupted_frame2_hash="
+              << hashGPUResult(secondUninterrupted)
+              << " resumed_frame2_hash=" << hashGPUResult(secondResumed)
+              << " serialized_exact=" << serializedExact
+              << " frame2_physical_exact=" << physicalExact
+              << " failure_flags=" << secondUninterrupted.failure
+              << ',' << secondResumed.failure
+              << " passed=" << passed << '\n';
+    return passed ? 0 : 1;
+}
+
+int runFruit9CheckpointHostRoundtrip(
+    const InitialState& authored,
+    const std::string& checkpointPath,
+    const std::string& metallibPath
+) {
+    if (!gFiniteBench) {
+        throw std::runtime_error("checkpoint host roundtrip requires finite bench");
+    }
+    const InitialState canonical = makeTrajectoryInitialState(
+        authored, TrajectoryScenario::pickup, nullptr
+    );
+    gFullYarnContactReset = true;
+    InitialState synthetic = canonical;
+    synthetic.fruits[9].velocityAndGroundImpulse.z = -0.21561298f;
+    synthetic.yarnContacts[9u * kDistanceCount].fruitNormalAndImpulse =
+        f4(0.1f, 0.0f, 0.0f, 0.1f);
+    synthetic.yarnContacts[9u * kDistanceCount].segmentImpulse =
+        f4(0.05f, 0.05f, 0.0f, 0.0f);
+    synthetic.initialReleasedMask = 1u << 9u;
+    saveFruit9Checkpoint(
+        checkpointPath, canonical, synthetic, 1u, metallibPath
+    );
+    const auto [restored, frame] = loadFruit9Checkpoint(
+        checkpointPath, canonical, metallibPath
+    );
+    const bool exact = frame == 1u &&
+        checkpointPayload(synthetic) == checkpointPayload(restored);
+    std::ifstream input(checkpointPath, std::ios::binary | std::ios::ate);
+    const auto fileBytes = input.tellg();
+    input.seekg(0);
+    std::vector<char> corrupted(static_cast<std::size_t>(fileBytes));
+    input.read(corrupted.data(), corrupted.size());
+    if (!input || corrupted.empty()) {
+        throw std::runtime_error("checkpoint host test cannot read saved file");
+    }
+    corrupted.back() ^= 1;
+    const std::string tamperedPath = checkpointPath + ".tampered";
+    std::ofstream output(tamperedPath, std::ios::binary | std::ios::trunc);
+    output.write(corrupted.data(), corrupted.size());
+    output.close();
+    bool tamperRejected = false;
+    try {
+        (void)loadFruit9Checkpoint(tamperedPath, canonical, metallibPath);
+    } catch (const std::runtime_error&) {
+        tamperRejected = true;
+    }
+    corrupted.back() ^= 1;
+    corrupted[offsetof(Fruit9CheckpointHeader, completedFrames)] ^= 2;
+    const std::string headerTamperedPath = checkpointPath + ".header-tampered";
+    std::ofstream headerOutput(
+        headerTamperedPath, std::ios::binary | std::ios::trunc
+    );
+    headerOutput.write(corrupted.data(), corrupted.size());
+    headerOutput.close();
+    bool headerTamperRejected = false;
+    try {
+        (void)loadFruit9Checkpoint(headerTamperedPath, canonical, metallibPath);
+    } catch (const std::runtime_error&) {
+        headerTamperRejected = true;
+    }
+    const bool passed = exact && tamperRejected && headerTamperRejected;
+    std::cout << "fruit9_checkpoint_host_roundtrip"
+              << " synthetic_state=1"
+              << " payload_exact=" << exact
+              << " tamper_rejected=" << tamperRejected
+              << " header_tamper_rejected=" << headerTamperRejected
+              << " passed=" << passed << '\n';
+    return passed ? 0 : 1;
 }
 
 bool bitwiseEqualPhysicalState(
@@ -5777,6 +6351,589 @@ int runFruitFlightProbe(
     return passed ? 0 : 1;
 }
 
+// Isolate the late airborne state of fruit 9 from the frozen full pickup.
+// This runs the same finite-bench Metal kernels and 48-substep frame cadence,
+// without any cloth or other fruits. It is diagnostic, not a scene qualification.
+int runFruit9FiniteFreeFlightProbe(
+    id<MTLDevice> device,
+    id<MTLCommandQueue> queue,
+    const Pipelines& pipelines
+) {
+    InitialState initial;
+    initial.config.control = u4(
+        NUMI_CLOTH_BAG_GPU_ABI_VERSION, 0u, 0u, 0u
+    );
+    initial.config.constraintCounts = u4(0u, 0u, 2u, 1u);
+    initial.config.gravityAndTimestep = f4(0.0f, 0.0f, -9.81f, kTimestep);
+    initial.config.clothMaterial = f4(kClothRadius, 0.0f, 0.0f, 0.0f);
+    initial.config.fruitMaterial = f4(
+        kFruitPairFriction, kFruitGroundFriction,
+        kFruitRollingResistance, kFruitYarnFriction
+    );
+    initial.config.airVelocityAndDensity = f4(0.0f, 0.0f, 0.0f, kAirDensity);
+    initial.config.aerodynamicCoefficients = f4(
+        0.0f, 0.0f, kFruitDrag, kFruitRotationalDrag
+    );
+    // Replay-1 frame 400 in native-finite-repaired-pickup-20260929-r1-fruits.csv.
+    // The source CSV uses the same FP32 values that the runtime publishes.
+    NumiClothBagGPUFruit fruit = makeProbeFruit(
+        {-0.11554774641990662, -0.0031509650871157646,
+         0.62879800796508789},
+        1.0f / 0.17f,
+        0.064000003039836884f
+    );
+    fruit.velocityAndGroundImpulse = f4(
+        0.12261608988046646f, -0.099801808595657349f,
+        -0.2156129777431488f, 0.0f
+    );
+    fruit.angularVelocity = f4(
+        1.4563699960708618f, -1.4221099615097046f,
+        0.5067983865737915f, 0.0f
+    );
+    fruit.orientation = f4(
+        0.795202017f, 0.00824716035f, 0.413398534f, -0.443494439f
+    );
+    initial.fruits = {fruit};
+
+    constexpr std::uint32_t frames = 24u; // 0.2 s, still above the bench.
+    std::vector<std::uint64_t> firstHashes;
+    bool passed = true;
+    for (std::uint32_t replay = 1u; replay <= 2u; ++replay) {
+        InitialState state = initial;
+        DVec3 expectedPosition = d3(fruit.positionAndInverseMass);
+        DVec3 expectedVelocity = d3(fruit.velocityAndGroundImpulse);
+        const double timestep = static_cast<double>(kTimestep);
+        const double inverseMass =
+            static_cast<double>(fruit.positionAndInverseMass.w);
+        const double radius = static_cast<double>(fruit.previousAndRadius.w);
+        const double drag = 0.5 * static_cast<double>(kAirDensity) *
+            static_cast<double>(kFruitDrag) * std::numbers::pi *
+            radius * radius;
+        std::vector<std::uint64_t> hashes;
+        double maximumPositionError = 0.0;
+        double maximumVelocityError = 0.0;
+        double minimumClearance = std::numeric_limits<double>::infinity();
+        double maximumGroundImpulse = 0.0;
+        bool failureFree = true;
+        for (std::uint32_t frame = 1u; frame <= frames; ++frame) {
+            const std::vector<NumiClothBagGPUConfig> configs(
+                kPickupSubstepsPerFrame, state.config
+            );
+            const GPUResult actual = runGPU(
+                device, queue, pipelines, state, 0u, 0u, configs
+            );
+            failureFree = failureFree && actual.failure == 0u;
+            hashes.push_back(hashGPUResult(actual));
+            for (std::uint32_t substep = 0u;
+                 substep < kPickupSubstepsPerFrame; ++substep) {
+                expectedVelocity.z += -9.81 * timestep;
+                const double attenuation = 1.0 /
+                    (1.0 + inverseMass * drag *
+                        length(expectedVelocity) * timestep);
+                expectedVelocity = expectedVelocity * attenuation;
+                expectedPosition += expectedVelocity * timestep;
+            }
+            const NumiClothBagGPUFruit& body = actual.fruits[0];
+            const DVec3 position = d3(body.positionAndInverseMass);
+            const DVec3 velocity = d3(body.velocityAndGroundImpulse);
+            maximumPositionError = std::max(
+                maximumPositionError, length(position - expectedPosition)
+            );
+            maximumVelocityError = std::max(
+                maximumVelocityError, length(velocity - expectedVelocity)
+            );
+            minimumClearance = std::min(
+                minimumClearance,
+                nativeStaticClearance(
+                    body.positionAndInverseMass, body.previousAndRadius.w,
+                    true
+                )
+            );
+            maximumGroundImpulse = std::max(
+                maximumGroundImpulse,
+                static_cast<double>(body.velocityAndGroundImpulse.w)
+            );
+            if (frame == 1u || frame % 4u == 0u) {
+                std::cout << "fruit9_finite_freeflight replay=" << replay
+                          << " frame=" << frame
+                          << " z_m=" << position.z
+                          << " vz_m_s=" << velocity.z
+                          << " expected_z_m=" << expectedPosition.z
+                          << " expected_vz_m_s=" << expectedVelocity.z
+                          << " static_clearance_m="
+                          << nativeStaticClearance(
+                                 body.positionAndInverseMass,
+                                 body.previousAndRadius.w, true
+                             )
+                          << " last_ground_impulse_Ns="
+                          << body.velocityAndGroundImpulse.w
+                          << " failure_flags=" << actual.failure << '\n';
+            }
+            state = continuedInitialState(state, actual, configs.back());
+        }
+        const bool exact = replay == 1u || hashes == firstHashes;
+        if (replay == 1u) firstHashes = hashes;
+        const bool valid = failureFree && exact &&
+            maximumPositionError < 5.0e-4 &&
+            maximumVelocityError < 5.0e-3 &&
+            minimumClearance > 0.30 &&
+            maximumGroundImpulse == 0.0;
+        passed = passed && valid;
+        std::cout << "fruit9_finite_freeflight_summary replay=" << replay
+                  << " frames=" << frames
+                  << " maximum_position_error_m=" << maximumPositionError
+                  << " maximum_velocity_error_m_s=" << maximumVelocityError
+                  << " minimum_static_clearance_m=" << minimumClearance
+                  << " maximum_ground_impulse_Ns=" << maximumGroundImpulse
+                  << " frame_hashes_exact=" << exact
+                  << " failure_free=" << failureFree
+                  << " passed=" << valid << '\n';
+    }
+    return passed ? 0 : 1;
+}
+
+// A high-index contact must be cleared even when the sphere is far from yarn.
+// Run the frozen under-dispatch and the complete reset in one binary so only
+// the begin dispatch count changes between the two seeded replays.
+int runFruit9GhostContactProbe(
+    id<MTLDevice> device,
+    id<MTLCommandQueue> queue,
+    const Pipelines& pipelines,
+    const InitialState& authored
+) {
+    if (!gFiniteBench) {
+        throw std::runtime_error("ghost-contact probe requires --finite-bench");
+    }
+    InitialState baseline = makeTrajectoryInitialState(
+        authored, TrajectoryScenario::pickup
+    );
+    NumiClothBagGPUFruit& distantFruit = baseline.fruits[9];
+    distantFruit.positionAndInverseMass = f4(
+        0.0f, 0.0f, 2.0f, distantFruit.positionAndInverseMass.w
+    );
+    distantFruit.previousAndRadius = f4(
+        0.0f, 0.0f, 2.0f, distantFruit.previousAndRadius.w
+    );
+    distantFruit.velocityAndGroundImpulse = f4(0.0f, 0.0f, -1.0f, 0.0f);
+    double minimumGap = std::numeric_limits<double>::infinity();
+    for (const auto& segment : baseline.distances) {
+        minimumGap = std::min(minimumGap, samplePointSegment(
+            d3(distantFruit.positionAndInverseMass),
+            d3(baseline.particles[segment.particlesAndColor.x]
+                .positionAndInverseMass),
+            d3(baseline.particles[segment.particlesAndColor.y]
+                .positionAndInverseMass)
+        ).distance - distantFruit.previousAndRadius.w -
+            baseline.config.clothMaterial.x);
+    }
+    constexpr std::uint32_t fruitIndex = 9u;
+    constexpr std::uint32_t segmentIndex = 0u;
+    const std::size_t contactIndex =
+        fruitIndex * baseline.distances.size() + segmentIndex;
+    InitialState seeded = baseline;
+    NumiClothBagGPUYarnContact& ghost = seeded.yarnContacts[contactIndex];
+    ghost.fruitNormalAndImpulse = f4(0.1f, 0.0f, 0.0f, 0.1f);
+    ghost.segmentImpulse = f4(0.05f, 0.05f, 0.0f, 0.0f);
+    ghost.control.w = 1u;
+    const std::vector<NumiClothBagGPUConfig> oneSubstep{baseline.config};
+    gFullYarnContactReset = false;
+    const GPUResult clean = runGPU(
+        device, queue, pipelines, baseline, 32u, 3u, oneSubstep
+    );
+    const GPUResult stale = runGPU(
+        device, queue, pipelines, seeded, 32u, 3u, oneSubstep
+    );
+    gFullYarnContactReset = true;
+    const GPUResult reset = runGPU(
+        device, queue, pipelines, seeded, 32u, 3u, oneSubstep
+    );
+    const auto& cleanFruit = clean.fruits[fruitIndex];
+    const auto& staleFruit = stale.fruits[fruitIndex];
+    const auto& resetFruit = reset.fruits[fruitIndex];
+    const auto& staleContact = stale.yarnContacts[contactIndex];
+    const auto& resetContact = reset.yarnContacts[contactIndex];
+    const bool recovered = bitwiseEqualPhysicalState(clean, reset);
+    const double velocityDelta =
+        static_cast<double>(staleFruit.velocityAndGroundImpulse.z) -
+        static_cast<double>(cleanFruit.velocityAndGroundImpulse.z);
+    const auto mechanicalEnergy = [](const GPUResult& result) {
+        double energy = 0.0;
+        for (const auto& particle : result.particles) {
+            const double mass = particle.previousAndMass.w;
+            const DVec3 velocity = d3(particle.velocity);
+            energy += 0.5 * mass * dot(velocity, velocity) +
+                mass * 9.81 * particle.positionAndInverseMass.z;
+        }
+        for (const auto& fruit : result.fruits) {
+            const double mass = 1.0 / fruit.positionAndInverseMass.w;
+            const double radius = fruit.previousAndRadius.w;
+            const double inertia = 0.4 * mass * radius * radius;
+            const DVec3 velocity = d3(fruit.velocityAndGroundImpulse);
+            const DVec3 spin = d3(fruit.angularVelocity);
+            energy += 0.5 * mass * dot(velocity, velocity) +
+                0.5 * inertia * dot(spin, spin) +
+                mass * 9.81 * fruit.positionAndInverseMass.z;
+        }
+        return energy;
+    };
+    const double cleanEnergy = mechanicalEnergy(clean);
+    const double staleEnergy = mechanicalEnergy(stale);
+    const double resetEnergy = mechanicalEnergy(reset);
+    const bool passed = clean.failure == 0u && stale.failure == 0u &&
+        reset.failure == 0u && minimumGap > 0.1 && recovered &&
+        std::abs(velocityDelta) > 1.0e-6 &&
+        staleContact.fruitNormalAndImpulse.w > 0.0f &&
+        resetContact.fruitNormalAndImpulse.w == 0.0f;
+    std::cout << std::setprecision(17)
+              << "fruit9_ghost_contact_probe"
+              << " index=" << contactIndex
+              << " minimum_initial_yarn_gap_m=" << minimumGap
+              << " final_contact_gap_m="
+              << staleContact.currentNormalAndSeparation.w
+              << " clean_vz_m_s="
+              << cleanFruit.velocityAndGroundImpulse.z
+              << " stale_vz_m_s="
+              << staleFruit.velocityAndGroundImpulse.z
+              << " reset_vz_m_s="
+              << resetFruit.velocityAndGroundImpulse.z
+              << " stale_minus_clean_vz_m_s=" << velocityDelta
+              << " clean_mechanical_energy_J=" << cleanEnergy
+              << " stale_mechanical_energy_J=" << staleEnergy
+              << " reset_mechanical_energy_J=" << resetEnergy
+              << " stale_minus_clean_energy_J="
+              << staleEnergy - cleanEnergy
+              << " stale_normal_impulse_Ns="
+              << staleContact.fruitNormalAndImpulse.w
+              << " reset_normal_impulse_Ns="
+              << resetContact.fruitNormalAndImpulse.w
+              << " clean_hash=" << hashGPUResult(clean)
+              << " stale_hash=" << hashGPUResult(stale)
+              << " reset_hash=" << hashGPUResult(reset)
+              << " reset_physical_equals_clean=" << recovered
+              << " failure_flags=" << clean.failure << ','
+              << stale.failure << ',' << reset.failure
+              << " passed=" << passed << '\n';
+    return passed ? 0 : 1;
+}
+
+int runFruit9PickupDivergenceProbe(
+    id<MTLDevice> device,
+    id<MTLCommandQueue> queue,
+    const Pipelines& pipelines,
+    const InitialState& authored,
+    const std::uint32_t maxFrames
+) {
+    if (!gFiniteBench || maxFrames == 0u || maxFrames > 12u) {
+        throw std::runtime_error(
+            "pickup divergence probe requires --finite-bench and 1..12 frames"
+        );
+    }
+    InitialState originalState = makeTrajectoryInitialState(
+        authored, TrajectoryScenario::pickup
+    );
+    InitialState fixedState = originalState;
+    bool found = false;
+    for (std::uint32_t frame = 0u; frame < maxFrames; ++frame) {
+        std::vector<NumiClothBagGPUConfig> configs(
+            kPickupSubstepsPerFrame, originalState.config
+        );
+        for (std::uint32_t substep = 0u;
+             substep < kPickupSubstepsPerFrame; ++substep) {
+            const std::uint64_t completed =
+                static_cast<std::uint64_t>(frame) *
+                    kPickupSubstepsPerFrame + substep + 1u;
+            const TrajectoryGripPose pose = trajectoryGripPose(
+                TrajectoryScenario::pickup,
+                static_cast<double>(completed) * kTimestep,
+                nullptr
+            );
+            configs[substep].gripTargetAndActive = f4(
+                static_cast<float>(pose.target.x),
+                static_cast<float>(pose.target.y),
+                static_cast<float>(pose.target.z),
+                pose.active ? 1.0f : 0.0f
+            );
+            configs[substep].gripOrientation = gripQuaternion4(
+                pose.orientation
+            );
+            configs[substep].gripControl.x = pose.attachmentGeneration;
+            configs[substep].gripControl.y = 0u;
+        }
+        gFullYarnContactReset = false;
+        const GPUResult original = runGPU(
+            device, queue, pipelines, originalState, 32u, 3u, configs
+        );
+        gFullYarnContactReset = true;
+        const GPUResult fixed = runGPU(
+            device, queue, pipelines, fixedState, 32u, 3u, configs
+        );
+        const bool exact = bitwiseEqualPhysicalState(original, fixed);
+        std::size_t staleFarContacts = 0u;
+        double maximumFarImpulse = 0.0;
+        for (std::size_t index = originalState.distances.size();
+             index < original.yarnContacts.size(); ++index) {
+            const auto& contact = original.yarnContacts[index];
+            if (contact.currentNormalAndSeparation.w > 0.01f &&
+                contact.fruitNormalAndImpulse.w > 0.0f) {
+                ++staleFarContacts;
+                maximumFarImpulse = std::max(maximumFarImpulse,
+                    static_cast<double>(contact.fruitNormalAndImpulse.w));
+            }
+        }
+        std::cout << std::setprecision(17)
+                  << "fruit9_pickup_reset_compare frame=" << frame + 1u
+                  << " original_hash=" << hashGPUResult(original)
+                  << " fixed_hash=" << hashGPUResult(fixed)
+                  << " physical_exact=" << exact
+                  << " original_fruit9_z_m="
+                  << original.fruits[9].positionAndInverseMass.z
+                  << " fixed_fruit9_z_m="
+                  << fixed.fruits[9].positionAndInverseMass.z
+                  << " original_fruit9_vz_m_s="
+                  << original.fruits[9].velocityAndGroundImpulse.z
+                  << " fixed_fruit9_vz_m_s="
+                  << fixed.fruits[9].velocityAndGroundImpulse.z
+                  << " stale_far_contact_count=" << staleFarContacts
+                  << " max_stale_far_impulse_Ns=" << maximumFarImpulse
+                  << " failure_flags=" << original.failure << ','
+                  << fixed.failure << '\n' << std::flush;
+        if (original.failure != 0u || fixed.failure != 0u) return 1;
+        if (!exact) {
+            const auto firstDifference = [](const auto& left,
+                                            const auto& right) {
+                using Value = typename std::decay_t<decltype(left)>::value_type;
+                for (std::size_t index = 0u; index < left.size(); ++index) {
+                    if (std::memcmp(&left[index], &right[index],
+                                    sizeof(Value)) != 0) return index;
+                }
+                return left.size();
+            };
+            const std::size_t particleDifference = firstDifference(
+                original.particles, fixed.particles
+            );
+            const std::size_t fruitDifference = firstDifference(
+                original.fruits, fixed.fruits
+            );
+            const std::size_t contactDifference = firstDifference(
+                original.yarnContacts, fixed.yarnContacts
+            );
+            std::cout << "fruit9_pickup_first_diff"
+                      << " frame=" << frame + 1u
+                      << " first_particle=" << particleDifference
+                      << " first_distance=" << firstDifference(
+                          original.distances, fixed.distances)
+                      << " first_grip=" << firstDifference(
+                          original.grips, fixed.grips)
+                      << " first_knot=" << firstDifference(
+                          original.knots, fixed.knots)
+                      << " first_bend=" << firstDifference(
+                          original.bends, fixed.bends)
+                      << " first_fruit=" << fruitDifference
+                      << " first_pair=" << firstDifference(
+                          original.fruitPairs, fixed.fruitPairs)
+                      << " first_yarn_contact=" << contactDifference
+                      << '\n';
+            if (fruitDifference < original.fruits.size()) {
+                const auto& a = original.fruits[fruitDifference];
+                const auto& b = fixed.fruits[fruitDifference];
+                std::cout << "fruit9_pickup_first_diff_fruit"
+                          << " index=" << fruitDifference
+                          << " original_z_m=" << a.positionAndInverseMass.z
+                          << " fixed_z_m=" << b.positionAndInverseMass.z
+                          << " original_vz_m_s="
+                          << a.velocityAndGroundImpulse.z
+                          << " fixed_vz_m_s="
+                          << b.velocityAndGroundImpulse.z << '\n';
+            }
+            if (contactDifference < original.yarnContacts.size()) {
+                const auto& a = original.yarnContacts[contactDifference];
+                const auto& b = fixed.yarnContacts[contactDifference];
+                std::cout << "fruit9_pickup_first_diff_contact"
+                          << " index=" << contactDifference
+                          << " fruit=" << a.identity.x
+                          << " segment=" << a.identity.y
+                          << " current_gap_m="
+                          << a.currentNormalAndSeparation.w
+                          << " original_normal_impulse_Ns="
+                          << a.fruitNormalAndImpulse.w
+                          << " fixed_normal_impulse_Ns="
+                          << b.fruitNormalAndImpulse.w
+                          << " original_responses=" << a.control.w
+                          << " fixed_responses=" << b.control.w << '\n';
+            }
+            found = true;
+            break;
+        }
+        originalState = continuedInitialState(
+            originalState, original, configs.back()
+        );
+        fixedState = continuedInitialState(
+            fixedState, fixed, configs.back()
+        );
+    }
+    std::cout << "fruit9_pickup_reset_compare_summary"
+              << " first_divergence_found=" << found << '\n';
+    return found ? 0 : 1;
+}
+
+// Observe fruit 9 after each genuine full-scene substep. A second replay uses
+// the usual 48-substep command-buffer batching; matching physical states at
+// every frame establish whether splitting is a valid diagnostic of this scene.
+int runFruit9FullSceneSplitProbe(
+    id<MTLDevice> device,
+    id<MTLCommandQueue> queue,
+    const Pipelines& pipelines,
+    const InitialState& starting,
+    const std::uint32_t startingFrame,
+    const std::uint32_t frames,
+    const std::uint32_t iterations,
+    const std::uint32_t strainSweeps
+) {
+    if (!gFiniteBench || frames == 0u || frames > 10u ||
+        startingFrame + frames > kPickupQualificationFrames) {
+        throw std::runtime_error(
+            "fruit9 full-scene split probe requires --finite-bench and 1..10 frames"
+        );
+    }
+    InitialState batchedState = startingFrame == 0u
+        ? makeTrajectoryInitialState(starting, TrajectoryScenario::pickup)
+        : starting;
+    InitialState splitState = batchedState;
+    bool allExact = true;
+    bool failureFree = true;
+    std::cout << std::setprecision(17);
+    for (std::uint32_t frame = 0u; frame < frames; ++frame) {
+        std::vector<NumiClothBagGPUConfig> configs(
+            kPickupSubstepsPerFrame, batchedState.config
+        );
+        for (std::uint32_t substep = 0u;
+             substep < kPickupSubstepsPerFrame; ++substep) {
+            const std::uint64_t completedSubsteps =
+                static_cast<std::uint64_t>(startingFrame + frame) *
+                    kPickupSubstepsPerFrame + substep + 1u;
+            const TrajectoryGripPose pose = trajectoryGripPose(
+                TrajectoryScenario::pickup,
+                static_cast<double>(completedSubsteps) * kTimestep,
+                nullptr
+            );
+            configs[substep].gripTargetAndActive = f4(
+                static_cast<float>(pose.target.x),
+                static_cast<float>(pose.target.y),
+                static_cast<float>(pose.target.z),
+                pose.active ? 1.0f : 0.0f
+            );
+            configs[substep].gripOrientation = gripQuaternion4(
+                pose.orientation
+            );
+            configs[substep].gripControl.x = pose.attachmentGeneration;
+            configs[substep].gripControl.y = 0u;
+        }
+        const GPUResult batched = runGPU(
+            device, queue, pipelines, batchedState,
+            iterations, strainSweeps, configs
+        );
+        GPUResult split;
+        for (std::uint32_t substep = 0u;
+             substep < kPickupSubstepsPerFrame; ++substep) {
+            const NumiClothBagGPUFruit& before = splitState.fruits[9];
+            const double previousVz =
+                static_cast<double>(before.velocityAndGroundImpulse.z);
+            const std::vector<NumiClothBagGPUConfig> single{
+                configs[substep]
+            };
+            split = runGPU(
+                device, queue, pipelines, splitState,
+                iterations, strainSweeps, single
+            );
+            failureFree = failureFree && split.failure == 0u;
+            const NumiClothBagGPUFruit& fruit = split.fruits[9];
+            double yarnNormalImpulse = 0.0;
+            DVec3 yarnVectorImpulse{};
+            std::uint32_t yarnResponses = 0u;
+            double minimumYarnGap =
+                std::numeric_limits<double>::infinity();
+            for (const NumiClothBagGPUYarnContact& contact :
+                 split.yarnContacts) {
+                if (contact.identity.x != 9u) continue;
+                yarnNormalImpulse += contact.fruitNormalAndImpulse.w;
+                yarnVectorImpulse += d3(contact.fruitNormalAndImpulse);
+                yarnResponses += contact.control.w;
+                minimumYarnGap = std::min(
+                    minimumYarnGap,
+                    static_cast<double>(
+                        contact.currentNormalAndSeparation.w
+                    )
+                );
+            }
+            double pairNormalImpulse = 0.0;
+            DVec3 pairVectorImpulse{};
+            for (const NumiClothBagGPUFruitPair& pair : split.fruitPairs) {
+                if (pair.fruitsAndColor.x == 9u) {
+                    pairNormalImpulse += pair.contact.w;
+                    pairVectorImpulse -= d3(pair.contact);
+                } else if (pair.fruitsAndColor.y == 9u) {
+                    pairNormalImpulse += pair.contact.w;
+                    pairVectorImpulse += d3(pair.contact);
+                }
+            }
+            const double velocityZ =
+                static_cast<double>(fruit.velocityAndGroundImpulse.z);
+            std::cout << "fruit9_fullscene_substep frame="
+                      << startingFrame + frame + 1u
+                      << " substep=" << substep + 1u
+                      << " z_m=" << fruit.positionAndInverseMass.z
+                      << " vz_m_s=" << velocityZ
+                      << " dvz_m_s=" << velocityZ - previousVz
+                      << " gravity_dvz_m_s="
+                      << static_cast<double>(-9.81f * kTimestep)
+                      << " static_clearance_m="
+                      << nativeStaticClearance(
+                             fruit.positionAndInverseMass,
+                             fruit.previousAndRadius.w, true
+                         )
+                      << " static_impulse_Ns="
+                      << fruit.velocityAndGroundImpulse.w
+                      << " yarn_normal_impulse_Ns=" << yarnNormalImpulse
+                      << " yarn_impulse_z_Ns=" << yarnVectorImpulse.z
+                      << " yarn_responses=" << yarnResponses
+                      << " minimum_yarn_gap_m=" << minimumYarnGap
+                      << " pair_normal_impulse_Ns=" << pairNormalImpulse
+                      << " pair_impulse_z_Ns=" << pairVectorImpulse.z
+                      << " failure_flags=" << split.failure << '\n';
+            splitState = continuedInitialState(
+                splitState, split, configs[substep]
+            );
+        }
+        const bool exact = bitwiseEqualPhysicalState(batched, split);
+        allExact = allExact && exact;
+        failureFree = failureFree && batched.failure == 0u;
+        std::cout << "fruit9_fullscene_frame frame="
+                  << startingFrame + frame + 1u
+                  << " batched_hash=" << hashGPUResult(batched)
+                  << " split_hash=" << hashGPUResult(split)
+                  << " physical_exact=" << exact
+                  << " batched_fruit9_z_m="
+                  << batched.fruits[9].positionAndInverseMass.z
+                  << " split_fruit9_z_m="
+                  << split.fruits[9].positionAndInverseMass.z
+                  << " batched_fruit9_vz_m_s="
+                  << batched.fruits[9].velocityAndGroundImpulse.z
+                  << " split_fruit9_vz_m_s="
+                  << split.fruits[9].velocityAndGroundImpulse.z
+                  << " failure_flags=" << batched.failure << ','
+                  << split.failure << '\n';
+        batchedState = continuedInitialState(
+            batchedState, batched, configs.back()
+        );
+        if (!exact || !failureFree) break;
+    }
+    std::cout << "fruit9_fullscene_split_summary frames_requested=" << frames
+              << " physical_exact=" << allExact
+              << " failure_free=" << failureFree
+              << " passed=" << (allExact && failureFree) << '\n';
+    return allExact && failureFree ? 0 : 1;
+}
+
 
 int runFiniteBenchProbe(id<MTLDevice> device, id<MTLCommandQueue> queue,
                         const Pipelines& pipelines) {
@@ -6150,6 +7307,16 @@ int run(const int argc, const char* const* argv) {
     bool localNodeProbe = false;
     bool finiteBenchProbe = false;
     bool fruitFlightProbe = false;
+    bool fruit9FiniteFreeFlightProbe = false;
+    bool fruit9GhostContactProbe = false;
+    bool fruit9PickupDivergenceProbe = false;
+    bool fruit9FullSceneSplitProbe = false;
+    std::string fruit9CheckpointCapturePath;
+    std::string fruit9CheckpointReadPath;
+    std::string fruit9CheckpointSelftestPath;
+    std::string fruit9CheckpointHostRoundtripPath;
+    std::uint32_t fruit9CheckpointFrame = 1u;
+    std::uint32_t fruit9SplitFrames = 1u;
     bool initialStateProbe = false;
     std::uint32_t replays = 2u;
     std::uint32_t iterations = 32u;
@@ -6183,6 +7350,30 @@ int run(const int argc, const char* const* argv) {
             initialStateProbe = true;
         } else if (value == "--fruit-flight-probe") {
             fruitFlightProbe = true;
+        } else if (value == "--fruit9-finite-freeflight-probe") {
+            fruit9FiniteFreeFlightProbe = true;
+        } else if (value == "--fruit9-ghost-contact-probe") {
+            fruit9GhostContactProbe = true;
+        } else if (value == "--fruit9-pickup-divergence-probe") {
+            fruit9PickupDivergenceProbe = true;
+        } else if (value == "--fruit9-fullscene-split-probe") {
+            fruit9FullSceneSplitProbe = true;
+        } else if (value == "--fruit9-checkpoint-capture" && argument + 1 < argc) {
+            fruit9CheckpointCapturePath = argv[++argument];
+        } else if (value == "--fruit9-checkpoint-read" && argument + 1 < argc) {
+            fruit9CheckpointReadPath = argv[++argument];
+        } else if (value == "--fruit9-checkpoint-selftest" && argument + 1 < argc) {
+            fruit9CheckpointSelftestPath = argv[++argument];
+        } else if (value == "--fruit9-checkpoint-host-roundtrip" && argument + 1 < argc) {
+            fruit9CheckpointHostRoundtripPath = argv[++argument];
+        } else if (value == "--fruit9-checkpoint-frame" && argument + 1 < argc) {
+            fruit9CheckpointFrame = static_cast<std::uint32_t>(
+                std::stoul(argv[++argument])
+            );
+        } else if (value == "--fruit9-split-frames" && argument + 1 < argc) {
+            fruit9SplitFrames = static_cast<std::uint32_t>(
+                std::stoul(argv[++argument])
+            );
         } else if (value == "--replays" && argument + 1 < argc) {
             replays = static_cast<std::uint32_t>(
                 std::stoul(argv[++argument])
@@ -6258,7 +7449,16 @@ int run(const int argc, const char* const* argv) {
                    "[--spin-prefix PATH] [--spin-steps N] "
                    "[--spin-dump-every N] [--pickup-prefix PATH] "
                    "[--pickup-steps N] [--pickup-dump-every N] "
-                   "[--fruit-flight-probe] [--initial-state-probe] [--finite-bench] "
+                   "[--fruit-flight-probe] [--fruit9-finite-freeflight-probe] "
+                   "[--fruit9-ghost-contact-probe] "
+                   "[--fruit9-pickup-divergence-probe] "
+                   "[--fruit9-checkpoint-capture PATH] "
+                   "[--fruit9-checkpoint-frame N] "
+                   "[--fruit9-checkpoint-read PATH] "
+                   "[--fruit9-checkpoint-selftest PATH] "
+                   "[--fruit9-checkpoint-host-roundtrip PATH] "
+                   "[--fruit9-fullscene-split-probe] [--fruit9-split-frames N] "
+                   "[--initial-state-probe] [--finite-bench] "
                    "[--finite-bench-probe] [--diagnose-failure]\n";
             return 0;
         } else {
@@ -6385,6 +7585,11 @@ int run(const int argc, const char* const* argv) {
         }
     }
 
+    if (!fruit9CheckpointHostRoundtripPath.empty()) {
+        return runFruit9CheckpointHostRoundtrip(
+            initial, fruit9CheckpointHostRoundtripPath, metallibPath
+        );
+    }
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
     if (device == nil) {
         throw std::runtime_error("no Apple Metal device is available");
@@ -6500,6 +7705,48 @@ int run(const int argc, const char* const* argv) {
     }
     if (fruitFlightProbe) {
         return runFruitFlightProbe(device, queue, pipelines);
+    }
+    if (fruit9FiniteFreeFlightProbe) {
+        return runFruit9FiniteFreeFlightProbe(device, queue, pipelines);
+    }
+    if (fruit9GhostContactProbe) {
+        return runFruit9GhostContactProbe(device, queue, pipelines, initial);
+    }
+    if (!fruit9CheckpointSelftestPath.empty()) {
+        return runFruit9CheckpointSelftest(
+            device, queue, pipelines, initial,
+            fruit9CheckpointSelftestPath, metallibPath
+        );
+    }
+    if (!fruit9CheckpointCapturePath.empty()) {
+        return runFruit9CheckpointCapture(
+            device, queue, pipelines, initial,
+            fruit9CheckpointFrame, fruit9CheckpointCapturePath, metallibPath
+        );
+    }
+    if (!fruit9CheckpointReadPath.empty()) {
+        gFullYarnContactReset = true;
+        const InitialState canonical = makeTrajectoryInitialState(
+            initial, TrajectoryScenario::pickup
+        );
+        const auto [restored, completedFrames] = loadFruit9Checkpoint(
+            fruit9CheckpointReadPath, canonical, metallibPath
+        );
+        return runFruit9FullSceneSplitProbe(
+            device, queue, pipelines, restored, completedFrames,
+            fruit9SplitFrames, iterations, strainSweeps
+        );
+    }
+    if (fruit9PickupDivergenceProbe) {
+        return runFruit9PickupDivergenceProbe(
+            device, queue, pipelines, initial, fruit9SplitFrames
+        );
+    }
+    if (fruit9FullSceneSplitProbe) {
+        return runFruit9FullSceneSplitProbe(
+            device, queue, pipelines, initial, 0u, fruit9SplitFrames,
+            iterations, strainSweeps
+        );
     }
 
     const bool coloringExact = verifyColoring(initial);
