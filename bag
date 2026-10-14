@@ -41,7 +41,7 @@ def view(prefix):
 
 
 def run(args):
-    frames = args.frames or DEFAULT_FRAMES.get(args.scene)
+    frames = args.frames if args.frames is not None else DEFAULT_FRAMES.get(args.scene)
     if not frames or not 1 <= frames <= 1440:
         raise ValueError('choose 1..1440 frames (recorded scenes need --frames)')
     if (args.scene == 'recorded') != bool(args.grip):
