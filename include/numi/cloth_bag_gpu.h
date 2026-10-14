@@ -2,7 +2,7 @@
 
 #include "metalrobo/gpu_types.h"
 
-#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 15u
+#define NUMI_CLOTH_BAG_GPU_ABI_VERSION 16u
 #define NUMI_CLOTH_BAG_GPU_INVALID_PARTICLE 0xffffffffu
 #define NUMI_CLOTH_BAG_GPU_SELF_IMPULSE_CAPACITY 4096u
 #define NUMI_CLOTH_BAG_GPU_MOUTH_RIM_CAPACITY 64u
@@ -18,6 +18,7 @@ enum NumiClothBagGPUFailure : mr_u32 {
     NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_START = 1u << 5u,
     NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_ARRIVAL = 1u << 6u,
     NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_ADVANCE = 1u << 7u,
+    NUMI_CLOTH_BAG_GPU_FAILURE_STATIC_YARN = 1u << 8u,
 };
 
 typedef struct MR_ALIGN16 NumiClothBagGPUConfig {
@@ -77,6 +78,10 @@ typedef struct MR_ALIGN16 NumiClothBagGPUParticle {
     // Reconstruct later constraint motion relative to staticPrediction, never
     // the whole chord from the pre-impact position around a curved feature.
     mr_float4 staticPredictionVelocity;
+    // Unclipped force-integrated trajectory. Endpoint clipping must not erase
+    // an earlier interior-yarn impact; w position validity and velocity reserve.
+    mr_float4 staticFreePredictionAndValidity;
+    mr_float4 staticFreePredictionVelocity;
 } NumiClothBagGPUParticle;
 
 typedef struct MR_ALIGN16 NumiClothBagGPUDistance {
@@ -86,6 +91,24 @@ typedef struct MR_ALIGN16 NumiClothBagGPUDistance {
     // w maximum relative extension for the unilateral limiter.
     mr_float4 material;
 } NumiClothBagGPUDistance;
+
+// Whole axial-segment contact is separate from endpoint sphere support. An
+// interior witness cannot publish a fictitious support normal on either knot.
+typedef struct MR_ALIGN16 NumiClothBagGPUStaticYarnContact {
+    // xyz current witness normal, w current gap in metres.
+    mr_float4 normalAndGap;
+    // xyz accumulated normal impulse vector, w accumulated scalar impulse Ns.
+    mr_float4 normalImpulse;
+    // xyz accumulated positional reaction, w accumulated scalar reaction kg*m.
+    mr_float4 positionReaction;
+    // x closest segment parameter, y earliest swept time, z active support,
+    // w accumulated tangential impulse Ns. Cleared each physical substep.
+    mr_float4 witness;
+    // Last accepted axial endpoints; w=1 when initialized. Segment CCD also
+    // guards iterative constraint displacements, not only free prediction.
+    mr_float4 acceptedFirst;
+    mr_float4 acceptedSecond;
+} NumiClothBagGPUStaticYarnContact;
 
 typedef struct MR_ALIGN16 NumiClothBagGPUGrip {
     // x particle, y attachment generation, z maximum capture distance as
@@ -221,8 +244,9 @@ typedef struct MR_ALIGN16 NumiClothBagGPUBatch {
 
 #ifndef __METAL_VERSION__
 static_assert(sizeof(NumiClothBagGPUConfig) == 240);
-static_assert(sizeof(NumiClothBagGPUParticle) == 96);
+static_assert(sizeof(NumiClothBagGPUParticle) == 128);
 static_assert(sizeof(NumiClothBagGPUDistance) == 32);
+static_assert(sizeof(NumiClothBagGPUStaticYarnContact) == 96);
 static_assert(sizeof(NumiClothBagGPUGrip) == 48);
 static_assert(sizeof(NumiClothBagGPUKnot) == 48);
 static_assert(sizeof(NumiClothBagGPUBend) == 32);

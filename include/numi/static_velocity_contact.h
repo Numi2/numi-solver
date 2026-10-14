@@ -127,6 +127,15 @@ inline float numiStaticVelocityBodyEnergyUpper(
     return changed ? numiVelocityUp(total * 0.5f) : 0;
 }
 
+inline float numiStaticVelocityPairEnergyUpper(
+    NumiStaticVelocityBody first, NumiStaticVelocityBody second,
+    NumiStaticVelocityPairTrial trial
+) {
+    const float firstEnergy = numiStaticVelocityBodyEnergyUpper(first, trial.first.velocity);
+    const float secondEnergy = numiStaticVelocityBodyEnergyUpper(second, trial.second.velocity);
+    return firstEnergy == 0 && secondEnergy == 0 ? 0 : numiVelocityUp(firstEnergy + secondEnergy);
+}
+
 inline NumiStaticVelocityPairResult numiStaticResolveVelocityPair(
     NumiStaticVelocityBody first, NumiStaticVelocityBody second,
     NumiStaticVec3 gradientA, NumiStaticVec3 gradientB,
@@ -189,9 +198,45 @@ inline NumiStaticVelocityPairResult numiStaticResolveVelocityPair(
             result.status = NumiStaticVelocityIterationLimit; return result;
         }
     } else if (final.derivative < 0) status = NumiStaticVelocityLimited;
-    const float firstEnergy = numiStaticVelocityBodyEnergyUpper(first, final.first.velocity);
-    const float secondEnergy = numiStaticVelocityBodyEnergyUpper(second, final.second.velocity);
-    const float energyUpper = firstEnergy == 0 && secondEnergy == 0 ? 0 : numiVelocityUp(firstEnergy + secondEnergy);
+    float energyUpper = numiStaticVelocityPairEnergyUpper(first, second, final);
+    if ((!numiStaticFinite(energyUpper) || energyUpper > 0) &&
+        uncappedNormal && status == NumiStaticVelocitySolved && impulse > 0) {
+        // FP32 may round the zero-derivative impulse into a represented
+        // kinetic gain. Search only the narrow normal-velocity interval that
+        // the final whole-yarn certificate already accepts. Every candidate
+        // remains an actual gradient impulse plus unilateral support response;
+        // only a nonpositive outward-rounded energy change may publish.
+        const float freeSlope = first.inverseMass * numiStaticDot(gradientA, gradientA) +
+                                second.inverseMass * numiStaticDot(gradientB, gradientB);
+        const float halfWidth = 1.0e-6f / freeSlope;
+        if (numiStaticFinite(halfWidth) && halfWidth > 0) {
+            float bestResidual = 3.402823466e38f;
+            float bestImpulse = 0;
+            NumiStaticVelocityPairTrial best = final;
+            bool found = false;
+            for (unsigned index = 0; index <= 32; ++index) {
+                const float offset = (float(index) * (1.0f / 16.0f) - 1.0f) * halfWidth;
+                const float candidateImpulse = impulse + offset;
+                if (!(candidateImpulse > 0) || !numiStaticFinite(candidateImpulse)) continue;
+                ++result.iterations;
+                const auto candidate = numiStaticVelocityEvaluate(
+                    first, second, gradientA, gradientB, candidateImpulse);
+                if (!candidate.valid || !numiStaticFinite(candidate.derivative) ||
+                    numiStaticAbs(candidate.derivative) > 1.0e-6f) continue;
+                const float candidateEnergy = numiStaticVelocityPairEnergyUpper(first, second, candidate);
+                if (!numiStaticFinite(candidateEnergy) || candidateEnergy > 0) continue;
+                const float residual = numiStaticAbs(candidate.derivative);
+                if (!found || residual < bestResidual) {
+                    found = true; bestResidual = residual;
+                    bestImpulse = candidateImpulse; best = candidate;
+                }
+            }
+            if (found) {
+                impulse = bestImpulse; final = best;
+                energyUpper = numiStaticVelocityPairEnergyUpper(first, second, final);
+            }
+        }
+    }
     if (!numiStaticFinite(energyUpper) || energyUpper > 0) {
         result.status = NumiStaticVelocityEnergyFailure; return result;
     }

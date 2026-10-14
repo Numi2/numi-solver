@@ -61,6 +61,9 @@ set(
     include/numi/cloth_bag_gpu.h
     include/numi/cloth_gpu_dispatch_guards.h
     include/numi/static_contact_geometry.h
+    include/numi/static_segment_geometry.h
+    include/numi/static_velocity_contact.h
+    src/metal/StaticYarnContact.metalinc
 )
 
 add_custom_command(

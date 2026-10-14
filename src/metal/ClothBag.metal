@@ -2,6 +2,8 @@
 
 #include "numi/cloth_bag_gpu.h"
 #include "numi/static_contact_geometry.h"
+#include "numi/static_segment_geometry.h"
+#include "numi/static_velocity_contact.h"
 
 using namespace metal;
 
@@ -671,6 +673,7 @@ kernel void numi_cloth_bag_begin_substep(
     device NumiClothBagGPUFruitPair* fruitPairs [[buffer(7)]],
     device atomic_uint* failure [[buffer(8)]],
     device NumiClothBagGPUYarnContact* yarnContacts [[buffer(9)]],
+    device NumiClothBagGPUStaticYarnContact* staticYarnContacts [[buffer(10)]],
     const uint index [[thread_position_in_grid]]
 ) {
     if (!validConfig(config, failure)) {
@@ -691,6 +694,8 @@ kernel void numi_cloth_bag_begin_substep(
         particle.staticNormalAndBlockedReaction=float4(0);
         particle.staticPredictionAndValidity=float4(0);
         particle.staticPredictionVelocity=float4(0);
+        particle.staticFreePredictionAndValidity=float4(position,1);
+        particle.staticFreePredictionVelocity=float4(velocity,0);
         if (inverseMass > 0.0f) {
             const float timestep = config.gravityAndTimestep.w;
             particle.velocity.xyz = fma(
@@ -704,6 +709,7 @@ kernel void numi_cloth_bag_begin_substep(
     }
     if (index < config.control.z) {
         distances[index].material.z = 0.0f;
+        staticYarnContacts[index] = {};
     }
     if (index < config.control.w) {
         grips[index].lambda.xyz = float3(0.0f);
@@ -1102,6 +1108,8 @@ kernel void numi_cloth_bag_advance_positions(
                 particle.positionAndInverseMass.xyz
             );
             if(config.constraintCounts.z==2u) {
+                particle.staticFreePredictionAndValidity = float4(particle.positionAndInverseMass.xyz,1);
+                particle.staticFreePredictionVelocity = float4(particle.velocity.xyz,0);
                 float3 velocity = particle.velocity.xyz;
                 nativeStaticSweep(particle.previousAndMass.xyz,particle.positionAndInverseMass,
                     config.clothMaterial.x,particle.staticNormalAndBlockedReaction,velocity,failure);
@@ -3889,3 +3897,5 @@ kernel void numi_cloth_bag_observe_first_failure(
     }
     atomic_store_explicit(trace + 1, flags, memory_order_relaxed);
 }
+
+#include "StaticYarnContact.metalinc"
