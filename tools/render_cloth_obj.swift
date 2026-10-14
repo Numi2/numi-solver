@@ -870,6 +870,145 @@ private func render(
     try data.write(to: URL(fileURLWithPath: output))
 }
 
+// The viewer only renders exported solver state. It never advances physics.
+private final class BagReplayWindow: NSObject, NSWindowDelegate {
+    let prefix: String
+    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 740),
+                          styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                          backing: .buffered, defer: false)
+    let imageView = NSImageView()
+    let slider = NSSlider(value: 0, minValue: 0, maxValue: 1, target: nil, action: nil)
+    let label = NSTextField(labelWithString: "Waiting for Metal state…")
+    let play = NSButton(title: "Pause", target: nil, action: nil)
+    var frames: [(Int, String)] = []
+    let images = NSCache<NSString, NSImage>()
+    var cursor = 0
+    var playing = true
+    var completed = false
+    var timer: Timer?
+    var lastPath = ""
+    var fixedBounds: ViewBounds?
+    var terminalResult = "Replay"
+    init(prefix: String, showWindow: Bool = true) {
+        self.prefix = prefix
+        super.init()
+        window.title = "Numi · Threaded cloth bag"
+        images.countLimit = 24
+        window.delegate = self
+        window.center()
+        imageView.imageScaling = .scaleProportionallyUpOrDown
+        play.target = self; play.action = #selector(toggle)
+        slider.target = self; slider.action = #selector(scrub)
+        let controls = NSStackView(views: [play, slider, label])
+        controls.orientation = .horizontal; controls.spacing = 12
+        slider.widthAnchor.constraint(greaterThanOrEqualToConstant: 300).isActive = true
+        let stack = NSStackView(views: [imageView, controls])
+        stack.orientation = .vertical; stack.spacing = 10
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        window.contentView!.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: window.contentView!.trailingAnchor, constant: -16),
+            stack.topAnchor.constraint(equalTo: window.contentView!.topAnchor, constant: 16),
+            stack.bottomAnchor.constraint(equalTo: window.contentView!.bottomAnchor, constant: -16),
+            imageView.heightAnchor.constraint(greaterThanOrEqualToConstant: 400)
+        ])
+        if showWindow { window.makeKeyAndOrderFront(nil) }
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0/30, repeats: true) { [weak self] _ in self?.tick() }
+        tick()
+    }
+    @objc func toggle() { playing.toggle(); play.title = playing ? "Pause" : "Play" }
+    @objc func scrub() { playing = false; play.title = "Play"; cursor = Int(slider.doubleValue); show() }
+    func windowWillClose(_ notification: Notification) { timer?.invalidate(); NSApp.terminate(nil) }
+    func tick() {
+        let url = URL(fileURLWithPath: prefix)
+        let stem = url.lastPathComponent + "-"
+        let paths = (try? FileManager.default.contentsOfDirectory(atPath: url.deletingLastPathComponent().path)) ?? []
+        let found: [(Int, String)] = paths.compactMap { name in
+            guard name.hasPrefix(stem), name.hasSuffix(".obj"),
+                  let frame = Int(name.dropFirst(stem.count).dropLast(4)) else { return nil }
+            return (frame, url.deletingLastPathComponent().appendingPathComponent(name).path)
+        }.sorted { $0.0 < $1.0 }
+        frames = found
+        slider.maxValue = Double(max(1, frames.count-1))
+        if !completed && FileManager.default.fileExists(atPath: prefix + "-scene.json") {
+            completed = true
+            if let data = try? Data(contentsOf: URL(fileURLWithPath: prefix + "-scene.json")),
+               let receipt = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                terminalResult = (receipt["result"] as? String) == "PASS" ? "Replay" : "Rejected run"
+            }
+            let list = prefix + "-view-framing.txt"
+            try? frames.map { $0.1 }.joined(separator: "\n").write(toFile: list, atomically: true, encoding: .utf8)
+            fixedBounds = try? trajectoryBounds(listPath: list)
+            images.removeAllObjects(); lastPath = ""; cursor = 0
+        }
+        if playing { cursor = completed ? (cursor + 1) % max(1, frames.count) : max(0, frames.count-1) }
+        show()
+    }
+    func show() {
+        guard !frames.isEmpty else { return }
+        cursor = min(max(0, cursor), frames.count-1)
+        let (frame, path) = frames[cursor]
+        slider.doubleValue = Double(cursor)
+        label.stringValue = String(format: "%.3f s · frame %d · %@", Double(frame)/120,
+                                  frame, completed ? terminalResult : "Computing on Metal")
+        guard path != lastPath else { return }
+        do {
+            if let cached = images.object(forKey: path as NSString) { imageView.image = cached }
+            else {
+                let (vertices, fruits, grip, bench) = try parseOBJ(at: path)
+                guard fruits.count == 12, grip != nil else { return }
+                let png = prefix + "-preview.png"
+                try render(vertices: vertices, fruits: fruits, grip: grip, bench: bench,
+                           cameraProfile: fixedBounds == nil ? "pickup-wide" : "trajectory",
+                           framing: fixedBounds, output: png)
+                guard let image = NSImage(contentsOfFile: png) else { return }
+                imageView.image = image
+                if completed { images.setObject(image, forKey: path as NSString) }
+            }
+            lastPath = path
+        } catch { /* A live exporter may still be completing this file. Retry it. */ }
+    }
+}
+
+if CommandLine.arguments.count == 3 && CommandLine.arguments[1] == "--verify-view" {
+    let app = NSApplication.shared
+    app.setActivationPolicy(.prohibited)
+    let viewer = BagReplayWindow(prefix: CommandLine.arguments[2], showWindow: false)
+    viewer.timer?.invalidate()
+    guard viewer.frames.count >= 2 else { fputs("viewer verification needs at least two states\n", stderr); exit(1) }
+    viewer.window.contentView!.layoutSubtreeIfNeeded()
+    guard viewer.imageView.frame.width > 0, viewer.imageView.frame.height > 0 else { exit(1) }
+    viewer.slider.doubleValue = 0; viewer.scrub()
+    guard viewer.cursor == 0, !viewer.playing, viewer.imageView.image != nil else { exit(1) }
+    viewer.slider.doubleValue = Double(viewer.frames.count-1); viewer.scrub()
+    guard viewer.cursor == viewer.frames.count-1, viewer.imageView.image != nil else { exit(1) }
+    viewer.toggle(); guard viewer.playing else { exit(1) }
+    viewer.toggle(); guard !viewer.playing else { exit(1) }
+    var eventLoopRan = false
+    let stop = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { _ in
+        viewer.tick()
+        eventLoopRan = true
+        app.stop(nil)
+        if let wake = NSEvent.otherEvent(with: .applicationDefined, location: .zero,
+                modifierFlags: [], timestamp: 0, windowNumber: 0, context: nil,
+                subtype: 0, data1: 0, data2: 0) { app.postEvent(wake, atStart: false) }
+    }
+    withExtendedLifetime(stop) { app.run() }
+    guard eventLoopRan else { exit(1) }
+    print("viewer_controls=PASS frames=\(viewer.frames.count) layout=PASS first_last_render=PASS pause_play_scrub=PASS event_loop=PASS bounded_image_cache=24")
+    exit(0)
+}
+
+if CommandLine.arguments.count == 3 && CommandLine.arguments[1] == "--view" {
+    let app = NSApplication.shared
+    app.setActivationPolicy(.regular)
+    let viewer = BagReplayWindow(prefix: CommandLine.arguments[2])
+    app.activate(ignoringOtherApps: true)
+    withExtendedLifetime(viewer) { app.run() }
+    exit(0)
+}
+
 guard [3, 4, 6].contains(CommandLine.arguments.count) else {
     fputs(
         "usage: render_cloth_obj.swift INPUT.obj OUTPUT.png " +

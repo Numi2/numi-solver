@@ -13,6 +13,7 @@
 #include <bit>
 #include <cmath>
 #include <cstddef>
+#include <cstdio>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
@@ -5272,7 +5273,8 @@ void dumpGPUOBJ(
     const std::vector<NumiClothBagGPUGrip>& grips,
     const NumiClothBagGPUConfig& config
 ) {
-    std::ofstream output(path);
+    const std::string temporaryPath = path + ".tmp";
+    std::ofstream output(temporaryPath);
     if (!output) {
         throw std::runtime_error("failed to open Metal cloth OBJ: " + path);
     }
@@ -5347,6 +5349,9 @@ void dumpGPUOBJ(
                << fruit.velocityAndGroundImpulse.y << ' '
                << fruit.velocityAndGroundImpulse.z << '\n';
     }
+    output.close();
+    if (!output || std::rename(temporaryPath.c_str(), path.c_str()) != 0)
+        throw std::runtime_error("failed to publish complete Metal cloth OBJ: " + path);
 }
 
 double maximumLocalNodePenetration(
@@ -6408,7 +6413,93 @@ int runLocalNodeProbe(
 
 #include "static_yarn_probe.mm.inc"
 
+// Scene execution deliberately does not run the independent oracle suite.
+// It retains the same topology, Metal kernels and exact replay checks.
+int runBagScene(id<MTLDevice> device, id<MTLCommandQueue> queue,
+                const Pipelines& pipelines, const InitialState& initial,
+                const std::string& name, unsigned frames, unsigned dumpEvery,
+                unsigned iterations, unsigned strainSweeps, const std::string& prefix,
+                const numi::GripTrajectory* trajectory) {
+    TrajectoryScenario scenario = TrajectoryScenario::pickup;
+    if (name == "swing") scenario = TrajectoryScenario::spin;
+    else if (name == "rest") scenario = TrajectoryScenario::grounded;
+    else if (name == "recorded") scenario = TrajectoryScenario::recorded;
+    else if (name != "pickup") throw std::runtime_error("unknown bag scene");
+    std::cout << "bag_scene=" << name << " backend=Metal device="
+              << device.name.UTF8String << " frames=" << frames << std::endl;
+    const auto first = runTrajectoryReplay(device, queue, pipelines, initial, scenario,
+        iterations, strainSweeps, frames, dumpEvery, 1u, prefix, trajectory);
+    const auto second = runTrajectoryReplay(device, queue, pipelines, initial, scenario,
+        iterations, strainSweeps, frames, dumpEvery, 2u, prefix, trajectory);
+    const bool complete = first.frameHashes.size() == frames && second.frameHashes.size() == frames;
+    const bool replayExact = first.frameHashes == second.frameHashes &&
+        bitwiseEqualPhysicalState(first.final, second.final);
+    const auto strain = maximumStrainViolation(first.final.particles, first.final.distances);
+    const auto ground = maximumGroundPenetration(first.final.particles, first.final.fruits,
+        initial.config.clothMaterial.x, gFiniteBench);
+    const auto self = maximumSelfPenetration(first.final.particles, first.final.distances,
+        initial.selfPairs, initial.config.clothMaterial.x);
+    const auto local = std::max(first.maximumLocalNodePenetration, second.maximumLocalNodePenetration);
+    const auto released = first.final.releaseStatus.masks.y;
+    unsigned landed = 0;
+    for (unsigned i = 0; i < first.final.fruits.size(); ++i) {
+        const auto& fruit = first.final.fruits[i];
+        if ((released & (1u << i)) &&
+            std::abs(nativeStaticClearance(fruit.positionAndInverseMass,
+                fruit.previousAndRadius.w, gFiniteBench)) <= 2e-6) ++landed;
+    }
+    const bool passed = complete && replayExact && first.failureFree && second.failureFree &&
+        trajectoryEscapeMask(first.final, scenario) == 0u && trajectoryEscapeMask(second.final, scenario) == 0u &&
+        strain <= 2e-6 && ground <= 1e-6 && self <= 2e-6 && local <= 2e-6;
+    // Completion of a simulator trajectory and the old prescribed-spill
+    // experiment are distinct outcomes. Preserve both explicitly.
+    const bool spillOutcome = std::popcount(released) >= 2 && landed >= 2;
+    std::ofstream receipt(prefix + "-scene.json.tmp");
+    if (!receipt) throw std::runtime_error("cannot write scene receipt");
+    receipt << std::setprecision(17)
+        << "{\n  \"schema\": \"numi.bag.scene.v1\",\n  \"scene\": \"" << name
+        << "\",\n  \"backend\": \"Metal\",\n  \"device\": \"" << device.name.UTF8String
+        << "\",\n  \"complete\": " << (complete ? "true" : "false")
+        << ",\n  \"replay_exact\": " << (replayExact ? "true" : "false")
+        << ",\n  \"frames_requested\": " << frames
+        << ",\n  \"frames_first\": " << first.frameHashes.size()
+        << ",\n  \"frames_second\": " << second.frameHashes.size()
+        << ",\n  \"simulated_seconds\": " << first.frameHashes.size()*kPickupSubstepsPerFrame*kTimestep
+        << ",\n  \"released_mask\": " << released
+        << ",\n  \"grounded_released_count\": " << landed
+        << ",\n  \"plural_spill_and_landing\": " << (spillOutcome ? "true" : "false")
+        << ",\n  \"strain_violation_m\": " << strain
+        << ",\n  \"ground_penetration_m\": " << ground
+        << ",\n  \"self_penetration_m\": " << self
+        << ",\n  \"maximum_local_node_overlap_m\": " << local
+        << ",\n  \"failure_first\": " << first.final.failure
+        << ",\n  \"failure_second\": " << second.final.failure
+        << ",\n  \"state_hash\": " << hashGPUResult(first.final)
+        << ",\n  \"gpu_seconds\": " << first.gpuSeconds+second.gpuSeconds
+        << ",\n  \"result\": \"" << (passed ? "PASS" : "FAIL") << "\"\n}\n";
+    receipt.close();
+    if (!receipt || std::rename((prefix + "-scene.json.tmp").c_str(), (prefix + "-scene.json").c_str()) != 0)
+        throw std::runtime_error("failed to publish complete scene receipt");
+    std::cout << "bag_scene_result=" << (passed ? "PASS" : "FAIL")
+        << " complete=" << complete << " replay_exact=" << replayExact
+        << " plural_spill_and_landing=" << spillOutcome << std::endl;
+    return passed ? 0 : 1;
+}
+
 int run(const int argc, const char* const* argv) {
+    std::string bagScene;
+    unsigned sceneFrames = 0u;
+    std::string scenePrefix;
+    unsigned sceneDumpEvery = 1u;
+    const auto sceneCount = [](const char* argument) {
+        const std::string literal(argument);
+        std::size_t consumed = 0;
+        const auto value = std::stoul(literal, &consumed);
+        if (literal.empty() || literal.front() == '-' || consumed != literal.size() ||
+            value > std::numeric_limits<unsigned>::max())
+            throw std::runtime_error("invalid scene count");
+        return static_cast<unsigned>(value);
+    };
     bool localNodeProbe = false;
     bool finiteBenchProbe = false;
     bool staticYarnProbe = false;
@@ -6435,7 +6526,15 @@ int run(const int argc, const char* const* argv) {
     std::string metallibPath = NUMI_TEMPORAL_CONE_METALLIB;
     for (int argument = 1; argument < argc; ++argument) {
         const std::string_view value(argv[argument]);
-        if (value == "--finite-bench") {
+        if (value == "--bag-scene" && argument + 1 < argc) {
+            bagScene = argv[++argument];
+        } else if (value == "--scene-frames" && argument + 1 < argc) {
+            sceneFrames = sceneCount(argv[++argument]);
+        } else if (value == "--scene-prefix" && argument + 1 < argc) {
+            scenePrefix = argv[++argument];
+        } else if (value == "--scene-dump-every" && argument + 1 < argc) {
+            sceneDumpEvery = sceneCount(argv[++argument]);
+        } else if (value == "--finite-bench") {
             gFiniteBench = true;
         } else if (value == "--diagnose-failure") {
             gDiagnoseFailure = true;
@@ -6523,7 +6622,8 @@ int run(const int argc, const char* const* argv) {
             );
         } else if (value == "--help") {
             std::cout
-                << "usage: numi-solver-cloth-metal [--replays N] "
+                << "usage: numi-solver-cloth-metal [--bag-scene swing|pickup|rest|recorded] "
+                   "[--scene-frames N] [--scene-prefix PATH] [--scene-dump-every N] [--replays N] "
                    "[--iterations N] [--strain-sweeps N] [--local-node-probe] "
                    "[--metallib PATH] [--material FILE] "
                    "[--grip-trajectory FILE] [--recorded-steps N] "
@@ -6544,6 +6644,19 @@ int run(const int argc, const char* const* argv) {
                 "unknown argument: " + std::string(value)
             );
         }
+    }
+    if (!bagScene.empty()) {
+        if (bagScene != "swing" && bagScene != "pickup" && bagScene != "rest" && bagScene != "recorded")
+            throw std::runtime_error("bag scene must be swing, pickup, rest or recorded");
+        if (sceneFrames == 0u || sceneFrames > 1440u || scenePrefix.empty() || sceneDumpEvery == 0u)
+            throw std::runtime_error("bag scene requires 1..1440 frames, output prefix and positive dump cadence");
+        if (bagScene == "recorded") recordedSteps = sceneFrames;
+        if (!pickupPrefix.empty() || !groundedPrefix.empty() || !spinPrefix.empty())
+            throw std::runtime_error("bag scene cannot also request research trajectories");
+        if ((bagScene == "recorded") != !gripTrajectoryPath.empty())
+            throw std::runtime_error("recorded scene requires a grip trajectory; other scenes use their authored grip");
+    } else if (sceneFrames != 0u || !scenePrefix.empty()) {
+        throw std::runtime_error("scene options require --bag-scene");
     }
     if (gAdaptiveStaticContact && !gFiniteBench)
         throw std::runtime_error("adaptive static contact requires --finite-bench");
@@ -6788,6 +6901,9 @@ int run(const int argc, const char* const* argv) {
     if (fruitFlightProbe) {
         return runFruitFlightProbe(device, queue, pipelines);
     }
+
+    if (!bagScene.empty()) return runBagScene(device, queue, pipelines, initial, bagScene,
+        sceneFrames, sceneDumpEvery, iterations, strainSweeps, scenePrefix, gripTrajectoryPointer);
 
     const bool coloringExact = verifyColoring(initial);
     const OracleResult oracle = runOracle(initial, iterations, strainSweeps);

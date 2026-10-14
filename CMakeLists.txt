@@ -482,7 +482,7 @@ if(BUILD_TESTING)
     add_test(NAME static_contact.transactional_substep_host COMMAND $<TARGET_FILE:numi-solver-transactional-substep>)
     set_tests_properties(static_contact.transactional_substep_host PROPERTIES LABELS "cpu;physics;contact;finite_bench;rollback" TIMEOUT 30)
     add_test(NAME elastic_yarn.normal_host COMMAND $<TARGET_FILE:numi-solver-elastic-yarn>)
-    add_test(NAME elastic_yarn.fem_boundary_host COMMAND $<TARGET_FILE:numi-solver-elastic-yarn> --fixture "${CMAKE_CURRENT_SOURCE_DIR}/docs/assets/elastic-yarn-fem-frame38-five-nodes.txt")
+    add_test(NAME elastic_yarn.fem_boundary_host COMMAND $<TARGET_FILE:numi-solver-elastic-yarn> --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/elastic-yarn-five-nodes.txt")
     set_tests_properties(elastic_yarn.normal_host elastic_yarn.fem_boundary_host PROPERTIES LABELS "cpu;physics;deformable;contact;reciprocal;energy" TIMEOUT 30)
     add_test(NAME static_contact.metal COMMAND $<TARGET_FILE:numi-solver-static-geometry-metal>)
     set_tests_properties(static_contact.host PROPERTIES LABELS "cpu;physics;contact;finite_bench" TIMEOUT 30)
@@ -491,7 +491,7 @@ if(BUILD_TESTING)
     add_test(NAME cloth_bag.finite_bench COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --finite-bench-probe)
     add_test(NAME cloth_bag.coupled_yarn COMMAND $<TARGET_FILE:numi-solver-cloth-bag> --coupled-yarn-probe)
     add_test(NAME cloth_bag.coupled_yarn_peak COMMAND $<TARGET_FILE:numi-solver-cloth-bag>
-        --coupled-yarn-snapshot-probe "${CMAKE_CURRENT_SOURCE_DIR}/docs/assets/finite-bench-load-pickup-96-failed-peak.obj")
+        --coupled-yarn-snapshot-probe "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/coupled-yarn-retained-peak.obj")
     set_tests_properties(cloth_bag.coupled_yarn cloth_bag.coupled_yarn_peak
         PROPERTIES LABELS "cpu;physics;cloth;contact;finite_bench;coupled" TIMEOUT 30)
     set_tests_properties(finite_bench.reference cloth_bag.finite_bench

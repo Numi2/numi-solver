@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+"""One entry point for the Metal threaded bag and its native replay viewer."""
+import argparse
+import datetime
+import hashlib
+import json
+import os
+import plistlib
+from pathlib import Path
+import signal
+import subprocess
+import sys
+import time
+
+ROOT = Path(__file__).resolve().parent
+BUILD = ROOT / 'build' / 'bag'
+DEFAULT_FRAMES = {'swing': 60, 'pickup': 480, 'rest': 120}
+
+
+def execute(args, **kwargs):
+    subprocess.run([str(x) for x in args], check=True, **kwargs)
+
+
+def build(viewer):
+    execute(['cmake', '-S', ROOT, '-B', BUILD, '-DCMAKE_BUILD_TYPE=Release'])
+    execute(['cmake', '--build', BUILD, '--target', 'numi-solver-cloth-metal', '-j', '4'])
+    if viewer:
+        target = BUILD / 'Bag.app/Contents/MacOS/Bag'
+        target.parent.mkdir(parents=True, exist_ok=True)
+        plist = {'CFBundleIdentifier': 'org.numi.threaded-bag', 'CFBundleName': 'Numi Bag',
+                 'CFBundleDisplayName': 'Numi Bag', 'CFBundleExecutable': 'Bag',
+                 'CFBundlePackageType': 'APPL', 'NSHighResolutionCapable': True}
+        (target.parent.parent / 'Info.plist').write_bytes(plistlib.dumps(plist))
+        source = ROOT / 'tools/render_cloth_obj.swift'
+        if not target.exists() or source.stat().st_mtime > target.stat().st_mtime:
+            execute(['xcrun', 'swiftc', '-O', source, '-o', target])
+
+
+def view(prefix):
+    return subprocess.Popen([str(BUILD / 'Bag.app/Contents/MacOS/Bag'), '--view', str(prefix)])
+
+
+def run(args):
+    frames = args.frames or DEFAULT_FRAMES.get(args.scene)
+    if not frames or not 1 <= frames <= 1440:
+        raise ValueError('choose 1..1440 frames (recorded scenes need --frames)')
+    if (args.scene == 'recorded') != bool(args.grip):
+        raise ValueError('recorded requires --grip; other scenes use their authored cuff path')
+    build(not args.headless)
+    stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
+    out = BUILD / 'runs' / stamp
+    out.mkdir(parents=True, exist_ok=False)
+    prefix = out / 'bag'
+    command = [str(BUILD / 'numi-solver-cloth-metal'), '--bag-scene', args.scene,
+               '--scene-frames', str(frames), '--scene-prefix', str(prefix), '--scene-dump-every', '1']
+    if args.grip:
+        command += ['--grip-trajectory', str(args.grip.resolve())]
+    if args.finite_bench:
+        command += ['--finite-bench', '--adaptive-static-contact']
+    if args.material:
+        command += ['--material', str(args.material.resolve())]
+    (out / 'command.json').write_text(json.dumps(command, indent=2) + '\n')
+    sources = ['tools/cloth_bag_metal.mm', 'src/metal/ClothBag.metal',
+               'src/metal/StaticYarnContact.metalinc', 'include/numi/cloth_bag_gpu.h',
+               'include/numi/cloth_material.h', 'include/numi/grip_trajectory.h']
+    hashes = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in sources}
+    for path in [BUILD / 'numi-solver-cloth-metal', BUILD / 'shaders/NumiTemporalCone.metallib', args.grip, args.material]:
+        if path:
+            hashes[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+    (out / 'inputs.json').write_text(json.dumps(hashes, indent=2) + '\n')
+    latest = BUILD / 'latest'
+    temp_link = BUILD / 'latest.tmp'
+    temp_link.unlink(missing_ok=True)
+    temp_link.symlink_to(out.relative_to(BUILD))
+    temp_link.replace(latest)
+    print(f'Metal scene: {args.scene}; {frames/120:g} simulated seconds. Replay: {out}', flush=True)
+    native = None
+    ui = None
+    try:
+        with (out / 'run.log').open('w') as log:
+            native = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+            while native.poll() is None:
+                if not args.headless and ui is None and (out / 'bag-0.obj').exists():
+                    ui = view(prefix)
+                if ui and ui.poll() is not None:
+                    os.killpg(native.pid, signal.SIGTERM)
+                    native.wait()
+                    (out / 'exit.txt').write_text('130\n')
+                    print('Viewer closed; native worker stopped. Accepted states retained.')
+                    return 130
+                time.sleep(0.2)
+            code = native.returncode
+        (out / 'exit.txt').write_text(str(code) + '\n')
+        receipt = prefix.with_name('bag-scene.json')
+        if receipt.exists():
+            result = json.loads(receipt.read_text())
+            print(json.dumps(result, indent=2))
+        else:
+            print((out / 'run.log').read_text()[-3000:], file=sys.stderr)
+        # Keep one latest run. Earlier runs are deliberate user output, never
+        # silently deleted by launching another scene.
+        if ui:
+            ui.wait()
+        return code
+    except BaseException:
+        if native and native.poll() is None:
+            os.killpg(native.pid, signal.SIGTERM)
+            native.wait()
+        if ui and ui.poll() is None:
+            ui.terminate(); ui.wait()
+        raise
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest='action')
+    launch = sub.add_parser('run', help='simulate on Metal; show actual yarn/fruit states')
+    launch.add_argument('--scene', choices=['swing', 'pickup', 'rest', 'recorded'], default='swing')
+    launch.add_argument('--frames', type=int)
+    launch.add_argument('--grip', type=Path)
+    launch.add_argument('--material', type=Path)
+    launch.add_argument('--finite-bench', action='store_true', help='experimental finite-table contact; can reject')
+    launch.add_argument('--headless', action='store_true')
+    replay = sub.add_parser('view', help='open an existing replay without running physics')
+    replay.add_argument('directory', type=Path, nargs='?', default=BUILD / 'latest')
+    sub.add_parser('check', help='run the native mechanics gates')
+    args = parser.parse_args(sys.argv[1:] or ['run'])
+    if args.action == 'run':
+        return run(args)
+    if args.action == 'view':
+        build(True)
+        if not (args.directory / 'bag-0.obj').exists():
+            raise ValueError('no bag replay in ' + str(args.directory))
+        return view(args.directory.resolve() / 'bag').wait()
+    if args.action == 'check':
+        build(False)
+        execute(['ctest', '--test-dir', BUILD, '-R',
+                 '^cloth_bag\\.(metal_(fruit_flight|internal_contact|local_node_contact|finite_bench_response)|static_yarn(_adaptive)?_native)$',
+                 '--output-on-failure', '-j', '1'])
+        return 0
+    parser.print_help()
+    return 2
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        sys.exit(130)
+    except (ValueError, OSError, subprocess.CalledProcessError) as error:
+        print('bag:', error, file=sys.stderr)
+        sys.exit(1)
