@@ -2,6 +2,8 @@
 
 Apple Metal physics for rigid bodies, articulated systems and deformable yarns.
 
+[Numi Lab branch history and recovery](docs/NumiLabMigration/README.md)
+
 ## Threaded cloth bag
 
 ```sh
